@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}.hl-pink{color:var(--pink);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:64px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:8px 13px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}
+.step.blue{border-left-color:var(--blue);background:#0d1426;}
+.node{cursor:pointer;transition:all .3s;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">✓ Блок 2</span>
+  <span class="tag tag-active">▶ 3.1 Backpropagation</span>
+  <span class="tag tag-next">3.2 Оптимизаторы</span>
+  <span class="tag tag-next">3.3 Регуляризация</span>
+</div>
+
+<h1>3.1 Backpropagation</h1>
+<p class="muted">Chain rule на вычислительном графе — полный вывод с нуля</p>
+
+<!-- 1. Идея -->
+<div class="card">
+  <h2>💡 Идея в одной фразе</h2>
+  <p>Backprop — это <strong>алгоритм эффективного вычисления всех частных производных</strong> ∂L/∂θᵢ за один проход назад по вычислительному графу, используя цепное правило.</p>
+  <div class="formula">Брутфорс: вычислить ∂L/∂θᵢ для каждого из P параметров отдельно → O(P) forward pass'ов
+Backprop: один forward + один backward → O(1) по числу проходов</div>
+  <div class="intuition">
+    💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
+  </div>
+</div>
+
+<!-- 2. Цепное правило — освежение -->
+<div class="card">
+  <h2>🔗 Chain rule — основа backprop</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Скалярный случай</h3>
+      <div class="formula">z = g(y),  y = f(x)
+dz/dx = dz/dy · dy/dx</div>
+      <h3 style="margin-top:14px;">Векторный случай (VJP)</h3>
+      <div class="formula">z = g(y),  y = f(x),  x,y,z ∈ ℝⁿ
+∂z/∂x = (∂y/∂x)ᵀ · ∂z/∂y
+       = Jᵀ · v
+v = ∂z/∂y — вектор из выше,
+J = ∂y/∂x — якобиан слоя</div>
+      <p style="font-size:.88em;margin-top:8px;">На практике нам не нужен полный якобиан J — только произведение Jᵀv. Это VJP (Vector-Jacobian Product) — именно это вычисляет autograd.</p>
+    </div>
+    <div>
+      <h3>Граф и дельты</h3>
+      <p style="font-size:.88em;">Обозначение: <span class="hl-amber">δˡ</span> = «локальный градиент» = ∂L/∂Zˡ</p>
+      <div class="formula" style="font-size:.85em;">Forward:  Zˡ = Aˡ⁻¹·(Wˡ)ᵀ + bˡ
+          Aˡ = f(Zˡ)
+
+Backward: δˡ = (∂L/∂Aˡ) ⊙ f′(Zˡ)   ← поэлементно
+          ∂L/∂Wˡ = (δˡ)ᵀ · Aˡ⁻¹
+          ∂L/∂bˡ = sum(δˡ, axis=0)
+          ∂L/∂Aˡ⁻¹ = δˡ · Wˡ         ← передаём ниже</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        💡 Три уравнения backward — вот и весь backprop для одного слоя. Применяешь их от последнего слоя к первому.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Интерактивный граф -->
+<div class="card">
+  <h2>🎬 Интерактивный вычислительный граф</h2>
+  <p class="muted">Нажимай на узлы по порядку — смотри forward (→) и backward (←) с числами</p>
+  <br>
+  <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+    <button class="active" id="btnFwd" onclick="setMode('fwd',this)">▶ Forward pass</button>
+    <button id="btnBwd" onclick="setMode('bwd',this)">◀ Backward pass</button>
+    <button onclick="resetGraph()">↺ Сброс</button>
+  </div>
+  <svg id="cgSvg" viewBox="0 0 860 300" style="width:100%;background:#0a0d14;border:1px solid var(--border);border-radius:8px;"></svg>
+  <div id="cgInfo" style="margin-top:10px;font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:12px 14px;min-height:60px;"></div>
+</div>
+
+<!-- 4. Полный вывод для одного слоя -->
+<div class="card">
+  <h2>📐 Полный вывод градиентов одного линейного слоя</h2>
+  <div class="tabs" id="derivTabs">
+    <button class="active" onclick="showDeriv('dW',this)">∂L/∂W</button>
+    <button onclick="showDeriv('db',this)">∂L/∂b</button>
+    <button onclick="showDeriv('dX',this)">∂L/∂X (передать вниз)</button>
+  </div>
+  <div id="derivContent"></div>
+</div>
+
+<!-- 5. Полный числовой пример: сеть 2→2→1 -->
+<div class="card">
+  <h2>🔢 Числовой пример: сеть 2→2→1, MSE loss</h2>
+  <p class="muted">Редактируй x и y_true — все градиенты пересчитываются автоматически</p>
+  <br>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;">
+    <div><div class="muted" style="font-size:.82em;">x₁</div><input type="number" id="nx1" value="1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">x₂</div><input type="number" id="nx2" value="-1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">y_true</div><input type="number" id="ny" value="1.0" step=".1" oninput="calcNet()"></div>
+    <button onclick="randNet()">🎲 Случайные</button>
+  </div>
+  <!-- Fixed weights display -->
+  <div class="muted" style="font-size:.82em;margin-bottom:6px;">Веса (фиксированы для примера):</div>
+  <div class="formula" style="font-size:.82em;" id="netWeightsDisplay"></div>
+  <br>
+  <div id="netSteps"></div>
+</div>
+
+<!-- 6. Backprop для активаций -->
+<div class="card">
+  <h2>⚡ Градиенты через функции активации</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula" style="font-size:.88em;">ReLU:
+  forward:  A = max(0, Z)
+  backward: δ_prev = δ ⊙ 𝟙[Z > 0]
+  → просто «маска»: пропускает grad там, где Z>0
+
+Sigmoid:
+  forward:  A = σ(Z)
+  backward: δ_prev = δ ⊙ A⊙(1−A)
+  → умножается на σ′ = σ(1−σ) ≤ 0.25
+
+Tanh:
+  forward:  A = tanh(Z)
+  backward: δ_prev = δ ⊙ (1−A²)
+  → умножается на tanh′ = 1−tanh² ≤ 1</div>
+    </div>
+    <div>
+      <h3>Визуализация маски ReLU</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Входной градиент δ: <span id="maskDeltaVal" style="color:var(--green);font-weight:600;">1.0</span></span>
+        <input type="range" min="-3" max="3" step=".1" value="1" id="maskDelta" oninput="drawMask()">
+      </div>
+      <canvas id="maskCanvas" width="340" height="160" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="maskInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Матричные формулы backprop -->
+<div class="card">
+  <h2>🗂 Матричные формулы backprop — шпаргалка</h2>
+  <div class="formula" style="font-size:.88em;">Слой l: Z = A_prev · Wᵀ + b,  A = f(Z)
+
+FORWARD:
+  Z^l      = A^(l-1) · (W^l)ᵀ + b^l        shape: (B, n_out)
+  A^l      = f(Z^l)                          shape: (B, n_out)
+
+BACKWARD (дано δ^l = ∂L/∂A^l, shape (B, n_out)):
+  ∂L/∂Z^l  = δ^l ⊙ f′(Z^l)                 shape: (B, n_out)
+  ∂L/∂W^l  = (∂L/∂Z^l)ᵀ · A^(l-1)          shape: (n_out, n_in)
+  ∂L/∂b^l  = Σ_B ∂L/∂Z^l                   shape: (n_out,)
+  δ^(l-1)  = ∂L/∂A^(l-1)  = ∂L/∂Z^l · W^l shape: (B, n_in)
+
+Стартовый градиент (MSE):  ∂L/∂A^L = 2(A^L − y)/B
+Стартовый градиент (CE):   ∂L/∂Z^L = (p̂ − y)/B   ← softmax+CE вместе</div>
+  <div class="intuition">
+    💡 <strong>Ключевое наблюдение:</strong> ∂L/∂W = δᵀ·X имеет shape (n_out, n_in) — то же, что у W. Каждый параметр получает свой градиент автоматически из одного матричного умножения.
+  </div>
+</div>
+
+<!-- 8. Код -->
+<div class="card">
+  <h2>💻 Реализация</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('numpy',this)">NumPy (с нуля)</button>
+    <button onclick="showCode('auto',this)">PyTorch autograd</button>
+    <button onclick="showCode('manual',this)">Ручной backward()</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ===================== COMPUTATIONAL GRAPH =====================
+const CG_NODES = [
+  {id:'x',  label:'x', sub:'вход',      x:60,  y:150, col:'#60a5fa'},
+  {id:'w1', label:'W₁',sub:'веса',      x:60,  y:240, col:'#a78bfa'},
+  {id:'mm', label:'·', sub:'matmul',    x:200, y:150, col:'#f59e0b'},
+  {id:'b1', label:'b₁',sub:'bias',      x:200, y:240, col:'#a78bfa'},
+  {id:'add1',label:'+',sub:'add bias',  x:320, y:150, col:'#f59e0b'},
+  {id:'relu',label:'f', sub:'ReLU',     x:440, y:150, col:'#10b981'},
+  {id:'w2', label:'W₂',sub:'веса',      x:440, y:240, col:'#a78bfa'},
+  {id:'mm2',label:'·', sub:'matmul',    x:560, y:150, col:'#f59e0b'},
+  {id:'b2', label:'b₂',sub:'bias',      x:560, y:240, col:'#a78bfa'},
+  {id:'add2',label:'+',sub:'add bias',  x:680, y:150, col:'#f59e0b'},
+  {id:'loss',label:'L', sub:'loss',     x:800, y:150, col:'#ef4444'},
+];
+const CG_EDGES = [
+  ['x','mm'],['w1','mm'],['mm','add1'],['b1','add1'],
+  ['add1','relu'],['relu','mm2'],['w2','mm2'],
+  ['mm2','add2'],['b2','add2'],['add2','loss']
+];
+const FWD_INFO = {
+  'x':    'Вход x\nshape: (B, n_in)',
+  'w1':   'Веса W₁\nshape: (n_h, n_in)',
+  'mm':   'Z_pre = x · W₁ᵀ\nmatmul: (B,n_in)·(n_in,n_h)=(B,n_h)',
+  'b1':   'bias b₁, shape: (n_h,)',
+  'add1': 'Z₁ = Z_pre + b₁\nbroadcast bias по батчу',
+  'relu': 'A₁ = ReLU(Z₁) = max(0, Z₁)\nпоэлементно, shape сохраняется',
+  'w2':   'Веса W₂\nshape: (n_out, n_h)',
+  'mm2':  'Z_pre2 = A₁ · W₂ᵀ\nmatmul: (B,n_h)·(n_h,n_out)=(B,n_out)',
+  'b2':   'bias b₂, shape: (n_out,)',
+  'add2': 'Ŷ = Z_pre2 + b₂  (logits/output)\nshape: (B, n_out)',
+  'loss': 'L = MSE(Ŷ, y)\nскаляр',
+};
+const BWD_INFO = {
+  'loss': '∂L/∂Ŷ = 2(Ŷ−y)/B\nСтартовый градиент, shape: (B, n_out)',
+  'add2': '∂L/∂b₂ = Σ_B ∂L/∂Ŷ\n∂L/∂Z_pre2 = ∂L/∂Ŷ (bias не меняет)',
+  'b2':   '∂L/∂b₂ = Σ_B δ   shape: (n_out,)',
+  'mm2':  '∂L/∂W₂ = δᵀ · A₁   shape: (n_out, n_h)\n∂L/∂A₁ = δ · W₂   shape: (B, n_h)',
+  'w2':   '∂L/∂W₂ = δᵀ · A₁',
+  'relu': '∂L/∂Z₁ = ∂L/∂A₁ ⊙ 𝟙[Z₁>0]\nReLU маска: grad=0 где Z₁≤0',
+  'add1': '∂L/∂b₁ = Σ_B ∂L/∂Z₁',
+  'b1':   '∂L/∂b₁ = Σ_B δ',
+  'mm':   '∂L/∂W₁ = δᵀ · x   shape: (n_h, n_in)\n∂L/∂x = δ · W₁   shape: (B, n_in)',
+  'w1':   '∂L/∂W₁ = δᵀ · x',
+  'x':    '∂L/∂x = δ · W₁\n(не нужен если x — данные, но нужен для предыдущего слоя)',
+};
+const FWD_ORDER = ['x','w1','w2','b1','b2','mm','add1','relu','mm2','add2','loss'];
+const BWD_ORDER = ['loss','add2','b2','mm2','w2','relu','add1','b1','mm','w1','x'];
+
+let cgMode='fwd', cgStep=-1, cgVisited=new Set();
+function setMode(m,btn){
+  cgMode=m; cgStep=-1; cgVisited=new Set();
+  document.querySelectorAll('.card button[id^=btn]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawCG();
+  document.getElementById('cgInfo').textContent='Нажимай на следующий узел в направлении '+(m==='fwd'?'→ forward':'← backward');
+}
+function resetGraph(){cgStep=-1;cgVisited=new Set();drawCG();document.getElementById('cgInfo').textContent='Нажми кнопку forward или backward, затем кликай на узлы';}
+
+function drawCG(){
+  const svg=document.getElementById('cgSvg');
+  svg.innerHTML='';
+  const order=cgMode==='fwd'?FWD_ORDER:BWD_ORDER;
+  const nextId=cgStep+1<order.length?order[cgStep+1]:null;
+
+  // edges
+  CG_EDGES.forEach(([a,b])=>{
+    const na=CG_NODES.find(n=>n.id===a), nb=CG_NODES.find(n=>n.id===b);
+    const visited=cgVisited.has(a)&&cgVisited.has(b);
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',na.x);line.setAttribute('y1',na.y);
+    line.setAttribute('x2',nb.x);line.setAttribute('y2',nb.y);
+    line.setAttribute('stroke',visited?(cgMode==='fwd'?'#f59e0b':'#10b981'):'#30363d');
+    line.setAttribute('stroke-width',visited?2:1);
+    svg.appendChild(line);
+  });
+
+  // nodes
+  CG_NODES.forEach(n=>{
+    const visited=cgVisited.has(n.id);
+    const isNext=n.id===nextId;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','node');
+    g.setAttribute('onclick',`clickNode('${n.id}')`);
+
+    const r=isNext?26:22;
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',n.x);circle.setAttribute('cy',n.y);circle.setAttribute('r',r);
+    circle.setAttribute('fill',visited?n.col+'33':'#161b22');
+    circle.setAttribute('stroke',isNext?'#fff':visited?n.col:'#30363d');
+    circle.setAttribute('stroke-width',isNext?2.5:1.5);
+    g.appendChild(circle);
+
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',n.x);txt.setAttribute('y',n.y+5);
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('fill',visited?n.col:'#8b949e');
+    txt.setAttribute('font-size','13');txt.setAttribute('font-weight','700');
+    txt.setAttribute('font-family','monospace');
+    txt.textContent=n.label;g.appendChild(txt);
+
+    const sub=document.createElementNS('http://www.w3.org/2000/svg','text');
+    sub.setAttribute('x',n.x);sub.setAttribute('y',n.y+r+14);
+    sub.setAttribute('text-anchor','middle');sub.setAttribute('fill','#8b949e');
+    sub.setAttribute('font-size','9');sub.setAttribute('font-family','system-ui');
+    sub.textContent=n.sub;g.appendChild(sub);
+
+    if(isNext){
+      const pulse=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      pulse.setAttribute('cx',n.x);pulse.setAttribute('cy',n.y);pulse.setAttribute('r',r+6);
+      pulse.setAttribute('fill','none');pulse.setAttribute('stroke','#ffffff44');pulse.setAttribute('stroke-width','1');
+      g.appendChild(pulse);
+    }
+    svg.appendChild(g);
+  });
+
+  // direction arrow
+  const arrow=document.createElementNS('http://www.w3.org/2000/svg','text');
+  arrow.setAttribute('x',430);arrow.setAttribute('y',295);
+  arrow.setAttribute('text-anchor','middle');arrow.setAttribute('fill','#8b949e');
+  arrow.setAttribute('font-size','11');arrow.setAttribute('font-family','system-ui');
+  arrow.textContent=cgMode==='fwd'?'→ Forward: x → L':'← Backward: L → x';
+  svg.appendChild(arrow);
+}
+
+function clickNode(id){
+  const order=cgMode==='fwd'?FWD_ORDER:BWD_ORDER;
+  const nextIdx=cgStep+1;
+  if(nextIdx>=order.length){document.getElementById('cgInfo').textContent='✅ Готово! Нажми «Сброс» для повтора.';return;}
+  if(order[nextIdx]!==id){
+    const n=CG_NODES.find(n=>n.id===id);
+    document.getElementById('cgInfo').innerHTML=`<span style="color:var(--red)">Следующий узел: ${order[nextIdx]}. Ты кликнул: ${id}</span>`;
+    return;
+  }
+  cgStep++;cgVisited.add(id);
+  const info=cgMode==='fwd'?FWD_INFO[id]:BWD_INFO[id];
+  document.getElementById('cgInfo').innerHTML=`<span style="color:${cgMode==='fwd'?'var(--amber)':'var(--green)'};font-weight:700;">${id}</span>  ${cgStep+1}/${order.length}\n${info||''}`;
+  drawCG();
+}
+
+// ===================== DERIVATIONS =====================
+const DERIVS={
+dW:[
+  {t:'Имеем: Z = A_prev · Wᵀ + b,  L = scalar', c:'Ищем: ∂L/∂W', hl:false},
+  {t:'Шаг 1: chain rule через Z', c:'∂L/∂W = ∂L/∂Z · ∂Z/∂W', hl:false},
+  {t:'Шаг 2: ∂Z/∂W при Z=A·Wᵀ', c:'(вариация по W при фикс. A)\n∂Z_{ij}/∂W_{kl} = A_{ik}·δ_{jl}  ← якобиан 4D тензор', hl:false},
+  {t:'Шаг 3: VJP — свёртка с δ=∂L/∂Z', c:'∂L/∂W = δᵀ · A_prev\n\nshape: (n_out, B) · (B, n_in) = (n_out, n_in) ✓', hl:true},
+  {t:'Интуиция', c:'∂L/∂W[i,j] = Σ_b δ[b,i] · A_prev[b,j]\nКаждый элемент W[i,j] получает градиент = скалярное произведение своей "строки входов" и "строки дельт"', hl:false},
+],
+db:[
+  {t:'Имеем: Z = A_prev · Wᵀ + b,  b broadcast по батчу', c:'∂Z_{bi,j}/∂b_k = δ_{jk}  (b не зависит от b индекса батча)', hl:false},
+  {t:'Шаг 1: суммирование по батчу', c:'∂L/∂b = Σ_b ∂L/∂Z[b,:]', hl:false},
+  {t:'Шаг 2: итог', c:'∂L/∂b = sum(δ, axis=0)\n\nshape: (n_out,) — суммируем по строкам батча', hl:true},
+  {t:'Почему sum, а не mean?', c:'Bias один на всех примеров в батче → его градиент = сумма дельт от всех B примеров', hl:false},
+],
+dX:[
+  {t:'Имеем: Z = A_prev · Wᵀ + b', c:'Ищем: ∂L/∂A_prev (чтобы передать градиент в слой l-1)', hl:false},
+  {t:'Шаг 1: ∂Z/∂A_prev при Z=A_prev·Wᵀ', c:'∂Z_{bi,j}/∂A_prev_{bk,l} = δ_{bb_k}·W_{j,l}\n← якобиан снова 4D', hl:false},
+  {t:'Шаг 2: VJP', c:'∂L/∂A_prev = δ · W\n\nshape: (B, n_out) · (n_out, n_in) = (B, n_in) ✓', hl:true},
+  {t:'Ключевое наблюдение', c:'Forward:  Z = A · Wᵀ\nBackward: δ_prev = δ · W\n→ транспонирование "отменяет" операцию умножения!', hl:false},
+],
+};
+function showDeriv(key,btn){
+  document.querySelectorAll('#derivTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('derivContent').innerHTML=DERIVS[key].map(s=>
+    `<div class="step ${s.hl?'hl':''}">`+
+    `<span style="color:var(--muted);font-size:.82em;">${s.t}</span><br>`+
+    `<span style="color:var(--amber);">${s.c.replace(/\n/g,'<br>')}</span></div>`
+  ).join('');
+}
+
+// ===================== NUMERICAL EXAMPLE =====================
+// Fixed weights for the example
+const W1=[[0.5,-0.3],[0.8,0.2]],b1=[0.1,-0.1];
+const W2=[[0.6,-0.4]],b2=[0.0];
+
+function sig(z){return 1/(1+Math.exp(-z));}
+function relu(z){return Math.max(0,z);}
+
+function calcNet(){
+  const x1=+document.getElementById('nx1').value;
+  const x2=+document.getElementById('nx2').value;
+  const y=+document.getElementById('ny').value;
+
+  // forward
+  const z1=[W1[0][0]*x1+W1[0][1]*x2+b1[0], W1[1][0]*x1+W1[1][1]*x2+b1[1]];
+  const a1=[relu(z1[0]),relu(z1[1])];
+  const z2=[W2[0][0]*a1[0]+W2[0][1]*a1[1]+b2[0]];
+  const yhat=z2[0];
+  const loss=(yhat-y)**2;
+
+  // backward
+  const dL_dyhat=2*(yhat-y);        // ∂L/∂ŷ
+  const dL_dz2=[dL_dyhat];           // ∂L/∂Z₂ (no activation)
+  const dL_dW2=[dL_dz2[0]*a1[0],dL_dz2[0]*a1[1]]; // ∂L/∂W₂
+  const dL_db2=[dL_dz2[0]];
+  const dL_da1=[dL_dz2[0]*W2[0][0], dL_dz2[0]*W2[0][1]]; // ∂L/∂A₁ = δ·W₂
+  const mask1=[z1[0]>0?1:0, z1[1]>0?1:0];
+  const dL_dz1=[dL_da1[0]*mask1[0], dL_da1[1]*mask1[1]]; // ReLU backward
+  const dL_dW1=[[dL_dz1[0]*x1,dL_dz1[0]*x2],[dL_dz1[1]*x1,dL_dz1[1]*x2]];
+  const dL_db1=[dL_dz1[0],dL_dz1[1]];
+
+  document.getElementById('netWeightsDisplay').textContent=
+    `W₁=[[${W1[0].join(',')}],[${W1[1].join(',')}]]  b₁=[${b1.join(',')}]\n`+
+    `W₂=[[${W2[0].join(',')}]]  b₂=[${b2.join(',')}]`;
+
+  const f=(v,d=4)=>v.toFixed(d);
+  document.getElementById('netSteps').innerHTML=`
+    <div class="step blue">FORWARD PASS</div>
+    <div class="step">Z₁ = W₁·x + b₁ = [${f(z1[0])}, ${f(z1[1])}]</div>
+    <div class="step">A₁ = ReLU(Z₁) = [${f(a1[0])}, ${f(a1[1])}]  (маска: [${mask1}])</div>
+    <div class="step">Z₂ = W₂·A₁ + b₂ = ${f(z2[0])}</div>
+    <div class="step hl">ŷ = ${f(yhat)},  y = ${y},  L = (ŷ−y)² = ${f(loss)}</div>
+
+    <div class="step blue" style="margin-top:10px;">BACKWARD PASS</div>
+    <div class="step hl">∂L/∂ŷ = 2(ŷ−y) = ${f(dL_dyhat)}  ← стартовый градиент</div>
+    <div class="step">∂L/∂W₂ = δ·A₁ = [${dL_dW2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">∂L/∂b₂ = δ = [${dL_db2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step green">∂L/∂A₁ = δ·W₂ = [${dL_da1.map(v=>f(v)).join(', ')}]  ← передаём через ReLU</div>
+    <div class="step">∂L/∂Z₁ = ∂L/∂A₁ ⊙ mask = [${dL_dz1.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">∂L/∂W₁ = [[${dL_dW1[0].map(v=>f(v)).join(', ')}],[${dL_dW1[1].map(v=>f(v)).join(', ')}]]</div>
+    <div class="step hl">∂L/∂b₁ = [${dL_db1.map(v=>f(v)).join(', ')}]</div>
+  `;
+}
+function randNet(){
+  document.getElementById('nx1').value=(Math.random()*4-2).toFixed(2);
+  document.getElementById('nx2').value=(Math.random()*4-2).toFixed(2);
+  document.getElementById('ny').value=(Math.random()*2-1).toFixed(2);
+  calcNet();
+}
+
+// ===================== RELU MASK CANVAS =====================
+function drawMask(){
+  const delta=+document.getElementById('maskDelta').value;
+  document.getElementById('maskDeltaVal').textContent=delta.toFixed(1);
+  const c=document.getElementById('maskCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  const zs=[-2,-1.5,-1,-0.5,0,0.5,1,1.5,2];
+  const n=zs.length, bw=W/n-4;
+
+  zs.forEach((z,i)=>{
+    const active=z>0;
+    const grad=active?delta:0;
+    const bh=Math.abs(grad)*(H*0.6);
+    const x=i*(W/n)+4;
+    const by=H*0.7;
+
+    // Z bar
+    ctx.fillStyle=active?'#1f2d1a':'#1a1212';
+    ctx.strokeStyle=active?'#10b981':'#ef4444';
+    ctx.lineWidth=1;
+    const zh=Math.abs(z)*20;
+    ctx.fillRect(x,by-zh,bw*0.45,zh);
+    ctx.strokeRect(x,by-zh,bw*0.45,zh);
+
+    // grad bar
+    ctx.fillStyle=active?'rgba(16,185,129,.4)':'rgba(239,68,68,.15)';
+    ctx.strokeStyle=active?'#10b981':'#ef4444';
+    if(bh>0){ctx.fillRect(x+bw*0.5,by-bh,bw*0.45,bh);ctx.strokeRect(x+bw*0.5,by-bh,bw*0.45,bh);}
+
+    ctx.fillStyle='#8b949e';ctx.font='8px monospace';ctx.textAlign='center';
+    ctx.fillText(z,x+bw/2,by+12);
+    ctx.fillStyle=active?'#10b981':'#ef4444';
+    ctx.fillText(active?'δ':'0',x+bw*0.75,by-bh-4);
+  });
+
+  ctx.strokeStyle='#333';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H*0.7);ctx.lineTo(W,H*0.7);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='left';
+  ctx.fillText('Z (нейрон)',4,12);ctx.fillText('grad через ReLU',W/2+4,12);
+
+  document.getElementById('maskInfo').innerHTML=
+    `δ_in = ${delta.toFixed(2)}: ${zs.filter(z=>z>0).length} нейронов пропускают grad, `+
+    `${zs.filter(z=>z<=0).length} блокируют (z≤0)`;
+}
+
+// ===================== CODE =====================
+const CODES={
+numpy:`import numpy as np
+
+class LinearLayer:
+    def __init__(self, n_in, n_out):
+        self.W = np.random.randn(n_out, n_in) * np.sqrt(2/n_in)
+        self.b = np.zeros(n_out)
+
+    def forward(self, X):
+        self.X = X                        # сохраняем для backward
+        return X @ self.W.T + self.b      # (B, n_in)→(B, n_out)
+
+    def backward(self, delta):
+        # delta = ∂L/∂Z, shape: (B, n_out)
+        self.dW = delta.T @ self.X        # (n_out, n_in)
+        self.db = delta.sum(axis=0)       # (n_out,)
+        return delta @ self.W             # ∂L/∂X = δ·W, (B, n_in)
+
+class ReLULayer:
+    def forward(self, Z):
+        self.mask = Z > 0
+        return Z * self.mask
+
+    def backward(self, delta):
+        return delta * self.mask          # ⊙ маска
+
+# MSE loss
+def mse_backward(y_pred, y_true):
+    B = y_pred.shape[0]
+    return 2 * (y_pred - y_true) / B    # ∂L/∂ŷ
+
+# Full backprop pass
+X = np.random.randn(32, 784)
+y = np.random.randn(32, 1)
+
+l1 = LinearLayer(784, 256)
+r1 = ReLULayer()
+l2 = LinearLayer(256, 1)
+
+# Forward
+a1 = r1.forward(l1.forward(X))
+yhat = l2.forward(a1)
+loss = ((yhat - y)**2).mean()
+
+# Backward
+d = mse_backward(yhat, y)
+d = l2.backward(d)
+d = r1.backward(d)
+d = l1.backward(d)
+
+# Gradients in l1.dW, l1.db, l2.dW, l2.db`,
+
+auto:`import torch
+import torch.nn as nn
+
+# PyTorch autograd делает всё автоматически
+model = nn.Sequential(
+    nn.Linear(784, 256),
+    nn.ReLU(),
+    nn.Linear(256, 1)
+)
+
+X = torch.randn(32, 784, requires_grad=False)
+y = torch.randn(32, 1)
+
+# Forward
+y_pred = model(X)
+loss = ((y_pred - y) ** 2).mean()
+
+# Backward — один вызов строит и проходит граф
+loss.backward()
+
+# Градиенты теперь в .grad каждого параметра
+for name, param in model.named_parameters():
+    print(f"{name}: grad shape={param.grad.shape}, "
+          f"norm={param.grad.norm():.4f}")
+
+# Важно: очищать градиенты перед следующим батчем!
+optimizer.zero_grad()   # или model.zero_grad()`,
+
+manual:`import torch
+import torch.nn as nn
+
+# Кастомный backward через Function (для исследований)
+class SquaredLoss(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, y_pred, y_true):
+        ctx.save_for_backward(y_pred, y_true)
+        return ((y_pred - y_true)**2).mean()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        y_pred, y_true = ctx.saved_tensors
+        B = y_pred.shape[0]
+        # ∂L/∂y_pred = 2(y_pred−y_true)/B
+        grad = 2 * (y_pred - y_true) / B * grad_output
+        return grad, None   # None для y_true (не параметр)
+
+# Проверка через gradcheck
+from torch.autograd import gradcheck
+loss_fn = SquaredLoss.apply
+inp = (torch.randn(4,1, dtype=torch.float64, requires_grad=True),
+       torch.randn(4,1, dtype=torch.float64))
+print(gradcheck(loss_fn, inp))   # True = градиент верен`,
+};
+function showCode(key,btn){
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent=CODES[key];
+}
+
+// INIT
+drawCG();
+document.getElementById('cgInfo').textContent='Нажми «Forward pass» или «Backward pass», затем кликай на узлы по порядку';
+showDeriv('dW',document.querySelector('#derivTabs button'));
+showCode('numpy',document.querySelector('#codeTabs button'));
+calcNet();
+drawMask();
+</script>
+</body>
+</html>

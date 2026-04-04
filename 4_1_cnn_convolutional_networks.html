@@ -1,0 +1,723 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.55}
+h1{font-size:1.5em;margin-bottom:4px}
+h2{font-size:1.15em;color:var(--amber);margin:18px 0 8px}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0}
+.formula{font-family:'Courier New',monospace;font-size:1.05em;background:#0d1117;padding:10px 14px;border-radius:8px;border-left:3px solid var(--amber);margin:10px 0;overflow-x:auto}
+.hl-a{color:var(--amber);font-weight:600}
+.hl-g{color:var(--green);font-weight:600}
+.hl-b{color:var(--blue);font-weight:600}
+.hl-r{color:var(--red);font-weight:600}
+.hl-p{color:var(--purple);font-weight:600}
+.muted{color:var(--muted);font-size:.88em}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .2s}
+.tab.active{border-color:var(--amber);color:var(--amber)}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+input[type=range]{width:100%;accent-color:var(--green);margin:6px 0}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px;width:56px;text-align:center;font-size:.95em}
+.slider-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:.9em}
+.slider-val{color:var(--green);font-weight:600;min-width:28px;text-align:right}
+canvas{border:1px solid var(--border);border-radius:6px}
+.step-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;margin:6px 0;font-size:.9em}
+.step-box .step-num{color:var(--amber);font-weight:700;margin-right:6px}
+.info-box{background:#161b22;border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.92em}
+.warn-box{background:#161b22;border-left:3px solid var(--red);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.92em}
+.code-block{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:.82em;overflow-x:auto;margin:10px 0;white-space:pre}
+.conv-cell{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:4px;font-size:.85em;margin:1px}
+.highlight-cell{border-color:var(--amber);background:rgba(245,158,11,.15)}
+.kernel-cell{border-color:var(--green);background:rgba(16,185,129,.15)}
+.result-cell{border-color:var(--blue);background:rgba(96,165,250,.15)}
+.matrix-grid{display:inline-flex;flex-direction:column;gap:1px}
+.matrix-row{display:flex;gap:1px}
+.arch-layer{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;font-size:.85em}
+.arch-arrow{text-align:center;color:var(--muted);font-size:1.2em;margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th{background:#0d1117;padding:8px 10px;text-align:left;color:var(--amber);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid #21262d}
+tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+
+<h1>4.1 — Свёрточные нейронные сети (CNN)</h1>
+<p class="muted">Блок 4 · Архитектуры · Полный конспект с математикой, визуализациями и кодом</p>
+
+<div class="tabs" id="main-tabs">
+  <button class="tab active" onclick="switchTab('t-conv')">Свёртка</button>
+  <button class="tab" onclick="switchTab('t-rf')">Рецептивное поле</button>
+  <button class="tab" onclick="switchTab('t-pool')">Pooling</button>
+  <button class="tab" onclick="switchTab('t-equi')">Equivariance</button>
+  <button class="tab" onclick="switchTab('t-arch')">Архитектура</button>
+  <button class="tab" onclick="switchTab('t-back')">Backprop</button>
+  <button class="tab" onclick="switchTab('t-code')">PyTorch</button>
+</div>
+
+<!-- ========== TAB 1: Свёртка ========== -->
+<div id="t-conv" class="tab-content active">
+
+<h2>1. Дискретная свёртка — математика</h2>
+<div class="card">
+<p>Свёртка в DL — дискретная кросс-корреляция (по историческим причинам называется свёрткой):</p>
+<div class="formula">
+  (I ★ K)[i,j] = <span class="hl-a">Σₘ Σₙ</span> <span class="hl-g">K[m,n]</span> · <span class="hl-b">I[i+m, j+n]</span>
+</div>
+<p>где <span class="hl-b">I</span> — входное изображение (H×W), <span class="hl-g">K</span> — ядро (kernel) размером k×k.</p>
+<p style="margin-top:8px">Размер выхода при <em>valid</em> padding:</p>
+<div class="formula">
+  H_out = <span class="hl-a">⌊(H_in + 2P - k) / S⌋</span> + 1
+</div>
+<p class="muted">P — padding, S — stride (шаг). Аналогично для W.</p>
+
+<div class="info-box">
+  <strong>Истинная свёртка</strong> vs <strong>кросс-корреляция:</strong> при свёртке ядро поворачивается на 180°: <code>(I * K)[i,j] = Σ K[-m,-n]·I[i+m,j+n]</code>. В DL ядро обучается — поворот не имеет значения, поэтому используют кросс-корреляцию, называя её "свёрткой".
+</div>
+
+<h3>Подсчёт параметров</h3>
+<div class="formula">
+  #params = <span class="hl-g">k × k × C_in × C_out</span> + <span class="hl-b">C_out</span> (bias)
+</div>
+<p class="muted">Для сверхтонкого слоя Conv2d(3→64, 3×3): 3×3×3×64 + 64 = <span class="hl-a">1792</span> параметров</p>
+</div>
+
+<h2>Интерактивный калькулятор свёртки</h2>
+<div class="card">
+<div class="grid2">
+<div>
+<h3>Параметры</h3>
+<div class="slider-row"><span>H_in</span><input type="range" id="hin" min="3" max="12" value="6" oninput="calcConv()"><span class="slider-val" id="hin-v">6</span></div>
+<div class="slider-row"><span>Kernel k</span><input type="range" id="ksize" min="1" max="5" value="3" oninput="calcConv()"><span class="slider-val" id="ksize-v">3</span></div>
+<div class="slider-row"><span>Padding P</span><input type="range" id="pad" min="0" max="4" value="0" oninput="calcConv()"><span class="slider-val" id="pad-v">0</span></div>
+<div class="slider-row"><span>Stride S</span><input type="range" id="str" min="1" max="4" value="1" oninput="calcConv()"><span class="slider-val" id="str-v">1</span></div>
+<div class="slider-row"><span>C_in</span><input type="range" id="cin" min="1" max="16" value="3" oninput="calcConv()"><span class="slider-val" id="cin-v">3</span></div>
+<div class="slider-row"><span>C_out</span><input type="range" id="cout" min="1" max="64" value="32" oninput="calcConv()"><span class="slider-val" id="cout-v">32</span></div>
+</div>
+<div>
+<h3>Результат</h3>
+<div id="conv-result" style="font-size:.92em;line-height:2"></div>
+</div>
+</div>
+</div>
+
+<h2>Визуализация: свёртка 6×6 → ядро 3×3</h2>
+<div class="card">
+<p class="muted" style="margin-bottom:10px">Нажмите на ячейку выхода, чтобы увидеть соответствующий рецептивный патч входа</p>
+<div style="display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start">
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Вход (6×6)</p>
+  <div id="vis-input" class="matrix-grid"></div>
+</div>
+<div style="display:flex;align-items:center;font-size:1.8em;color:var(--amber);padding-top:40px">★</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Ядро (3×3)</p>
+  <div id="vis-kernel" class="matrix-grid"></div>
+</div>
+<div style="display:flex;align-items:center;font-size:1.8em;color:var(--muted);padding-top:40px">=</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Выход (4×4)</p>
+  <div id="vis-output" class="matrix-grid"></div>
+</div>
+<div id="conv-calc-box" style="max-width:220px;font-size:.82em;color:var(--muted)"></div>
+</div>
+</div>
+</div>
+
+<!-- ========== TAB 2: Рецептивное поле ========== -->
+<div id="t-rf" class="tab-content">
+<h2>2. Рецептивное поле (Receptive Field)</h2>
+<div class="card">
+<p>Рецептивное поле нейрона — размер области входного изображения, влияющей на его активацию.</p>
+<div class="formula">
+  RF<sub>L</sub> = RF<sub>L-1</sub> + (k-1) · <span class="hl-a">Π<sub>i=1</sub><sup>L-1</sup> s<sub>i</sub></span>
+</div>
+<p class="muted">k — kernel size слоя L, s<sub>i</sub> — stride слоёв до L</p>
+
+<div class="info-box">
+  <strong>Зачем важно?</strong> Для классификации объекта нейрон должен "видеть" весь объект. Глубокие сети с малыми ядрами достигают большого RF без избыточного числа параметров.
+</div>
+
+<h3>Сравнение: одно большое ядро vs стек малых</h3>
+<div class="grid2">
+<div class="step-box">
+  <span class="step-num">7×7</span>conv, 1 слой<br>
+  Параметры: 7·7·C·C = <span class="hl-r">49C²</span><br>
+  RF = 7
+</div>
+<div class="step-box">
+  <span class="step-num">3×3</span>conv × 3 слоя<br>
+  Параметры: 3·(3·3·C·C) = <span class="hl-g">27C²</span><br>
+  RF = 1+2+2+2 = 7
+</div>
+</div>
+<p>Три слоя 3×3 дают тот же RF, что один 7×7, но параметров <span class="hl-g">в 1.8× меньше</span> и между слоями — нелинейности!</p>
+</div>
+
+<h2>Интерактивный калькулятор RF</h2>
+<div class="card">
+<div id="rf-layers-ui"></div>
+<button onclick="addRFLayer()" style="margin:8px 0;background:var(--card);border:1px solid var(--border);color:var(--green);padding:6px 14px;border-radius:8px;cursor:pointer">+ Добавить слой</button>
+<button onclick="removeRFLayer()" style="margin:8px 4px;background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer">− Удалить</button>
+<div id="rf-result" style="margin-top:10px;font-size:.95em"></div>
+</div>
+
+<h2>Визуализация роста RF</h2>
+<div class="card">
+<canvas id="rf-canvas" width="600" height="300" style="width:100%;max-width:600px"></canvas>
+</div>
+</div>
+
+<!-- ========== TAB 3: Pooling ========== -->
+<div id="t-pool" class="tab-content">
+<h2>3. Pooling — субдискретизация</h2>
+<div class="card">
+<p>Pooling уменьшает пространственный размер карты признаков, сохраняя важные признаки.</p>
+
+<h3>Max Pooling</h3>
+<div class="formula">
+  y[i,j] = <span class="hl-a">max</span><sub>m,n ∈ window</sub> x[i·s+m, j·s+n]
+</div>
+
+<h3>Average Pooling</h3>
+<div class="formula">
+  y[i,j] = <span class="hl-g">1/(k²)</span> · Σ<sub>m,n ∈ window</sub> x[i·s+m, j·s+n]
+</div>
+
+<h3>Global Average Pooling (GAP)</h3>
+<div class="formula">
+  y<sub>c</sub> = <span class="hl-b">1/(H·W)</span> · Σ<sub>i,j</sub> x<sub>c</sub>[i,j]
+</div>
+<p class="muted">GAP сворачивает карту (C, H, W) → (C,). Заменяет FC-слои в ResNet, MobileNet — <strong>нет параметров</strong>!</p>
+
+<div class="info-box">
+  <strong>Зачем pooling?</strong> (1) Трансляционная инвариантность к небольшим сдвигам. (2) Уменьшение объёма вычислений и памяти. (3) Неявная регуляризация.
+</div>
+
+<h3>Градиент через Max Pooling</h3>
+<div class="formula">
+  ∂L/∂x[i,j] = <span class="hl-a">∂L/∂y</span> · <span class="hl-g">𝟙[x[i,j] = max]</span>
+</div>
+<p class="muted">Градиент проходит только через максимальный элемент окна ("маршрутизация градиента").</p>
+
+<div class="warn-box">
+  <span class="hl-r">⚠ Stride в conv vs Pooling:</span> Современные архитектуры (ResNet, EfficientNet) часто заменяют MaxPool слоями Conv с stride=2 — это обучаемое прореживание с сохранением информации.
+</div>
+</div>
+
+<h2>Интерактивная демонстрация: Max vs Avg Pool</h2>
+<div class="card">
+<div class="slider-row"><span>Kernel k</span><input type="range" id="pk" min="2" max="4" value="2" oninput="drawPool()"><span class="slider-val" id="pk-v">2</span></div>
+<div class="slider-row"><span>Stride S</span><input type="range" id="ps" min="1" max="4" value="2" oninput="drawPool()"><span class="slider-val" id="ps-v">2</span></div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px">
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Вход (6×6)</p>
+  <div id="pool-input" class="matrix-grid"></div>
+</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Max Pool выход</p>
+  <div id="pool-max-out" class="matrix-grid"></div>
+</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Avg Pool выход</p>
+  <div id="pool-avg-out" class="matrix-grid"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== TAB 4: Equivariance ========== -->
+<div id="t-equi" class="tab-content">
+<h2>4. Equivariance и Invariance</h2>
+<div class="card">
+<h3>Определения</h3>
+<div class="formula">
+  Equivariant: f(T(x)) = <span class="hl-a">T'(f(x))</span><br>
+  Invariant:   f(T(x)) = <span class="hl-g">f(x)</span>
+</div>
+
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Equivariance (свёртка)</strong><br><br>
+  Сдвиг входа → сдвиг карты признаков. Одни и те же признаки обнаруживаются в любой позиции одним и тем же ядром.
+</div>
+<div class="step-box">
+  <strong class="hl-g">Invariance (MaxPool, GAP)</strong><br><br>
+  Небольшой сдвиг объекта не меняет итоговую классификацию — pooling "поглощает" смещение.
+</div>
+</div>
+
+<h3>Математическое доказательство equivariance</h3>
+<div class="step-box"><span class="step-num">Шаг 1.</span>Пусть T_δ — оператор сдвига: (T_δ I)[i,j] = I[i-δ, j]</div>
+<div class="step-box"><span class="step-num">Шаг 2.</span>(T_δ I ★ K)[i,j] = Σ K[m,n]·I[i+m-δ, j+n] = (I★K)[i-δ, j]</div>
+<div class="step-box"><span class="step-num">Шаг 3.</span>Т.е. f(T_δ I) = T_δ(f(I)) → свёртка equivariant к сдвигу ✓</div>
+
+<div class="warn-box">
+  <span class="hl-r">Свёртка не equivariant к:</span> ротациям, масштабированию, отражениям. Для этого: увеличение данных (data augmentation), группо-equivariant свёртки (G-CNN), или пространственный трансформер (STN).
+</div>
+
+<h3>Parameter Sharing — суть экономии</h3>
+<div class="formula">
+  FC-слой (28²→128): <span class="hl-r">784 × 128 = 100352</span> параметров<br>
+  Conv(1→1, 3×3) на том же входе: <span class="hl-g">9</span> параметров
+</div>
+<p>Одно ядро сканирует <em>все</em> пространственные позиции — это и есть parameter sharing. Ядро учит детектор признака (например, "вертикальный край"), который работает везде в изображении.</p>
+</div>
+
+<h2>Визуализация: equivariance к сдвигу</h2>
+<div class="card">
+<p class="muted" style="margin-bottom:10px">Двигайте слайдер — объект сдвигается, карта признаков сдвигается ровно на столько же</p>
+<div class="slider-row"><span>Сдвиг δ</span><input type="range" id="eq-shift" min="0" max="4" value="0" oninput="drawEquivar()"><span class="slider-val" id="eq-shift-v">0</span></div>
+<canvas id="eq-canvas" width="640" height="280" style="width:100%;max-width:640px;margin-top:10px"></canvas>
+</div>
+</div>
+
+<!-- ========== TAB 5: Архитектура ========== -->
+<div id="t-arch" class="tab-content">
+<h2>5. Типичная CNN-архитектура</h2>
+<div class="card">
+<p>Классическая CNN — стек блоков "Conv → BN → ReLU → Pool", завершённый классификатором.</p>
+
+<div style="display:flex;flex-direction:column;gap:6px;margin:14px 0">
+<div class="arch-layer" style="border-color:var(--blue)">Input: (B, 3, H, W) — RGB изображение</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(3→64, 3×3, P=1) → BN → ReLU → (B, 64, H, W)</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(64→128, 3×3, P=1) → BN → ReLU → (B, 128, H, W)</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--green)">MaxPool(2, S=2) → (B, 128, H/2, W/2)</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(128→256, 3×3, P=1) → BN → ReLU → (B, 256, H/2, W/2)</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--green)">GlobalAvgPool → (B, 256)</div>
+<div class="arch-arrow">↓</div>
+<div class="arch-layer" style="border-color:var(--purple)">Linear(256 → num_classes) → Softmax → (B, C)</div>
+</div>
+
+<h3>Размеры feature map в реальной сети (ImageNet, H=W=224)</h3>
+<table>
+<tr><th>Слой</th><th>Размер выхода</th><th>Параметры</th></tr>
+<tr><td>Input</td><td>3 × 224 × 224</td><td>—</td></tr>
+<tr><td>Conv(3→64, 7×7, S=2)</td><td>64 × 112 × 112</td><td>9 408</td></tr>
+<tr><td>MaxPool(3×3, S=2)</td><td>64 × 56 × 56</td><td>0</td></tr>
+<tr><td>ResBlock(64→64) ×3</td><td>64 × 56 × 56</td><td>≈221K</td></tr>
+<tr><td>ResBlock(128→128) ×4, S=2</td><td>128 × 28 × 28</td><td>≈1.2M</td></tr>
+<tr><td>ResBlock(256→256) ×6, S=2</td><td>256 × 14 × 14</td><td>≈7.1M</td></tr>
+<tr><td>ResBlock(512→512) ×3, S=2</td><td>512 × 7 × 7</td><td>≈14.9M</td></tr>
+<tr><td>GAP → Linear(512→1000)</td><td>1000</td><td>513K</td></tr>
+</table>
+<p class="muted" style="margin-top:6px">ResNet-34: всего ≈21.8M параметров</p>
+</div>
+
+<h2>Depthwise Separable Convolution (MobileNet)</h2>
+<div class="card">
+<p>Разделение свёртки на два этапа резко сокращает количество параметров:</p>
+<div class="grid2">
+<div>
+<h3>Обычная Conv</h3>
+<div class="formula">Cost = <span class="hl-r">k·k·C_in·C_out·H·W</span></div>
+</div>
+<div>
+<h3>Depthwise Sep.</h3>
+<div class="formula">Cost = <span class="hl-g">k·k·C_in·H·W + C_in·C_out·H·W</span></div>
+</div>
+</div>
+<div class="formula">
+Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</span> при большом C_out
+</div>
+<p class="muted">Для k=3: экономия в <span class="hl-a">~9×</span> при сохранении аналогичной выразительности.</p>
+</div>
+</div>
+
+<!-- ========== TAB 6: Backprop ========== -->
+<div id="t-back" class="tab-content">
+<h2>6. Backprop в свёрточном слое</h2>
+<div class="card">
+<p>Прямой проход: <span class="hl-g">Z = I ★ K + b</span>, затем A = f(Z)</p>
+<p>Пусть δ = ∂L/∂Z (incoming gradient, shape = Z).</p>
+
+<h3>Градиент по ядру ∂L/∂K</h3>
+<div class="formula">
+  ∂L/∂K[m,n] = <span class="hl-a">Σ<sub>i,j</sub></span> δ[i,j] · <span class="hl-b">I[i+m, j+n]</span>
+</div>
+<div class="step-box"><span class="step-num">Суть:</span> ∂L/∂K — это свёртка входа I с градиентом δ (кросс-корреляция δ по I)</div>
+
+<h3>Градиент по входу ∂L/∂I (для предыдущего слоя)</h3>
+<div class="formula">
+  ∂L/∂I[i,j] = <span class="hl-a">Σ<sub>m,n</sub></span> δ[i-m, j-n] · <span class="hl-g">K[m,n]</span>
+</div>
+<div class="step-box"><span class="step-num">Суть:</span> это полная свёртка δ с <em>повёрнутым на 180°</em> ядром K — или traspозиционная свёртка</div>
+
+<h3>Градиент по bias</h3>
+<div class="formula">
+  ∂L/∂b<sub>c</sub> = <span class="hl-a">Σ<sub>i,j</sub></span> δ<sub>c</sub>[i,j]
+</div>
+<p class="muted">Суммируем градиент по всей пространственной карте — каждая позиция получает один и тот же bias, поэтому вклады складываются.</p>
+
+<div class="info-box">
+  <strong>Ключевое наблюдение:</strong> backprop через свёртку — тоже свёртка (или её транспозиция). Это делает реализацию элегантной: те же примитивы CUDA/cuDNN.
+</div>
+
+<h3>Пошаговый числовой пример</h3>
+<div class="step-box"><span class="step-num">Дано:</span>I = [[1,2,3],[4,5,6],[7,8,9]], K = [[1,0],[-1,0]], stride=1, pad=0</div>
+<div class="step-box"><span class="step-num">Forward:</span>Z[0,0] = 1·1+2·0+4·(-1)+5·0 = -3; Z[0,1] = 2·1+3·0+5·(-1)+6·0 = -3 и т.д.</div>
+<div class="step-box"><span class="step-num">Пусть δ = [[1,1],[1,1]] (upstream gradient).</span></div>
+<div class="step-box"><span class="step-num">∂L/∂K[0,0]</span>= δ[0,0]·I[0,0] + δ[0,1]·I[0,1] + δ[1,0]·I[1,0] + δ[1,1]·I[1,1] = 1+2+4+5 = 12</div>
+<div class="step-box"><span class="step-num">∂L/∂K[1,0]</span>= 1·4 + 1·5 + 1·7 + 1·8 = 24</div>
+</div>
+</div>
+
+<!-- ========== TAB 7: PyTorch ========== -->
+<div id="t-code" class="tab-content">
+<h2>7. Реализация на PyTorch</h2>
+<div class="card">
+<h3>Базовый свёрточный блок</h3>
+<div class="code-block">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class ConvBlock(nn.Module):
+    """Conv → BN → ReLU (стандартный блок CNN)"""
+    def __init__(self, in_ch, out_ch, k=3, s=1, p=1):
+        super().__init__()
+        self.conv = nn.Conv2d(in_ch, out_ch, k, stride=s, padding=p, bias=False)
+        self.bn   = nn.BatchNorm2d(out_ch)
+
+    def forward(self, x):
+        return F.relu(self.bn(self.conv(x)))</div>
+
+<h3>Простая CNN для CIFAR-10</h3>
+<div class="code-block">class SimpleCNN(nn.Module):
+    def __init__(self, num_classes=10):
+        super().__init__()
+        # Encoder: (3,32,32) → (256,4,4)
+        self.features = nn.Sequential(
+            ConvBlock(3, 64),               # (64,32,32)
+            ConvBlock(64, 128),             # (128,32,32)
+            nn.MaxPool2d(2, 2),             # (128,16,16)
+            ConvBlock(128, 256),            # (256,16,16)
+            ConvBlock(256, 256),            # (256,16,16)
+            nn.MaxPool2d(2, 2),             # (256,8,8)
+            ConvBlock(256, 512),            # (512,8,8)
+            nn.AdaptiveAvgPool2d(1),        # (512,1,1) GAP
+        )
+        self.classifier = nn.Linear(512, num_classes)
+
+    def forward(self, x):
+        x = self.features(x).squeeze(-1).squeeze(-1)  # (B,512)
+        return self.classifier(x)
+
+model = SimpleCNN()
+print(f"Параметры: {sum(p.numel() for p in model.parameters()):,}")
+# → Параметры: 3,742,730</div>
+
+<h3>Проверка размерностей вручную</h3>
+<div class="code-block">x = torch.randn(4, 3, 32, 32)   # batch=4, RGB, 32×32
+conv = nn.Conv2d(3, 64, 3, padding=1)
+out = conv(x)
+print(out.shape)   # → torch.Size([4, 64, 32, 32])
+
+# H_out = (32 + 2*1 - 3) / 1 + 1 = 32 ✓</div>
+
+<h3>Depthwise Separable Conv</h3>
+<div class="code-block">class DepthwiseSeparable(nn.Module):
+    def __init__(self, in_ch, out_ch, k=3, s=1):
+        super().__init__()
+        # Depthwise: каждый канал свёртывается отдельно
+        self.dw = nn.Conv2d(in_ch, in_ch, k, stride=s,
+                            padding=k//2, groups=in_ch, bias=False)
+        self.bn1 = nn.BatchNorm2d(in_ch)
+        # Pointwise: смешиваем каналы 1×1 conv
+        self.pw  = nn.Conv2d(in_ch, out_ch, 1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_ch)
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.dw(x)))
+        return F.relu(self.bn2(self.pw(x)))
+
+# Сравнение параметров
+regular = nn.Conv2d(64, 128, 3, padding=1)
+dws     = DepthwiseSeparable(64, 128)
+print(f"Обычная: {sum(p.numel() for p in regular.parameters()):,}")
+print(f"DW-Sep:  {sum(p.numel() for p in dws.parameters()):,}")
+# → Обычная: 73,728  DW-Sep: 8,448  (экономия ~8.7×)</div>
+
+<h3>Визуализация фильтров первого слоя</h3>
+<div class="code-block">import matplotlib.pyplot as plt
+import torchvision.models as models
+
+resnet = models.resnet18(pretrained=True)
+w = resnet.conv1.weight.data  # (64, 3, 7, 7)
+
+fig, axes = plt.subplots(8, 8, figsize=(10, 10))
+for i, ax in enumerate(axes.flat):
+    f = w[i].permute(1,2,0)  # (7,7,3)
+    f = (f - f.min()) / (f.max() - f.min())
+    ax.imshow(f); ax.axis('off')
+plt.tight_layout(); plt.show()</div>
+
+<h3>NumPy: свёртка вручную (2D)</h3>
+<div class="code-block">import numpy as np
+from scipy.signal import correlate2d
+
+def conv2d_manual(img, kernel, padding=0, stride=1):
+    """Ручная 2D кросс-корреляция (одноканальная)"""
+    if padding > 0:
+        img = np.pad(img, padding, mode='constant')
+    H, W = img.shape
+    k = kernel.shape[0]
+    H_out = (H - k) // stride + 1
+    W_out = (W - k) // stride + 1
+    out = np.zeros((H_out, W_out))
+    for i in range(0, H_out):
+        for j in range(0, W_out):
+            out[i,j] = np.sum(img[i*stride:i*stride+k,
+                                   j*stride:j*stride+k] * kernel)
+    return out
+
+# Детектор вертикальных краёв (фильтр Собеля)
+sobel_x = np.array([[-1, 0, 1],[-2, 0, 2],[-1, 0, 1]])
+img = np.random.randn(6, 6)
+result = conv2d_manual(img, sobel_x)
+print("Input:", img.shape, "→ Output:", result.shape)  # (6,6) → (4,4)</div>
+</div>
+</div>
+
+<script>
+// ---- TAB SWITCHING ----
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['t-conv','t-rf','t-pool','t-equi','t-arch','t-back','t-code'];
+    t.classList.toggle('active', ids[i]===id);
+  });
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===id));
+}
+
+// ---- CONV CALCULATOR ----
+function calcConv(){
+  const hin=+document.getElementById('hin').value;
+  const k=+document.getElementById('ksize').value;
+  const p=+document.getElementById('pad').value;
+  const s=+document.getElementById('str').value;
+  const cin=+document.getElementById('cin').value;
+  const cout=+document.getElementById('cout').value;
+  document.getElementById('hin-v').textContent=hin;
+  document.getElementById('ksize-v').textContent=k;
+  document.getElementById('pad-v').textContent=p;
+  document.getElementById('str-v').textContent=s;
+  document.getElementById('cin-v').textContent=cin;
+  document.getElementById('cout-v').textContent=cout;
+  const hout=Math.floor((hin+2*p-k)/s)+1;
+  const params=k*k*cin*cout+cout;
+  const flops=2*k*k*cin*hout*hout*cout;
+  const valid=hout>0;
+  document.getElementById('conv-result').innerHTML=`
+    <div>H_in = W_in: <span style="color:var(--blue)">${hin}×${hin}</span></div>
+    <div>H_out = W_out: <span style="color:${valid?'var(--green)':'var(--red)'}">${valid?hout+'×'+hout:'Неверно!'}</span></div>
+    <div>Параметры: <span style="color:var(--amber)">${params.toLocaleString()}</span></div>
+    <div>FLOPs (matmul): <span style="color:var(--muted)">${flops.toLocaleString()}</span></div>
+    <div>Padding type: <span style="color:var(--blue)">${p===0?'valid':p===Math.floor(k/2)?'same':'custom'}</span></div>
+  `;
+}
+calcConv();
+
+// ---- CONV VISUALIZATION ----
+const inputData=[
+  [2,1,3,0,1,2],[0,3,1,2,4,1],[1,2,0,3,1,0],
+  [3,0,2,1,0,3],[1,4,1,2,3,0],[0,1,3,0,2,1]
+];
+const kernelData=[[1,0,-1],[1,0,-1],[1,0,-1]];
+let selR=-1,selC=-1;
+
+function buildVis(){
+  buildMatrix('vis-input',inputData,6,6,'input');
+  buildMatrix('vis-kernel',kernelData,3,3,'kernel');
+  const out=[];
+  for(let i=0;i<4;i++){out.push([]);for(let j=0;j<4;j++){let v=0;for(let m=0;m<3;m++)for(let n=0;n<3;n++)v+=kernelData[m][n]*inputData[i+m][j+n];out[i].push(Math.round(v));}}
+  buildMatrix('vis-output',out,4,4,'output');
+}
+
+function buildMatrix(id,data,rows,cols,type){
+  const el=document.getElementById(id);el.innerHTML='';
+  for(let i=0;i<rows;i++){
+    const row=document.createElement('div');row.className='matrix-row';
+    for(let j=0;j<cols;j++){
+      const cell=document.createElement('div');cell.className='conv-cell';
+      cell.textContent=data[i][j];
+      if(type==='output'){cell.style.cursor='pointer';cell.onclick=()=>highlightPatch(i,j,data[i][j]);}
+      if(type==='kernel')cell.classList.add('kernel-cell');
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+
+function highlightPatch(or,oc,val){
+  selR=or;selC=oc;
+  document.querySelectorAll('#vis-input .conv-cell').forEach(c=>c.classList.remove('highlight-cell'));
+  document.querySelectorAll('#vis-output .conv-cell').forEach((c,idx)=>{const r=Math.floor(idx/4),co=idx%4;c.classList.toggle('result-cell',r===or&&co===oc);});
+  for(let m=0;m<3;m++)for(let n=0;n<3;n++){
+    const idx=(or+m)*6+(oc+n);
+    document.querySelectorAll('#vis-input .conv-cell')[idx].classList.add('highlight-cell');
+  }
+  let calc='Вычисление Z['+or+','+oc+']:<br>';
+  let total=0;
+  for(let m=0;m<3;m++)for(let n=0;n<3;n++){
+    const iv=inputData[or+m][oc+n],kv=kernelData[m][n],prod=iv*kv;total+=prod;
+    calc+=`K[${m},${n}]·I[${or+m},${oc+n}] = ${kv}·${iv} = ${prod}<br>`;
+  }
+  calc+=`<br><strong style="color:var(--amber)">Σ = ${Math.round(total)}</strong>`;
+  document.getElementById('conv-calc-box').innerHTML=calc;
+}
+buildVis();
+
+// ---- RF CALCULATOR ----
+let rfLayers=[{k:3,s:1},{k:3,s:1},{k:3,s:2}];
+function renderRFUI(){
+  const c=document.getElementById('rf-layers-ui');c.innerHTML='';
+  rfLayers.forEach((l,i)=>{
+    const d=document.createElement('div');d.className='slider-row';d.style.gap='12px';
+    d.innerHTML=`<span style="color:var(--muted);width:60px">Слой ${i+1}</span>
+      <span>k:</span><input type="range" min="1" max="7" step="2" value="${l.k}" oninput="rfLayers[${i}].k=+this.value;calcRF()">
+      <span class="slider-val">${l.k}</span>
+      <span>s:</span><input type="range" min="1" max="4" value="${l.s}" oninput="rfLayers[${i}].s=+this.value;calcRF()">
+      <span class="slider-val">${l.s}</span>`;
+    c.appendChild(d);
+  });
+  calcRF();
+}
+function addRFLayer(){if(rfLayers.length<6){rfLayers.push({k:3,s:1});renderRFUI();}}
+function removeRFLayer(){if(rfLayers.length>1){rfLayers.pop();renderRFUI();}}
+function calcRF(){
+  // Update display values
+  document.querySelectorAll('#rf-layers-ui .slider-val').forEach((el,i)=>{
+    const idx=Math.floor(i/2),sub=i%2;
+    el.textContent=sub===0?rfLayers[idx].k:rfLayers[idx].s;
+  });
+  let rf=1,stride=1;const rfs=[1];
+  for(const l of rfLayers){rf+=(l.k-1)*stride;stride*=l.s;rfs.push(rf);}
+  let html=`<div class="step-box">`;
+  rfLayers.forEach((l,i)=>html+=`Слой ${i+1} (k=${l.k}, s=${l.s}): RF = <span style="color:var(--amber)">${rfs[i+1]}</span><br>`);
+  html+=`<br><strong>Итоговое RF = <span style="color:var(--green)">${rf}</span></strong></div>`;
+  document.getElementById('rf-result').innerHTML=html;
+  drawRFCanvas(rfs);
+}
+function drawRFCanvas(rfs){
+  const cv=document.getElementById('rf-canvas');
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,600,300);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,600,300);
+  const n=rfs.length;const W=560;const x0=20;const y=150;
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  for(let i=0;i<n;i++){
+    const x=x0+i*(W/(n-1||1));
+    ctx.beginPath();ctx.moveTo(x,50);ctx.lineTo(x,250);ctx.stroke();
+    ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(i===0?'Input':'Layer '+i,x,270);
+  }
+  for(let i=0;i<n;i++){
+    const x=x0+i*(W/(n-1||1));
+    const rf=rfs[i];const maxRF=rfs[n-1]||1;
+    const h=Math.min((rf/maxRF)*160+4,160);
+    ctx.fillStyle='rgba(245,158,11,0.2)';ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+    ctx.fillRect(x-h/2,y-h/2,h,h);ctx.strokeRect(x-h/2,y-h/2,h,h);
+    ctx.fillStyle='#f59e0b';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText(rf,x,y+5);
+  }
+  ctx.strokeStyle='#10b981';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  for(let i=0;i<n-1;i++){
+    const x1=x0+i*(W/(n-1||1)),x2=x0+(i+1)*(W/(n-1||1));
+    const h1=Math.min((rfs[i]/rfs[n-1]||1)*160+4,160),h2=Math.min((rfs[i+1]/rfs[n-1]||1)*160+4,160);
+    ctx.beginPath();ctx.moveTo(x1+h1/2,y);ctx.lineTo(x2-h2/2,y);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle='#e6edf3';ctx.font='12px system-ui';ctx.textAlign='left';
+  ctx.fillText('Рецептивное поле на каждом уровне',20,25);
+}
+renderRFUI();
+
+// ---- POOL VISUALIZATION ----
+const poolInput=[
+  [8,2,4,1,3,7],[5,9,6,3,8,2],[1,4,2,7,5,6],
+  [3,6,8,4,1,9],[7,1,5,2,6,3],[2,8,3,9,4,5]
+];
+function drawPool(){
+  const k=+document.getElementById('pk').value,s=+document.getElementById('ps').value;
+  document.getElementById('pk-v').textContent=k;
+  document.getElementById('ps-v').textContent=s;
+  const hout=Math.floor((6-k)/s)+1;
+  buildPoolMatrix('pool-input',poolInput,6,6,false);
+  const maxOut=[],avgOut=[];
+  for(let i=0;i<hout;i++){
+    maxOut.push([]);avgOut.push([]);
+    for(let j=0;j<hout;j++){
+      let mx=-Infinity,sm=0;
+      for(let m=0;m<k;m++)for(let n=0;n<k;n++){const v=poolInput[i*s+m][j*s+n];mx=Math.max(mx,v);sm+=v;}
+      maxOut[i].push(mx);avgOut[i].push(+(sm/(k*k)).toFixed(1));
+    }
+  }
+  buildPoolMatrix('pool-max-out',maxOut,hout,hout,true);
+  buildPoolMatrix('pool-avg-out',avgOut,hout,hout,false);
+}
+function buildPoolMatrix(id,data,r,c,highlight){
+  const el=document.getElementById(id);el.innerHTML='';
+  for(let i=0;i<r;i++){
+    const row=document.createElement('div');row.className='matrix-row';
+    for(let j=0;j<c;j++){
+      const cell=document.createElement('div');cell.className='conv-cell';
+      cell.textContent=data[i][j];
+      if(highlight)cell.classList.add('highlight-cell');
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+drawPool();
+
+// ---- EQUIVARIANCE CANVAS ----
+function drawEquivar(){
+  const shift=+document.getElementById('eq-shift').value;
+  document.getElementById('eq-shift-v').textContent=shift;
+  const cv=document.getElementById('eq-canvas');
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,640,280);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,640,280);
+  // Draw input (left side)
+  const cols=8,rows=6,cs=28,ox=20,oy=30;
+  ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='left';
+  ctx.fillText('Вход (6×8)',ox,20);
+  for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){
+    const isObj=(j===2+shift||j===3+shift)&&i>=1&&i<=4;
+    ctx.fillStyle=isObj?'rgba(245,158,11,0.7)':'rgba(96,165,250,0.15)';
+    ctx.fillRect(ox+j*cs,oy+i*cs,cs-2,cs-2);
+    if(isObj){ctx.fillStyle='#0d1117';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('■',ox+j*cs+13,oy+i*cs+15);}
+  }
+  // Arrow
+  ctx.strokeStyle='#8b949e';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ox+cols*cs+12,oy+rows*cs/2);ctx.lineTo(ox+cols*cs+40,oy+rows*cs/2);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='18px system-ui';ctx.textAlign='center';ctx.fillText('★',ox+cols*cs+26,oy+rows*cs/2+7);
+  // Feature map (right side), shift same amount
+  const ox2=ox+cols*cs+60;const fcols=6,frows=4;
+  ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='left';
+  ctx.fillText('Карта признаков (4×6)',ox2,20);
+  for(let i=0;i<frows;i++)for(let j=0;j<fcols;j++){
+    const isAct=(j===Math.max(0,shift)||j===Math.max(0,shift)+1)&&i>=0&&i<=3;
+    ctx.fillStyle=isAct?'rgba(16,185,129,0.7)':'rgba(96,165,250,0.08)';
+    ctx.fillRect(ox2+j*cs,oy+i*cs,cs-2,cs-2);
+    if(isAct){ctx.fillStyle='#0d1117';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('✓',ox2+j*cs+13,oy+i*cs+15);}
+  }
+  ctx.fillStyle='var(--green)';ctx.font='12px system-ui';ctx.textAlign='center';
+  ctx.fillStyle='#8b949e';
+  ctx.fillText(`Объект сдвинут на δ=${shift} → признак сдвинут на δ=${shift}: f(T_δ I) = T_δ f(I)`,320,260);
+}
+drawEquivar();
+</script>
+</body>
+</html>

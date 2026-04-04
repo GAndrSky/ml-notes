@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.05em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 68px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.neuron-svg { width: 100%; }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; }
+canvas { border-radius: 8px; cursor: crosshair; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Блок 2 — Нейрон изнутри</span>
+  <span class="tag tag-active">2.1 Перцептрон и нейрон</span>
+  <span class="tag tag-block">2.2 Функции активации</span>
+  <span class="tag tag-block">2.3 Forward pass</span>
+</div>
+
+<h1>2.1 Перцептрон и нейрон</h1>
+<p class="muted">y = f(w<sup>⊤</sup>x + b) — от биологии к математике</p>
+
+<!-- SECTION 1: История и биология -->
+<div class="card">
+  <h2>🧠 От биологии к математике</h2>
+  <p>Нейрон в мозге: получает сигналы через дендриты → суммирует → если превышает порог, «стреляет» по аксону.</p>
+  <br>
+  <div class="grid-2">
+    <div style="background:#0d1117;border-radius:8px;padding:14px;">
+      <h3>Биологический нейрон</h3>
+      <svg viewBox="0 0 220 120" style="width:100%">
+        <!-- dendrites -->
+        <line x1="20" y1="30" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="20" y1="60" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="20" y1="90" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <text x="5" y="33" fill="#60a5fa" font-size="9">x₁</text>
+        <text x="5" y="63" fill="#60a5fa" font-size="9">x₂</text>
+        <text x="5" y="93" fill="#60a5fa" font-size="9">x₃</text>
+        <!-- body -->
+        <circle cx="100" cy="60" r="22" fill="#1f2d1a" stroke="#10b981" stroke-width="2"/>
+        <text x="100" y="55" fill="#10b981" font-size="9" text-anchor="middle">Σ</text>
+        <text x="100" y="68" fill="#8b949e" font-size="8" text-anchor="middle">soma</text>
+        <!-- axon -->
+        <line x1="122" y1="60" x2="190" y2="60" stroke="#f59e0b" stroke-width="2"/>
+        <polygon points="190,55 200,60 190,65" fill="#f59e0b"/>
+        <text x="155" y="52" fill="#8b949e" font-size="8">axon</text>
+        <!-- threshold label -->
+        <text x="100" y="95" fill="#8b949e" font-size="8" text-anchor="middle">порог θ</text>
+      </svg>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:14px;">
+      <h3>Математический нейрон</h3>
+      <svg viewBox="0 0 220 120" style="width:100%">
+        <line x1="18" y1="30" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="18" y1="60" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="18" y1="90" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <text x="3" y="33" fill="#60a5fa" font-size="9">x₁w₁</text>
+        <text x="3" y="63" fill="#60a5fa" font-size="9">x₂w₂</text>
+        <text x="3" y="93" fill="#60a5fa" font-size="9">x₃w₃</text>
+        <circle cx="100" cy="60" r="22" fill="#1f2d1a" stroke="#10b981" stroke-width="2"/>
+        <text x="100" y="55" fill="#10b981" font-size="9" text-anchor="middle">Σ+b</text>
+        <text x="100" y="67" fill="#8b949e" font-size="8" text-anchor="middle">z=w⊤x+b</text>
+        <!-- activation -->
+        <rect x="134" y="50" width="24" height="20" rx="4" fill="#1a1506" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="146" y="63" fill="#f59e0b" font-size="9" text-anchor="middle">f</text>
+        <line x1="122" y1="60" x2="134" y2="60" stroke="#f59e0b" stroke-width="1.5"/>
+        <line x1="158" y1="60" x2="200" y2="60" stroke="#a78bfa" stroke-width="2"/>
+        <polygon points="198,55 208,60 198,65" fill="#a78bfa"/>
+        <text x="185" y="52" fill="#a78bfa" font-size="8">y</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: Математика -->
+<div class="card">
+  <h2>📐 Полная математика нейрона</h2>
+  
+  <h3>Входные данные и веса</h3>
+  <div class="formula">
+    x = [x₁, x₂, ..., xₙ]<sup>⊤</sup> ∈ ℝⁿ &nbsp;&nbsp;&nbsp; (входной вектор)<br>
+    w = [w₁, w₂, ..., wₙ]<sup>⊤</sup> ∈ ℝⁿ &nbsp;&nbsp;&nbsp; (веса)<br>
+    b ∈ ℝ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (bias)
+  </div>
+
+  <h3>Два шага вычисления</h3>
+  <div class="formula">
+    <span class="hl-blue">z</span> = <span class="hl-amber">w<sup>⊤</sup>x + b</span> = w₁x₁ + w₂x₂ + ... + wₙxₙ + b &nbsp;&nbsp; (pre-activation / линейная часть)<br>
+    <span class="hl-purple">y</span> = <span class="hl-green">f(z)</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (activation / нелинейность)
+  </div>
+
+  <div class="intuition">
+    💡 <strong>Почему два шага?</strong> Линейная часть z — это «взвешенное голосование» входов. Функция активации f — это «решение» нейрона что делать с результатом. Без f вся сеть сколлапсировала бы в одну линейную операцию.
+  </div>
+
+  <h3>Скалярное произведение — сердце нейрона</h3>
+  <div class="formula">
+    w<sup>⊤</sup>x = Σᵢ wᵢxᵢ = |w|·|x|·cos(θ)
+  </div>
+  <p>Это <strong>косинусное сходство</strong> до нормировки: нейрон сильно активируется, когда вход x похож на вектор весов w (угол θ мал → cos(θ) ≈ 1).</p>
+</div>
+
+<!-- SECTION 3: Интерактивный калькулятор нейрона -->
+<div class="card">
+  <h2>🧮 Интерактивный нейрон-калькулятор</h2>
+  <p class="muted">Редактируй веса, bias и входы — смотри вычисление пошагово</p>
+  <br>
+
+  <div class="grid-3">
+    <div>
+      <h3>Входы x</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">x₁</span>
+          <input type="number" id="x1" value="2" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">x₂</span>
+          <input type="number" id="x2" value="-1" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">x₃</span>
+          <input type="number" id="x3" value="0.5" step="0.1" oninput="calcNeuron()">
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Веса w</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">w₁</span>
+          <input type="number" id="w1" value="0.5" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">w₂</span>
+          <input type="number" id="w2" value="-0.3" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">w₃</span>
+          <input type="number" id="w3" value="0.8" step="0.1" oninput="calcNeuron()">
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Параметры</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">b</span>
+          <input type="number" id="bias" value="0.1" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="margin-top:8px;">
+          <span class="muted" style="font-size:0.85em;">Активация f:</span><br>
+          <select id="actFn" onchange="calcNeuron()" style="background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;margin-top:4px;width:100%;">
+            <option value="relu">ReLU</option>
+            <option value="sigmoid">Sigmoid</option>
+            <option value="tanh">Tanh</option>
+            <option value="linear">Linear</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box" id="calcResult">
+    <!-- заполняется JS -->
+  </div>
+</div>
+
+<!-- SECTION 4: Геометрический смысл -->
+<div class="card">
+  <h2>📊 Геометрический смысл: гиперплоскость-разделитель</h2>
+  
+  <p>Перцептрон (нейрон со step-функцией) делит пространство на два полупространства гиперплоскостью:</p>
+  <div class="formula">
+    w<sup>⊤</sup>x + b = 0 &nbsp;&nbsp; ← граница решения (decision boundary)
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <h3>Визуализация 2D (кликай для добавления точек)</h3>
+      <canvas id="hyperCanvas" width="300" height="280" style="background:#0d1117;border:1px solid var(--border);border-radius:8px;" onclick="addPoint(event)"></canvas>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setClass(0)" id="btn0" class="active">🔵 Класс 0</button>
+        <button onclick="setClass(1)" id="btn1">🔴 Класс 1</button>
+        <button onclick="clearPoints()">Очистить</button>
+      </div>
+    </div>
+    <div>
+      <h3>Настройка гиперплоскости</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">w₁ (наклон): <span class="val-display" id="hw1v">1.0</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="1" id="hw1" oninput="updateHyperplane()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">w₂ (наклон): <span class="val-display" id="hw2v">1.0</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="1" id="hw2" oninput="updateHyperplane()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">b (смещение): <span class="val-display" id="hbv">0.0</span></span>
+        <input type="range" min="-5" max="5" step="0.1" value="0" id="hb" oninput="updateHyperplane()">
+      </div>
+      <div class="result-box" id="hyperInfo" style="font-size:0.88em;margin-top:12px;"></div>
+
+      <div class="intuition" style="margin-top:10px;font-size:0.88em;">
+        💡 <strong>w задаёт нормаль</strong> к гиперплоскости — направление "роста" функции.<br>
+        <strong>b сдвигает</strong> плоскость вдоль нормали.<br>
+        |b| / |w| = расстояние от начала координат до плоскости.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5: Bias -->
+<div class="card">
+  <h2>⚖️ Роль bias b</h2>
+  <div class="grid-2">
+    <div>
+      <p>Bias — это <strong>порог активации</strong>. Без него нейрон вынужден проводить гиперплоскость через начало координат.</p>
+      <br>
+      <div class="formula">Без bias: w<sup>⊤</sup>x = 0 → плоскость через (0,0)<br>С bias: w<sup>⊤</sup>x + b = 0 → свободная плоскость</div>
+      <br>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 Bias = смещённый вход. Можно записать:<br>
+        <code>z = [w; b]<sup>⊤</sup> · [x; 1]</code><br>
+        т.е. добавить постоянный вход x₀=1 с весом b.
+      </div>
+    </div>
+    <div>
+      <h3>Bias как сдвиг activation threshold</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">b = <span class="val-display" id="biasViz">0</span></span>
+        <input type="range" min="-4" max="4" step="0.1" value="0" id="biasRange" oninput="drawBiasViz()">
+      </div>
+      <canvas id="biasCanvas" width="290" height="150" style="background:#0d1117;border:1px solid var(--border);border-radius:8px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: Перцептрон исторически -->
+<div class="card">
+  <h2>📜 Перцептрон Розенблатта (1958) → современный нейрон</h2>
+  <table>
+    <tr><th>Свойство</th><th>Перцептрон (1958)</th><th>Современный нейрон</th></tr>
+    <tr><td>Активация f</td><td>step(z): 0 или 1</td><td>ReLU, Sigmoid, GELU...</td></tr>
+    <tr><td>Вывод</td><td>бинарный (0/1)</td><td>непрерывный (ℝ)</td></tr>
+    <tr><td>Дифференцируемость</td><td>❌ (обучение через Perceptron Rule)</td><td>✅ (backprop через ∂L/∂w)</td></tr>
+    <tr><td>Граница решения</td><td>линейная гиперплоскость</td><td>линейная (нелинейность через стек слоёв)</td></tr>
+    <tr><td>Ограничение</td><td>только линейно-разделимое</td><td>универсальная аппроксимация (UAT)</td></tr>
+  </table>
+  <div class="warn" style="margin-top:12px;font-size:0.88em;">
+    ⚠️ <strong>Теорема Минского (1969):</strong> Перцептрон не может решить XOR — не линейно разделима. Это породило «зиму ИИ». Решение: стек нейронов (скрытые слои) + дифференцируемые активации.
+  </div>
+</div>
+
+<!-- SECTION 7: Код -->
+<div class="card">
+  <h2>💻 Реализация в NumPy и PyTorch</h2>
+
+  <div class="tabs">
+    <button class="active" onclick="showCode(0, this)">NumPy (с нуля)</button>
+    <button onclick="showCode(1, this)">PyTorch (nn.Linear)</button>
+    <button onclick="showCode(2, this)">PyTorch autograd</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;">import numpy as np
+
+# Один нейрон вручную
+x = np.array([2.0, -1.0, 0.5])     # вход (3,)
+w = np.array([0.5, -0.3, 0.8])     # веса (3,)
+b = 0.1                              # bias
+
+# Шаг 1: pre-activation
+z = w @ x + b                        # dot product + bias
+# z = 0.5*2 + (-0.3)*(-1) + 0.8*0.5 + 0.1 = 1.8
+
+# Шаг 2: activation (ReLU)
+y = np.maximum(0, z)                 # ReLU: max(0, z)
+
+print(f"z = {z:.4f}")               # z = 1.8000
+print(f"y = {y:.4f}")               # y = 1.8000
+
+# Батч: x.shape = (batch, features)
+X = np.random.randn(32, 3)          # 32 примера, 3 признака
+W = np.array([0.5, -0.3, 0.8])
+Z = X @ W + b                        # shape: (32,)
+Y = np.maximum(0, Z)                 # shape: (32,)</div>
+
+  <div id="code1" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;display:none;">import torch
+import torch.nn as nn
+
+# nn.Linear = один слой нейронов
+# in_features=3, out_features=1 → один нейрон
+layer = nn.Linear(in_features=3, out_features=1)
+
+# Веса инициализированы случайно (Kaiming uniform по умолчанию)
+print(layer.weight.shape)    # (1, 3) — матрица W
+print(layer.bias.shape)      # (1,)   — вектор b
+
+# Ручная установка весов
+with torch.no_grad():
+    layer.weight.copy_(torch.tensor([[0.5, -0.3, 0.8]]))
+    layer.bias.copy_(torch.tensor([0.1]))
+
+# Forward pass (батч из 4 примеров)
+x = torch.tensor([[2.0, -1.0, 0.5],
+                   [1.0,  0.0, 2.0],
+                   [-1.0, 1.0, 0.0],
+                   [0.5, -0.5, 1.0]])  # shape: (4, 3)
+
+z = layer(x)                           # shape: (4, 1)
+y = torch.relu(z)                      # shape: (4, 1)
+
+# Вручную: z = x @ W.T + b
+z_manual = x @ layer.weight.T + layer.bias
+# Совпадает!</div>
+
+  <div id="code2" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;display:none;">import torch
+
+# Нейрон с autograd для проверки градиентов
+x = torch.tensor([2.0, -1.0, 0.5])
+w = torch.tensor([0.5, -0.3, 0.8], requires_grad=True)
+b = torch.tensor(0.1, requires_grad=True)
+
+# Forward
+z = w @ x + b
+y = torch.relu(z)
+
+# Допустим, loss = y (MSE с target=0 для примера)
+loss = y  # упрощённо
+loss.backward()
+
+# Градиенты:
+# ∂loss/∂w = ∂y/∂z · ∂z/∂w = 1 * x = x (т.к. z>0, ReLU′=1)
+print(w.grad)    # tensor([2., -1., 0.5]) = x
+print(b.grad)    # tensor(1.) = 1
+
+# Геометрический смысл: ∂z/∂w = x
+# Градиент по весам = входной вектор x
+# → вес обновляется пропорционально входу!</div>
+</div>
+
+<!-- SECTION 8: UAT -->
+<div class="card">
+  <h2>🎯 Почему стек нейронов = универсальный аппроксиматор?</h2>
+  <p>Теорема Цыбенко (1989): Сеть с одним скрытым слоем и сигмоидными нейронами может аппроксимировать <strong>любую непрерывную функцию</strong> на компакте с произвольной точностью.</p>
+  <br>
+  <div class="formula">
+    ∀ε>0, ∀f ∈ C([0,1]ⁿ), ∃ сеть F: &nbsp; sup|f(x) − F(x)| &lt; ε
+  </div>
+  <br>
+  <div class="intuition">
+    💡 Каждый нейрон — это «детектор» паттерна (гиперплоскость). Комбинируя много нейронов (=много гиперплоскостей), можно аппроксимировать любую границу решения. Это как аппроксимировать кривую кусочками прямых.
+  </div>
+  <div class="grid-2" style="margin-top:12px;">
+    <div style="background:#0d1117;border-radius:8px;padding:12px;font-size:0.88em;">
+      <span class="hl-amber">Нейрон 1:</span> детектирует "левый угол"<br>
+      <span class="hl-green">Нейрон 2:</span> детектирует "правый угол"<br>
+      <span class="hl-blue">Нейрон 3:</span> детектирует "горизонталь"<br>
+      <span class="muted">⟹ вместе: детектируют букву "П"</span>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:12px;font-size:0.88em;">
+      <span class="hl-amber">1 нейрон:</span> линейный классификатор<br>
+      <span class="hl-green">1 слой нейронов:</span> параллельные детекторы<br>
+      <span class="hl-blue">Стек слоёв:</span> иерархия признаков<br>
+      <span class="muted">⟹ глубокие сети = композиция функций</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== NEURON CALCULATOR =====
+function activate(z, fn) {
+  switch(fn) {
+    case 'relu': return Math.max(0, z);
+    case 'sigmoid': return 1 / (1 + Math.exp(-z));
+    case 'tanh': return Math.tanh(z);
+    case 'linear': return z;
+  }
+}
+function activateName(fn) {
+  return { relu:'ReLU: max(0,z)', sigmoid:'σ(z) = 1/(1+e⁻ᶻ)', tanh:'tanh(z)', linear:'f(z) = z (линейная)' }[fn];
+}
+function calcNeuron() {
+  const x1=+document.getElementById('x1').value, x2=+document.getElementById('x2').value, x3=+document.getElementById('x3').value;
+  const w1=+document.getElementById('w1').value, w2=+document.getElementById('w2').value, w3=+document.getElementById('w3').value;
+  const b=+document.getElementById('bias').value;
+  const fn=document.getElementById('actFn').value;
+  const t1=w1*x1, t2=w2*x2, t3=w3*x3;
+  const z=t1+t2+t3+b;
+  const y=activate(z, fn);
+  document.getElementById('calcResult').innerHTML = `
+    <div class="step highlight">z = w₁·x₁ + w₂·x₂ + w₃·x₃ + b</div>
+    <div class="step">  = (${w1})·(${x1}) + (${w2})·(${x2}) + (${w3})·(${x3}) + (${b})</div>
+    <div class="step">  = ${t1.toFixed(4)} + ${t2.toFixed(4)} + ${t3.toFixed(4)} + ${b.toFixed(4)}</div>
+    <div class="step highlight">z = <span class="hl-blue">${z.toFixed(4)}</span></div>
+    <div class="step">f = ${activateName(fn)}</div>
+    <div class="step highlight">y = f(z) = <span class="hl-purple">${y.toFixed(6)}</span></div>
+  `;
+}
+
+// ===== HYPERPLANE CANVAS =====
+let points = [];
+let currentClass = 0;
+function setClass(c) {
+  currentClass = c;
+  document.getElementById('btn0').classList.toggle('active', c===0);
+  document.getElementById('btn1').classList.toggle('active', c===1);
+}
+function addPoint(e) {
+  const canvas = document.getElementById('hyperCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) / rect.width * 6 - 3;
+  const py = -((e.clientY - rect.top) / rect.height * 6 - 3);
+  points.push({x:px, y:py, cls:currentClass});
+  drawHyperplane();
+}
+function clearPoints() { points=[]; drawHyperplane(); }
+function toCanvas(val, size) { return (val + 3) / 6 * size; }
+function updateHyperplane() {
+  const w1=+document.getElementById('hw1').value;
+  const w2=+document.getElementById('hw2').value;
+  const b=+document.getElementById('hb').value;
+  document.getElementById('hw1v').textContent = w1.toFixed(1);
+  document.getElementById('hw2v').textContent = w2.toFixed(1);
+  document.getElementById('hbv').textContent = b.toFixed(1);
+  drawHyperplane();
+}
+function drawHyperplane() {
+  const c = document.getElementById('hyperCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const w1=+document.getElementById('hw1').value;
+  const w2=+document.getElementById('hw2').value;
+  const b=+document.getElementById('hb').value;
+
+  // Background coloring
+  const imgData = ctx.createImageData(W,H);
+  for(let px=0;px<W;px++) for(let py=0;py<H;py++) {
+    const x1 = px/W*6-3, x2 = -(py/H*6-3);
+    const z = w1*x1 + w2*x2 + b;
+    const idx=(py*W+px)*4;
+    if(z>0) { imgData.data[idx]=15;imgData.data[idx+1]=45;imgData.data[idx+2]=26;imgData.data[idx+3]=160; }
+    else { imgData.data[idx]=26;imgData.data[idx+1]=15;imgData.data[idx+2]=15;imgData.data[idx+3]=160; }
+  }
+  ctx.putImageData(imgData,0,0);
+
+  // Grid
+  ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
+  for(let v=-2;v<=2;v++) {
+    ctx.beginPath();ctx.moveTo(toCanvas(v,W),0);ctx.lineTo(toCanvas(v,W),H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,toCanvas(v,H));ctx.lineTo(W,toCanvas(v,H));ctx.stroke();
+  }
+  // Axes
+  ctx.strokeStyle='#8b949e';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+
+  // Decision boundary: w1*x + w2*y + b = 0 → y = (-w1*x - b) / w2
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2.5;ctx.setLineDash([]);
+  ctx.beginPath();
+  if(Math.abs(w2)>0.01) {
+    const x0=-3, x1c=3;
+    const y0=(-w1*x0-b)/w2, y1c=(-w1*x1c-b)/w2;
+    ctx.moveTo(toCanvas(x0,W), toCanvas(-y0,H));
+    ctx.lineTo(toCanvas(x1c,W), toCanvas(-y1c,H));
+  } else {
+    const xb = -b/w1;
+    ctx.moveTo(toCanvas(xb,W),0); ctx.lineTo(toCanvas(xb,W),H);
+  }
+  ctx.stroke();
+
+  // Normal vector
+  const norm = Math.sqrt(w1*w1+w2*w2)||1;
+  const cx=W/2, cy=H/2, scale=40;
+  ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;ctx.setLineDash([4,2]);
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+w1/norm*scale,cy-w2/norm*scale);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#60a5fa';ctx.font='11px monospace';
+  ctx.fillText('w (нормаль)',cx+w1/norm*scale+4,cy-w2/norm*scale);
+
+  // Points
+  points.forEach(p => {
+    const px=toCanvas(p.x,W), py=toCanvas(-p.y,H);
+    ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);
+    ctx.fillStyle = p.cls===0?'#60a5fa':'#ef4444';
+    ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    const z=w1*p.x+w2*p.y+b;
+    const pred=z>0?1:0;
+    if(pred!==p.cls){
+      ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+    }
+  });
+
+  // Info
+  let correct=points.filter(p=>{const z=w1*p.x+w2*p.y+b;return (z>0?1:0)===p.cls;}).length;
+  document.getElementById('hyperInfo').innerHTML = `
+    <div>Уравнение: <span class="hl-amber">${w1.toFixed(1)}x₁ + ${w2.toFixed(1)}x₂ + ${b.toFixed(1)} = 0</span></div>
+    <div>|w| = ${(Math.sqrt(w1**2+w2**2)).toFixed(2)}</div>
+    <div>Расстояние от (0,0): <span class="hl-green">${points.length>0?Math.abs(b)/norm.toFixed(2):(Math.abs(b)/Math.max(norm,0.01)).toFixed(2)}</span></div>
+    ${points.length>0?`<div>Точки: ${correct}/${points.length} верно</div>`:'<div class="muted">Кликни на холст чтобы добавить точки</div>'}
+  `;
+}
+
+// ===== BIAS VISUALIZATION =====
+function drawBiasViz() {
+  const b = +document.getElementById('biasRange').value;
+  document.getElementById('biasViz').textContent = b.toFixed(1);
+  const c = document.getElementById('biasCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  
+  // Draw ReLU shifted by bias: f(x+b) basically showing threshold shift
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  
+  // Sigmoid curve shifted
+  ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let px=0;px<W;px++) {
+    const x = (px/W*10-5);
+    const z = x + b;
+    const y = 1/(1+Math.exp(-z));
+    const canY = H - y*H*0.8 - H*0.1;
+    if(px===0) ctx.moveTo(px,canY); else ctx.lineTo(px,canY);
+  }
+  ctx.stroke();
+  
+  // threshold line x=0 → where sigmoid = 0.5
+  const threshX = (-b/10+0.5)*W;
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(threshX,0);ctx.lineTo(threshX,H);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#f59e0b';ctx.font='10px monospace';
+  ctx.fillText(`порог x=${(-b).toFixed(1)}`,threshX+4,14);
+  
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';
+  ctx.fillText('σ(x+b)',6,18);
+  ctx.fillText('x',(W-12),H/2+14);
+  ctx.fillText('0',W/2+4,H/2+14);
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Init
+calcNeuron();
+updateHyperplane();
+drawBiasViz();
+</script>
+</body>
+</html>

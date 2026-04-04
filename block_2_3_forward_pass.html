@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:950px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.95em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;} .hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;} .hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;} .hl-pink{color:var(--pink);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;} h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin:5px 0;cursor:pointer;transition:all .2s;font-size:.88em;}
+.step-row:hover,.step-row.active{border-color:var(--amber);background:#1a1506;}
+.step-row .step-num{color:var(--amber);font-weight:700;font-family:monospace;min-width:24px;}
+.step-row .step-shape{font-family:monospace;color:var(--green);font-weight:600;min-width:110px;}
+.step-row .step-op{color:var(--blue);font-family:monospace;}
+.shape-badge{display:inline-block;background:#1a2633;border:1px solid var(--blue);color:var(--blue);font-family:monospace;font-size:.82em;padding:1px 8px;border-radius:5px;margin:1px 2px;}
+.dim-label{font-size:.78em;color:var(--muted);}
+#netSvg{width:100%;border-radius:8px;background:#0a0d14;border:1px solid var(--border);}
+select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:62px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">✓ 2.1 Нейрон</span>
+  <span class="tag tag-done">✓ 2.2 Активации</span>
+  <span class="tag tag-active">▶ 2.3 Forward pass</span>
+  <span class="tag tag-next">2.4 Loss-функции</span>
+</div>
+
+<h1>2.3 Forward pass</h1>
+<p class="muted">Как данные проходят через слои: матричные операции, shapes, батч</p>
+
+<!-- 1. Один шаг слоя -->
+<div class="card">
+  <h2>🔬 Один слой — три операции</h2>
+  <p>Каждый <strong>линейный слой</strong> делает ровно три вещи:</p>
+  <div class="formula">Z = X · Wᵀ + b     ← линейное преобразование (matmul + bias)
+A = f(Z)          ← поэлементная активация</div>
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Shapes (батч из B примеров)</h3>
+      <div style="background:#0d1117;border-radius:8px;padding:12px;font-family:monospace;font-size:.88em;line-height:2;">
+        X  : <span class="shape-badge">(B, nᵢₙ)</span><br>
+        W  : <span class="shape-badge">(nₒᵤₜ, nᵢₙ)</span><span class="dim-label"> ← хранится транспонированной</span><br>
+        Wᵀ : <span class="shape-badge">(nᵢₙ, nₒᵤₜ)</span><br>
+        b  : <span class="shape-badge">(nₒᵤₜ,)</span><span class="dim-label"> ← broadcast по батчу</span><br>
+        Z  : <span class="shape-badge">(B, nᵢₙ)</span> · <span class="shape-badge">(nᵢₙ, nₒᵤₜ)</span> = <span class="shape-badge">(B, nₒᵤₜ)</span><br>
+        A  : <span class="shape-badge">(B, nₒᵤₜ)</span>
+      </div>
+    </div>
+    <div>
+      <h3>Почему W хранится как (nₒᵤₜ, nᵢₙ)?</h3>
+      <p style="font-size:.88em;">В PyTorch <code style="color:var(--amber)">nn.Linear</code> хранит <code>weight.shape = (out, in)</code>. Forward вычисляется как <code>X @ W.T + b</code>.</p>
+      <p style="font-size:.88em;margin-top:8px;">При backprop нужен Wᵀ для вычисления <span class="hl-amber">∂L/∂X = δ · W</span> — хранение по строкам (out_features) удобнее для градиентов.</p>
+      <div class="intuition" style="font-size:.84em;margin-top:8px;">
+        💡 Каждая строка W[i] — это вектор весов i-го нейрона выходного слоя. <br>W[i] · x = скалярный выход нейрона i.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Интерактивный shape-трекер -->
+<div class="card">
+  <h2>📐 Интерактивный shape-трекер MLP</h2>
+  <p class="muted">Задай архитектуру — смотри shapes на каждом слое</p>
+  <br>
+  <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Batch size B</div><input type="number" id="shB" value="32" min="1" max="512" oninput="buildShapes()"></div>
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Вход d_in</div><input type="number" id="shIn" value="784" min="1" oninput="buildShapes()"></div>
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Скрытый 1</div><input type="number" id="shH1" value="256" min="1" oninput="buildShapes()"></div>
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Скрытый 2</div><input type="number" id="shH2" value="128" min="1" oninput="buildShapes()"></div>
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Выход d_out</div><input type="number" id="shOut" value="10" min="1" oninput="buildShapes()"></div>
+    <div><div class="muted" style="font-size:.82em;margin-bottom:4px;">Активация</div>
+      <select id="shAct" onchange="buildShapes()">
+        <option>ReLU</option><option>GELU</option><option>Tanh</option><option>SiLU</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="shapeSteps"></div>
+
+  <div style="margin-top:14px;">
+    <h3>Суммарные параметры</h3>
+    <div id="paramCount" style="font-family:monospace;font-size:.9em;background:#0d1117;border-radius:8px;padding:12px 14px;margin-top:6px;"></div>
+  </div>
+</div>
+
+<!-- 3. Пошаговый визуализатор -->
+<div class="card">
+  <h2>🎬 Пошаговый forward pass (числовой пример)</h2>
+  <p class="muted">Сеть 2→3→2. Кликай на шаги чтобы видеть матрицу на каждом этапе.</p>
+  <br>
+  <div class="grid-2">
+    <div>
+      <div id="fwdSteps"></div>
+      <button onclick="randomizeFwd()" style="margin-top:10px;">🎲 Случайные веса</button>
+    </div>
+    <div>
+      <h3>Активная матрица</h3>
+      <canvas id="matCanvas" width="320" height="240" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:320px;"></canvas>
+      <div id="matInfo" style="font-family:monospace;font-size:.82em;margin-top:6px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Сетевая диаграмма -->
+<div class="card">
+  <h2>🕸️ Архитектура MLP — диаграмма</h2>
+  <div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+    <span class="muted" style="font-size:.85em;">Конфигурация:</span>
+    <button class="active" onclick="setArch([2,4,4,2],this)">2→4→4→2</button>
+    <button onclick="setArch([3,5,5,5,2],this)">3→5→5→5→2</button>
+    <button onclick="setArch([4,6,4,3],this)">4→6→4→3</button>
+  </div>
+  <svg id="netSvg" viewBox="0 0 800 300"></svg>
+  <div style="margin-top:8px;font-size:.82em;color:var(--muted);">
+    <span style="color:var(--blue)">●</span> Нейрон (нода)&nbsp;&nbsp;
+    <span style="color:var(--amber)">─</span> Веса W&nbsp;&nbsp;
+    <span style="color:var(--green)">[ ]</span> Активация f
+  </div>
+</div>
+
+<!-- 5. Батч: почему параллельно -->
+<div class="card">
+  <h2>⚡ Батч: почему не по одному примеру?</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Без батча (B=1)</h3>
+      <div class="formula" style="font-size:.85em;">for each x in dataset:
+    z = W @ x + b   # (n_out,)
+    a = relu(z)
+# N итераций циклом — медленно!</div>
+      <p style="font-size:.88em;margin-top:8px;">Матрица W никак не параллелизуется — каждый вызов независим.</p>
+    </div>
+    <div>
+      <h3>С батчем (B примеров)</h3>
+      <div class="formula" style="font-size:.85em;">X = batch  # (B, n_in)
+Z = X @ W.T + b   # (B, n_out)
+A = relu(Z)       # поэлементно
+# Одна операция matmul!</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        💡 GPU содержит тысячи CUDA-ядер. <br>matmul(B, n) распараллеливается по B строкам одновременно.<br>Speedup: 100–1000× vs цикл по одному.
+      </div>
+    </div>
+  </div>
+  <br>
+  <h3>Матричный вид батча</h3>
+  <div class="formula">X  = [x₁ᵀ]   ← пример 1, shape (n_in,)
+     [x₂ᵀ]   ← пример 2
+     [...]
+     [xBᵀ]   ← пример B
+                          shape X: (B, n_in)
+
+Z = X·Wᵀ + b:  каждая строка Zᵢ = xᵢ·Wᵀ + b — один пример
+                broadcast b по строкам автоматически</div>
+</div>
+
+<!-- 6. Memory layout -->
+<div class="card">
+  <h2>🧠 Memory: активации и веса в памяти</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Что хранится во время forward pass</h3>
+      <div style="font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:12px;line-height:2;">
+        <span class="hl-amber">Веса W, b</span>  — постоянно (параметры)<br>
+        <span class="hl-green">Активации A</span> — каждый слой (для backprop!)<br>
+        <span class="hl-blue">Pre-activation Z</span> — каждый слой<br>
+        <span class="hl-red">Вход X</span> — батч (для ∂L/∂W = δᵀX)
+      </div>
+      <div class="warn" style="margin-top:10px;font-size:.85em;">
+        ⚠️ Именно поэтому при большом батче или глубокой сети кончается VRAM: все промежуточные активации хранятся до backward().
+      </div>
+    </div>
+    <div>
+      <h3>Интерактивный memory-калькулятор</h3>
+      <div style="font-size:.85em;margin:8px 0;">
+        <div style="display:flex;gap:8px;align-items:center;margin:5px 0;">
+          <span class="muted" style="width:100px;">Batch size</span>
+          <input type="number" id="memB" value="32" oninput="calcMem()">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:5px 0;">
+          <span class="muted" style="width:100px;">Слоёв</span>
+          <input type="number" id="memL" value="4" oninput="calcMem()">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:5px 0;">
+          <span class="muted" style="width:100px;">Hidden size</span>
+          <input type="number" id="memH" value="512" oninput="calcMem()">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:5px 0;">
+          <span class="muted" style="width:100px;">Dtype</span>
+          <select id="memDtype" onchange="calcMem()">
+            <option value="4">float32 (4B)</option>
+            <option value="2">bfloat16 (2B)</option>
+            <option value="1">int8 (1B)</option>
+          </select>
+        </div>
+      </div>
+      <div id="memResult" style="font-family:monospace;font-size:.83em;background:#0d1117;border-radius:8px;padding:10px 12px;margin-top:6px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Код -->
+<div class="card">
+  <h2>💻 Реализация</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('numpy',this)">NumPy (с нуля)</button>
+    <button onclick="showCode('torch',this)">PyTorch nn.Module</button>
+    <button onclick="showCode('shapes',this)">Shape-дебаггинг</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ============================================================
+// SHAPE TRACKER
+// ============================================================
+function buildShapes() {
+  const B   = +document.getElementById('shB').value || 32;
+  const din = +document.getElementById('shIn').value || 784;
+  const h1  = +document.getElementById('shH1').value || 256;
+  const h2  = +document.getElementById('shH2').value || 128;
+  const dout= +document.getElementById('shOut').value || 10;
+  const act = document.getElementById('shAct').value;
+
+  const layers = [
+    {name:'Вход X', op:'', inS:[B,din], outS:[B,din], params:0, color:'#60a5fa'},
+    {name:`Linear(${din}→${h1})`, op:`X·Wᵀ + b`, inS:[B,din], outS:[B,h1], params:din*h1+h1, color:'#f59e0b'},
+    {name:act, op:`поэлементно`, inS:[B,h1], outS:[B,h1], params:0, color:'#10b981'},
+    {name:`Linear(${h1}→${h2})`, op:`A·Wᵀ + b`, inS:[B,h1], outS:[B,h2], params:h1*h2+h2, color:'#f59e0b'},
+    {name:act, op:`поэлементно`, inS:[B,h2], outS:[B,h2], params:0, color:'#10b981'},
+    {name:`Linear(${h2}→${dout})`, op:`A·Wᵀ + b`, inS:[B,h2], outS:[B,dout], params:h2*dout+dout, color:'#f59e0b'},
+    {name:'Softmax', op:`dim=-1`, inS:[B,dout], outS:[B,dout], params:0, color:'#a78bfa'},
+  ];
+
+  const fmt = s => s.map(v=>`<span style="color:var(--green);font-weight:600;">${v}</span>`).join(' × ');
+  document.getElementById('shapeSteps').innerHTML = layers.map((l,i) => `
+    <div class="step-row">
+      <div class="step-num">${i}</div>
+      <div style="min-width:200px;font-weight:600;color:${l.color}">${l.name}</div>
+      <div style="min-width:130px;font-size:.82em;">вход: (${fmt(l.inS)})</div>
+      <div style="color:var(--blue);font-family:monospace;min-width:100px;font-size:.82em;">${l.op}</div>
+      <div style="min-width:130px;font-size:.82em;">выход: (${fmt(l.outS)})</div>
+      <div style="color:var(--muted);font-family:monospace;font-size:.82em;">${l.params>0?`params: ${l.params.toLocaleString()}`:'—'}</div>
+    </div>`).join('');
+
+  const totalP = layers.reduce((a,l)=>a+l.params,0);
+  const fmtN = n => n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n;
+  document.getElementById('paramCount').innerHTML = `
+Параметры:
+  Linear(${din}→${h1}):  ${(din*h1+h1).toLocaleString()}
+  Linear(${h1}→${h2}): ${(h1*h2+h2).toLocaleString()}
+  Linear(${h2}→${dout}):  ${(h2*dout+dout).toLocaleString()}
+  ─────────────────────────────
+  Итого: <span style="color:var(--amber);font-weight:600;">${fmtN(totalP)} параметров</span>
+  Память float32: ${(totalP*4/1024/1024).toFixed(2)} MB (только веса)`;
+}
+
+// ============================================================
+// FORWARD PASS STEPPER
+// ============================================================
+let fwdW1, fwdW2, fwdB1, fwdB2, fwdX;
+let activeStep = -1;
+
+function rand(r,c,scale=1){return Array.from({length:r},()=>Array.from({length:c},()=>(Math.random()*2-1)*scale));}
+function randomizeFwd() {
+  fwdX = rand(4,2,1.5);
+  fwdW1 = rand(3,2,0.8); fwdB1 = rand(1,3,0.2)[0];
+  fwdW2 = rand(2,3,0.8); fwdB2 = rand(1,2,0.2)[0];
+  activeStep = -1;
+  buildFwdSteps();
+}
+function matMul(A,B){
+  return A.map(row=>B[0].map((_,j)=>row.reduce((s,v,k)=>s+v*B[k][j],0)));
+}
+function addBias(Z,b){return Z.map(row=>row.map((v,j)=>v+b[j]));}
+function relu(Z){return Z.map(r=>r.map(v=>Math.max(0,v)));}
+
+function buildFwdSteps() {
+  const X = fwdX;
+  const Z1 = addBias(matMul(X,fwdW1[0].map((_,j)=>fwdW1.map(r=>r[j]))),fwdB1); // X @ W1.T + b1
+  const A1 = relu(Z1);
+  const Z2 = addBias(matMul(A1,fwdW2[0].map((_,j)=>fwdW2.map(r=>r[j]))),fwdB2);
+
+  const steps = [
+    {label:'X — вход', shape:'(4, 2)', data: X, color:'#60a5fa', desc:'Батч из 4 примеров, 2 признака'},
+    {label:'Z₁ = X·W₁ᵀ+b₁', shape:'(4, 3)', data: Z1, color:'#f59e0b', desc:'pre-activation слоя 1'},
+    {label:'A₁ = ReLU(Z₁)', shape:'(4, 3)', data: A1, color:'#10b981', desc:'activation слоя 1'},
+    {label:'Z₂ = A₁·W₂ᵀ+b₂', shape:'(4, 2)', data: Z2, color:'#f59e0b', desc:'pre-activation слоя 2 = logits'},
+  ];
+
+  document.getElementById('fwdSteps').innerHTML = steps.map((s,i)=>`
+    <div class="step-row ${i===activeStep?'active':''}" onclick="selectFwdStep(${i})">
+      <div class="step-num">${i}</div>
+      <div style="color:${s.color};font-family:monospace;font-weight:600;min-width:160px;">${s.label}</div>
+      <div class="step-shape">${s.shape}</div>
+      <div style="color:var(--muted);font-size:.82em;">${s.desc}</div>
+    </div>`).join('');
+
+  window._fwdStepsData = steps;
+  if(activeStep>=0) drawMatrix(steps[activeStep]);
+}
+
+function selectFwdStep(i) {
+  activeStep = i;
+  buildFwdSteps();
+  drawMatrix(window._fwdStepsData[i]);
+}
+
+function drawMatrix(step) {
+  const c = document.getElementById('matCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const data = step.data;
+  const rows=data.length, cols=data[0].length;
+  const cw=Math.min(Math.floor((W-60)/cols),70), ch=Math.min(Math.floor((H-50)/rows),50);
+  const offX=(W-cw*cols)/2, offY=(H-ch*rows)/2;
+
+  // find range
+  const all=data.flat(); const mn=Math.min(...all), mx=Math.max(...all);
+  const rng=mx-mn||1;
+
+  data.forEach((row,i)=>row.forEach((v,j)=>{
+    const t=(v-mn)/rng; // 0..1
+    const r=Math.round(t*239+(1-t)*15);
+    const g=Math.round(t*181+(1-t)*47);
+    const b=Math.round(t*46+(1-t)*79);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.fillRect(offX+j*cw, offY+i*ch, cw-2, ch-2);
+    ctx.fillStyle='#fff'; ctx.font=`${Math.max(9,Math.min(12,cw/4))}px monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(v.toFixed(2), offX+j*cw+cw/2-1, offY+i*ch+ch/2);
+  }));
+
+  // Labels
+  ctx.fillStyle='#8b949e'; ctx.font='10px monospace'; ctx.textAlign='center';
+  data[0].forEach((_,j)=>ctx.fillText(`col${j}`,offX+j*cw+cw/2-1,offY-8));
+  ctx.textAlign='right';
+  data.forEach((_,i)=>ctx.fillText(`r${i}`,offX-4,offY+i*ch+ch/2));
+
+  document.getElementById('matInfo').innerHTML =
+    `<span style="color:${step.color};font-weight:600;">${step.label}</span>  shape: ${step.shape}<br>${step.desc}`;
+}
+
+// ============================================================
+// NETWORK DIAGRAM SVG
+// ============================================================
+let currentArch = [2,4,4,2];
+function setArch(arch, btn) {
+  currentArch = arch;
+  document.querySelectorAll('.card button').forEach(b=>{ if(['2→4→4→2','3→5→5→5→2','4→6→4→3'].some(s=>b.textContent===s)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  drawNet(arch);
+}
+function drawNet(arch) {
+  const svg = document.getElementById('netSvg');
+  const W=800, H=300;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML='';
+  const nLayers=arch.length;
+  const xStep=W/(nLayers+1);
+  const layerColors=['#60a5fa','#f59e0b','#f59e0b','#10b981','#f59e0b','#a78bfa'];
+
+  // Pre-compute positions
+  const positions = arch.map((n,li)=>{
+    const x=(li+1)*xStep;
+    const maxN=Math.max(...arch);
+    const yStep=H/(n+1);
+    return Array.from({length:n},(_,ni)=>({x, y:(ni+1)*yStep}));
+  });
+
+  // Draw connections
+  for(let li=0;li<nLayers-1;li++){
+    positions[li].forEach(({x:x1,y:y1})=>{
+      positions[li+1].forEach(({x:x2,y:y2})=>{
+        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+        line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+        line.setAttribute('stroke','#f59e0b'); line.setAttribute('stroke-width','0.6');
+        line.setAttribute('stroke-opacity','0.25');
+        svg.appendChild(line);
+      });
+    });
+  }
+
+  // Draw activation boxes between layers
+  for(let li=0;li<nLayers-1;li++){
+    const x1=positions[li][0].x, x2=positions[li+1][0].x;
+    const bx=(x1+x2)/2, by=H/2;
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',bx-20); rect.setAttribute('y',by-11);
+    rect.setAttribute('width',40); rect.setAttribute('height',22);
+    rect.setAttribute('rx',5); rect.setAttribute('fill','#1f2d1a');
+    rect.setAttribute('stroke','#10b981'); rect.setAttribute('stroke-width','1.2');
+    svg.appendChild(rect);
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',bx); txt.setAttribute('y',by+4);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill','#10b981');
+    txt.setAttribute('font-size','9'); txt.setAttribute('font-family','monospace');
+    txt.textContent='f(z)'; svg.appendChild(txt);
+  }
+
+  // Draw nodes
+  const layerNames = ['Input','Hidden','Hidden','Hidden','Hidden','Output'];
+  positions.forEach((layer,li)=>{
+    const col=li===0?'#60a5fa':li===nLayers-1?'#a78bfa':'#f59e0b';
+    const label=li===0?'Input':li===nLayers-1?'Output':`Hidden ${li}`;
+    layer.forEach(({x,y})=>{
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',10);
+      c.setAttribute('fill','#161b22'); c.setAttribute('stroke',col); c.setAttribute('stroke-width','1.8');
+      svg.appendChild(c);
+    });
+    // Layer label
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',layer[0].x); t.setAttribute('y',H-8);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#8b949e');
+    t.setAttribute('font-size','10'); t.setAttribute('font-family','system-ui');
+    t.textContent=`${label} (${arch[li]})`; svg.appendChild(t);
+  });
+
+  // W labels
+  for(let li=0;li<nLayers-1;li++){
+    const x1=positions[li][0].x, x2=positions[li+1][0].x;
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    const bx=(x1+x2)/2;
+    t.setAttribute('x',bx); t.setAttribute('y',18);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#f59e0b');
+    t.setAttribute('font-size','10'); t.setAttribute('font-family','monospace');
+    t.textContent=`W${li+1}(${arch[li+1]}×${arch[li]})`; svg.appendChild(t);
+  }
+}
+
+// ============================================================
+// MEMORY CALCULATOR
+// ============================================================
+function calcMem() {
+  const B=+document.getElementById('memB').value||32;
+  const L=+document.getElementById('memL').value||4;
+  const H=+document.getElementById('memH').value||512;
+  const bytes=+document.getElementById('memDtype').value||4;
+  const fmt=n=>{if(n>=1e9)return(n/1e9).toFixed(2)+' GB';if(n>=1e6)return(n/1e6).toFixed(1)+' MB';return(n/1e3).toFixed(1)+' KB';};
+
+  const wMem = L * H * H * bytes;
+  const aMem = L * B * H * bytes;  // activations stored for backprop
+  const xMem = B * H * bytes;
+  const total = wMem + aMem + xMem;
+
+  document.getElementById('memResult').innerHTML =
+    `Веса W (${L} слоёв):         ${fmt(wMem)}
+Активации A (forward):   ${fmt(aMem)}  ← хранятся для backprop!
+Батч X:                  ${fmt(xMem)}
+─────────────────────────────────
+Итого (forward pass):    <span style="color:var(--amber);font-weight:600;">${fmt(total)}</span>
+(backward ×2 — градиенты тоже нужны)`;
+}
+
+// ============================================================
+// CODE TABS
+// ============================================================
+const CODES = {
+numpy:`import numpy as np
+
+def relu(z): return np.maximum(0, z)
+def softmax(z):
+    e = np.exp(z - z.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+
+class Linear:
+    def __init__(self, n_in, n_out):
+        # He-инициализация (для ReLU)
+        self.W = np.random.randn(n_out, n_in) * np.sqrt(2/n_in)
+        self.b = np.zeros(n_out)
+
+    def __call__(self, X):
+        # X: (B, n_in) → (B, n_out)
+        return X @ self.W.T + self.b   # broadcast bias
+
+class MLP:
+    def __init__(self, dims):
+        self.layers = [Linear(dims[i], dims[i+1]) for i in range(len(dims)-1)]
+
+    def __call__(self, X):
+        for i, layer in enumerate(self.layers):
+            X = layer(X)
+            if i < len(self.layers)-1:
+                X = relu(X)    # скрытые слои
+        return softmax(X)       # выходной слой
+
+# Использование
+model = MLP([784, 256, 128, 10])
+X = np.random.randn(32, 784)   # батч 32 примера
+probs = model(X)                # (32, 10)
+print(probs.shape)              # (32, 10)`,
+
+torch:`import torch
+import torch.nn as nn
+
+class MLP(nn.Module):
+    def __init__(self, dims, activation=nn.ReLU):
+        super().__init__()
+        layers = []
+        for i in range(len(dims)-1):
+            layers.append(nn.Linear(dims[i], dims[i+1]))
+            if i < len(dims)-2:
+                layers.append(activation())  # между слоями
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.net(x)   # shapes: (B,d0)→(B,d1)→...→(B,dk)
+
+model = MLP([784, 256, 128, 10])
+
+# Проверка shapes по слоям
+X = torch.randn(32, 784)
+for name, module in model.net.named_children():
+    X = module(X)
+    print(f"{name}: {X.shape}")
+# 0: torch.Size([32, 256])
+# 1: torch.Size([32, 256])   ← ReLU не меняет shape
+# 2: torch.Size([32, 128])
+# 3: torch.Size([32, 128])
+# 4: torch.Size([32, 10])`,
+
+shapes:`import torch
+import torch.nn as nn
+
+# Удобный hook для отслеживания shapes
+def register_shape_hooks(model):
+    hooks = []
+    def hook(module, inp, out):
+        name = type(module).__name__
+        in_s  = tuple(inp[0].shape) if inp else '—'
+        out_s = tuple(out.shape)
+        print(f"{name:15s}  in: {str(in_s):20s}  out: {str(out_s)}")
+    for m in model.modules():
+        if not isinstance(m, nn.Sequential):
+            hooks.append(m.register_forward_hook(hook))
+    return hooks
+
+model = MLP([784, 256, 128, 10])
+hooks = register_shape_hooks(model)
+
+X = torch.randn(32, 784)
+_ = model(X)  # выводит shapes каждого слоя
+
+for h in hooks: h.remove()
+
+# Быстрый способ: torchinfo
+# pip install torchinfo
+from torchinfo import summary
+summary(model, input_size=(32, 784))
+# ================================================================
+# Layer (type)   Output Shape   Param #
+# Linear         [32, 256]      200,960
+# ReLU           [32, 256]      0
+# Linear         [32, 128]      32,896
+# ReLU           [32, 128]      0
+# Linear         [32, 10]       1,290
+# ================================================================
+# Total params: 235,146`,
+};
+function showCode(key, btn) {
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent = CODES[key];
+}
+
+// ============================================================
+// INIT
+// ============================================================
+buildShapes();
+randomizeFwd();
+drawNet([2,4,4,2]);
+calcMem();
+showCode('numpy', document.querySelector('#codeTabs button'));
+</script>
+</body>
+</html>

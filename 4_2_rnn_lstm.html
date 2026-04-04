@@ -1,0 +1,716 @@
+
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.55}
+h1{font-size:1.5em;margin-bottom:4px}
+h2{font-size:1.15em;color:var(--amber);margin:18px 0 8px}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0}
+.formula{font-family:'Courier New',monospace;font-size:1em;background:#0d1117;padding:10px 14px;border-radius:8px;border-left:3px solid var(--amber);margin:10px 0;overflow-x:auto;white-space:pre}
+.hl-a{color:var(--amber);font-weight:600}
+.hl-g{color:var(--green);font-weight:600}
+.hl-b{color:var(--blue);font-weight:600}
+.hl-r{color:var(--red);font-weight:600}
+.hl-p{color:var(--purple);font-weight:600}
+.muted{color:var(--muted);font-size:.88em}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .2s}
+.tab.active{border-color:var(--amber);color:var(--amber)}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=range]{width:100%;accent-color:var(--green);margin:4px 0}
+.slider-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.9em}
+.sv{color:var(--green);font-weight:600;min-width:38px;text-align:right}
+.step-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:.9em}
+.sn{color:var(--amber);font-weight:700;margin-right:6px}
+.info-box{background:#161b22;border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.warn-box{background:#161b22;border-left:3px solid var(--red);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.code-block{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:.8em;overflow-x:auto;margin:10px 0;white-space:pre}
+canvas{border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th{background:#0d1117;padding:8px 10px;text-align:left;color:var(--amber);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid #21262d}
+.gate-row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.gate{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px;flex:1;min-width:160px;text-align:center}
+.gate-name{font-weight:700;font-size:.9em;margin-bottom:6px}
+.gate-formula{font-family:'Courier New',monospace;font-size:.78em;color:var(--amber)}
+.gate-desc{color:var(--muted);font-size:.8em;margin-top:6px}
+</style>
+
+<h1>4.2 — RNN / LSTM</h1>
+<p class="muted">Блок 4 · Архитектуры · Рекуррентные сети, vanishing gradient, ворота LSTM, BPTT</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('t-rnn')">Базовый RNN</button>
+  <button class="tab" onclick="sw('t-vanish')">Vanishing Gradient</button>
+  <button class="tab" onclick="sw('t-lstm')">LSTM</button>
+  <button class="tab" onclick="sw('t-gru')">GRU</button>
+  <button class="tab" onclick="sw('t-bptt')">BPTT</button>
+  <button class="tab" onclick="sw('t-viz')">Визуализация</button>
+  <button class="tab" onclick="sw('t-code')">PyTorch</button>
+</div>
+
+<!-- ===== TAB 1: Базовый RNN ===== -->
+<div id="t-rnn" class="tab-content active">
+<h2>1. Рекуррентная нейронная сеть — идея</h2>
+<div class="card">
+<p>RNN обрабатывает последовательность <span class="hl-b">x₁, x₂, …, xₜ</span>, поддерживая <span class="hl-a">hidden state hₜ</span> — «память» о прошлом.</p>
+<div class="formula">hₜ = <span class="hl-a">tanh</span>( <span class="hl-g">Wₕ</span>·hₜ₋₁  +  <span class="hl-b">Wₓ</span>·xₜ  +  b )
+yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
+<p>Параметры <span class="hl-g">Wₕ, Wₓ, b</span> — <strong>одни и те же</strong> на каждом шаге. Это и есть parameter sharing во времени.</p>
+
+<div class="info-box"><strong>Размерности:</strong> xₜ ∈ ℝⁿ, hₜ ∈ ℝᴴ, Wₓ ∈ ℝᴴˣⁿ, Wₕ ∈ ℝᴴˣᴴ, Wᵧ ∈ ℝᴼˣᴴ<br>Параметров: H·n + H·H + H + O·H + O = <span class="hl-a">H(n + H + 1) + O(H+1)</span></div>
+
+<h3>Типы задач</h3>
+<div class="gate-row">
+  <div class="gate"><div class="gate-name hl-b">Many-to-One</div><div class="gate-formula">x₁..xₜ → y</div><div class="gate-desc">Классификация текста, сентимент-анализ</div></div>
+  <div class="gate"><div class="gate-name hl-g">Many-to-Many</div><div class="gate-formula">x₁..xₜ → y₁..yₜ</div><div class="gate-desc">POS-tagging, NER, seq2seq</div></div>
+  <div class="gate"><div class="gate-name hl-a">One-to-Many</div><div class="gate-formula">x₁ → y₁..yₜ</div><div class="gate-desc">Генерация текста, image captioning</div></div>
+</div>
+
+<h3>Развёртка во времени (unrolling)</h3>
+<p>RNN — это обычная глубокая сеть, где «слои» — шаги времени, а веса разделены:</p>
+<canvas id="unroll-canvas" width="860" height="160" style="width:100%;margin-top:10px"></canvas>
+</div>
+
+<h2>Интерактивный forward pass</h2>
+<div class="card">
+<p class="muted">Посмотрите, как hidden state эволюционирует при разных входах и весах</p>
+<div class="grid2">
+<div>
+  <div class="slider-row"><span>H (скрытый размер)</span><input type="range" id="rH" min="1" max="8" value="3" oninput="runRNN()"><span class="sv" id="rH-v">3</span></div>
+  <div class="slider-row"><span>T (длина последовательности)</span><input type="range" id="rT" min="2" max="8" value="5" oninput="runRNN()"><span class="sv" id="rT-v">5</span></div>
+  <div class="slider-row"><span>Wₕ (норма)</span><input type="range" id="rWh" min="1" max="20" value="8" oninput="runRNN()"><span class="sv" id="rWh-v">0.8</span></div>
+</div>
+<div id="rnn-result" style="font-size:.85em;font-family:'Courier New',monospace;line-height:1.8"></div>
+</div>
+<canvas id="rnn-canvas" width="800" height="120" style="width:100%;margin-top:12px"></canvas>
+</div>
+</div>
+
+<!-- ===== TAB 2: Vanishing Gradient ===== -->
+<div id="t-vanish" class="tab-content">
+<h2>2. Проблема затухающего/взрывного градиента</h2>
+<div class="card">
+<p>При backprop через T шагов градиент умножается на Wₕ и tanh' на каждом шаге:</p>
+<div class="formula">∂L/∂h₁ = ∂L/∂hₜ · <span class="hl-a">Π_{k=2}^{T}</span> ( <span class="hl-g">diag(1-hₖ²)</span> · <span class="hl-b">Wₕᵀ</span> )</div>
+<p class="muted">diag(1-hₖ²) — Якобиан tanh: tanh'(z) = 1 - tanh²(z) ∈ [0,1]</p>
+
+<h3>Норма произведения матриц</h3>
+<div class="formula">‖∂hₜ/∂h₁‖ ≤ <span class="hl-a">(λ_max · max|tanh'|)^(T-1)</span></div>
+<p>где λ_max — наибольшее сингулярное число Wₕ.</p>
+
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-r">Затухание</strong><br><br>
+  λ_max · max|tanh'| &lt; 1<br>→ градиент → 0 экспоненциально<br>→ RNN «забывает» далёкое прошлое
+</div>
+<div class="step-box">
+  <strong class="hl-a">Взрыв</strong><br><br>
+  λ_max · max|tanh'| > 1<br>→ градиент → ∞ экспоненциально<br>→ обучение взрывается (NaN)
+</div>
+</div>
+
+<div class="info-box"><strong>Как бороться со взрывом:</strong> Gradient Clipping — обрезаем норму: if ‖g‖ > threshold: g ← g · threshold/‖g‖<br><strong>Как бороться с затуханием:</strong> LSTM/GRU, ResNet-like skip connections, инициализация Wₕ = I</div>
+</div>
+
+<h2>Интерактивная визуализация: затухание через T шагов</h2>
+<div class="card">
+<div class="slider-row"><span>T (шагов назад)</span><input type="range" id="vT" min="1" max="30" value="10" oninput="drawVanish()"><span class="sv" id="vT-v">10</span></div>
+<div class="slider-row"><span>λ_max (сп. число Wₕ)</span><input type="range" id="vL" min="1" max="20" value="9" oninput="drawVanish()"><span class="sv" id="vL-v">0.9</span></div>
+<div class="slider-row"><span>max|tanh'|</span><input type="range" id="vTp" min="1" max="10" value="7" oninput="drawVanish()"><span class="sv" id="vTp-v">0.7</span></div>
+<canvas id="vanish-canvas" width="800" height="220" style="width:100%;margin-top:10px"></canvas>
+<div id="vanish-info" style="margin-top:8px;font-size:.9em"></div>
+</div>
+</div>
+
+<!-- ===== TAB 3: LSTM ===== -->
+<div id="t-lstm" class="tab-content">
+<h2>3. LSTM — Long Short-Term Memory (Hochreiter & Schmidhuber, 1997)</h2>
+<div class="card">
+<p>LSTM добавляет <span class="hl-a">cell state cₜ</span> — «конвейерная лента» с минимальными трансформациями, управляемая тремя воротами.</p>
+
+<div class="gate-row">
+  <div class="gate">
+    <div class="gate-name" style="color:var(--red)">Forget Gate fₜ</div>
+    <div class="gate-formula">fₜ = σ(Wf·[hₜ₋₁, xₜ] + bf)</div>
+    <div class="gate-desc">«Что забыть из cell state?» fₜ∈(0,1) поэлементно</div>
+  </div>
+  <div class="gate">
+    <div class="gate-name" style="color:var(--green)">Input Gate iₜ</div>
+    <div class="gate-formula">iₜ = σ(Wi·[hₜ₋₁, xₜ] + bi)<br>c̃ₜ = tanh(Wc·[hₜ₋₁, xₜ] + bc)</div>
+    <div class="gate-desc">«Что записать?» iₜ — сколько, c̃ₜ — что</div>
+  </div>
+  <div class="gate">
+    <div class="gate-name" style="color:var(--blue)">Output Gate oₜ</div>
+    <div class="gate-formula">oₜ = σ(Wo·[hₜ₋₁, xₜ] + bo)</div>
+    <div class="gate-desc">«Что вывести в hₜ?»</div>
+  </div>
+</div>
+
+<h3>Обновление cell state и hidden state</h3>
+<div class="formula"><span class="hl-r">cₜ</span> = <span class="hl-r">fₜ</span> ⊙ cₜ₋₁  +  <span class="hl-g">iₜ</span> ⊙ <span class="hl-g">c̃ₜ</span>
+<span class="hl-b">hₜ</span> = <span class="hl-b">oₜ</span> ⊙ tanh(<span class="hl-r">cₜ</span>)</div>
+<p class="muted">⊙ — поэлементное произведение (Hadamard product)</p>
+
+<div class="info-box"><strong>Почему LSTM решает vanishing gradient?</strong><br>
+Градиент по cₜ₋₁: ∂cₜ/∂cₜ₋₁ = fₜ — это просто умножение на fₜ, без матричного произведения и tanh'!<br>
+При fₜ ≈ 1 градиент течёт практически без затухания через T шагов.</div>
+
+<h3>Параметры LSTM</h3>
+<div class="formula">4 · (H·H + H·n + H)  =  4H(H + n + 1)  параметров</div>
+<p class="muted">В 4 раза больше, чем у RNN — за каждый из 4 вентилей (f, i, c̃, o)</p>
+</div>
+
+<h2>Интерактивный шаг LSTM</h2>
+<div class="card">
+<p class="muted">Управляйте воротами (0=закрыто, 1=открыто) и смотрите, как обновляется cell state</p>
+<div class="grid2">
+<div>
+  <div class="slider-row"><span class="hl-r">Forget gate fₜ</span><input type="range" id="lf" min="0" max="100" value="20" oninput="stepLSTM()"><span class="sv" id="lf-v">0.20</span></div>
+  <div class="slider-row"><span class="hl-g">Input gate iₜ</span><input type="range" id="li" min="0" max="100" value="80" oninput="stepLSTM()"><span class="sv" id="li-v">0.80</span></div>
+  <div class="slider-row"><span class="hl-g">Candidate c̃ₜ</span><input type="range" id="lc" min="-100" max="100" value="70" oninput="stepLSTM()"><span class="sv" id="lc-v">0.70</span></div>
+  <div class="slider-row"><span class="hl-b">Output gate oₜ</span><input type="range" id="lo" min="0" max="100" value="60" oninput="stepLSTM()"><span class="sv" id="lo-v">0.60</span></div>
+  <div class="slider-row"><span>cₜ₋₁ (prev cell)</span><input type="range" id="lcp" min="-100" max="100" value="50" oninput="stepLSTM()"><span class="sv" id="lcp-v">0.50</span></div>
+</div>
+<div id="lstm-step-result" style="font-size:.9em;font-family:'Courier New',monospace;line-height:2;padding:10px;background:#0d1117;border-radius:8px"></div>
+</div>
+<canvas id="lstm-canvas" width="800" height="80" style="width:100%;margin-top:14px"></canvas>
+</div>
+
+<h2>Динамика cell state во времени</h2>
+<div class="card">
+<canvas id="lstm-dyn-canvas" width="800" height="180" style="width:100%"></canvas>
+<p class="muted" style="margin-top:6px">Синяя линия — cell state cₜ (LSTM). Оранжевая — hidden state базового RNN с теми же входами.</p>
+</div>
+</div>
+
+<!-- ===== TAB 4: GRU ===== -->
+<div id="t-gru" class="tab-content">
+<h2>4. GRU — Gated Recurrent Unit (Cho et al., 2014)</h2>
+<div class="card">
+<p>GRU — упрощённая версия LSTM: <strong>два</strong> ворота вместо трёх, нет отдельного cell state.</p>
+
+<div class="gate-row">
+  <div class="gate">
+    <div class="gate-name" style="color:var(--amber)">Reset Gate rₜ</div>
+    <div class="gate-formula">rₜ = σ(Wr·[hₜ₋₁, xₜ] + br)</div>
+    <div class="gate-desc">«Насколько забыть прошлое при вычислении кандидата?»</div>
+  </div>
+  <div class="gate">
+    <div class="gate-name" style="color:var(--green)">Update Gate zₜ</div>
+    <div class="gate-formula">zₜ = σ(Wz·[hₜ₋₁, xₜ] + bz)</div>
+    <div class="gate-desc">«Сколько старого vs нового состояния взять?»</div>
+  </div>
+</div>
+
+<div class="formula">h̃ₜ = tanh(W·[<span class="hl-a">rₜ</span> ⊙ hₜ₋₁, xₜ] + b)   ← кандидат
+hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-g">zₜ</span> ⊙ h̃ₜ   ← линейная интерполяция</div>
+
+<div class="info-box"><strong>Интуиция zₜ:</strong> при zₜ→0 hₜ≈hₜ₋₁ (игнорируем вход, помним прошлое). При zₜ→1 hₜ≈h̃ₜ (полностью обновляемся).</div>
+
+<h3>Сравнение RNN / GRU / LSTM</h3>
+<table>
+  <tr><th>Модель</th><th>Ворота</th><th>Параметры</th><th>Cell State</th><th>Скорость</th></tr>
+  <tr><td>RNN</td><td>0</td><td>H(n+H+1)+O(H+1)</td><td>нет</td><td>быстрее</td></tr>
+  <tr><td>GRU</td><td>2 (r, z)</td><td>3H(n+H+1)+O(H+1)</td><td>нет</td><td>средняя</td></tr>
+  <tr><td>LSTM</td><td>3 (f, i, o)</td><td>4H(n+H+1)+O(H+1)</td><td>да</td><td>медленнее</td></tr>
+</table>
+<p class="muted" style="margin-top:8px">На практике GRU ≈ LSTM по качеству на большинстве задач, но в 1.3× быстрее.</p>
+
+<h3>Параметры GRU</h3>
+<div class="formula">3 · (H·(H+n) + H)  =  3H(H + n + 1)  параметров</div>
+</div>
+</div>
+
+<!-- ===== TAB 5: BPTT ===== -->
+<div id="t-bptt" class="tab-content">
+<h2>5. Backpropagation Through Time (BPTT)</h2>
+<div class="card">
+<p>Развёртываем RNN в глубокую сеть по оси времени и применяем обычный backprop:</p>
+
+<div class="formula">L = <span class="hl-a">Σₜ</span> Lₜ(yₜ, ŷₜ)   ← суммарный loss по всем шагам</div>
+
+<h3>Градиент по Wₕ</h3>
+<div class="formula">∂L/∂Wₕ = <span class="hl-a">Σₜ</span> ∂Lₜ/∂Wₕ
+
+∂Lₜ/∂Wₕ = <span class="hl-a">Σ_{k=1}^{t}</span> ( ∂Lₜ/∂hₜ · <span class="hl-g">Π_{j=k+1}^{t}</span> ∂hⱼ/∂hⱼ₋₁ ) · ∂hₖ/∂Wₕ</div>
+
+<div class="step-box"><span class="sn">Шаг 1.</span>∂hₜ/∂hₜ₋₁ = diag(1-hₜ²) · Wₕᵀ   ← Якобиан одного шага</div>
+<div class="step-box"><span class="sn">Шаг 2.</span>∂hₜ/∂h₁ = Π_{k=2}^{t} diag(1-hₖ²) · Wₕᵀ   ← произведение Якобианов</div>
+<div class="step-box"><span class="sn">Шаг 3.</span>∂hₖ/∂Wₕ = hₖ₋₁ᵀ   ← вклад на шаге k</div>
+
+<h3>Truncated BPTT</h3>
+<div class="info-box">Полный BPTT при T=1000 — 1000 шагов назад. На практике: Truncated BPTT — обрезаем backprop до k₂=35-200 шагов, forward pass можно не обрезать.</div>
+
+<div class="formula">∂L/∂Wₕ ≈ <span class="hl-a">Σ_{t}</span> <span class="hl-g">Σ_{k=t-k₂}^{t}</span> ( ∂Lₜ/∂hₜ · Π ∂hⱼ/∂hⱼ₋₁ ) · ∂hₖ/∂Wₕ</div>
+
+<h3>Gradients для LSTM через время</h3>
+<div class="formula">∂cₜ/∂cₜ₋₁ = <span class="hl-a">fₜ</span>   ← только поэлементное умножение, нет Wₕ, нет tanh'!</div>
+<p>Это «шоссе градиента» (gradient highway) — ключевое преимущество LSTM над RNN.</p>
+
+<h3>Числовой пример: BPTT для RNN (T=3)</h3>
+<div class="step-box"><span class="sn">Дано:</span>T=3, H=1, Wₕ=0.5, hₜ=tanh(Wₕ·hₜ₋₁+Wₓ·xₜ), h₀=0, x=[1,1,1], L=h₃²</div>
+<div class="step-box"><span class="sn">Forward:</span>h₁=tanh(0+Wₓ)≈0.76, h₂=tanh(0.5·0.76+Wₓ)≈0.91, h₃=tanh(0.5·0.91+Wₓ)≈0.95 (Wₓ=1)</div>
+<div class="step-box"><span class="sn">∂L/∂h₃</span>= 2·h₃ = 1.90</div>
+<div class="step-box"><span class="sn">∂L/∂Wₕ</span>= ∂L/∂h₃ · [(1-h₃²)·h₂ + (1-h₃²)·Wₕ·(1-h₂²)·h₁ + …]</div>
+</div>
+
+<h2>Визуализация градиентного потока</h2>
+<div class="card">
+<div class="slider-row"><span>T (длина)</span><input type="range" id="bT" min="2" max="20" value="8" oninput="drawBPTT()"><span class="sv" id="bT-v">8</span></div>
+<div class="slider-row"><span>Wₕ норма</span><input type="range" id="bW" min="1" max="20" value="9" oninput="drawBPTT()"><span class="sv" id="bW-v">0.9</span></div>
+<canvas id="bptt-canvas" width="800" height="200" style="width:100%;margin-top:10px"></canvas>
+</div>
+</div>
+
+<!-- ===== TAB 6: Визуализация ===== -->
+<div id="t-viz" class="tab-content">
+<h2>6. Архитектура LSTM — пошаговая визуализация</h2>
+<div class="card">
+<p class="muted">Нажимайте «Следующий шаг» для пошагового прохода через ячейку LSTM</p>
+<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+  <button onclick="lstmStep(-1)" style="background:var(--card);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:8px;cursor:pointer">← Сброс</button>
+  <button onclick="lstmStep(1)" style="background:var(--card);border:1px solid var(--amber);color:var(--amber);padding:7px 14px;border-radius:8px;cursor:pointer">Следующий шаг →</button>
+  <span id="step-label" style="padding:7px 0;color:var(--muted);font-size:.9em"></span>
+</div>
+<canvas id="cell-canvas" width="840" height="360" style="width:100%"></canvas>
+<div id="step-desc" style="margin-top:10px;font-size:.9em;min-height:40px;color:var(--muted)"></div>
+</div>
+
+<h2>Сравнение cell state: RNN vs LSTM</h2>
+<div class="card">
+<canvas id="cmp-canvas" width="800" height="220" style="width:100%"></canvas>
+<p class="muted" style="margin-top:6px">Вход: последовательность с «важным событием» на шаге 2. RNN его «забывает», LSTM помнит.</p>
+</div>
+</div>
+
+<!-- ===== TAB 7: PyTorch ===== -->
+<div id="t-code" class="tab-content">
+<h2>7. PyTorch — реализация</h2>
+<div class="card">
+
+<h3>Базовый RNN вручную</h3>
+<div class="code-block">import torch, torch.nn as nn
+
+class ManualRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super().__init__()
+        self.Wx = nn.Linear(input_size,  hidden_size, bias=False)
+        self.Wh = nn.Linear(hidden_size, hidden_size, bias=True)
+        self.Wy = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x, h0=None):
+        B, T, n = x.shape; H = self.Wh.weight.shape[0]
+        h = torch.zeros(B, H) if h0 is None else h0
+        outs = []
+        for t in range(T):
+            h = torch.tanh(self.Wx(x[:, t]) + self.Wh(h))
+            outs.append(self.Wy(h).unsqueeze(1))
+        return torch.cat(outs, dim=1), h   # (B,T,O), (B,H)</div>
+
+<h3>nn.RNN / nn.LSTM — стандартный API</h3>
+<div class="code-block">rnn  = nn.RNN(input_size=10, hidden_size=32, num_layers=2,
+              batch_first=True, dropout=0.2)
+lstm = nn.LSTM(input_size=10, hidden_size=32, num_layers=2,
+               batch_first=True, dropout=0.2, bidirectional=True)
+
+x = torch.randn(8, 20, 10)         # (batch=8, seq=20, features=10)
+
+out_r, h_r = rnn(x)                # out: (8,20,32),  h: (2,8,32)
+out_l, (h_l, c_l) = lstm(x)        # out: (8,20,64),  h,c: (4,8,32)
+#                                   # 64 = 32*2 (bidirectional)</div>
+
+<h3>Sequence Classification</h3>
+<div class="code-block">class SentimentLSTM(nn.Module):
+    def __init__(self, vocab_size, emb_dim=64, hidden=128, n_layers=2):
+        super().__init__()
+        self.emb  = nn.Embedding(vocab_size, emb_dim, padding_idx=0)
+        self.lstm = nn.LSTM(emb_dim, hidden, n_layers,
+                            batch_first=True, dropout=0.3)
+        self.fc   = nn.Linear(hidden, 1)   # binary classification
+
+    def forward(self, x):                  # x: (B, T) token ids
+        emb = self.emb(x)                  # (B, T, emb_dim)
+        out, (h, c) = self.lstm(emb)       # out: (B,T,H)
+        # Берём hidden state последнего слоя, последнего шага
+        last = h[-1]                       # (B, H)
+        return self.fc(last).squeeze(-1)   # (B,)</div>
+
+<h3>GRU</h3>
+<div class="code-block">gru = nn.GRU(input_size=10, hidden_size=32, num_layers=2,
+             batch_first=True, bidirectional=True)
+out, h = gru(x)    # out: (8,20,64), h: (4,8,32)</div>
+
+<h3>Gradient Clipping</h3>
+<div class="code-block">optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+loss.backward()
+# Обрезаем норму градиентов до 1.0
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()
+optimizer.zero_grad()</div>
+
+<h3>LSTM вручную (NumPy)</h3>
+<div class="code-block">import numpy as np
+
+def sigmoid(x): return 1 / (1 + np.exp(-x))
+
+def lstm_step(x, h_prev, c_prev, W, b):
+    """
+    x: (n,)  h_prev,c_prev: (H,)
+    W: (4H, n+H)  b: (4H,)
+    """
+    combined = np.concatenate([h_prev, x])   # (H+n,)
+    gates = W @ combined + b                  # (4H,)
+    H = len(h_prev)
+    f = sigmoid(gates[0*H : 1*H])            # forget
+    i = sigmoid(gates[1*H : 2*H])            # input
+    o = sigmoid(gates[3*H : 4*H])            # output
+    c_tilde = np.tanh(gates[2*H : 3*H])      # candidate
+    c = f * c_prev + i * c_tilde             # new cell
+    h = o * np.tanh(c)                       # new hidden
+    return h, c</div>
+</div>
+</div>
+
+<script>
+// ---- TABS ----
+const TAB_IDS = ['t-rnn','t-vanish','t-lstm','t-gru','t-bptt','t-viz','t-code'];
+function sw(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TAB_IDS[i]===id));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===id));
+  if(id==='t-viz'){drawCmp();drawLSTMCell(-1);}
+  if(id==='t-bptt')drawBPTT();
+  if(id==='t-vanish')drawVanish();
+  if(id==='t-lstm')drawLSTMDyn();
+}
+
+// ---- UNROLL CANVAS ----
+function drawUnroll(){
+  const cv=document.getElementById('unroll-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,860,160);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,860,160);
+  const T=5; const w=120,h=50,gap=50;const y0=55;
+  for(let t=0;t<T;t++){
+    const x=40+t*(w+gap);
+    // box
+    ctx.fillStyle='rgba(245,158,11,0.15)';ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+    roundRect(ctx,x,y0,w,h,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e6edf3';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText('RNN',x+w/2,y0+20);
+    ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';
+    ctx.fillText('t='+(t+1),x+w/2,y0+37);
+    // arrow right
+    if(t<T-1){arrow(ctx,x+w,y0+h/2,x+w+gap,y0+h/2,'#10b981');}
+    // x input arrow
+    ctx.fillStyle='#8b949e';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText('x'+(t+1),x+w/2,140);
+    arrowV(ctx,x+w/2,130,x+w/2,y0+h,'#60a5fa');
+    // h output arrow
+    ctx.fillText('h'+(t+1),x+w/2+3,30);
+    arrowV(ctx,x+w/2,y0,x+w/2,18,'#a78bfa');
+  }
+  // h₀
+  ctx.fillStyle='#8b949e';ctx.font='11px monospace';ctx.textAlign='center';
+  ctx.fillText('h₀',10,y0+h/2+4);
+  arrow(ctx,18,y0+h/2,40,y0+h/2,'#a78bfa');
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+function arrow(ctx,x1,y1,x2,y2,color){ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-8,y2);ctx.stroke();ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-8,y2-4);ctx.lineTo(x2-8,y2+4);ctx.closePath();ctx.fill();}
+function arrowV(ctx,x,y1,y2,color){const up=y2<y1;ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2+(up?8:-8));ctx.stroke();ctx.fillStyle=color;ctx.beginPath();if(up){ctx.moveTo(x,y2);ctx.lineTo(x-4,y2+8);ctx.lineTo(x+4,y2+8);}else{ctx.moveTo(x,y2);ctx.lineTo(x-4,y2-8);ctx.lineTo(x+4,y2-8);}ctx.closePath();ctx.fill();}
+drawUnroll();
+
+// ---- RNN FORWARD ----
+function runRNN(){
+  const H=+document.getElementById('rH').value;
+  const T=+document.getElementById('rT').value;
+  const Wh_norm=document.getElementById('rWh').value/10;
+  document.getElementById('rH-v').textContent=H;
+  document.getElementById('rT-v').textContent=T;
+  document.getElementById('rWh-v').textContent=Wh_norm.toFixed(1);
+  // Simple 1D simulation
+  let h=0; const hs=[0];
+  for(let t=0;t<T;t++){
+    h=Math.tanh(Wh_norm*h + 0.5);
+    hs.push(h);
+  }
+  let html='';
+  for(let t=0;t<=T;t++)html+=`h${t} = <span style="color:${Math.abs(hs[t])>.5?'var(--amber)':'var(--green)'}"><b>${hs[t].toFixed(4)}</b></span><br>`;
+  document.getElementById('rnn-result').innerHTML=html;
+  // draw
+  const cv=document.getElementById('rnn-canvas');
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,120);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,120);
+  const px=40,py=10,pw=720,ph=90;
+  // grid
+  ctx.strokeStyle='#21262d';ctx.lineWidth=0.5;
+  for(let v=-1;v<=1;v+=0.5){const y=py+ph/2-v*ph/2;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px+pw,y);ctx.stroke();}
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='right';
+  ctx.fillText('1',px-4,py+5);ctx.fillText('0',px-4,py+ph/2+4);ctx.fillText('-1',px-4,py+ph+4);
+  // line
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.beginPath();
+  hs.forEach((h,i)=>{const x=px+i*(pw/T);const y=py+ph/2-h*ph/2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // dots
+  hs.forEach((h,i)=>{const x=px+i*(pw/T);const y=py+ph/2-h*ph/2;ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle='#e6edf3';ctx.font='12px system-ui';ctx.textAlign='left';
+  ctx.fillText('hₜ во времени',px,ph+py+14);
+}
+runRNN();
+
+// ---- VANISHING ----
+function drawVanish(){
+  const T=+document.getElementById('vT').value;
+  const lam=document.getElementById('vL').value/10;
+  const tp=document.getElementById('vTp').value/10;
+  document.getElementById('vT-v').textContent=T;
+  document.getElementById('vL-v').textContent=lam.toFixed(1);
+  document.getElementById('vTp-v').textContent=tp.toFixed(1);
+  const factor=lam*tp;
+  const cv=document.getElementById('vanish-canvas');
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,220);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,220);
+  const px=50,py=20,pw=720,ph=170;
+  const grads=[]; for(let t=0;t<=T;t++)grads.push(Math.pow(factor,t));
+  const maxG=Math.max(...grads);
+  ctx.strokeStyle='#21262d';ctx.lineWidth=0.5;
+  [0.25,0.5,0.75,1].forEach(v=>{const y=py+ph-v*ph;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px+pw,y);ctx.stroke();});
+  // bars
+  const bw=Math.max(4,pw/T-4);
+  grads.forEach((g,i)=>{
+    const x=px+i*(pw/T);
+    const h2=Math.min((g/Math.max(maxG,1))*ph,ph);
+    const color=factor<1?`rgba(239,68,68,${0.3+0.7*(g/Math.max(maxG,1))})`:`rgba(245,158,11,${0.3+0.7*(g/Math.max(maxG,1))})`;
+    ctx.fillStyle=color;ctx.fillRect(x,py+ph-h2,bw,h2);
+    ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';
+    ctx.fillText('T-'+i,x+bw/2,py+ph+14);
+  });
+  const info=factor<1?`<span style="color:var(--red)">Затухание!</span> λ·tanh'=${factor.toFixed(2)}&lt;1 → градиент через ${T} шагов ≈ ${grads[T].toExponential(2)}`
+    :factor===1?`<span style="color:var(--green)">Стабильно</span> λ·tanh'=1.00`
+    :`<span style="color:var(--amber)">Взрыв!</span> λ·tanh'=${factor.toFixed(2)}&gt;1 → градиент через ${T} шагов ≈ ${grads[T].toExponential(2)}`;
+  document.getElementById('vanish-info').innerHTML=info;
+}
+drawVanish();
+
+// ---- LSTM STEP ----
+function stepLSTM(){
+  const f=document.getElementById('lf').value/100;
+  const i=document.getElementById('li').value/100;
+  const c_=document.getElementById('lc').value/100;
+  const o=document.getElementById('lo').value/100;
+  const cp=document.getElementById('lcp').value/100;
+  document.getElementById('lf-v').textContent=f.toFixed(2);
+  document.getElementById('li-v').textContent=i.toFixed(2);
+  document.getElementById('lc-v').textContent=c_.toFixed(2);
+  document.getElementById('lo-v').textContent=o.toFixed(2);
+  document.getElementById('lcp-v').textContent=cp.toFixed(2);
+  const ct=f*cp+i*c_;
+  const ht=o*Math.tanh(ct);
+  document.getElementById('lstm-step-result').innerHTML=
+    `fₜ ⊙ cₜ₋₁ = ${f.toFixed(2)} × ${cp.toFixed(2)} = <b style="color:var(--red)">${(f*cp).toFixed(3)}</b>\n`+
+    `iₜ ⊙ c̃ₜ  = ${i.toFixed(2)} × ${c_.toFixed(2)} = <b style="color:var(--green)">${(i*c_).toFixed(3)}</b>\n\n`+
+    `cₜ = ${(f*cp).toFixed(3)} + ${(i*c_).toFixed(3)} = <b style="color:var(--amber)">${ct.toFixed(3)}</b>\n`+
+    `tanh(cₜ)  = ${Math.tanh(ct).toFixed(3)}\n`+
+    `hₜ = oₜ⊙tanh(cₜ) = ${o.toFixed(2)}×${Math.tanh(ct).toFixed(3)} = <b style="color:var(--blue)">${ht.toFixed(3)}</b>`;
+  // draw bar
+  const cv=document.getElementById('lstm-canvas');
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,80);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,80);
+  const labels=[['cₜ₋₁',cp,'#8b949e'],['fₜ⊙cₜ₋₁',f*cp,'#ef4444'],['iₜ⊙c̃ₜ',i*c_,'#10b981'],['cₜ',ct,'#f59e0b'],['hₜ',ht,'#60a5fa']];
+  labels.forEach(([l,v,c],idx)=>{
+    const x=40+idx*150;const bh=Math.abs(v)*40;const by=v>=0?35-bh:35;
+    ctx.fillStyle=c;ctx.globalAlpha=0.8;ctx.fillRect(x,by,60,bh);ctx.globalAlpha=1;
+    ctx.fillStyle='#e6edf3';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(l,x+30,72);ctx.fillText(v.toFixed(2),x+30,25);
+  });
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,35);ctx.lineTo(760,35);ctx.stroke();
+}
+stepLSTM();
+
+// ---- LSTM DYNAMICS ----
+function drawLSTMDyn(){
+  const cv=document.getElementById('lstm-dyn-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,180);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,180);
+  const T=20;const inputs=Array.from({length:T},(_,i)=>i===3||i===4?1.5:(Math.random()-.3)*0.3);
+  // LSTM simple (1D)
+  let c=0,h=0; const cs=[],hs_lstm=[];
+  for(let t=0;t<T;t++){
+    const f=1/(1+Math.exp(-(-0.5+h)));
+    const i2=1/(1+Math.exp(-(inputs[t]+h)));
+    const ctilde=Math.tanh(inputs[t]+h*0.3);
+    const o=1/(1+Math.exp(-(h*0.5+0.2)));
+    c=f*c+i2*ctilde; h=o*Math.tanh(c);
+    cs.push(c); hs_lstm.push(h);
+  }
+  // RNN
+  let hr=0;const hs_rnn=[];
+  for(let t=0;t<T;t++){hr=Math.tanh(0.7*hr+inputs[t]);hs_rnn.push(hr);}
+  const drawLine=(arr,color)=>{
+    const px=40,py=20,pw=720,ph=140;
+    const maxV=2;
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+    arr.forEach((v,i)=>{const x=px+i*(pw/(T-1));const y=py+ph/2-v/maxV*ph/2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+    arr.forEach((v,i)=>{const x=px+i*(pw/(T-1));const y=py+ph/2-v/maxV*ph/2;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();});
+  };
+  ctx.strokeStyle='#21262d';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(40,90);ctx.lineTo(760,90);ctx.stroke();
+  drawLine(cs,'#60a5fa');drawLine(hs_rnn,'#f59e0b');
+  // event marker
+  ctx.strokeStyle='#ef4444';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(40+3*(720/19),20);ctx.lineTo(40+3*(720/19),160);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ef4444';ctx.font='10px system-ui';ctx.textAlign='center';
+  ctx.fillText('event',40+3.5*(720/19),16);
+  ctx.fillStyle='#60a5fa';ctx.fillText('LSTM cell cₜ',630,30);
+  ctx.fillStyle='#f59e0b';ctx.fillText('RNN hₜ',630,50);
+}
+
+// ---- BPTT CANVAS ----
+function drawBPTT(){
+  const T=+document.getElementById('bT').value;
+  const Wh=document.getElementById('bW').value/10;
+  document.getElementById('bT-v').textContent=T;
+  document.getElementById('bW-v').textContent=Wh.toFixed(1);
+  const cv=document.getElementById('bptt-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,200);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,200);
+  const px=30,py=30,pw=740,ph=130;
+  const bw=pw/T-4;
+  const tanh_d=0.7;
+  const factor=Wh*tanh_d;
+  for(let t=0;t<T;t++){
+    const g=Math.pow(factor,T-t-1);
+    const bh=Math.min(Math.abs(g)*ph/(factor>1?Math.pow(factor,T-1):1),ph);
+    const x=px+t*(pw/T);
+    const c=factor<1?`rgba(239,68,68,${0.2+0.8*(t/(T-1))})`:`rgba(245,158,11,${0.2+0.8*(1-(t/(T-1)))})`;
+    ctx.fillStyle=c;ctx.fillRect(x,py+ph-bh,bw,bh);
+    ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
+    ctx.fillText('t='+(t+1),x+bw/2,py+ph+18);
+    ctx.fillStyle='#e6edf3';ctx.font='9px system-ui';
+    if(bh>14)ctx.fillText(g.toExponential(1),x+bw/2,py+ph-bh+12);
+  }
+  ctx.fillStyle='#e6edf3';ctx.font='12px system-ui';ctx.textAlign='left';
+  ctx.fillText(`|∂L/∂hₜ| при backprop до каждого шага t. Wₕ·tanh'=${factor.toFixed(2)}`,px,py-10);
+}
+
+// ---- LSTM CELL STEP VISUALIZATION ----
+let lstmStepIdx=-1;
+const STEPS=[
+  {label:'Исходное состояние',desc:'Inputs: xₜ (текущий вход), hₜ₋₁ (предыдущий hidden state), cₜ₋₁ (предыдущий cell state)'},
+  {label:'Forget Gate fₜ',desc:'fₜ = σ(Wf·[hₜ₋₁, xₜ] + bf). Решаем, что забыть из cₜ₋₁. fₜ≈0 → забываем, fₜ≈1 → помним.'},
+  {label:'Input Gate iₜ + Candidate c̃ₜ',desc:'iₜ = σ(Wi·[hₜ₋₁, xₜ]) — насколько обновляем. c̃ₜ = tanh(Wc·[hₜ₋₁, xₜ]) — что записать.'},
+  {label:'Обновление Cell State cₜ',desc:'cₜ = fₜ ⊙ cₜ₋₁ + iₜ ⊙ c̃ₜ. "Конвейерная лента" — минимальные трансформации, градиент течёт свободно.'},
+  {label:'Output Gate oₜ + Hidden State hₜ',desc:'oₜ = σ(Wo·[hₜ₋₁, xₜ]). hₜ = oₜ ⊙ tanh(cₜ). Это и есть выход ячейки.'},
+];
+function lstmStep(dir){
+  lstmStepIdx=dir===-1?-1:Math.min(lstmStepIdx+1,STEPS.length-1);
+  drawLSTMCell(lstmStepIdx);
+}
+function drawLSTMCell(step){
+  const cv=document.getElementById('cell-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,840,360);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,840,360);
+  // Main cell box
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1.5;ctx.fillStyle='#161b22';
+  roundRect(ctx,80,40,680,260,16);ctx.fill();ctx.stroke();
+  // Cell state highway (top)
+  ctx.strokeStyle='#60a5fa';ctx.lineWidth=3;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(40,80);ctx.lineTo(800,80);ctx.stroke();
+  ctx.fillStyle='#60a5fa';ctx.font='bold 11px system-ui';ctx.textAlign='center';
+  ctx.fillText('Cell state  cₜ',420,68);
+  // Gates
+  const gates=[
+    {x:150,label:'f',color:'#ef4444',step:1,act:'σ'},
+    {x:310,label:'i',color:'#10b981',step:2,act:'σ'},
+    {x:450,label:'c̃',color:'#10b981',step:2,act:'tanh'},
+    {x:560,label:'×',color:'#f59e0b',step:3,act:''},
+    {x:680,label:'o',color:'#a78bfa',step:4,act:'σ'},
+  ];
+  gates.forEach(g=>{
+    const active=step>=g.step;
+    ctx.fillStyle=active?g.color+'33':'#21262d';
+    ctx.strokeStyle=active?g.color:'#30363d';
+    ctx.lineWidth=active?2:1;
+    ctx.beginPath();ctx.arc(g.x,80,22,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle=active?g.color:'#8b949e';
+    ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText(g.act||g.label,g.x,85);
+    if(g.act&&g.act!==g.label){ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.fillText(g.label,g.x+15,66);}
+  });
+  // Multiply gates on highway
+  [{x:230,step:1},{x:560,step:3}].forEach(m=>{
+    const active=step>=m.step;
+    ctx.fillStyle=active?'rgba(245,158,11,.2)':'#21262d';
+    ctx.strokeStyle=active?'#f59e0b':'#30363d';
+    ctx.lineWidth=active?2:1;
+    ctx.beginPath();ctx.arc(m.x,80,16,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle=active?'#f59e0b':'#8b949e';ctx.font='bold 14px system-ui';ctx.textAlign='center';
+    ctx.fillText('×',m.x,86);
+  });
+  // Add gate
+  const addActive=step>=3;
+  ctx.fillStyle=addActive?'rgba(245,158,11,.2)':'#21262d';ctx.strokeStyle=addActive?'#f59e0b':'#30363d';ctx.lineWidth=addActive?2:1;
+  ctx.beginPath();ctx.arc(400,80,16,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle=addActive?'#f59e0b':'#8b949e';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText('+',400,86);
+  // hₜ output
+  if(step>=4){
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(680,102);ctx.lineTo(680,200);ctx.stroke();
+    ctx.beginPath();ctx.arc(720,200,18,0,Math.PI*2);ctx.fillStyle='rgba(16,185,129,.2)';ctx.strokeStyle='#10b981';ctx.fill();ctx.stroke();
+    ctx.fillStyle='#10b981';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('tanh',720,205);
+    ctx.strokeStyle='#a78bfa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(738,200);ctx.lineTo(780,200);ctx.stroke();
+    ctx.fillStyle='#a78bfa';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('hₜ →',782,205);
+    ctx.strokeStyle='#60a5fa';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(680,80);ctx.lineTo(720,80);ctx.lineTo(720,182);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // Inputs
+  [{x:150,label:'hₜ₋₁, xₜ'},{x:310,label:'hₜ₋₁, xₜ'},{x:450,label:'hₜ₋₁, xₜ'},{x:680,label:'hₜ₋₁, xₜ'}].slice(0,step<0?0:4).forEach((inp,idx)=>{
+    if(step<1)return;
+    ctx.strokeStyle='#30363d';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(inp.x,280);ctx.lineTo([150,310,450,680][idx],102);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';
+    ctx.fillText(inp.label,inp.x,295);
+  });
+  // Labels
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
+  ctx.fillText('cₜ₋₁ →',55,84);ctx.fillText('→ cₜ',800,84);
+  const s=step<0?STEPS[0]:{...STEPS[Math.max(0,step)]};
+  document.getElementById('step-label').textContent=step<0?'Нажмите "Следующий шаг"':STEPS[step]?.label||'';
+  document.getElementById('step-desc').textContent=step<0?'Наведите и нажмите кнопку для пошагового разбора ячейки LSTM':STEPS[step]?.desc||'';
+}
+drawLSTMCell(-1);
+
+// ---- COMPARE CANVAS ----
+function drawCmp(){
+  const cv=document.getElementById('cmp-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,220);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,220);
+  const T=25;const event_t=5;
+  const inputs=Array.from({length:T},(_,i)=>i===event_t?2.0:Math.random()*0.2-0.1);
+  let c=0,hl=0; const cs=[];
+  for(let t=0;t<T;t++){const f=0.9;const i2=1/(1+Math.exp(-inputs[t]));const ct2=Math.tanh(inputs[t]);c=f*c+i2*ct2;hl=0.6*Math.tanh(c);cs.push(hl);}
+  let hr=0; const rs=[];
+  for(let t=0;t<T;t++){hr=Math.tanh(0.5*hr+inputs[t]);rs.push(hr);}
+  const px=40,py=20,pw=720,ph=170;
+  ctx.strokeStyle='#21262d';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(px,py+ph/2);ctx.lineTo(px+pw,py+ph/2);ctx.stroke();
+  const drawS=(arr,color)=>{
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+    arr.forEach((v,i)=>{const x=px+i*(pw/(T-1));const y=py+ph/2-v/2*ph;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+  };
+  drawS(cs,'#60a5fa');drawS(rs,'#f59e0b');
+  ctx.strokeStyle='#ef4444';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  const ex=px+event_t*(pw/(T-1));
+  ctx.beginPath();ctx.moveTo(ex,py);ctx.lineTo(ex,py+ph);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ef4444';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('событие',ex,py-4);
+  ctx.fillStyle='#60a5fa';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('LSTM (помнит)',px+20,py+15);
+  ctx.fillStyle='#f59e0b';ctx.fillText('RNN (забывает)',px+20,py+30);
+}
+drawCmp();
+drawLSTMDyn();
+</script>

@@ -1,0 +1,631 @@
+
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:980px;margin:0 auto;line-height:1.55}
+h1{font-size:1.5em;margin-bottom:4px}
+h2{font-size:1.15em;color:var(--amber);margin:18px 0 8px}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0}
+.formula{font-family:'Courier New',monospace;font-size:.98em;background:#0d1117;padding:10px 14px;border-radius:8px;border-left:3px solid var(--amber);margin:10px 0;overflow-x:auto;white-space:pre}
+.hl-a{color:var(--amber);font-weight:600}
+.hl-g{color:var(--green);font-weight:600}
+.hl-b{color:var(--blue);font-weight:600}
+.hl-r{color:var(--red);font-weight:600}
+.hl-p{color:var(--purple);font-weight:600}
+.muted{color:var(--muted);font-size:.88em}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .15s}
+.tab.active{border-color:var(--amber);color:var(--amber)}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=range]{width:100%;accent-color:var(--green);margin:4px 0}
+.sr{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.9em}
+.sv{color:var(--green);font-weight:600;min-width:42px;text-align:right}
+.step-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:.88em}
+.sn{color:var(--amber);font-weight:700;margin-right:6px}
+.info-box{background:#161b22;border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.warn-box{background:#161b22;border-left:3px solid var(--red);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.code-block{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:.78em;overflow-x:auto;margin:10px 0;white-space:pre}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th{background:#0d1117;padding:8px 10px;text-align:left;color:var(--amber);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid #21262d}
+canvas{border-radius:6px;display:block}
+.tok{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:6px;font-size:.85em;font-weight:600;cursor:pointer;transition:all .2s;margin:3px}
+.tok-inactive{background:#161b22;border:1px solid var(--border);color:var(--muted)}
+.tok-active{background:rgba(245,158,11,.2);border:1px solid var(--amber);color:var(--amber)}
+.tok-ctx{background:rgba(96,165,250,.15);border:1px solid var(--blue);color:var(--blue)}
+</style>
+
+<h1>4.3 — Transformer (Часть 1): Attention</h1>
+<p class="muted">Scaled Dot-Product Attention · Multi-Head Attention · маски · интерпретация</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('t-why')">Мотивация</button>
+  <button class="tab" onclick="sw('t-sdpa')">Scaled Dot-Product</button>
+  <button class="tab" onclick="sw('t-viz')">Интерактив</button>
+  <button class="tab" onclick="sw('t-mha')">Multi-Head</button>
+  <button class="tab" onclick="sw('t-mask')">Маски</button>
+  <button class="tab" onclick="sw('t-math')">Матричная форма</button>
+  <button class="tab" onclick="sw('t-code')">PyTorch</button>
+</div>
+
+<!-- ===== 1. МОТИВАЦИЯ ===== -->
+<div id="t-why" class="tab-content active">
+<h2>Зачем Attention? Проблемы RNN</h2>
+<div class="card">
+<div class="grid2">
+<div>
+<h3 class="hl-r">RNN — узкое место</h3>
+<div class="step-box"><span class="sn">1.</span>Информация о шаге t=1 должна пройти через все T hidden states до шага T → затухание</div>
+<div class="step-box"><span class="sn">2.</span>Последовательная обработка — нельзя распараллелить</div>
+<div class="step-box"><span class="sn">3.</span>Фиксированный вектор контекста в seq2seq — «бутылочное горлышко»</div>
+</div>
+<div>
+<h3 class="hl-g">Attention — решение</h3>
+<div class="step-box"><span class="sn">1.</span>Прямое соединение между любыми двумя позициями — O(1) путь</div>
+<div class="step-box"><span class="sn">2.</span>Весь вход обрабатывается параллельно</div>
+<div class="step-box"><span class="sn">3.</span>Каждый токен «смотрит» на все остальные с разными весами</div>
+</div>
+</div>
+
+<h3>Ключевая идея: запрос, ключ, значение</h3>
+<p>Аналогия: <strong>поиск по базе данных</strong>.</p>
+<div class="step-box"><span class="sn" style="color:var(--amber)">Query Q</span> — «что я ищу?» (запрос от текущего токена)</div>
+<div class="step-box"><span class="sn" style="color:var(--blue)">Key K</span> — «что у меня есть?» (метка каждого токена в контексте)</div>
+<div class="step-box"><span class="sn" style="color:var(--green)">Value V</span> — «что вернуть?» (контент каждого токена)</div>
+
+<div class="info-box">Softmax(Q·Kᵀ/√dₖ) даёт веса совместимости Q с каждым K. Эти веса используются для взвешенной суммы V.</div>
+</div>
+
+<h2>История: от Bahdanau (2015) к Transformer (2017)</h2>
+<div class="card">
+<table>
+<tr><th>Год</th><th>Работа</th><th>Вклад</th></tr>
+<tr><td>2015</td><td>Bahdanau et al.</td><td>Additive attention для seq2seq NMT</td></tr>
+<tr><td>2015</td><td>Luong et al.</td><td>Multiplicative (dot-product) attention</td></tr>
+<tr><td>2017</td><td>Vaswani et al.</td><td>«Attention is All You Need» — Transformer без RNN</td></tr>
+<tr><td>2018</td><td>BERT / GPT</td><td>Pre-training на Transformer encoder / decoder</td></tr>
+</table>
+</div>
+</div>
+
+<!-- ===== 2. SCALED DOT-PRODUCT ===== -->
+<div id="t-sdpa" class="tab-content">
+<h2>Scaled Dot-Product Attention — полный вывод</h2>
+<div class="card">
+<div class="formula">Attention(Q, K, V) = <span class="hl-g">softmax</span>( <span class="hl-a">Q·Kᵀ</span> / <span class="hl-b">√dₖ</span> ) · <span class="hl-p">V</span></div>
+<p>Q ∈ ℝ<sup>L×dₖ</sup>, K ∈ ℝ<sup>S×dₖ</sup>, V ∈ ℝ<sup>S×dᵥ</sup> → выход ∈ ℝ<sup>L×dᵥ</sup></p>
+
+<h3>Почему делим на √dₖ?</h3>
+<div class="step-box"><span class="sn">Шаг 1.</span>Q и K инициализированы из N(0,1). Скалярное произведение qᵢᵀkⱼ = Σₖ qₖkₖ — сумма dₖ независимых слагаемых.</div>
+<div class="step-box"><span class="sn">Шаг 2.</span>Var[qᵢᵀkⱼ] = dₖ → std = <span class="hl-b">√dₖ</span></div>
+<div class="step-box"><span class="sn">Шаг 3.</span>Без нормировки при большом dₖ логиты огромны → softmax насыщается → градиент ≈ 0</div>
+<div class="step-box"><span class="sn">Шаг 4.</span>Делим на √dₖ → Var[qᵢᵀkⱼ/√dₖ] = 1 → softmax в рабочем диапазоне ✓</div>
+
+<h3>Визуализация эффекта √dₖ</h3>
+<canvas id="softmax-canvas" width="800" height="180" style="width:100%;margin-top:10px"></canvas>
+<div class="sr" style="margin-top:8px"><span>dₖ</span><input type="range" id="dk-sl" min="1" max="512" value="64" oninput="drawSoftmaxEffect()"><span class="sv" id="dk-v">64</span></div>
+
+<h3>Additive vs Dot-Product Attention</h3>
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Dot-Product (Luong)</strong><br>
+  score(q,k) = qᵀk / √dₖ<br>
+  Быстрее (matmul), лучше при больших dₖ
+</div>
+<div class="step-box">
+  <strong class="hl-g">Additive (Bahdanau)</strong><br>
+  score(q,k) = vᵀ·tanh(Wq·q + Wk·k)<br>
+  Медленнее, иногда лучше при малых dₖ
+</div>
+</div>
+</div>
+
+<h2>Пошаговое вычисление (числовой пример)</h2>
+<div class="card">
+<p class="muted">L=3 токена, dₖ=2, dᵥ=2</p>
+<div class="step-box"><span class="sn">Шаг 1.</span>Q = [[1,0],[0,1],[1,1]], K = [[1,0],[0,1],[1,1]], V = [[1,0],[0,1],[1,1]]</div>
+<div class="step-box"><span class="sn">Шаг 2.</span>QKᵀ = [[1,0,1],[0,1,1],[1,1,2]]  (матрица совместимости 3×3)</div>
+<div class="step-box"><span class="sn">Шаг 3.</span>/ √2 = [[0.71,0,0.71],[0,0.71,0.71],[0.71,0.71,1.41]]</div>
+<div class="step-box"><span class="sn">Шаг 4.</span>softmax по строкам → A[0] = [0.42, 0.21, 0.37] (сумма=1)</div>
+<div class="step-box"><span class="sn">Шаг 5.</span>A·V → выходной вектор для токена 0: 0.42·[1,0]+0.21·[0,1]+0.37·[1,1] = [0.79, 0.58]</div>
+</div>
+</div>
+
+<!-- ===== 3. ИНТЕРАКТИВ ===== -->
+<div id="t-viz" class="tab-content">
+<h2>Интерактивная визуализация Attention</h2>
+<div class="card">
+<p class="muted">Нажмите на токен, чтобы увидеть его веса attention ко всем остальным</p>
+<div id="tok-row" style="margin:12px 0;display:flex;flex-wrap:wrap;gap:4px"></div>
+<canvas id="attn-canvas" width="800" height="320" style="width:100%;margin-top:8px"></canvas>
+<div id="attn-info" style="margin-top:10px;font-size:.88em;font-family:'Courier New',monospace;line-height:1.8;color:var(--muted)"></div>
+</div>
+
+<h2>Калькулятор Attention</h2>
+<div class="card">
+<div class="sr"><span>dₖ (размер ключа)</span><input type="range" id="calc-dk" min="1" max="8" value="4" oninput="calcAttn()"><span class="sv" id="calc-dk-v">4</span></div>
+<div class="sr"><span>Температура (1/√dₖ scale)</span><input type="range" id="calc-temp" min="1" max="40" value="10" oninput="calcAttn()"><span class="sv" id="calc-temp-v">1.0</span></div>
+<div id="calc-result" style="font-size:.85em;font-family:'Courier New',monospace;margin-top:10px;line-height:1.9"></div>
+<canvas id="calc-canvas" width="700" height="120" style="width:100%;margin-top:10px"></canvas>
+</div>
+</div>
+
+<!-- ===== 4. MULTI-HEAD ===== -->
+<div id="t-mha" class="tab-content">
+<h2>Multi-Head Attention</h2>
+<div class="card">
+<p>Один head ограничен — учит одну «проекцию» совместимости. MHA запускает <span class="hl-a">h</span> параллельных head, каждый в своём подпространстве.</p>
+
+<div class="formula">head<sub>i</sub> = Attention(<span class="hl-a">Q·W<sub>i</sub><sup>Q</sup></span>, <span class="hl-b">K·W<sub>i</sub><sup>K</sup></span>, <span class="hl-g">V·W<sub>i</sub><sup>V</sup></span>)
+
+MHA(Q,K,V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · <span class="hl-p">W<sup>O</sup></span></div>
+
+<p>Проекции: W<sub>i</sub><sup>Q</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>K</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>V</sup> ∈ ℝ<sup>d_model×d_v</sup></p>
+<p>Стандартно: dₖ = dᵥ = d_model / h. Для d_model=512, h=8: <span class="hl-a">dₖ = 64</span></p>
+
+<h3>Параметры MHA</h3>
+<div class="formula">h·(d_model·dₖ + d_model·dₖ + d_model·dᵥ) + d_model·d_model
+= h·d_model·(2dₖ + dᵥ) + d_model²
+= 4·d_model²   (при dₖ=dᵥ=d_model/h)</div>
+
+<div class="info-box"><strong>Зачем несколько голов?</strong><br>
+head 1 может учить синтаксические связи (подлежащее↔сказуемое),<br>
+head 2 — кореференцию (местоимение↔антецедент),<br>
+head 3 — позиционные паттерны (соседние токены), и т.д.</div>
+</div>
+
+<h2>Интерактивный MHA</h2>
+<div class="card">
+<div class="sr"><span>Голов h</span><input type="range" id="mha-h" min="1" max="16" value="8" oninput="drawMHA()"><span class="sv" id="mha-h-v">8</span></div>
+<div class="sr"><span>d_model</span><input type="range" id="mha-d" min="64" max="1024" step="64" value="512" oninput="drawMHA()"><span class="sv" id="mha-d-v">512</span></div>
+<canvas id="mha-canvas" width="800" height="200" style="width:100%;margin-top:10px"></canvas>
+<div id="mha-info" style="margin-top:10px;font-size:.9em;line-height:1.9"></div>
+</div>
+</div>
+
+<!-- ===== 5. МАСКИ ===== -->
+<div id="t-mask" class="tab-content">
+<h2>Маски в Attention</h2>
+<div class="card">
+<h3>Padding Mask</h3>
+<p>Батч содержит последовательности разной длины — дополняем PAD-токенами. Маскируем, чтобы attention не смотрел на паддинг:</p>
+<div class="formula">score[i][j] = -∞,  если j — PAD-токен
+→ softmax: exp(-∞)=0  → вес=0  ✓</div>
+
+<h3>Causal Mask (Look-ahead Mask)</h3>
+<p>В <strong>декодере</strong> (авторегрессивная генерация) токен позиции t не должен видеть t+1, t+2, …:</p>
+<div class="formula">M[i][j] = -∞  при j > i
+M[i][j] = 0   при j ≤ i</div>
+<p>Это нижнетреугольная матрица (lower triangular mask).</p>
+</div>
+
+<h2>Визуализация масок</h2>
+<div class="card">
+<div class="tabs" style="margin-bottom:12px">
+  <button class="tab active" onclick="switchMask('pad')" id="mask-tab-pad">Padding Mask</button>
+  <button class="tab" onclick="switchMask('causal')" id="mask-tab-causal">Causal Mask</button>
+  <button class="tab" onclick="switchMask('both')" id="mask-tab-both">Комбинированная</button>
+</div>
+<div class="sr"><span>Длина L</span><input type="range" id="mask-L" min="4" max="10" value="6" oninput="drawMask()"><span class="sv" id="mask-L-v">6</span></div>
+<div class="sr"><span>PAD с позиции</span><input type="range" id="mask-P" min="2" max="10" value="5" oninput="drawMask()"><span class="sv" id="mask-P-v">5</span></div>
+<canvas id="mask-canvas" width="700" height="340" style="width:100%;max-width:500px;margin:10px auto"></canvas>
+</div>
+
+<h2>PyTorch: создание масок</h2>
+<div class="card">
+<div class="code-block">import torch
+import torch.nn.functional as F
+
+# Causal mask (look-ahead) для декодера
+def causal_mask(L, device='cpu'):
+    # True = маскировать (запрещено смотреть)
+    mask = torch.triu(torch.ones(L, L, device=device), diagonal=1).bool()
+    return mask          # (L, L) upper triangular
+
+# Padding mask
+def padding_mask(lengths, max_len):
+    # lengths: (B,) — реальные длины последовательностей
+    idx = torch.arange(max_len).unsqueeze(0)  # (1, max_len)
+    return idx >= lengths.unsqueeze(1)         # (B, max_len) True=PAD
+
+# Применение в scaled_dot_product_attention
+scores = Q @ K.transpose(-2,-1) / (dk**0.5)
+if mask is not None:
+    scores = scores.masked_fill(mask, float('-inf'))
+attn_weights = F.softmax(scores, dim=-1)</div>
+</div>
+</div>
+
+<!-- ===== 6. МАТРИЧНАЯ ФОРМА ===== -->
+<div id="t-math" class="tab-content">
+<h2>Полная матричная форма — все детали</h2>
+<div class="card">
+<h3>Self-Attention vs Cross-Attention</h3>
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Self-Attention</strong><br>
+  Q = K = V = X (один вход)<br>
+  Используется в энкодере и в self-attn декодера
+</div>
+<div class="step-box">
+  <strong class="hl-g">Cross-Attention</strong><br>
+  Q из декодера, K=V из энкодера<br>
+  Позволяет декодеру «смотреть» на вход
+</div>
+</div>
+
+<h3>Вычислительная сложность</h3>
+<div class="formula">Self-Attention:   O(<span class="hl-a">L²</span>·d)   — квадратично по длине!
+FFN:              O(<span class="hl-g">L</span>·d²)  — линейно по длине</div>
+<p class="muted">При L=1024, d=512: L²·d = 536M, L·d² = 268M — сопоставимо</p>
+<p class="muted">При L=8192: L²·d = 34G — attention становится узким местом → Flash Attention, Sparse Attention</p>
+
+<h3>Производная Attention по Q</h3>
+<div class="formula">Пусть A = softmax(QKᵀ/√dₖ), выход O = A·V
+
+∂L/∂Q = <span class="hl-a">dA/dQ</span> · (∂A_soft/∂logits) · <span class="hl-g">V</span>
+
+dA/dQ: каждая строка Aᵢ = softmax(qᵢKᵀ/√dₖ)
+∂Aᵢ/∂qᵢ = (diag(Aᵢ) - Aᵢ·Aᵢᵀ) · Kᵀ/√dₖ   ← Якобиан softmax из 1.2</div>
+
+<h3>Flash Attention — зачем нужен</h3>
+<div class="step-box"><span class="sn">Проблема:</span>Матрица QKᵀ при L=4096 занимает 4096²×4 байт = 64 МБ на голову × 32 головы = 2 GB — не влезает в SRAM GPU</div>
+<div class="step-box"><span class="sn">Flash Attention:</span>Вычисляет attention блоками (tiling) без материализации полной матрицы QKᵀ в HBM. Сложность памяти: O(L) вместо O(L²)</div>
+
+<div class="info-box"><strong>Связь с Info Theory (блок 1.4):</strong> Attention — это взвешенная сумма, где веса — категориальное распределение. Можно интерпретировать как H(attention) — энтропию внимания: низкая энтропия → «острый» фокус на одном токене, высокая → равномерное рассеивание.</div>
+</div>
+
+<h2>Калькулятор сложности</h2>
+<div class="card">
+<div class="sr"><span>L (длина последовательности)</span><input type="range" id="comp-L" min="64" max="16384" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-L-v">512</span></div>
+<div class="sr"><span>d_model</span><input type="range" id="comp-d" min="64" max="2048" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-d-v">512</span></div>
+<div class="sr"><span>Heads h</span><input type="range" id="comp-h" min="1" max="32" value="8" oninput="calcComp()"><span class="sv" id="comp-h-v">8</span></div>
+<div id="comp-result" style="margin-top:10px;font-size:.9em;line-height:2"></div>
+</div>
+</div>
+
+<!-- ===== 7. КОД ===== -->
+<div id="t-code" class="tab-content">
+<h2>PyTorch — реализация с нуля</h2>
+<div class="card">
+
+<h3>Scaled Dot-Product Attention</h3>
+<div class="code-block">import torch, torch.nn as nn, math
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    """
+    Q: (B, H, L, dₖ)
+    K: (B, H, S, dₖ)
+    V: (B, H, S, dᵥ)
+    mask: (B, 1, L, S) или (L, S) — True = маскировать
+    """
+    dk = Q.shape[-1]
+    scores = Q @ K.transpose(-2, -1) / math.sqrt(dk)   # (B,H,L,S)
+    if mask is not None:
+        scores = scores.masked_fill(mask, float('-inf'))
+    weights = F.softmax(scores, dim=-1)                 # (B,H,L,S)
+    return weights @ V, weights                         # (B,H,L,dᵥ), weights</div>
+
+<h3>Multi-Head Attention</h3>
+<div class="code-block">class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, num_heads, dropout=0.1):
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.h  = num_heads
+        self.dk = d_model // num_heads
+        # Объединённые проекции (эффективнее отдельных)
+        self.W_q = nn.Linear(d_model, d_model, bias=False)
+        self.W_k = nn.Linear(d_model, d_model, bias=False)
+        self.W_v = nn.Linear(d_model, d_model, bias=False)
+        self.W_o = nn.Linear(d_model, d_model, bias=False)
+        self.drop = nn.Dropout(dropout)
+
+    def split_heads(self, x):
+        B, L, D = x.shape
+        return x.view(B, L, self.h, self.dk).transpose(1, 2)  # (B,H,L,dk)
+
+    def forward(self, Q, K, V, mask=None):
+        B = Q.shape[0]
+        Q = self.split_heads(self.W_q(Q))   # (B,H,L,dk)
+        K = self.split_heads(self.W_k(K))
+        V = self.split_heads(self.W_v(V))
+
+        out, weights = scaled_dot_product_attention(Q, K, V, mask)
+        out = out.transpose(1, 2).contiguous().view(B, -1, self.h * self.dk)
+        return self.W_o(out), weights    # (B,L,d_model)</div>
+
+<h3>Использование PyTorch встроенного MHA</h3>
+<div class="code-block">mha = nn.MultiheadAttention(embed_dim=512, num_heads=8,
+                            dropout=0.1, batch_first=True)
+x   = torch.randn(4, 32, 512)   # (batch, seq, d_model)
+
+# Self-attention
+out, attn_w = mha(x, x, x)                             # (4,32,512)
+
+# Cross-attention (декодер смотрит на энкодер)
+memory = torch.randn(4, 20, 512)
+out2, _ = mha(query=x, key=memory, value=memory)
+
+# С causal mask
+causal = torch.triu(torch.ones(32,32), diagonal=1).bool()
+out3, _ = mha(x, x, x, attn_mask=causal)</div>
+
+<h3>PyTorch 2.0: F.scaled_dot_product_attention (Flash Attention)</h3>
+<div class="code-block"># Автоматически выбирает Flash Attention если доступна
+out = F.scaled_dot_product_attention(
+    Q, K, V,
+    attn_mask=None,
+    dropout_p=0.1,
+    is_causal=True    # каузальная маска без материализации
+)</div>
+</div>
+</div>
+
+<script>
+const TAB_IDS=['t-why','t-sdpa','t-viz','t-mha','t-mask','t-math','t-code'];
+function sw(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TAB_IDS[i]===id));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===id));
+  if(id==='t-viz'){initAttn();calcAttn();}
+  if(id==='t-mha')drawMHA();
+  if(id==='t-mask')drawMask();
+  if(id==='t-sdpa')drawSoftmaxEffect();
+  if(id==='t-math')calcComp();
+}
+
+// ---- SOFTMAX EFFECT ----
+function drawSoftmaxEffect(){
+  const dk=+document.getElementById('dk-sl').value;
+  document.getElementById('dk-v').textContent=dk;
+  const cv=document.getElementById('softmax-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,180);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,180);
+  const logits=[3.0,1.0,0.5,-0.5,2.0,-1.0,0.8,1.5];
+  const L=logits.length;const px=40,py=20,pw=340,ph=130;
+  const drawBar=(offset,vals,label,color)=>{
+    const sm=softmax(vals);
+    const bw=pw/L-4;
+    vals.forEach((v,i)=>{
+      const bh=(v+2)/5*ph*0.6;const x=offset+i*(pw/L);
+      ctx.fillStyle='rgba(96,165,250,0.3)';ctx.fillRect(x,py+ph-Math.max(bh,2),bw,Math.max(bh,2));
+    });
+    sm.forEach((v,i)=>{
+      const bh=v*ph;const x=offset+i*(pw/L);
+      ctx.fillStyle=color;ctx.fillRect(x,py+ph/2-bh/2,bw,bh);
+    });
+    ctx.fillStyle='#e6edf3';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(label,offset+pw/2,py+ph+18);
+  };
+  // Raw logits scaled by sqrt(dk) vs /sqrt(dk)
+  const raw=logits.map(v=>v*Math.sqrt(dk));
+  const scaled=logits;
+  drawBar(px,raw,`softmax(score·√${dk}) — без нормировки`,'#ef4444');
+  drawBar(px+pw+80,scaled,`softmax(score/√${dk}) — с нормировкой`,'#10b981');
+  // entropy labels
+  const h1=-softmax(raw).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  const h2=-softmax(scaled).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='center';
+  ctx.fillText(`H=${h1.toFixed(2)} бит`,px+pw/2,py+ph+34);
+  ctx.fillStyle='#10b981';ctx.fillText(`H=${h2.toFixed(2)} бит`,px+pw+80+pw/2,py+ph+34);
+}
+function softmax(arr){const m=Math.max(...arr);const e=arr.map(v=>Math.exp(v-m));const s=e.reduce((a,b)=>a+b,0);return e.map(v=>v/s);}
+drawSoftmaxEffect();
+
+// ---- ATTENTION INTERACTIVE ----
+const SENTENCE=['The','cat','sat','on','the','mat'];
+const N=SENTENCE.length;
+// Pre-compute plausible attention weights per query token
+const ATTN_WEIGHTS=[
+  [0.40,0.25,0.10,0.08,0.10,0.07],
+  [0.20,0.35,0.18,0.07,0.12,0.08],
+  [0.12,0.15,0.38,0.12,0.10,0.13],
+  [0.08,0.07,0.15,0.35,0.18,0.17],
+  [0.18,0.10,0.08,0.12,0.35,0.17],
+  [0.07,0.08,0.12,0.18,0.22,0.33],
+];
+let selTok=0;
+function initAttn(){
+  const row=document.getElementById('tok-row');if(!row)return;
+  row.innerHTML='';
+  SENTENCE.forEach((t,i)=>{
+    const b=document.createElement('div');
+    b.className='tok '+(i===selTok?'tok-active':'tok-inactive');
+    b.textContent=t;b.onclick=()=>{selTok=i;initAttn();drawAttn();};
+    row.appendChild(b);
+  });
+  drawAttn();
+}
+function drawAttn(){
+  const cv=document.getElementById('attn-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,320);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,320);
+  const w=ATTN_WEIGHTS[selTok];
+  const bw=Math.floor(750/N)-6;const px=25;
+  // Tokens row (source)
+  SENTENCE.forEach((t,i)=>{
+    const x=px+i*(750/N);
+    const alpha=w[i];
+    ctx.fillStyle=`rgba(245,158,11,${0.1+alpha*0.85})`;
+    ctx.strokeStyle=i===selTok?'#f59e0b':'rgba(245,158,11,0.3)';
+    ctx.lineWidth=i===selTok?2:1;
+    roundRect(ctx,x,220,bw,36,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e6edf3';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+    ctx.fillText(t,x+bw/2,243);
+    ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';
+    ctx.fillText(w[i].toFixed(2),x+bw/2,258);
+  });
+  // Query token (selected)
+  const qx=px+selTok*(750/N);
+  ctx.fillStyle='rgba(96,165,250,0.2)';ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;
+  roundRect(ctx,qx,40,bw,36,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#60a5fa';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+  ctx.fillText(SENTENCE[selTok],qx+bw/2,63);
+  ctx.fillStyle='#60a5fa';ctx.font='10px system-ui';ctx.fillText('Query',qx+bw/2,78);
+  // Attention lines
+  SENTENCE.forEach((t,i)=>{
+    const alpha=w[i];if(alpha<0.03)return;
+    const x=px+i*(750/N)+bw/2;
+    const kx=px+selTok*(750/N)+bw/2;
+    ctx.strokeStyle=`rgba(245,158,11,${alpha*1.2})`;ctx.lineWidth=alpha*6;
+    ctx.beginPath();ctx.moveTo(kx,76);ctx.quadraticCurveTo((kx+x)/2,150,x,220);ctx.stroke();
+  });
+  // Softmax bar chart
+  const chartX=550,chartY=10,chartH=180,chartW=220;
+  ctx.fillStyle='#161b22';ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
+  roundRect(ctx,chartX,chartY,chartW,chartH,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
+  ctx.fillText(`Веса Attention (Query: "${SENTENCE[selTok]}")`,chartX+chartW/2,chartY+14);
+  const bh2=12;const gap=4;
+  SENTENCE.forEach((t,i)=>{
+    const y=chartY+22+i*(bh2+gap);
+    const blen=w[i]*(chartW-80);
+    ctx.fillStyle='#21262d';ctx.fillRect(chartX+60,y,chartW-80,bh2);
+    ctx.fillStyle=`rgba(245,158,11,${0.3+w[i]*0.7})`;ctx.fillRect(chartX+60,y,blen,bh2);
+    ctx.fillStyle='#e6edf3';ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText(t,chartX+56,y+10);
+    ctx.fillStyle='#f59e0b';ctx.textAlign='left';
+    ctx.fillText(w[i].toFixed(2),chartX+64+blen,y+10);
+  });
+  // Info
+  const maxI=w.indexOf(Math.max(...w));
+  document.getElementById('attn-info').textContent=
+    `"${SENTENCE[selTok]}" уделяет наибольшее внимание "${SENTENCE[maxI]}" (${(w[maxI]*100).toFixed(0)}%). Энтропия: H=${(-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0)).toFixed(2)} бит`;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+initAttn();
+
+// ---- ATTN CALCULATOR ----
+function calcAttn(){
+  const dk=+document.getElementById('calc-dk').value;
+  const tempV=document.getElementById('calc-temp').value/10;
+  document.getElementById('calc-dk-v').textContent=dk;
+  document.getElementById('calc-temp-v').textContent=tempV.toFixed(1);
+  const sqrtdk=Math.sqrt(dk);
+  const rawScores=[2.1,0.8,1.5,-0.3,1.0];
+  const scaled=rawScores.map(v=>v/sqrtdk*tempV);
+  const sm=softmax(scaled);
+  let html=`dₖ=${dk}  √dₖ=${sqrtdk.toFixed(2)}  scale=1/√dₖ=${(1/sqrtdk).toFixed(3)}\n`;
+  html+=`Raw scores:    [${rawScores.map(v=>v.toFixed(2)).join(', ')}]\n`;
+  html+=`Scaled scores: [${scaled.map(v=>v.toFixed(2)).join(', ')}]\n`;
+  html+=`Softmax:       [${sm.map(v=>v.toFixed(3)).join(', ')}]`;
+  document.getElementById('calc-result').innerHTML=`<span style="color:var(--muted)">${html}</span>`;
+  // draw
+  const cv=document.getElementById('calc-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,700,120);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,700,120);
+  const bw=80;const gap=10;const px=30;const ph=80;const py=15;
+  sm.forEach((v,i)=>{
+    const bh=v*ph;const x=px+i*(bw+gap);
+    ctx.fillStyle='rgba(245,158,11,0.8)';ctx.fillRect(x,py+ph-bh,bw,bh);
+    ctx.fillStyle='#e6edf3';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(`k${i+1}`,x+bw/2,py+ph+14);ctx.fillText(v.toFixed(3),x+bw/2,py+ph-bh-4);
+  });
+}
+
+// ---- MHA ----
+function drawMHA(){
+  const h=+document.getElementById('mha-h').value;
+  const d=+document.getElementById('mha-d').value;
+  document.getElementById('mha-h-v').textContent=h;
+  document.getElementById('mha-d-v').textContent=d;
+  const dk=Math.floor(d/h);
+  const params=4*d*d;
+  const cv=document.getElementById('mha-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,200);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,200);
+  const maxH=Math.min(h,16);const bw=Math.floor(720/maxH)-4;const px=40;const py=30;const bh=80;
+  for(let i=0;i<maxH;i++){
+    const x=px+i*(720/maxH);
+    const hue=i/maxH;
+    const r=Math.round(50+180*Math.sin(hue*Math.PI));
+    const g=Math.round(100+100*Math.sin(hue*Math.PI+1));
+    const b=Math.round(180-80*Math.sin(hue*Math.PI));
+    ctx.fillStyle=`rgba(${r},${g},${b},0.2)`;ctx.strokeStyle=`rgba(${r},${g},${b},0.7)`;ctx.lineWidth=1;
+    roundRect(ctx,x,py,bw,bh,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e6edf3';ctx.font='9px system-ui';ctx.textAlign='center';
+    ctx.fillText(`h${i+1}`,x+bw/2,py+30);ctx.fillText(`dₖ=${dk}`,x+bw/2,py+45);
+  }
+  // Concat arrow
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(px,py+bh+8);ctx.lineTo(px+720,py+bh+8);ctx.stroke();
+  ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';ctx.textAlign='center';
+  ctx.fillText(`Concat → (L, ${h}·${dk}=${d}) → W_O → (L, ${d})`,px+360,py+bh+24);
+  document.getElementById('mha-info').innerHTML=
+    `dₖ = dᵥ = d_model/h = <span class="hl-a">${dk}</span> &nbsp;|&nbsp; `+
+    `Параметров MHA: 4·d_model² = <span class="hl-g">${(4*d*d).toLocaleString()}</span> &nbsp;|&nbsp; `+
+    `FLOPs на шаг: ≈ <span class="hl-b">${(8*d*d).toLocaleString()}</span>`;
+}
+drawMHA();
+
+// ---- MASKS ----
+let maskType='pad';
+function switchMask(t){
+  maskType=t;
+  ['pad','causal','both'].forEach(k=>{
+    document.getElementById('mask-tab-'+k)?.classList.toggle('active',k===t);
+  });
+  drawMask();
+}
+function drawMask(){
+  const L=+document.getElementById('mask-L').value;
+  const P=Math.min(+document.getElementById('mask-P').value,L);
+  document.getElementById('mask-L-v').textContent=L;
+  document.getElementById('mask-P-v').textContent=P;
+  const cv=document.getElementById('mask-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');const W=500,H=340;ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  const cs=Math.floor(Math.min((W-80)/L,(H-80)/L));
+  const ox=Math.floor((W-cs*L)/2);const oy=30;
+  for(let i=0;i<L;i++){
+    for(let j=0;j<L;j++){
+      const pad=(j>=P);
+      const causal=(j>i);
+      let masked=false;
+      if(maskType==='pad')masked=pad;
+      else if(maskType==='causal')masked=causal;
+      else masked=pad||causal;
+      ctx.fillStyle=masked?'rgba(239,68,68,0.35)':'rgba(16,185,129,0.25)';
+      ctx.fillRect(ox+j*cs,oy+i*cs,cs-1,cs-1);
+      ctx.fillStyle=masked?'#ef4444':'#10b981';
+      ctx.font=`${Math.max(9,cs-8)}px system-ui`;ctx.textAlign='center';
+      ctx.fillText(masked?'-∞':'0',ox+j*cs+cs/2,oy+i*cs+cs/2+4);
+    }
+  }
+  // Axis labels
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';
+  for(let i=0;i<L;i++){
+    ctx.textAlign='right';ctx.fillText(`q${i+1}`,ox-3,oy+i*cs+cs/2+4);
+    ctx.textAlign='center';ctx.fillText(`k${i+1}`,ox+i*cs+cs/2,oy-5);
+  }
+  // Legend
+  ctx.fillStyle='rgba(239,68,68,0.5)';ctx.fillRect(ox,oy+L*cs+15,14,14);
+  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('-∞ (маскировано)',ox+18,oy+L*cs+26);
+  ctx.fillStyle='rgba(16,185,129,0.4)';ctx.fillRect(ox+160,oy+L*cs+15,14,14);
+  ctx.fillStyle='#10b981';ctx.fillText('0 (разрешено)',ox+178,oy+L*cs+26);
+}
+drawMask();
+
+// ---- COMPLEXITY CALC ----
+function calcComp(){
+  const L=+document.getElementById('comp-L').value;
+  const d=+document.getElementById('comp-d').value;
+  const h=+document.getElementById('comp-h').value;
+  document.getElementById('comp-L-v').textContent=L;
+  document.getElementById('comp-d-v').textContent=d;
+  document.getElementById('comp-h-v').textContent=h;
+  const dk=d/h;
+  const attnFlops=L*L*d*2;
+  const ffnFlops=L*d*4*d*2;
+  const memQK=L*L*4;
+  const fmt=n=>n>=1e9?(n/1e9).toFixed(1)+'G':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
+  document.getElementById('comp-result').innerHTML=
+    `Attention FLOPs (QKᵀ + AV): <span class="hl-a">${fmt(attnFlops)}</span> &nbsp;| сложность <strong>O(L²·d)</strong><br>`+
+    `FFN FLOPs (×4 expand):       <span class="hl-g">${fmt(ffnFlops)}</span> &nbsp;| сложность <strong>O(L·d²)</strong><br>`+
+    `Память QKᵀ матрицы:          <span class="hl-b">${(memQK/1e6).toFixed(1)} MB</span> × ${h} heads = <span class="hl-r">${(memQK*h/1e6).toFixed(1)} MB</span><br>`+
+    `dₖ = d/h = ${d}/${h} = <span class="hl-p">${dk}</span>`;
+}
+calcComp();
+</script>

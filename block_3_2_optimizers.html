@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:68px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);}
+table{width:100%;border-collapse:collapse;}
+th{background:#1a1a2e;color:var(--amber);padding:8px 10px;text-align:left;font-size:.85em;}
+td{padding:7px 10px;border-top:1px solid var(--border);font-size:.85em;}
+td.mono{font-family:monospace;}
+select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">✓ 3.1 Backprop</span>
+  <span class="tag tag-active">▶ 3.2 Оптимизаторы</span>
+  <span class="tag tag-next">3.3 Регуляризация</span>
+</div>
+
+<h1>3.2 Оптимизаторы</h1>
+<p class="muted">SGD → Momentum → Adam → AdamW — откуда берутся формулы и почему они работают</p>
+
+<!-- 1. Общая форма -->
+<div class="card">
+  <h2>🗺️ Общая задача оптимизации</h2>
+  <p>После backprop у нас есть градиент <span class="hl-amber">g = ∂L/∂θ</span>. Оптимизатор решает: <strong>как именно обновить θ?</strong></p>
+  <div class="formula">θ_{t+1} = θ_t − η · update(g_t, g_{t-1}, ...)
+
+update зависит от оптимизатора:
+  SGD:      update = g_t
+  Momentum: update = экспон. скользящее среднее g
+  Adam:     update = нормированное EMA g / √(EMA g²)</div>
+  <div class="intuition">
+    💡 Все оптимизаторы решают одну задачу: двигаться вниз по loss surface, но делают это по-разному. SGD — прямолинейно. Momentum — с инерцией. Adam — адаптивно для каждого параметра.
+  </div>
+</div>
+
+<!-- 2. Интерактивная loss surface + траектории -->
+<div class="card">
+  <h2>🎮 Интерактивная loss surface — сравни оптимизаторы</h2>
+  <p class="muted">Выбери поверхность и оптимизаторы, нажми Run</p>
+  <br>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+    <div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Поверхность</div>
+      <select id="surfType" onchange="resetTraj()">
+        <option value="rosenbrock">Rosenbrock (banana)</option>
+        <option value="saddle">Седло</option>
+        <option value="ravine">Ущелье (ravine)</option>
+        <option value="bowl">Параболоид</option>
+      </select>
+    </div>
+    <div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">lr</div>
+      <input type="number" id="lrInput" value="0.003" step="0.001" min="0.0001" max="0.1">
+    </div>
+    <div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Шагов</div>
+      <input type="number" id="nSteps" value="200" min="10" max="1000">
+    </div>
+    <button onclick="runOpt()" style="border-color:var(--green);color:var(--green);">▶ Run</button>
+    <button onclick="resetTraj()">↺ Сброс</button>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkSGD" checked> <span style="color:#ef4444">● SGD</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkMom" checked> <span style="color:#f59e0b">● Momentum</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdam" checked> <span style="color:#10b981">● Adam</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdamW"> <span style="color:#a78bfa">● AdamW</span></label>
+  </div>
+  <canvas id="surfCanvas" width="880" height="380" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;border-radius:8px;"></canvas>
+  <div id="surfResult" style="margin-top:8px;font-family:monospace;font-size:.82em;color:var(--muted);"></div>
+</div>
+
+<!-- 3. SGD -->
+<div class="card">
+  <h2>1️⃣ SGD — Stochastic Gradient Descent</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">θ_{t+1} = θ_t − η · g_t
+
+g_t = ∂L_batch/∂θ   (на мини-батче)</div>
+      <p style="margin-top:8px;font-size:.88em;">«Стохастический» — потому что используем случайный мини-батч, а не весь датасет. Это добавляет шум, но ускоряет сходимость и помогает выйти из локальных минимумов.</p>
+      <div class="warn" style="margin-top:10px;font-size:.85em;">
+        ⚠️ Проблемы SGD:<br>
+        • Одинаковый lr для всех параметров<br>
+        • Медленная сходимость в «ущельях» (ravines)<br>
+        • Осциллирует поперёк направления минимума<br>
+        • Застревает у седловых точек
+      </div>
+    </div>
+    <div>
+      <h3>Размер батча vs lr</h3>
+      <div style="margin:8px 0;">
+        <span class="muted" style="font-size:.85em;">Batch size B: <span id="bsVal" style="color:var(--green);font-weight:600;">32</span></span>
+        <input type="range" min="1" max="512" step="1" value="32" id="bsRange" oninput="updateBS()">
+      </div>
+      <div id="bsInfo" style="font-family:monospace;font-size:.83em;background:#0d1117;border-radius:8px;padding:10px 12px;"></div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        💡 Linear scaling rule: при удвоении B → удваивай lr.<br>
+        Градиент мини-батча ≈ среднее по B примерам — при большем B он точнее, но разнообразия меньше.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Momentum -->
+<div class="card">
+  <h2>2️⃣ SGD + Momentum</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">v_t = β·v_{t-1} + g_t        (EMA градиентов)
+θ_{t+1} = θ_t − η·v_t
+
+β обычно = 0.9</div>
+      <p style="font-size:.88em;margin-top:8px;">v_t — «скорость» (velocity). Аналог физической инерции: шарик катится вниз, набирает скорость, не меняет направление резко.</p>
+      <br>
+      <h3>Раскрытие суммы (почему EMA?)</h3>
+      <div class="formula" style="font-size:.85em;">v_t = g_t + β·g_{t-1} + β²·g_{t-2} + ...
+     = Σ_{k=0}^{t} β^k · g_{t-k}
+
+→ экспоненциально взвешенное среднее
+  прошлых градиентов с весами β^k</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        💡 Эффективное окно памяти ≈ 1/(1−β).<br>
+        β=0.9: ~10 шагов. β=0.99: ~100 шагов.
+      </div>
+    </div>
+    <div>
+      <h3>Эффект momentum на ущелье</h3>
+      <div style="margin:8px 0;">
+        <span class="muted" style="font-size:.85em;">β = <span id="betaVal" style="color:var(--green);font-weight:600;">0.90</span></span>
+        <input type="range" min="0" max=".99" step=".01" value=".9" id="betaRange" oninput="drawMomentum()">
+      </div>
+      <canvas id="momCanvas" width="340" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="momInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Adam -->
+<div class="card">
+  <h2>3️⃣ Adam — Adaptive Moment Estimation</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">m_t = β₁·m_{t-1} + (1−β₁)·g_t    ← 1й момент (EMA g)
+v_t = β₂·v_{t-1} + (1−β₂)·g_t²   ← 2й момент (EMA g²)
+
+m̂_t = m_t/(1−β₁ᵗ)   ← bias correction
+v̂_t = v_t/(1−β₂ᵗ)
+
+θ_{t+1} = θ_t − η · m̂_t / (√v̂_t + ε)
+
+Гиперпараметры: β₁=0.9, β₂=0.999, ε=1e-8</div>
+      <div class="intuition" style="font-size:.85em;margin-top:10px;">
+        💡 <strong>m̂ / √v̂</strong> — нормированный градиент.<br>
+        Если g постоянно большой → v̂ большой → шаг маленький.<br>
+        Если g маленький → v̂ маленький → шаг относительно большой.<br>
+        Каждый параметр получает свой эффективный lr!
+      </div>
+    </div>
+    <div>
+      <h3>Bias correction — зачем?</h3>
+      <div class="formula" style="font-size:.85em;">При t=1, β₁=0.9:
+m_1 = 0.9·0 + 0.1·g_1 = 0.1·g_1
+m̂_1 = 0.1·g_1 / (1−0.9¹) = 0.1·g_1/0.1 = g_1 ✓
+
+Без коррекции m_1 = 0.1·g_1 → недооценка в 10×!
+Коррекция нужна только в начале (β^t → 0 при t→∞)</div>
+      <br>
+      <h3>Интуиция: Adam = Momentum + RMSProp</h3>
+      <div style="font-size:.85em;background:#0d1117;border-radius:8px;padding:10px 12px;font-family:monospace;">
+        <span style="color:var(--amber)">Momentum:</span> m̂_t (направление)<br>
+        <span style="color:var(--green)">RMSProp:</span>  1/√v̂_t (масштаб шага)<br>
+        <span style="color:var(--blue)">Adam:</span>      m̂_t / √v̂_t (оба вместе)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. AdamW -->
+<div class="card">
+  <h2>4️⃣ AdamW — Adam + правильный Weight Decay</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">Adam с L2 (неправильно!):
+  g_t = ∂L/∂θ + λ·θ      ← λθ попадает в EMA
+  θ_{t+1} = θ_t − η·m̂/(√v̂+ε)
+  Проблема: λθ масштабируется на 1/√v̂ ← некорректно
+
+AdamW (правильно):
+  g_t = ∂L/∂θ             ← чистый градиент
+  θ_{t+1} = θ_t − η·m̂/(√v̂+ε) − η·λ·θ_t
+                            ↑ weight decay отдельно!</div>
+      <div class="warn" style="margin-top:10px;font-size:.85em;">
+        ⚠️ В Adam+L2 weight decay масштабируется адаптивными ставками v̂, из-за чего параметры с большим v̂ (частые, шумные) регуляризируются слабее. AdamW применяет decay напрямую к параметрам — равномерно.
+      </div>
+    </div>
+    <div>
+      <h3>Сравнение эффекта decay</h3>
+      <div style="margin:8px 0;">
+        <span class="muted" style="font-size:.85em;">λ (weight decay): <span id="wdVal" style="color:var(--green);font-weight:600;">0.01</span></span>
+        <input type="range" min="0" max=".2" step=".001" value=".01" id="wdRange" oninput="drawWD()">
+      </div>
+      <canvas id="wdCanvas" width="340" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="wdInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Сравнительная таблица -->
+<div class="card">
+  <h2>📋 Сравнительная таблица оптимизаторов</h2>
+  <table>
+    <tr><th>Оптимизатор</th><th>Формула update</th><th>Память</th><th>Когда использовать</th></tr>
+    <tr><td><strong>SGD</strong></td><td class="mono">η·g</td><td class="mono">O(P)</td><td>CV с lr scheduling; простые задачи</td></tr>
+    <tr><td><strong>SGD+Momentum</strong></td><td class="mono">η·v, v=βv+g</td><td class="mono">O(2P)</td><td>CNN — часто лучше Adam на ImageNet</td></tr>
+    <tr><td><strong>Adam</strong></td><td class="mono">η·m̂/√v̂</td><td class="mono">O(3P)</td><td>NLP, Transformer, быстрый старт</td></tr>
+    <tr><td><strong>AdamW</strong></td><td class="mono">η·m̂/√v̂ + λθ</td><td class="mono">O(3P)</td><td>LLM, BERT, GPT — дефолт</td></tr>
+    <tr><td><strong>RMSProp</strong></td><td class="mono">η·g/√v̂</td><td class="mono">O(2P)</td><td>RNN — исторически</td></tr>
+  </table>
+</div>
+
+<!-- 8. LR Scheduling -->
+<div class="card">
+  <h2>📉 Learning Rate Scheduling</h2>
+  <div class="grid-2">
+    <div>
+      <p style="font-size:.88em;">Постоянный lr редко оптимален. Стратегии:</p>
+      <div class="formula" style="font-size:.85em;">Step decay:   η_t = η₀ · γ^(t//step)
+Cosine:       η_t = η_min + ½(η₀−η_min)·(1+cos(πt/T))
+Warmup:       η_t = η₀ · t/t_warmup  (первые t_warmup шагов)
+Linear decay: η_t = η₀ · (1 − t/T)</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        💡 <strong>Warmup</strong> важен для Adam: в начале m и v ещё не прогреты, эффективный lr нестабилен. Маленький начальный lr даёт EMA "набрать" статистику. BERT, GPT все используют warmup + cosine decay.
+      </div>
+    </div>
+    <div>
+      <h3>Интерактивный LR Schedule</h3>
+      <div style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="active" onclick="setSchedule('cosine',this)">Cosine</button>
+        <button onclick="setSchedule('step',this)">Step</button>
+        <button onclick="setSchedule('warmup',this)">Warmup+Cosine</button>
+        <button onclick="setSchedule('linear',this)">Linear</button>
+      </div>
+      <canvas id="lrCanvas" width="340" height="180" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;margin-top:8px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- 9. Код -->
+<div class="card">
+  <h2>💻 Реализация в PyTorch</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('api',this)">API PyTorch</button>
+    <button onclick="showCode('adam',this)">Adam с нуля</button>
+    <button onclick="showCode('loop',this)">Training loop</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ===================== LOSS SURFACES =====================
+function getLoss(surf, x, y) {
+  switch(surf) {
+    case 'rosenbrock': return (1-x)**2 + 100*(y-x**2)**2;
+    case 'saddle':     return x**2 - y**2;
+    case 'ravine':     return x**2 + 10*y**2;
+    case 'bowl':       return x**2 + y**2;
+  }
+}
+function getGrad(surf, x, y) {
+  const h=1e-5;
+  return [(getLoss(surf,x+h,y)-getLoss(surf,x-h,y))/(2*h),
+          (getLoss(surf,x,y+h)-getLoss(surf,x,y-h))/(2*h)];
+}
+
+const START = {rosenbrock:[-1.2,1], saddle:[1.8,0.5], ravine:[1.8,0.9], bowl:[1.5,1.2]};
+const XRANGE = {rosenbrock:[-2,2], saddle:[-3,3], ravine:[-2.5,2.5], bowl:[-2,2]};
+const YRANGE = {rosenbrock:[-1,2.5], saddle:[-3,3], ravine:[-1.5,1.5], bowl:[-2,2]};
+
+let trajectories = {};
+
+function resetTraj() { trajectories = {}; drawSurface(); }
+
+function runOpt() {
+  const surf = document.getElementById('surfType').value;
+  const lr = +document.getElementById('lrInput').value;
+  const steps = +document.getElementById('nSteps').value;
+  const [sx,sy] = START[surf];
+  const opts = [
+    {id:'SGD',   chk:'chkSGD',  col:'#ef4444', run: ()=>runSGD(surf,sx,sy,lr,steps)},
+    {id:'Mom',   chk:'chkMom',  col:'#f59e0b', run: ()=>runMom(surf,sx,sy,lr,steps)},
+    {id:'Adam',  chk:'chkAdam', col:'#10b981', run: ()=>runAdam(surf,sx,sy,lr,steps)},
+    {id:'AdamW', chk:'chkAdamW',col:'#a78bfa', run: ()=>runAdamW(surf,sx,sy,lr,steps)},
+  ];
+  trajectories = {};
+  opts.forEach(o => { if(document.getElementById(o.chk).checked) trajectories[o.id]={col:o.col,pts:o.run()}; });
+  drawSurface();
+  const res = Object.entries(trajectories).map(([k,v])=>{
+    const last=v.pts[v.pts.length-1];
+    return `${k}: (${last[0].toFixed(3)},${last[1].toFixed(3)}) L=${getLoss(surf,...last).toFixed(4)}`;
+  }).join('  |  ');
+  document.getElementById('surfResult').textContent = res || '';
+}
+
+function runSGD(surf,x,y,lr,steps){
+  const pts=[[x,y]];
+  for(let i=0;i<steps;i++){const [gx,gy]=getGrad(surf,x,y);x-=lr*gx;y-=lr*gy;pts.push([x,y]);}
+  return pts;
+}
+function runMom(surf,x,y,lr,steps,beta=0.9){
+  const pts=[[x,y]]; let vx=0,vy=0;
+  for(let i=0;i<steps;i++){const [gx,gy]=getGrad(surf,x,y);vx=beta*vx+gx;vy=beta*vy+gy;x-=lr*vx;y-=lr*vy;pts.push([x,y]);}
+  return pts;
+}
+function runAdam(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8){
+  const pts=[[x,y]]; let mx=0,my=0,vx=0,vy=0;
+  for(let i=1;i<=steps;i++){
+    const [gx,gy]=getGrad(surf,x,y);
+    mx=b1*mx+(1-b1)*gx; my=b1*my+(1-b1)*gy;
+    vx=b2*vx+(1-b2)*gx**2; vy=b2*vy+(1-b2)*gy**2;
+    const mxh=mx/(1-b1**i), myh=my/(1-b1**i);
+    const vxh=vx/(1-b2**i), vyh=vy/(1-b2**i);
+    x-=lr*mxh/(Math.sqrt(vxh)+eps); y-=lr*myh/(Math.sqrt(vyh)+eps);
+    pts.push([x,y]);
+  }
+  return pts;
+}
+function runAdamW(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8,wd=0.01){
+  const pts=[[x,y]]; let mx=0,my=0,vx=0,vy=0;
+  for(let i=1;i<=steps;i++){
+    const [gx,gy]=getGrad(surf,x,y);
+    mx=b1*mx+(1-b1)*gx; my=b1*my+(1-b1)*gy;
+    vx=b2*vx+(1-b2)*gx**2; vy=b2*vy+(1-b2)*gy**2;
+    const mxh=mx/(1-b1**i), myh=my/(1-b1**i);
+    const vxh=vx/(1-b2**i), vyh=vy/(1-b2**i);
+    x-=lr*mxh/(Math.sqrt(vxh)+eps)+lr*wd*x;
+    y-=lr*myh/(Math.sqrt(vyh)+eps)+lr*wd*y;
+    pts.push([x,y]);
+  }
+  return pts;
+}
+
+function drawSurface() {
+  const c=document.getElementById('surfCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const surf=document.getElementById('surfType').value;
+  const [x0,x1]=XRANGE[surf], [y0,y1]=YRANGE[surf];
+
+  // Draw contours via image
+  const img=ctx.createImageData(W,H);
+  const vals=[];
+  for(let py=0;py<H;py++) for(let px=0;px<W;px++){
+    const x=x0+(px/W)*(x1-x0), y=y1-((py/H)*(y1-y0));
+    vals.push(getLoss(surf,x,y));
+  }
+  const mn=Math.min(...vals.filter(isFinite)), mx=Math.max(...vals.filter(isFinite));
+  vals.forEach((v,i)=>{
+    const t=Math.min((v-mn)/(mx-mn),1);
+    const idx=i*4;
+    // Dark blue → purple → amber color map
+    const r=Math.round(t<0.5?13+t*2*50:63+((t-0.5)*2)*180);
+    const g=Math.round(t<0.5?17:17+(t-0.5)*2*100);
+    const bg=Math.round(t<0.5?23+t*2*80:103-((t-0.5)*2)*90);
+    img.data[idx]=r; img.data[idx+1]=g; img.data[idx+2]=bg; img.data[idx+3]=255;
+  });
+  ctx.putImageData(img,0,0);
+
+  // Coordinate transform
+  const tx=x=>(x-x0)/(x1-x0)*W;
+  const ty=y=>H-(y-y0)/(y1-y0)*H;
+
+  // Draw trajectories
+  Object.values(trajectories).forEach(({col,pts})=>{
+    if(!pts||pts.length<2) return;
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.beginPath();
+    pts.forEach(([x,y],i)=>{
+      const px=tx(x),py=ty(y);
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    });
+    ctx.stroke();
+    // Start dot
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(tx(pts[0][0]),ty(pts[0][1]),5,0,Math.PI*2); ctx.fill();
+    // End dot
+    const [ex,ey]=pts[pts.length-1];
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(tx(ex),ty(ey),5,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle=col; ctx.fill();
+  });
+
+  // Legend
+  ctx.fillStyle='#8b949e'; ctx.font='10px system-ui';
+  ctx.fillText(`● start  ○ end  |  ${surf}`,8,H-6);
+}
+
+// ===================== BS INFO =====================
+function updateBS(){
+  const B=+document.getElementById('bsRange').value;
+  document.getElementById('bsVal').textContent=B;
+  const noise=Math.sqrt(1/B);
+  document.getElementById('bsInfo').innerHTML=
+    `B=${B}\nGrad variance ∝ 1/B: ~${(noise*100).toFixed(0)}% отн. к B=1\n`+
+    `Linear scaling: lr ≈ ${(0.001*B/32).toFixed(4)}\n`+
+    `Рекомендация: ${B<=32?'мало памяти, шумный grad':B<=256?'баланс шум/скорость':'низкий шум, нужен warmup'}`;
+}
+
+// ===================== MOMENTUM CANVAS =====================
+function drawMomentum(){
+  const beta=+document.getElementById('betaRange').value;
+  document.getElementById('betaVal').textContent=beta.toFixed(2);
+  const c=document.getElementById('momCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Simulate 1D ravine: f(x,y) = x² + 10y², gradient varies
+  let x=1.5, y=0.8, vx=0, vy=0;
+  const lr=0.05;
+  const pts=[[x,y]];
+  for(let i=0;i<80;i++){
+    const gx=2*x, gy=20*y;
+    vx=beta*vx+gx; vy=beta*vy+gy;
+    x-=lr*vx; y-=lr*vy;
+    pts.push([x,y]);
+  }
+
+  const tx=v=>(v+2)/4*W;
+  const ty=v=>(v+1)/2*H;
+
+  // Contour fill
+  const imgD=ctx.createImageData(W,H);
+  for(let py=0;py<H;py++) for(let px=0;px<W;px++){
+    const cx=px/W*4-2, cy=py/H*2-1;
+    const v=Math.min((cx**2+10*cy**2)/15,1);
+    const i=(py*W+px)*4;
+    imgD.data[i]=Math.round(13+v*50); imgD.data[i+1]=Math.round(17+v*30); imgD.data[i+2]=Math.round(23+v*60); imgD.data[i+3]=255;
+  }
+  ctx.putImageData(imgD,0,0);
+
+  ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+  ctx.beginPath();
+  pts.forEach(([x,y],i)=>{
+    const px=tx(x),py=ty(y);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+  ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(tx(pts[0][0]),ty(pts[0][1]),4,0,Math.PI*2); ctx.fill();
+
+  const last=pts[pts.length-1];
+  const eff=Math.round(1/(1-beta));
+  document.getElementById('momInfo').textContent=`β=${beta.toFixed(2)}, эфф.окно≈${eff} шагов, конец:(${last[0].toFixed(3)},${last[1].toFixed(3)})`;
+}
+
+// ===================== WEIGHT DECAY CANVAS =====================
+function drawWD(){
+  const wd=+document.getElementById('wdRange').value;
+  document.getElementById('wdVal').textContent=wd.toFixed(3);
+  const c=document.getElementById('wdCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Show weight trajectory over steps for Adam vs AdamW
+  const steps=100;
+  let th_adam=1.0, mA=0, vA=0;
+  let th_adamw=1.0, mW=0, vW=0;
+  const pts_a=[th_adam], pts_w=[th_adamw];
+
+  for(let i=1;i<=steps;i++){
+    // Simulate loss where optimal θ=0, g≈θ + noise
+    const g_a=th_adam*0.1+0.01*(Math.random()-0.5);
+    mA=0.9*mA+0.1*g_a+0.1*wd*th_adam; // L2 in grad
+    vA=0.999*vA+0.001*(g_a+wd*th_adam)**2;
+    th_adam-=0.01*(mA/(1-0.9**i))/(Math.sqrt(vA/(1-0.999**i))+1e-8);
+    pts_a.push(th_adam);
+
+    const g_w=th_adamw*0.1+0.01*(Math.random()-0.5);
+    mW=0.9*mW+0.1*g_w;
+    vW=0.999*vW+0.001*g_w**2;
+    th_adamw-=0.01*(mW/(1-0.9**i))/(Math.sqrt(vW/(1-0.999**i))+1e-8)+0.01*wd*th_adamw;
+    pts_w.push(th_adamw);
+  }
+
+  const allV=[...pts_a,...pts_w];
+  const lo=Math.min(...allV), hi=Math.max(...allV);
+  const ty=v=>H-(v-lo)/(hi-lo||1)*(H*0.8)-H*0.1;
+  const tx=i=>i/steps*W;
+
+  ctx.strokeStyle='#333';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,ty(0));ctx.lineTo(W,ty(0));ctx.stroke();
+
+  ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2;
+  ctx.beginPath(); pts_a.forEach((v,i)=>{i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v));});ctx.stroke();
+
+  ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2;
+  ctx.beginPath(); pts_w.forEach((v,i)=>{i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v));});ctx.stroke();
+
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
+  ctx.fillText('Adam+L2 (синий)  AdamW (фиолет)',4,12);
+  ctx.fillText(`λ=${wd.toFixed(3)}`,W-50,12);
+
+  document.getElementById('wdInfo').innerHTML=
+    `Adam+L2 финал: θ≈${pts_a[steps].toFixed(4)}\nAdamW финал:   θ≈${pts_w[steps].toFixed(4)}`;
+}
+
+// ===================== LR SCHEDULE =====================
+let schedType='cosine';
+function setSchedule(type,btn){
+  schedType=type;
+  document.querySelectorAll('.card button').forEach(b=>{
+    if(['Cosine','Step','Warmup+Cosine','Linear'].some(s=>b.textContent===s)) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  drawLRSchedule();
+}
+function drawLRSchedule(){
+  const c=document.getElementById('lrCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const T=200, lr0=0.01, lrMin=0.0001, warmup=20;
+
+  function getLR(t){
+    switch(schedType){
+      case 'cosine':   return lrMin+0.5*(lr0-lrMin)*(1+Math.cos(Math.PI*t/T));
+      case 'step':     return lr0*Math.pow(0.5,Math.floor(t/50));
+      case 'warmup':   return t<warmup?lr0*t/warmup:lrMin+0.5*(lr0-lrMin)*(1+Math.cos(Math.PI*(t-warmup)/(T-warmup)));
+      case 'linear':   return Math.max(lr0*(1-t/T),lrMin);
+    }
+  }
+
+  ctx.strokeStyle='#1e2533';ctx.lineWidth=1;
+  [0.002,0.005,0.01].forEach(v=>{
+    const py=H-(v/lr0)*(H*0.8)-H*0.1;
+    ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(W,py);ctx.stroke();
+  });
+  ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let t=0;t<=T;t++){
+    const px=t/T*W, py=H-(getLR(t)/lr0)*(H*0.8)-H*0.1;
+    t===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='9px monospace';
+  ctx.fillText(schedType,4,13);ctx.fillText('lr',4,H*0.15);ctx.fillText('step →',W-45,H-4);
+}
+
+// ===================== CODE =====================
+const CODES={
+api:`import torch
+import torch.nn as nn
+
+model = nn.Sequential(nn.Linear(784,256), nn.ReLU(), nn.Linear(256,10))
+
+# SGD
+opt = torch.optim.SGD(model.parameters(), lr=0.01)
+
+# SGD + Momentum
+opt = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+
+# Adam
+opt = torch.optim.Adam(model.parameters(), lr=1e-3,
+                        betas=(0.9, 0.999), eps=1e-8)
+
+# AdamW (дефолт для LLM/Transformer)
+opt = torch.optim.AdamW(model.parameters(), lr=1e-3,
+                         betas=(0.9, 0.999), weight_decay=0.01)
+
+# LR Scheduler (cosine + warmup через transformers)
+from torch.optim.lr_scheduler import CosineAnnealingLR
+scheduler = CosineAnnealingLR(opt, T_max=1000, eta_min=1e-6)
+
+# В training loop:
+# scheduler.step()  # вызывать каждую эпоху/шаг`,
+
+adam:`import torch
+
+class AdamOptimizer:
+    def __init__(self, params, lr=1e-3, betas=(0.9,0.999), eps=1e-8, wd=0.0):
+        self.params = list(params)
+        self.lr, self.b1, self.b2, self.eps, self.wd = lr, *betas, eps, wd
+        self.t = 0
+        self.m = [torch.zeros_like(p) for p in self.params]
+        self.v = [torch.zeros_like(p) for p in self.params]
+
+    @torch.no_grad()
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            if p.grad is None: continue
+            g = p.grad
+            # AdamW: weight decay на параметр, не на градиент
+            if self.wd > 0:
+                p.mul_(1 - self.lr * self.wd)
+            # EMA моментов
+            self.m[i] = self.b1 * self.m[i] + (1-self.b1) * g
+            self.v[i] = self.b2 * self.v[i] + (1-self.b2) * g**2
+            # Bias correction
+            m_hat = self.m[i] / (1 - self.b1**self.t)
+            v_hat = self.v[i] / (1 - self.b2**self.t)
+            # Update
+            p -= self.lr * m_hat / (v_hat.sqrt() + self.eps)
+
+    def zero_grad(self):
+        for p in self.params:
+            if p.grad is not None: p.grad.zero_()`,
+
+loop:`import torch
+import torch.nn as nn
+from torch.optim.lr_scheduler import OneCycleLR
+
+model = nn.Sequential(nn.Linear(784,256),nn.ReLU(),nn.Linear(256,10))
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.01)
+criterion = nn.CrossEntropyLoss()
+
+# OneCycleLR: warmup → peak → cosine decay (один из лучших)
+scheduler = OneCycleLR(optimizer, max_lr=3e-4,
+                        steps_per_epoch=len(train_loader),
+                        epochs=10)
+
+for epoch in range(10):
+    model.train()
+    for X, y in train_loader:
+        optimizer.zero_grad()      # 1. Очистить градиенты
+        logits = model(X)          # 2. Forward pass
+        loss = criterion(logits, y)# 3. Loss
+        loss.backward()            # 4. Backward pass
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # grad clip!
+        optimizer.step()           # 5. Обновить параметры
+        scheduler.step()           # 6. Обновить lr`
+};
+function showCode(key,btn){
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent=CODES[key];
+}
+
+// INIT
+drawSurface();
+updateBS();
+drawMomentum();
+drawWD();
+drawLRSchedule();
+showCode('api',document.querySelector('#codeTabs button'));
+</script>
+</body>
+</html>
