@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.2 Предобработка данных</title>
+  <link rel="stylesheet" href="shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    textarea{
+      width:100%;
+      min-height:100px;
+      padding:10px;
+      resize:vertical;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-family:inherit;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .inline-math{
+      color:var(--blue);
+      font-weight:600;
+    }
+
+    .divider{
+      height:1px;
+      background:var(--border);
+      margin:14px 0;
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .small{
+      font-size:.9rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 5 — Classical ML</span>
+    <span class="tag tag-block">5.1 Введение в classical ML</span>
+    <span class="tag tag-active">5.2 Предобработка данных</span>
+    <span class="tag tag-block">5.3 Линейная регрессия</span>
+  </div>
+
+  <header class="hero">
+    <h1>5.2 Предобработка данных</h1>
+    <p class="muted">Scaling, encoding, missing values, leakage, train-only fitting, pipeline mindset</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">data quality</span>
+      <span class="mini-tag">feature engineering</span>
+      <span class="mini-tag">normalization</span>
+      <span class="mini-tag">encoding</span>
+      <span class="mini-tag">pipeline</span>
+    </div>
+
+    <h2>Зачем вообще нужна предобработка</h2>
+    <p>
+      В классическом ML качество модели очень часто определяется не только самим алгоритмом,
+      а тем, <span class="hl-amber">что именно подаётся на вход</span> и
+      <span class="hl-amber">как именно это подготовлено</span>.
+    </p>
+    <p>
+      Один и тот же dataset может дать:
+    </p>
+    <ul>
+      <li>слабый результат без обработки,</li>
+      <li>приличный результат после базового cleaning,</li>
+      <li>сильный результат после корректного scaling, encoding и контроля leakage.</li>
+    </ul>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong> Модель не понимает “смысл” признаков. Она видит только числа.
+      Если один признак живёт в диапазоне <code>[0,1]</code>, второй в <code>[0,100000]</code>,
+      третий содержит пропуски, а четвёртый — текстовые категории, то без грамотной подготовки
+      алгоритм получает хаотичный и плохо сопоставимый сигнал.
+    </div>
+
+    <div class="info">
+      <strong>Ключевая идея.</strong> Предобработка — это превращение сырых данных
+      в <span class="hl-blue">машиночитаемое, сопоставимое, устойчивое и честно подготовленное</span>
+      представление, пригодное для обучения и оценки модели.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Что обычно входит в preprocessing pipeline</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Базовые шаги</h3>
+        <ul>
+          <li>очистка и проверка типов данных,</li>
+          <li>работа с пропусками,</li>
+          <li>обработка категориальных признаков,</li>
+          <li>масштабирование числовых признаков,</li>
+          <li>обработка выбросов,</li>
+          <li>лог-преобразования и power transforms,</li>
+          <li>генерация признаков,</li>
+          <li>отбор признаков.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Критически важные правила</h3>
+        <ul>
+          <li><span class="hl-red">никогда</span> не использовать test для подгонки preprocessing,</li>
+          <li>всё, что “учится” из данных, надо fit делать только на train,</li>
+          <li>validation/test проходят только через transform,</li>
+          <li>pipeline должен воспроизводиться одинаково на новых данных.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      Raw data → cleaning → split → fit preprocessing on train → transform val/test → train model → evaluate
+    </div>
+
+    <div class="warn">
+      <strong>Частая ошибка новичков:</strong> сначала посчитать mean/std на всём dataset,
+      а потом делать split. Это уже <span class="hl-red">утечка информации</span>,
+      потому что train косвенно “увидел” test.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Пропуски (missing values)</h2>
+
+    <p>
+      Пропуск — это ситуация, когда значение признака неизвестно:
+      <code>NaN</code>, пустая строка, <code>null</code>, спец-код вроде <code>-999</code> и т.д.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему пропуски опасны</h3>
+        <ul>
+          <li>многие модели просто не умеют работать с NaN,</li>
+          <li>пропуски могут быть неслучайными,</li>
+          <li>они искажают статистики и расстояния,</li>
+          <li>неправильный fill может скрыть полезный сигнал.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Типичные стратегии</h3>
+        <ul>
+          <li><strong>drop rows / columns</strong>,</li>
+          <li><strong>mean / median imputation</strong>,</li>
+          <li><strong>mode</strong> для категорий,</li>
+          <li><strong>constant fill</strong> вроде “Unknown”,</li>
+          <li><strong>missing indicator</strong>,</li>
+          <li>модельная импутация.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      x<sub>missing</sub> → \hat{x} = mean(train) 
+      &nbsp;&nbsp;или&nbsp;&nbsp;
+      \hat{x} = median(train)
+    </div>
+
+    <div class="intuition">
+      Если распределение признака асимметричное или с выбросами,
+      <span class="hl-green">median обычно устойчивее mean</span>.
+      Для категориальных признаков часто используют mode или отдельную категорию “missing”.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ситуация</th>
+          <th>Часто разумно</th>
+          <th>Почему</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Числовой признак, мало выбросов</td>
+          <td>mean imputation</td>
+          <td>просто и быстро</td>
+        </tr>
+        <tr>
+          <td>Числовой признак, тяжёлые хвосты</td>
+          <td>median imputation</td>
+          <td>устойчивость к выбросам</td>
+        </tr>
+        <tr>
+          <td>Категориальный признак</td>
+          <td>mode / “Unknown”</td>
+          <td>сохраняется дискретная природа признака</td>
+        </tr>
+        <tr>
+          <td>Пропуск сам по себе информативен</td>
+          <td>fill + missing flag</td>
+          <td>сигнал “значение отсутствует” может быть полезен</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warn">
+      Пропуск — это не просто “дырка”. Иногда сам факт отсутствия значения связан с target.
+      Например, “нет данных о доходе” может косвенно коррелировать с поведением клиента.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Масштабирование числовых признаков</h2>
+
+    <p>
+      Многие алгоритмы чувствительны к масштабу признаков:
+      <span class="hl-blue">k-NN, SVM, логистическая регрессия, линейные модели с регуляризацией,
+      PCA, градиентные методы</span>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Когда scaling особенно важен</h3>
+        <ul>
+          <li>есть расстояния или нормы,</li>
+          <li>есть регуляризация L1/L2,</li>
+          <li>признаки в разных единицах,</li>
+          <li>есть gradient-based optimization.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда менее критично</h3>
+        <ul>
+          <li>деревья решений,</li>
+          <li>random forest,</li>
+          <li>boosting на деревьях.</li>
+        </ul>
+        <p class="muted small">
+          Но даже там scaling может быть полезен ради единообразного pipeline.
+        </p>
+      </div>
+    </div>
+
+    <h3>Standardization</h3>
+    <div class="formula">
+      z = \frac{x - \mu}{\sigma}
+    </div>
+    <p>
+      Здесь <span class="inline-math">μ</span> — mean на train,
+      а <span class="inline-math">σ</span> — standard deviation на train.
+      После преобразования признак обычно имеет mean около 0 и std около 1.
+    </p>
+
+    <h3>Min-Max scaling</h3>
+    <div class="formula">
+      x' = \frac{x - x_{min}}{x_{max} - x_{min}}
+    </div>
+    <p>
+      Сжимает признак в диапазон вроде <code>[0,1]</code>.
+      Полезно, когда нужен контролируемый диапазон, но чувствительно к выбросам.
+    </p>
+
+    <h3>Robust scaling</h3>
+    <div class="formula">
+      x' = \frac{x - median}{IQR}
+      \quad,\quad IQR = Q_{0.75} - Q_{0.25}
+    </div>
+    <p>
+      Более устойчив к выбросам, потому что опирается на квартили, а не на mean/std.
+    </p>
+
+    <div class="info">
+      <strong>Смысл scaling:</strong> не “сделать данные красивыми”, а
+      привести признаки к сопоставимому численному масштабу,
+      чтобы модель не переоценивала признаки только потому, что у них большие числа.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: как работает scaling</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Настройка исходного признака</h3>
+
+        <div class="control-group">
+          <label for="scaleMean">Mean исходного признака: <span id="scaleMeanVal" class="hl-green">50</span></label>
+          <input type="range" id="scaleMean" min="-50" max="150" value="50" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="scaleStd">Std исходного признака: <span id="scaleStdVal" class="hl-blue">20</span></label>
+          <input type="range" id="scaleStd" min="1" max="60" value="20" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="scalePoint">Точка x: <span id="scalePointVal" class="hl-amber">70</span></label>
+          <input type="range" id="scalePoint" min="-100" max="200" value="70" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="scaleMin">Min для min-max: <span id="scaleMinVal">0</span></label>
+          <input type="range" id="scaleMin" min="-100" max="100" value="0" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="scaleMax">Max для min-max: <span id="scaleMaxVal">100</span></label>
+          <input type="range" id="scaleMax" min="-50" max="250" value="100" step="1">
+        </div>
+      </div>
+
+      <div>
+        <h3>Результат</h3>
+        <div class="result-box" id="scaleResults"></div>
+        <canvas id="scaleCanvas" width="380" height="240"></canvas>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Одна и та же точка может выглядеть “большой” или “малой”
+      только относительно статистик признака. В standardization важен не абсолютный x,
+      а то, <span class="hl-green">насколько он отклонён от среднего в единицах std</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Кодирование категориальных признаков</h2>
+
+    <p>
+      Модели обычно не понимают строковые значения вроде <code>"red"</code>, <code>"male"</code>,
+      <code>"Riga"</code> напрямую. Категории надо перевести в числовое представление.
+    </p>
+
+    <h3>One-hot encoding</h3>
+    <div class="formula">
+      \text{city} \in \{Riga, Tallinn, Vilnius\}
+      \Rightarrow
+      [1,0,0], [0,1,0], [0,0,1]
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>не навязывает ложный порядок,</li>
+          <li>подходит для большинства линейных моделей,</li>
+          <li>прозрачно и интерпретируемо.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>раздувает размерность,</li>
+          <li>плохо для high-cardinality категорий,</li>
+          <li>редкие категории могут давать шум.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Ordinal encoding</h3>
+    <p>
+      Подходит, когда в категории реально есть порядок:
+      <code>low &lt; medium &lt; high</code>.
+    </p>
+
+    <div class="warn">
+      <strong>Важно:</strong> нельзя кодировать номинальные категории
+      как <code>red=1, blue=2, green=3</code>, если в них нет порядка.
+      Иначе модель может решить, что <code>green &gt; blue &gt; red</code> по смыслу.
+    </div>
+
+    <h3>High-cardinality признаки</h3>
+    <p>
+      Для признаков вроде <code>user_id</code>, <code>zip_code</code>, <code>product_code</code>
+      one-hot может быть слишком дорогим. Тогда используют:
+    </p>
+    <ul>
+      <li>frequency encoding,</li>
+      <li>target encoding,</li>
+      <li>hashing trick,</li>
+      <li>группировку редких категорий в “Other”.</li>
+    </ul>
+
+    <div class="warn">
+      <strong>Target encoding</strong> легко даёт leakage, если делать его на всём dataset.
+      Его нужно строить очень аккуратно, обычно через CV-стратегии.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: one-hot encoding</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="citySelect">Выбери категорию</label>
+          <select id="citySelect">
+            <option value="Riga">Riga</option>
+            <option value="Tallinn">Tallinn</option>
+            <option value="Vilnius">Vilnius</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Список известных категорий</label>
+          <textarea id="knownCats">Riga
+Tallinn
+Vilnius</textarea>
+        </div>
+
+        <button id="encodeBtn">Построить encoding</button>
+      </div>
+
+      <div>
+        <h3>Результат encoding</h3>
+        <div class="result-box" id="oneHotResult"></div>
+        <div class="info">
+          Если категория не встречалась во время fit encoder,
+          на inference надо заранее решить поведение:
+          <code>ignore</code>, <code>error</code>, “Other”, или другую стратегию.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4. Выбросы и тяжёлые хвосты</h2>
+
+    <p>
+      Выбросы могут сильно влиять на средние, стандартные отклонения, линейные коэффициенты
+      и расстояния между объектами.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что можно делать</h3>
+        <ul>
+          <li>оставить как есть, если это реальные редкие случаи,</li>
+          <li>winsorization / clipping,</li>
+          <li>robust scaling,</li>
+          <li>лог-преобразование,</li>
+          <li>отдельный бинарный признак “extreme value”.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Нельзя делать автоматически</h3>
+        <ul>
+          <li>без понимания домена удалять все “большие” числа,</li>
+          <li>считать любой редкий случай ошибкой,</li>
+          <li>ломать полезный business signal ради “красивого графика”.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Лог-преобразование</h3>
+    <div class="formula">
+      x' = \log(1 + x)
+    </div>
+
+    <p>
+      Полезно для положительных признаков с сильной правой асимметрией:
+      доход, количество просмотров, длительности, денежные суммы.
+    </p>
+
+    <div class="intuition">
+      Лог “сжимает” большие значения сильнее, чем маленькие.
+      Разница между 10 и 20 сохраняется заметной, но разница между 10000 и 10010 перестаёт доминировать.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Feature engineering</h2>
+
+    <p>
+      Иногда лучший способ улучшить модель — не брать более сложный алгоритм,
+      а построить более умные признаки.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Сырой признак</th>
+          <th>Полезная инженерия</th>
+          <th>Зачем</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>timestamp</td>
+          <td>hour, weekday, month, is_weekend</td>
+          <td>извлечь циклическую структуру времени</td>
+        </tr>
+        <tr>
+          <td>birth_date</td>
+          <td>age</td>
+          <td>убрать лишнюю абсолютную дату</td>
+        </tr>
+        <tr>
+          <td>income, debt</td>
+          <td>debt / income</td>
+          <td>отношение информативнее абсолютных значений</td>
+        </tr>
+        <tr>
+          <td>text length</td>
+          <td>log(length)</td>
+          <td>убрать сильную асимметрию</td>
+        </tr>
+        <tr>
+          <td>city</td>
+          <td>country, region, capital_flag</td>
+          <td>агрегация категорий</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="success">
+      <strong>Практическая мысль:</strong> feature engineering — это место,
+      где соединяются математика, доменная логика и здравый смысл.
+      Очень часто простая модель на хороших признаках сильнее сложной модели на сырых данных.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>6. Train / validation / test и data leakage</h2>
+
+    <p>
+      Это одна из самых важных тем во всём ML-пайплайне.
+      Можно получить “прекрасные” метрики и при этом обманывать самого себя.
+    </p>
+
+    <div class="formula">
+      \text{Leakage} = \text{любая информация из future/val/test, которая попала в train-процесс}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Классические примеры leakage</h3>
+        <ul>
+          <li>scaler fitted на всём dataset,</li>
+          <li>imputer fitted на train+test,</li>
+          <li>feature построен с использованием target из будущего,</li>
+          <li>дубликаты одного объекта в train и test,</li>
+          <li>time-series split сделан случайно.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Правильная логика</h3>
+        <ul>
+          <li>split сначала,</li>
+          <li>fit preprocessing только на train,</li>
+          <li>transform val/test теми же объектами,</li>
+          <li>весь pipeline должен быть воспроизводим.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step"><strong>Шаг 1.</strong> Делим данные на train / val / test.</div>
+    <div class="step"><strong>Шаг 2.</strong> На train учим imputer, encoder, scaler.</div>
+    <div class="step"><strong>Шаг 3.</strong> Те же fitted-трансформеры применяем к val/test.</div>
+    <div class="step"><strong>Шаг 4.</strong> Учим модель только на преобразованном train.</div>
+    <div class="step"><strong>Шаг 5.</strong> Подбираем решения по validation.</div>
+    <div class="step"><strong>Шаг 6.</strong> Один раз финально оцениваем на test.</div>
+
+    <div class="warn">
+      <strong>Test</strong> — это не место для принятия решений по гиперпараметрам.
+      Это финальный честный экзамен модели.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: leakage vs правильный split</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="trainMean">Среднее train</label>
+          <input type="number" id="trainMean" value="50">
+        </div>
+        <div class="control-group">
+          <label for="testMean">Среднее test</label>
+          <input type="number" id="testMean" value="80">
+        </div>
+        <div class="control-group">
+          <label for="exampleX">Пример x из test</label>
+          <input type="number" id="exampleX" value="90">
+        </div>
+        <div class="control-group">
+          <label for="globalStd">Std (для простоты общая)</label>
+          <input type="number" id="globalStd" value="10">
+        </div>
+        <button id="leakageBtn">Посчитать</button>
+      </div>
+
+      <div>
+        <div class="result-box" id="leakageResult"></div>
+        <div class="intuition">
+          Даже если difference кажется маленьким, сама идея уже сломана:
+          train pipeline получил знание о test-распределении.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>7. Почему preprocessing зависит от модели</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Модель</th>
+          <th>Scaling</th>
+          <th>Encoding</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Linear / Logistic Regression</td>
+          <td>часто важен</td>
+          <td>one-hot / ordinal</td>
+          <td>регуляризация чувствительна к масштабу</td>
+        </tr>
+        <tr>
+          <td>k-NN</td>
+          <td>критичен</td>
+          <td>нужны числовые признаки</td>
+          <td>всё строится на расстоянии</td>
+        </tr>
+        <tr>
+          <td>SVM</td>
+          <td>обычно очень важен</td>
+          <td>нужны числовые признаки</td>
+          <td>margin и kernel чувствительны к масштабу</td>
+        </tr>
+        <tr>
+          <td>Decision Tree</td>
+          <td>обычно не нужен</td>
+          <td>категории всё равно надо кодировать</td>
+          <td>split по порогам, а не по расстояниям</td>
+        </tr>
+        <tr>
+          <td>Random Forest / GBDT</td>
+          <td>редко критичен</td>
+          <td>зависит от реализации</td>
+          <td>обычно терпимее к сырому масштабу</td>
+        </tr>
+        <tr>
+          <td>PCA / k-means</td>
+          <td>очень важен</td>
+          <td>только числовое представление</td>
+          <td>геометрия пространства меняется из-за масштаба</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      <strong>Вывод:</strong> preprocessing нельзя выбирать вслепую.
+      Он должен учитывать и тип данных, и тип модели, и способ валидации.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>8. sklearn Pipeline и ColumnTransformer</h2>
+
+    <p>
+      В production-style workflow предобработка и модель должны быть
+      связаны в единый объект. Иначе легко получить рассинхрон
+      между тем, как данные обрабатывались на train и на inference.
+    </p>
+
+    <div class="tabs" id="codeTabs">
+      <button class="tab-btn active" data-tab="tab1">NumPy intuition</button>
+      <button class="tab-btn" data-tab="tab2">sklearn Pipeline</button>
+      <button class="tab-btn" data-tab="tab3">ColumnTransformer</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">import numpy as np
+
+# train-only statistics
+x_train = np.array([10., 20., 30., 40., 50.])
+mu = x_train.mean()
+sigma = x_train.std()
+
+def standardize(x, mu, sigma):
+    return (x - mu) / sigma
+
+x_val = np.array([35., 60.])
+
+x_train_scaled = standardize(x_train, mu, sigma)
+x_val_scaled = standardize(x_val, mu, sigma)
+
+print("mu =", mu)
+print("sigma =", sigma)
+print("train_scaled =", x_train_scaled)
+print("val_scaled =", x_val_scaled)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler()),
+    ("model", LogisticRegression(max_iter=1000))
+])
+
+pipe.fit(X_train, y_train)
+y_pred = pipe.predict(X_val)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+num_features = ["age", "income", "debt_ratio"]
+cat_features = ["city", "education"]
+
+num_pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler())
+])
+
+cat_pipe = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocessor = ColumnTransformer([
+    ("num", num_pipe, num_features),
+    ("cat", cat_pipe, cat_features)
+])
+
+full_pipe = Pipeline([
+    ("preprocess", preprocessor),
+    ("model", LogisticRegression(max_iter=2000))
+])
+
+full_pipe.fit(X_train, y_train)
+pred = full_pipe.predict(X_test)</div>
+    </div>
+
+    <div class="success">
+      <strong>Почему Pipeline так важен:</strong>
+      он делает fit/transform логику структурированной,
+      уменьшает риск leakage и позволяет одинаково применять preprocessing в train и inference.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>9. Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>масштабировать весь dataset до split,</li>
+        <li>удалять пропуски без анализа причин,</li>
+        <li>кодировать номинальные категории как числа с порядком,</li>
+        <li>забывать обработку unseen categories,</li>
+        <li>не сохранять fitted preprocessing для production,</li>
+        <li>путать cleaning и leakage-safe fitting,</li>
+        <li>забывать, что train и production должны проходить одинаковый pipeline,</li>
+        <li>считать, что trees “решают всё” и preprocessing не нужен вообще.</li>
+      </ul>
+    </div>
+
+    <div class="info">
+      Хороший preprocessing — это не набор ритуалов.
+      Это аккуратная, воспроизводимая система преобразований,
+      согласованная с моделью и протоколом оценки.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>10. Связь с ML дальше по курсу</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Где это понадобится сразу</h3>
+        <ul>
+          <li><strong>5.3 Линейная регрессия</strong> — scaling, outliers, feature engineering,</li>
+          <li><strong>5.4 Регуляризация</strong> — сопоставимый масштаб критичен,</li>
+          <li><strong>5.5 Логистическая регрессия</strong> — pipeline и кодирование категорий,</li>
+          <li><strong>5.8 k-NN</strong> — расстояния ломаются без scaling,</li>
+          <li><strong>5.13 SVM</strong> — margin чувствителен к масштабу.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Где всплывёт позже</h3>
+        <ul>
+          <li><strong>5.14 Кластеризация</strong> — геометрия пространства зависит от preprocessing,</li>
+          <li><strong>5.15 Снижение размерности</strong> — PCA и похожие методы чувствительны к scale,</li>
+          <li><strong>5.17 Валидация</strong> — всё обучение transformers только внутри train folds,</li>
+          <li><strong>5.20 Практический pipeline</strong> — это уже production mindset.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Предобработка данных — это мост между сырым dataset и обучаемой моделью.
+      Её цель не просто “почистить таблицу”, а
+      <span class="hl-green">создать корректное, устойчивое и leakage-safe представление данных</span>.
+    </p>
+    <p>
+      Самое важное, что надо запомнить:
+    </p>
+    <ul>
+      <li>всё, что учится из данных, fit делается только на train,</li>
+      <li>масштабирование и encoding зависят от модели,</li>
+      <li>пропуски и выбросы надо трактовать осмысленно,</li>
+      <li>pipeline должен быть воспроизводим от начала до конца,</li>
+      <li>хороший preprocessing часто даёт не меньше пользы, чем смена алгоритма.</li>
+    </ul>
+  </div>
+
+  <script src="shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(target).classList.add('active');
+      });
+    });
+
+    // ---------- Scaling interactive ----------
+    const scaleMean = document.getElementById('scaleMean');
+    const scaleStd = document.getElementById('scaleStd');
+    const scalePoint = document.getElementById('scalePoint');
+    const scaleMin = document.getElementById('scaleMin');
+    const scaleMax = document.getElementById('scaleMax');
+
+    const scaleMeanVal = document.getElementById('scaleMeanVal');
+    const scaleStdVal = document.getElementById('scaleStdVal');
+    const scalePointVal = document.getElementById('scalePointVal');
+    const scaleMinVal = document.getElementById('scaleMinVal');
+    const scaleMaxVal = document.getElementById('scaleMaxVal');
+
+    const scaleResults = document.getElementById('scaleResults');
+    const scaleCanvas = document.getElementById('scaleCanvas');
+    const sctx = scaleCanvas.getContext('2d');
+
+    function updateScalingDemo(){
+      const mean = Number(scaleMean.value);
+      const std = Math.max(0.0001, Number(scaleStd.value));
+      let x = Number(scalePoint.value);
+      let minV = Number(scaleMin.value);
+      let maxV = Number(scaleMax.value);
+
+      if(maxV <= minV + 1){
+        maxV = minV + 1;
+      }
+
+      scaleMeanVal.textContent = mean;
+      scaleStdVal.textContent = std;
+      scalePointVal.textContent = x;
+      scaleMinVal.textContent = minV;
+      scaleMaxVal.textContent = maxV;
+
+      const z = (x - mean) / std;
+      const mm = (x - minV) / (maxV - minV);
+
+      scaleResults.innerHTML = `
+        <div><span class="hl-blue">Standardized:</span> z = (x - μ) / σ = (${x} - ${mean}) / ${std} = <span class="hl-green">${z.toFixed(3)}</span></div>
+        <div style="margin-top:8px"><span class="hl-purple">Min-max:</span> x' = (x - min)/(max - min) = (${x} - ${minV}) / (${maxV - minV}) = <span class="hl-amber">${mm.toFixed(3)}</span></div>
+        <div style="margin-top:8px" class="muted">Если z ≈ 0, точка около среднего. Если |z| > 2, она уже заметно далека от среднего.</div>
+      `;
+
+      drawScalingCanvas(mean, std, x, minV, maxV, z, mm);
+    }
+
+    function drawScalingCanvas(mean, std, x, minV, maxV, z, mm){
+      const w = scaleCanvas.width;
+      const h = scaleCanvas.height;
+
+      sctx.clearRect(0,0,w,h);
+      sctx.fillStyle = '#0d1117';
+      sctx.fillRect(0,0,w,h);
+
+      // axes
+      sctx.strokeStyle = '#30363d';
+      sctx.lineWidth = 1;
+      sctx.beginPath();
+      sctx.moveTo(40, 40);
+      sctx.lineTo(40, h - 40);
+      sctx.lineTo(w - 20, h - 40);
+      sctx.stroke();
+
+      // raw scale line
+      const rawY = 70;
+      const stdY = 170;
+
+      sctx.fillStyle = '#8b949e';
+      sctx.font = '12px system-ui';
+      sctx.fillText('Исходная шкала x', 40, rawY - 20);
+      sctx.fillText('Standardized z-шкала', 40, stdY - 20);
+
+      sctx.strokeStyle = '#60a5fa';
+      sctx.beginPath();
+      sctx.moveTo(60, rawY);
+      sctx.lineTo(w - 30, rawY);
+      sctx.stroke();
+
+      sctx.strokeStyle = '#10b981';
+      sctx.beginPath();
+      sctx.moveTo(60, stdY);
+      sctx.lineTo(w - 30, stdY);
+      sctx.stroke();
+
+      function mapRaw(v){
+        return 60 + ((v - (mean - 3*std)) / (6*std)) * (w - 90);
+      }
+
+      function mapStd(v){
+        return 60 + ((v + 3) / 6) * (w - 90);
+      }
+
+      // raw ticks
+      [-2,-1,0,1,2].forEach(k => {
+        const val = mean + k * std;
+        const px = mapRaw(val);
+        sctx.strokeStyle = '#30363d';
+        sctx.beginPath();
+        sctx.moveTo(px, rawY - 8);
+        sctx.lineTo(px, rawY + 8);
+        sctx.stroke();
+        sctx.fillStyle = '#8b949e';
+        sctx.fillText(String(Math.round(val)), px - 10, rawY + 24);
+      });
+
+      // standardized ticks
+      [-2,-1,0,1,2].forEach(k => {
+        const px = mapStd(k);
+        sctx.strokeStyle = '#30363d';
+        sctx.beginPath();
+        sctx.moveTo(px, stdY - 8);
+        sctx.lineTo(px, stdY + 8);
+        sctx.stroke();
+        sctx.fillStyle = '#8b949e';
+        sctx.fillText(String(k), px - 5, stdY + 24);
+      });
+
+      // means
+      const meanX = mapRaw(mean);
+      sctx.strokeStyle = '#f59e0b';
+      sctx.beginPath();
+      sctx.moveTo(meanX, rawY - 16);
+      sctx.lineTo(meanX, rawY + 16);
+      sctx.stroke();
+      sctx.fillStyle = '#f59e0b';
+      sctx.fillText('μ', meanX - 4, rawY - 22);
+
+      const zeroX = mapStd(0);
+      sctx.strokeStyle = '#f59e0b';
+      sctx.beginPath();
+      sctx.moveTo(zeroX, stdY - 16);
+      sctx.lineTo(zeroX, stdY + 16);
+      sctx.stroke();
+      sctx.fillText('0', zeroX - 3, stdY - 22);
+
+      // point
+      const rawPointX = mapRaw(x);
+      const stdPointX = mapStd(Math.max(-3, Math.min(3, z)));
+
+      sctx.fillStyle = '#a78bfa';
+      sctx.beginPath();
+      sctx.arc(rawPointX, rawY, 6, 0, Math.PI * 2);
+      sctx.fill();
+
+      sctx.beginPath();
+      sctx.arc(stdPointX, stdY, 6, 0, Math.PI * 2);
+      sctx.fill();
+
+      sctx.fillStyle = '#a78bfa';
+      sctx.fillText('x', rawPointX - 3, rawY - 14);
+      sctx.fillText('z', stdPointX - 3, stdY - 14);
+
+      // min max info
+      sctx.fillStyle = '#8b949e';
+      sctx.fillText(`min-max range: [${minV}, ${maxV}]`, 40, h - 12);
+      sctx.fillText(`scaled value: ${mm.toFixed(3)}`, 220, h - 12);
+    }
+
+    [scaleMean, scaleStd, scalePoint, scaleMin, scaleMax].forEach(el => {
+      el.addEventListener('input', updateScalingDemo);
+    });
+
+    updateScalingDemo();
+
+    // ---------- One-hot ----------
+    const encodeBtn = document.getElementById('encodeBtn');
+    const citySelect = document.getElementById('citySelect');
+    const knownCats = document.getElementById('knownCats');
+    const oneHotResult = document.getElementById('oneHotResult');
+
+    function updateOneHot(){
+      const selected = citySelect.value.trim();
+      const categories = knownCats.value
+        .split('\n')
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      const vector = categories.map(cat => cat === selected ? 1 : 0);
+      const known = categories.includes(selected);
+
+      oneHotResult.innerHTML = `
+        <div><strong>Выбрано:</strong> <span class="hl-blue">${selected}</span></div>
+        <div style="margin-top:8px"><strong>Fitted categories:</strong> [${categories.map(x => `"${x}"`).join(', ')}]</div>
+        <div style="margin-top:8px"><strong>One-hot vector:</strong> <code>[${vector.join(', ')}]</code></div>
+        <div style="margin-top:8px">
+          ${known
+            ? '<span class="hl-green">Категория была известна во время fit encoder.</span>'
+            : '<span class="hl-red">Категория unseen. Нужна стратегия handle_unknown.</span>'}
+        </div>
+      `;
+    }
+
+    encodeBtn.addEventListener('click', updateOneHot);
+    citySelect.addEventListener('change', updateOneHot);
+    updateOneHot();
+
+    // ---------- Leakage ----------
+    const leakageBtn = document.getElementById('leakageBtn');
+    const leakageResult = document.getElementById('leakageResult');
+
+    function updateLeakage(){
+      const trainMean = Number(document.getElementById('trainMean').value);
+      const testMean = Number(document.getElementById('testMean').value);
+      const exampleX = Number(document.getElementById('exampleX').value);
+      const globalStd = Math.max(0.0001, Number(document.getElementById('globalStd').value));
+
+      const trueScaled = (exampleX - trainMean) / globalStd;
+      const leakedMean = (trainMean + testMean) / 2;
+      const leakedScaled = (exampleX - leakedMean) / globalStd;
+
+      leakageResult.innerHTML = `
+        <div><span class="hl-green">Правильно:</span> z = (${exampleX} - ${trainMean}) / ${globalStd} = <strong>${trueScaled.toFixed(3)}</strong></div>
+        <div style="margin-top:8px"><span class="hl-red">С leakage:</span> z = (${exampleX} - ${leakedMean}) / ${globalStd} = <strong>${leakedScaled.toFixed(3)}</strong></div>
+        <div style="margin-top:8px"><strong>Разница:</strong> ${(leakedScaled - trueScaled).toFixed(3)}</div>
+        <div style="margin-top:8px" class="muted">
+          Здесь preprocessing уже зависит от test distribution, а значит оценка больше не честная.
+        </div>
+      `;
+    }
+
+    leakageBtn.addEventListener('click', updateLeakage);
+    updateLeakage();
+  </script>
+</body>
+</html>

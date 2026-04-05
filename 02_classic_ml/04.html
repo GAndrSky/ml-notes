@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.4 Регуляризация линейных моделей</title>
+  <link rel="stylesheet" href="shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.1rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .lambda-badge{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 5 — Classical ML</span>
+    <span class="tag tag-block">5.3 Линейная регрессия</span>
+    <span class="tag tag-active">5.4 Регуляризация линейных моделей</span>
+    <span class="tag tag-block">5.5 Логистическая регрессия</span>
+  </div>
+
+  <header class="hero">
+    <h1>5.4 Регуляризация линейных моделей</h1>
+    <p class="muted">Ridge, Lasso, Elastic Net, shrinkage, sparsity, multicollinearity, MAP and priors</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">ridge</span>
+      <span class="mini-tag">lasso</span>
+      <span class="mini-tag">elastic net</span>
+      <span class="mini-tag">shrinkage</span>
+      <span class="mini-tag">MAP</span>
+    </div>
+
+    <h2>Зачем нужна регуляризация</h2>
+    <p>
+      В линейной модели можно подобрать веса, которые очень хорошо объясняют train,
+      но начинают плохо работать на новых данных. Это классическая проблема
+      <span class="hl-red">overfitting</span>.
+    </p>
+
+    <div class="formula">
+      \hat{y} = \mathbf{w}^T \mathbf{x} + b
+    </div>
+
+    <p>
+      Если признаков много, они коррелируют между собой или в данных есть шум,
+      веса могут стать слишком большими и нестабильными.
+    </p>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Регуляризация — это штраф за “слишком сложную” модель.
+      Мы говорим алгоритму: “объясняй данные хорошо, но не делай веса без необходимости огромными”.
+    </div>
+
+    <div class="formula">
+      \text{Objective} = \text{data fit} + \lambda \cdot \text{penalty}
+    </div>
+
+    <div class="info">
+      <strong>Главная идея:</strong>
+      без регуляризации модель минимизирует только ошибку на train.
+      С регуляризацией она балансирует между
+      <span class="hl-blue">качеством подгонки</span> и
+      <span class="hl-blue">простотой / устойчивостью параметров</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Общий шаблон регуляризованной линейной модели</h2>
+
+    <p>
+      В обычной линейной регрессии мы минимизируем MSE:
+    </p>
+
+    <div class="formula">
+      L(\mathbf{w}, b)=\frac{1}{n}\sum_{i=1}^{n}(\mathbf{w}^T\mathbf{x}^{(i)}+b-y^{(i)})^2
+    </div>
+
+    <p>
+      В регуляризованной версии добавляем штраф на веса:
+    </p>
+
+    <div class="formula">
+      J(\mathbf{w}, b)=
+      \frac{1}{n}\sum_{i=1}^{n}(\mathbf{w}^T\mathbf{x}^{(i)}+b-y^{(i)})^2
+      +
+      \lambda \cdot \Omega(\mathbf{w})
+    </div>
+
+    <p>
+      Где:
+    </p>
+    <ul>
+      <li><code>\Omega(\mathbf{w})</code> — penalty term,</li>
+      <li><code>\lambda \ge 0</code> — сила регуляризации.</li>
+    </ul>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если λ = 0</h3>
+        <ul>
+          <li>получаем обычную линейную регрессию,</li>
+          <li>никакого штрафа нет,</li>
+          <li>модель может раздувать веса.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Если λ очень большой</h3>
+        <ul>
+          <li>штраф доминирует,</li>
+          <li>веса сильно прижимаются к нулю,</li>
+          <li>модель становится слишком простой.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Слишком маленькое <code>\lambda</code> почти не помогает от overfitting.
+      Слишком большое — приводит к underfitting.
+      Поэтому регуляризация — это всегда баланс.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5.4.1 Ridge regression (L2)</h2>
+
+    <p>
+      В Ridge штрафуется сумма квадратов весов.
+    </p>
+
+    <div class="formula">
+      J_{ridge}(\mathbf{w}, b)=
+      \frac{1}{n}\sum_{i=1}^{n}(\mathbf{w}^T\mathbf{x}^{(i)}+b-y^{(i)})^2
+      +
+      \lambda \sum_{j=1}^{d} w_j^2
+    </div>
+
+    <p>
+      Или в векторной форме:
+    </p>
+
+    <div class="formula">
+      J_{ridge}(\mathbf{w}, b)=
+      \frac{1}{n}\|X\mathbf{w}+b\mathbf{1}-\mathbf{y}\|_2^2
+      +
+      \lambda \|\mathbf{w}\|_2^2
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что делает Ridge</h3>
+        <ul>
+          <li>уменьшает веса плавно,</li>
+          <li>почти никогда не делает их строго нулевыми,</li>
+          <li>стабилизирует решение,</li>
+          <li>хорошо помогает при multicollinearity.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Интуиция</h3>
+        <p>
+          Большой вес стоит дорого, потому что квадрат быстро растёт.
+          Значит модель предпочитает распределять вклад между признаками мягче.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Ridge — это про <span class="hl-green">shrinkage</span>:
+      он сжимает веса к нулю, но обычно не зануляет их.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5.4.2 Lasso regression (L1)</h2>
+
+    <p>
+      В Lasso штрафуется сумма модулей весов.
+    </p>
+
+    <div class="formula">
+      J_{lasso}(\mathbf{w}, b)=
+      \frac{1}{n}\sum_{i=1}^{n}(\mathbf{w}^T\mathbf{x}^{(i)}+b-y^{(i)})^2
+      +
+      \lambda \sum_{j=1}^{d}|w_j|
+    </div>
+
+    <p>
+      Или в векторной форме:
+    </p>
+
+    <div class="formula">
+      J_{lasso}(\mathbf{w}, b)=
+      \frac{1}{n}\|X\mathbf{w}+b\mathbf{1}-\mathbf{y}\|_2^2
+      +
+      \lambda \|\mathbf{w}\|_1
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что делает Lasso</h3>
+        <ul>
+          <li>сжимает веса,</li>
+          <li>часть коэффициентов делает ровно нулевыми,</li>
+          <li>выполняет встроенный feature selection.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему это интересно</h3>
+        <p>
+          Модель может стать не только устойчивее, но и проще:
+          часть признаков просто выключается из предсказания.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      Lasso особенно чувствителен к коррелирующим признакам:
+      если несколько признаков несут похожую информацию,
+      он может выбрать один и занулить остальные довольно нестабильно.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5.4.3 Elastic Net</h2>
+
+    <p>
+      Elastic Net объединяет L1 и L2 штрафы.
+    </p>
+
+    <div class="formula">
+      J_{EN}(\mathbf{w}, b)=
+      \frac{1}{n}\sum_{i=1}^{n}(\mathbf{w}^T\mathbf{x}^{(i)}+b-y^{(i)})^2
+      +
+      \lambda_1 \|\mathbf{w}\|_1
+      +
+      \lambda_2 \|\mathbf{w}\|_2^2
+    </div>
+
+    <p>
+      Часто записывают через один общий коэффициент и mixing parameter:
+    </p>
+
+    <div class="formula">
+      J_{EN}=
+      \text{MSE}
+      +
+      \alpha \Bigl(
+        \rho \|\mathbf{w}\|_1 + \frac{1-\rho}{2}\|\mathbf{w}\|_2^2
+      \Bigr)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Зачем нужен Elastic Net</h3>
+        <ul>
+          <li>даёт sparsity как Lasso,</li>
+          <li>стабилизирует решение как Ridge,</li>
+          <li>полезен при большом числе коррелирующих признаков.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда он удобен</h3>
+        <ul>
+          <li>много признаков,</li>
+          <li>часть признаков лишняя,</li>
+          <li>есть группировки сильно похожих фич.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info">
+      Упрощённо:
+      <span class="hl-purple">Ridge</span> — мягко сжимает все,
+      <span class="hl-green">Lasso</span> — зануляет часть,
+      <span class="hl-amber">Elastic Net</span> — компромисс между ними.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5.4.4 Shrinkage и sparsity</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Shrinkage</h3>
+        <p>
+          Это общий эффект, когда регуляризация тянет коэффициенты к нулю.
+          Такой эффект есть и у Ridge, и у Lasso.
+        </p>
+        <div class="formula">
+          |w_j| \downarrow
+        </div>
+      </div>
+      <div>
+        <h3>Sparsity</h3>
+        <p>
+          Это ситуация, когда многие коэффициенты становятся точно нулевыми.
+          Такой эффект характерен прежде всего для Lasso.
+        </p>
+        <div class="formula">
+          w_j = 0 \quad \text{для многих } j
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      <strong>Интуиция различия:</strong>
+      Ridge говорит: “пусть все признаки немного участвуют, но аккуратно”.
+      Lasso говорит: “оставим только действительно нужные, остальные уберём”.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Свойство</th>
+          <th>Ridge</th>
+          <th>Lasso</th>
+          <th>Elastic Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Штраф</td>
+          <td>L2</td>
+          <td>L1</td>
+          <td>L1 + L2</td>
+        </tr>
+        <tr>
+          <td>Сжимает веса</td>
+          <td>Да</td>
+          <td>Да</td>
+          <td>Да</td>
+        </tr>
+        <tr>
+          <td>Зануляет веса</td>
+          <td>Обычно нет</td>
+          <td>Да</td>
+          <td>Часто да</td>
+        </tr>
+        <tr>
+          <td>Стабильность при коллинеарности</td>
+          <td>Высокая</td>
+          <td>Ниже</td>
+          <td>Хорошая</td>
+        </tr>
+        <tr>
+          <td>Feature selection</td>
+          <td>Нет</td>
+          <td>Да</td>
+          <td>Да, частично</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Почему Lasso зануляет, а Ridge — нет</h2>
+
+    <p>
+      Это один из самых важных интуитивных моментов темы.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>L2 penalty</h3>
+        <div class="formula">
+          \|\mathbf{w}\|_2^2 = \sum_j w_j^2
+        </div>
+        <p>
+          Квадрат гладкий около нуля. Он мягко тянет веса к нулю,
+          но обычно не даёт точного обнуления.
+        </p>
+      </div>
+      <div>
+        <h3>L1 penalty</h3>
+        <div class="formula">
+          \|\mathbf{w}\|_1 = \sum_j |w_j|
+        </div>
+        <p>
+          У модуля есть “излом” в нуле. Геометрически это делает решение,
+          в котором некоторые веса оказываются ровно нулевыми, более вероятным.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      На языке геометрии оптимизации:
+      пересечение эллиптических линий loss с L1-областью ограничений
+      часто попадает в углы ромба, а углы соответствуют нулевым коэффициентам.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: как λ сжимает веса</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="lambdaSlider">Сила регуляризации λ <span class="lambda-badge" id="lambdaVal">0.00</span></label>
+          <input type="range" id="lambdaSlider" min="0" max="10" value="0" step="0.05">
+        </div>
+
+        <div class="control-group">
+          <label for="modeSelect">Режим регуляризации</label>
+          <select id="modeSelect">
+            <option value="ridge">Ridge (L2)</option>
+            <option value="lasso">Lasso (L1)</option>
+            <option value="elastic">Elastic Net</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="mixSlider">Elastic Net mix ρ (только для Elastic Net): <span class="lambda-badge" id="mixVal">0.50</span></label>
+          <input type="range" id="mixSlider" min="0" max="1" value="0.5" step="0.01">
+        </div>
+
+        <div class="info">
+          Ниже показаны исходные “нештрафованные” веса и их регуляризованные версии.
+          Это интуитивная визуализация shrinkage, а не точный solver.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="weightsCanvas" width="380" height="280"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">w₁</div>
+            <div class="value" id="w1Out">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">w₂</div>
+            <div class="value" id="w2Out">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">w₃</div>
+            <div class="value" id="w3Out">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Попробуй один и тот же <code>\lambda</code> в режимах Ridge и Lasso:
+      в Ridge все столбцы постепенно уменьшаются,
+      а в Lasso часть столбцов может “схлопнуться” в ноль.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Регуляризация и bias-variance tradeoff</h2>
+
+    <p>
+      Регуляризация почти всегда увеличивает bias, но уменьшает variance.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Без регуляризации</h3>
+        <ul>
+          <li>модель гибче,</li>
+          <li>может очень хорошо подогнаться под train,</li>
+          <li>но сильнее колеблется от выборки к выборке.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>С регуляризацией</h3>
+        <ul>
+          <li>модель менее гибкая,</li>
+          <li>чуть хуже объясняет train,</li>
+          <li>но чаще лучше обобщает на новых данных.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      \lambda \uparrow \Rightarrow \text{bias} \uparrow,\quad \text{variance} \downarrow
+    </div>
+
+    <div class="warn">
+      Поэтому нельзя выбирать <code>\lambda</code> “на глаз”.
+      Его обычно подбирают по validation / cross-validation.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Регуляризация и multicollinearity</h2>
+
+    <p>
+      Когда признаки сильно коррелируют, обычная линейная регрессия может выдавать
+      нестабильные коэффициенты:
+    </p>
+
+    <ul>
+      <li>веса становятся большими по модулю,</li>
+      <li>знаки могут меняться странно,</li>
+      <li>интерпретация ломается,</li>
+      <li>решение становится чувствительным к шуму.</li>
+    </ul>
+
+    <div class="formula">
+      X^T X \approx \text{плохо обусловлена}
+    </div>
+
+    <p>
+      В Ridge к матрице добавляется диагональный стабилизатор:
+    </p>
+
+    <div class="formula">
+      \mathbf{w}_{ridge} = (X^T X + \lambda I)^{-1}X^T\mathbf{y}
+    </div>
+
+    <div class="success">
+      Это одна из причин, почему Ridge очень любят:
+      он не просто борется с overfitting,
+      но и делает решение численно и статистически стабильнее.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Геометрическая интерпретация</h2>
+
+    <p>
+      Очень полезно понимать регуляризацию геометрически.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Без штрафа</h3>
+        <p>
+          Мы ищем минимум MSE где угодно в пространстве параметров.
+        </p>
+      </div>
+      <div>
+        <h3>Со штрафом</h3>
+        <p>
+          Мы ограничиваем допустимую область решений:
+          решение должно хорошо фититься и при этом оставаться “близко к нулю”.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula">
+      \min \text{MSE} \quad \text{при условии} \quad \|\mathbf{w}\|_p \le c
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Penalty</th>
+          <th>Форма области ограничений</th>
+          <th>Следствие</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>L2</td>
+          <td>окружность / шар</td>
+          <td>гладкое shrinkage</td>
+        </tr>
+        <tr>
+          <td>L1</td>
+          <td>ромб / многогранник с углами</td>
+          <td>решения чаще попадают в углы → нули</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      Это одна из самых классических картинок в ML:
+      эллипсы loss + круг Ridge vs ромб Lasso.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5.4.5 Связь с MAP и priors</h2>
+
+    <p>
+      Регуляризация имеет красивую вероятностную интерпретацию.
+      Если смотреть на обучение как на MAP estimation,
+      то penalty соответствует prior на веса.
+    </p>
+
+    <div class="formula">
+      \mathbf{w}_{MAP} = \arg\max_{\mathbf{w}} p(\mathbf{w}\mid D)
+    </div>
+
+    <div class="formula">
+      p(\mathbf{w}\mid D) \propto p(D\mid \mathbf{w})p(\mathbf{w})
+    </div>
+
+    <p>
+      После логарифмирования:
+    </p>
+
+    <div class="formula">
+      \arg\max_{\mathbf{w}} \log p(D\mid \mathbf{w}) + \log p(\mathbf{w})
+    </div>
+
+    <p>
+      То есть:
+    </p>
+    <ul>
+      <li><span class="hl-blue">log-likelihood</span> отвечает за fit to data,</li>
+      <li><span class="hl-purple">log-prior</span> превращается в regularization term.</li>
+    </ul>
+
+    <div class="grid-2">
+      <div>
+        <h3>Ridge ↔ Gaussian prior</h3>
+        <div class="formula">
+          w_j \sim \mathcal{N}(0,\sigma^2)
+        </div>
+        <p>
+          Тогда отрицательный log-prior даёт квадрат коэффициента,
+          то есть L2 penalty.
+        </p>
+      </div>
+      <div>
+        <h3>Lasso ↔ Laplace prior</h3>
+        <div class="formula">
+          p(w_j) \propto e^{-c|w_j|}
+        </div>
+        <p>
+          Тогда отрицательный log-prior даёт модуль коэффициента,
+          то есть L1 penalty.
+        </p>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Очень красивая мысль:
+      регуляризация — это не просто “технический хак”,
+      а способ зашить в модель наше априорное ожидание,
+      что большие веса маловероятны.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: MAP-интуиция</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="priorMode">Выбери prior</label>
+          <select id="priorMode">
+            <option value="gaussian">Gaussian prior (Ridge / L2)</option>
+            <option value="laplace">Laplace prior (Lasso / L1)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="priorStrength">Сила prior / штрафа: <span class="lambda-badge" id="priorStrengthVal">1.00</span></label>
+          <input type="range" id="priorStrength" min="0.2" max="4" value="1" step="0.05">
+        </div>
+
+        <div class="info">
+          Чем сильнее prior, тем меньше вероятность больших весов.
+          Ниже показан shape penalty как функция одного коэффициента <code>w</code>.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="priorCanvas" width="380" height="260"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Градиентный взгляд</h2>
+
+    <p>
+      В gradient descent регуляризация просто добавляет вклад в градиент.
+    </p>
+
+    <h3>Ridge</h3>
+    <div class="formula">
+      J(\mathbf{w}) = \text{MSE} + \lambda \|\mathbf{w}\|_2^2
+    </div>
+
+    <div class="formula">
+      \nabla_{\mathbf{w}} J = \nabla_{\mathbf{w}} \text{MSE} + 2\lambda \mathbf{w}
+    </div>
+
+    <h3>Lasso</h3>
+    <div class="formula">
+      J(\mathbf{w}) = \text{MSE} + \lambda \|\mathbf{w}\|_1
+    </div>
+
+    <div class="formula">
+      \nabla_{\mathbf{w}} J \approx \nabla_{\mathbf{w}} \text{MSE} + \lambda \cdot \text{sign}(\mathbf{w})
+    </div>
+
+    <div class="warn">
+      Для L1 в нуле обычный градиент не определён,
+      поэтому на практике используют subgradient / coordinate descent / специальные solver'ы.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Когда использовать Ridge, Lasso, Elastic Net</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ситуация</th>
+          <th>Часто разумный выбор</th>
+          <th>Почему</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Много коррелирующих признаков</td>
+          <td>Ridge</td>
+          <td>стабилизирует веса</td>
+        </tr>
+        <tr>
+          <td>Нужно отбросить часть признаков</td>
+          <td>Lasso</td>
+          <td>даёт sparsity</td>
+        </tr>
+        <tr>
+          <td>Много признаков и часть из них коррелирует</td>
+          <td>Elastic Net</td>
+          <td>компромисс между отбором и стабильностью</td>
+        </tr>
+        <tr>
+          <td>Признаков мало и они понятны</td>
+          <td>Ridge / обычная linear model</td>
+          <td>Lasso может быть не нужен</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      На практике часто начинают с Ridge как с очень надёжного baseline,
+      а затем проверяют Lasso / Elastic Net по CV.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему scale признаков здесь особенно важен</h2>
+
+    <p>
+      В регуляризованных линейных моделях штраф накладывается прямо на веса.
+      Поэтому масштаб признаков критически влияет на то, как penalty ощущается моделью.
+    </p>
+
+    <div class="formula">
+      x'_j = \frac{x_j - \mu_j}{\sigma_j}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если scale разный</h3>
+        <ul>
+          <li>признаки с крупным масштабом могут требовать маленькие веса,</li>
+          <li>признаки с мелким масштабом — большие веса,</li>
+          <li>penalty становится несправедливым.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Если признаки стандартизованы</h3>
+        <ul>
+          <li>штраф сравним между коэффициентами,</li>
+          <li>выборка λ становится осмысленнее,</li>
+          <li>веса интерпретируются честнее.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Для Ridge / Lasso / Elastic Net обычно
+      <span class="hl-red">scale features first</span>.
+      Иначе регуляризация может работать криво.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn: Ridge, Lasso, ElasticNet</h2>
+
+    <div class="tabs" id="codeTabs">
+      <button class="tab-btn active" data-tab="tab1">Ridge</button>
+      <button class="tab-btn" data-tab="tab2">Lasso</button>
+      <button class="tab-btn" data-tab="tab3">Elastic Net</button>
+      <button class="tab-btn" data-tab="tab4">Pipeline + CV</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Ridge
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("ridge", Ridge(alpha=1.0))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Lasso
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("lasso", Lasso(alpha=0.1, max_iter=5000))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+# Можно посмотреть, какие веса занулились
+print(model.named_steps["lasso"].coef_)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import ElasticNet
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("enet", ElasticNet(alpha=0.1, l1_ratio=0.5, max_iter=5000))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+print(model.named_steps["enet"].coef_)</div>
+    </div>
+
+    <div class="tab-panel" id="tab4">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", Ridge())
+])
+
+param_grid = {
+    "model__alpha": [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+}
+
+search = GridSearchCV(
+    pipe,
+    param_grid=param_grid,
+    cv=5,
+    scoring="neg_mean_squared_error"
+)
+
+search.fit(X_train, y_train)
+
+print("best alpha:", search.best_params_)
+print("best score:", search.best_score_)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>NumPy-интуиция: Ridge closed-form</h2>
+
+    <p>
+      В Ridge решение можно записать аналитически:
+    </p>
+
+    <div class="formula">
+      \mathbf{w}_{ridge} = (X^T X + \lambda I)^{-1}X^T\mathbf{y}
+    </div>
+
+    <div class="code-block">import numpy as np
+
+# X: (n, d), y: (n,)
+X = np.array([
+    [1.0, 2.0],
+    [2.0, 1.9],
+    [3.0, 3.1],
+    [4.0, 3.9]
+])
+
+y = np.array([5.0, 7.0, 9.1, 11.0])
+
+lam = 1.0
+
+# Без bias-столбца для простоты
+XtX = X.T @ X
+Xty = X.T @ y
+
+I = np.eye(X.shape[1])
+w_ridge = np.linalg.inv(XtX + lam * I) @ Xty
+
+print("ridge weights:", w_ridge)</div>
+
+    <div class="info">
+      Для Lasso такого простого closed-form уже нет.
+      Это тоже хороший интуитивный маркер: L1 даёт более “острую” геометрию оптимизации.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>не стандартизовать признаки перед Ridge / Lasso / Elastic Net,</li>
+        <li>думать, что больше λ всегда лучше,</li>
+        <li>интерпретировать Lasso selection как абсолютную истину,</li>
+        <li>забывать, что feature selection может быть нестабилен при коррелирующих фичах,</li>
+        <li>подбирать λ по test, а не по validation / CV,</li>
+        <li>считать, что regularization “чинит” плохие признаки автоматически.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Сразу дальше</h3>
+        <ul>
+          <li><strong>5.5 Логистическая регрессия</strong> — там регуляризация тоже критична,</li>
+          <li>L1/L2 переходят и в classification setting,</li>
+          <li>снова появятся weights, penalty и tuning strength.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Позже в курсе</h3>
+        <ul>
+          <li><strong>5.17 Валидация</strong> — выбор λ через CV,</li>
+          <li><strong>5.18 Imbalance</strong> — regularized logistic models,</li>
+          <li><strong>5.19 Интерпретация</strong> — влияние shrinkage на коэффициенты.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Регуляризация — это способ сделать линейную модель не только точной на train,
+      но и более устойчивой на новых данных.
+    </p>
+    <ul>
+      <li><strong>Ridge (L2)</strong> мягко сжимает веса и стабилизирует решение.</li>
+      <li><strong>Lasso (L1)</strong> сжимает и может занулять коэффициенты.</li>
+      <li><strong>Elastic Net</strong> объединяет sparsity и устойчивость.</li>
+      <li><strong>λ</strong> управляет компромиссом между fit и простотой модели.</li>
+      <li>Регуляризация тесно связана с <strong>bias-variance tradeoff</strong>, <strong>multicollinearity</strong> и <strong>MAP priors</strong>.</li>
+    </ul>
+    <p>
+      Самая важная мысль: regularization — это не второстепенная настройка,
+      а один из центральных механизмов контроля сложности модели в classical ML.
+    </p>
+  </div>
+
+  <script src="shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Weights shrinkage demo ----------
+    const lambdaSlider = document.getElementById('lambdaSlider');
+    const lambdaVal = document.getElementById('lambdaVal');
+    const modeSelect = document.getElementById('modeSelect');
+    const mixSlider = document.getElementById('mixSlider');
+    const mixVal = document.getElementById('mixVal');
+
+    const w1Out = document.getElementById('w1Out');
+    const w2Out = document.getElementById('w2Out');
+    const w3Out = document.getElementById('w3Out');
+
+    const weightsCanvas = document.getElementById('weightsCanvas');
+    const wctx = weightsCanvas.getContext('2d');
+
+    const baseWeights = [2.8, -1.9, 1.1];
+
+    function softThreshold(value, t){
+      if (value > t) return value - t;
+      if (value < -t) return value + t;
+      return 0;
+    }
+
+    function shrinkWeights() {
+      const lambda = Number(lambdaSlider.value);
+      const mode = modeSelect.value;
+      const rho = Number(mixSlider.value);
+
+      lambdaVal.textContent = lambda.toFixed(2);
+      mixVal.textContent = rho.toFixed(2);
+
+      let current = baseWeights.map(w => {
+        if (mode === 'ridge') {
+          return w / (1 + lambda);
+        }
+        if (mode === 'lasso') {
+          return softThreshold(w, lambda * 0.45);
+        }
+        // elastic net
+        const lassoPart = softThreshold(w, lambda * rho * 0.45);
+        return lassoPart / (1 + lambda * (1 - rho));
+      });
+
+      w1Out.textContent = current[0].toFixed(2);
+      w2Out.textContent = current[1].toFixed(2);
+      w3Out.textContent = current[2].toFixed(2);
+
+      drawWeights(baseWeights, current, mode);
+    }
+
+    function drawWeights(original, current, mode){
+      const W = weightsCanvas.width;
+      const H = weightsCanvas.height;
+      wctx.clearRect(0,0,W,H);
+      wctx.fillStyle = '#0d1117';
+      wctx.fillRect(0,0,W,H);
+
+      const maxAbs = 3.5;
+      const centerY = H / 2;
+
+      // grid
+      wctx.strokeStyle = '#30363d';
+      wctx.lineWidth = 1;
+      for (let i = -3; i <= 3; i++) {
+        const x = 40 + (i + maxAbs) / (2 * maxAbs) * (W - 70);
+        wctx.beginPath();
+        wctx.moveTo(x, 20);
+        wctx.lineTo(x, H - 30);
+        wctx.stroke();
+      }
+
+      // zero line
+      const zeroX = 40 + (0 + maxAbs) / (2 * maxAbs) * (W - 70);
+      wctx.strokeStyle = '#f59e0b';
+      wctx.lineWidth = 1.4;
+      wctx.beginPath();
+      wctx.moveTo(zeroX, 20);
+      wctx.lineTo(zeroX, H - 30);
+      wctx.stroke();
+
+      const rowsY = [70, 140, 210];
+      const colors = ['#60a5fa','#ef4444','#10b981'];
+
+      wctx.font = '12px system-ui';
+      wctx.fillStyle = '#8b949e';
+      wctx.fillText('original → regularized', 16, 16);
+
+      original.forEach((w, i) => {
+        const y = rowsY[i];
+        const x0 = 40 + (w + maxAbs) / (2 * maxAbs) * (W - 70);
+        const x1 = 40 + (current[i] + maxAbs) / (2 * maxAbs) * (W - 70);
+
+        wctx.fillStyle = '#8b949e';
+        wctx.fillText(`w${i+1}`, 10, y + 4);
+
+        // original
+        wctx.fillStyle = colors[i];
+        wctx.beginPath();
+        wctx.arc(x0, y, 6, 0, Math.PI * 2);
+        wctx.fill();
+
+        // arrow
+        wctx.strokeStyle = '#8b949e';
+        wctx.lineWidth = 1.3;
+        wctx.beginPath();
+        wctx.moveTo(x0, y);
+        wctx.lineTo(x1, y);
+        wctx.stroke();
+
+        // regularized
+        wctx.fillStyle = mode === 'lasso' && Math.abs(current[i]) < 1e-10 ? '#f59e0b' : '#a78bfa';
+        wctx.beginPath();
+        wctx.arc(x1, y, 6, 0, Math.PI * 2);
+        wctx.fill();
+      });
+    }
+
+    lambdaSlider.addEventListener('input', shrinkWeights);
+    modeSelect.addEventListener('change', shrinkWeights);
+    mixSlider.addEventListener('input', shrinkWeights);
+
+    // ---------- Prior canvas ----------
+    const priorMode = document.getElementById('priorMode');
+    const priorStrength = document.getElementById('priorStrength');
+    const priorStrengthVal = document.getElementById('priorStrengthVal');
+    const priorCanvas = document.getElementById('priorCanvas');
+    const pctx = priorCanvas.getContext('2d');
+
+    function drawPrior() {
+      const mode = priorMode.value;
+      const s = Number(priorStrength.value);
+      priorStrengthVal.textContent = s.toFixed(2);
+
+      const W = priorCanvas.width;
+      const H = priorCanvas.height;
+      pctx.clearRect(0,0,W,H);
+      pctx.fillStyle = '#0d1117';
+      pctx.fillRect(0,0,W,H);
+
+      // axes
+      pctx.strokeStyle = '#30363d';
+      pctx.lineWidth = 1;
+      pctx.beginPath();
+      pctx.moveTo(30, H/2);
+      pctx.lineTo(W-20, H/2);
+      pctx.stroke();
+
+      pctx.beginPath();
+      pctx.moveTo(W/2, 20);
+      pctx.lineTo(W/2, H-20);
+      pctx.stroke();
+
+      pctx.fillStyle = '#8b949e';
+      pctx.font = '12px system-ui';
+      pctx.fillText('w', W-14, H/2-8);
+      pctx.fillText('penalty', W/2+8, 16);
+
+      pctx.strokeStyle = mode === 'gaussian' ? '#60a5fa' : '#10b981';
+      pctx.lineWidth = 2.5;
+      pctx.beginPath();
+
+      for (let px = 0; px < W; px++) {
+        const w = (px - W/2) / 35;
+        let penalty;
+        if (mode === 'gaussian') {
+          penalty = s * w * w;
+        } else {
+          penalty = s * Math.abs(w);
+        }
+        const py = H - 30 - penalty * 18;
+        if (px === 0) pctx.moveTo(px, py);
+        else pctx.lineTo(px, py);
+      }
+      pctx.stroke();
+
+      pctx.fillStyle = '#8b949e';
+      pctx.fillText(mode === 'gaussian' ? 'quadratic penalty (L2)' : 'absolute penalty (L1)', 16, H-8);
+    }
+
+    priorMode.addEventListener('change', drawPrior);
+    priorStrength.addEventListener('input', drawPrior);
+
+    // init
+    shrinkWeights();
+    drawPrior();
+  </script>
+</body>
+</html>

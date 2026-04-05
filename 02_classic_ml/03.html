@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.3 Линейная регрессия</title>
+  <link rel="stylesheet" href="shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    textarea{
+      width:100%;
+      min-height:100px;
+      padding:10px;
+      resize:vertical;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-family:inherit;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .inline-math{
+      color:var(--blue);
+      font-weight:600;
+    }
+
+    .divider{
+      height:1px;
+      background:var(--border);
+      margin:14px 0;
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .small{
+      font-size:.9rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.1rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 5 — Classical ML</span>
+    <span class="tag tag-block">5.2 Предобработка данных</span>
+    <span class="tag tag-active">5.3 Линейная регрессия</span>
+    <span class="tag tag-block">5.4 Регуляризация линейных моделей</span>
+  </div>
+
+  <header class="hero">
+    <h1>5.3 Линейная регрессия</h1>
+    <p class="muted">Prediction as a weighted sum, MSE, gradients, normal equation, geometry of best-fit line</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">regression</span>
+      <span class="mini-tag">MSE</span>
+      <span class="mini-tag">least squares</span>
+      <span class="mini-tag">gradient descent</span>
+      <span class="mini-tag">normal equation</span>
+    </div>
+
+    <h2>Что такое линейная регрессия</h2>
+    <p>
+      Линейная регрессия — это одна из самых базовых и самых важных моделей в ML.
+      Она пытается предсказывать <span class="hl-amber">числовую величину</span>
+      как линейную комбинацию признаков.
+    </p>
+
+    <div class="formula">
+      \hat{y} = w_1 x_1 + w_2 x_2 + \dots + w_d x_d + b
+    </div>
+
+    <p>
+      Здесь:
+    </p>
+    <ul>
+      <li><code>x_1, ..., x_d</code> — признаки объекта,</li>
+      <li><code>w_1, ..., w_d</code> — веса модели,</li>
+      <li><code>b</code> — bias / intercept,</li>
+      <li><code>\hat{y}</code> — предсказание модели.</li>
+    </ul>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong> Линейная регрессия — это попытка объяснить целевую переменную
+      как <span class="hl-green">взвешенную сумму факторов</span>.
+      Например, цена квартиры может зависеть от площади, района, этажа, состояния ремонта и так далее.
+      Модель учится, какой вклад даёт каждый фактор.
+    </div>
+
+    <div class="info">
+      Несмотря на простоту, линейная регрессия — это не “детская” модель.
+      Это фундамент для понимания:
+      оптимизации, лосса, градиентов, регуляризации, интерпретации коэффициентов и bias-variance tradeoff.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Форма модели: от одной переменной к многомерному случаю</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Одна переменная</h3>
+        <div class="formula">
+          \hat{y} = wx + b
+        </div>
+        <p>
+          Геометрически это просто прямая на плоскости.
+          Модель подбирает наклон <code>w</code> и сдвиг <code>b</code>,
+          чтобы линия как можно лучше описывала зависимость между <code>x</code> и <code>y</code>.
+        </p>
+      </div>
+      <div>
+        <h3>Много признаков</h3>
+        <div class="formula">
+          \hat{y} = \mathbf{w}^T \mathbf{x} + b
+        </div>
+        <p>
+          В векторной форме линейная регрессия описывает гиперплоскость в пространстве признаков.
+          В 2D это линия, в 3D — плоскость, дальше — гиперплоскость.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula">
+      \mathbf{x}^{(i)} \in \mathbb{R}^d,\quad
+      \hat{y}^{(i)} = \mathbf{w}^T \mathbf{x}^{(i)} + b
+    </div>
+
+    <div class="warn">
+      <strong>Важно:</strong> “линейная” регрессия означает линейность по параметрам <code>w</code> и <code>b</code>.
+      Даже если в признаки заранее добавить <code>x^2</code>, <code>x^3</code>, <code>\log x</code>,
+      модель всё ещё будет линейной регрессией, если остаётся линейной по коэффициентам.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Что именно мы минимизируем</h2>
+
+    <p>
+      Чтобы понять, какие веса хорошие, нужна функция ошибки.
+      Для линейной регрессии классический выбор — <span class="hl-amber">MSE</span>,
+      mean squared error.
+    </p>
+
+    <h3>Ошибка на одном объекте</h3>
+    <div class="formula">
+      e^{(i)} = \hat{y}^{(i)} - y^{(i)}
+    </div>
+
+    <h3>Squared error</h3>
+    <div class="formula">
+      (e^{(i)})^2 = (\hat{y}^{(i)} - y^{(i)})^2
+    </div>
+
+    <h3>MSE на всём train</h3>
+    <div class="formula">
+      L(\mathbf{w}, b) = \frac{1}{n} \sum_{i=1}^{n} (\hat{y}^{(i)} - y^{(i)})^2
+    </div>
+
+    <p>
+      Подставляя модель:
+    </p>
+    <div class="formula">
+      L(\mathbf{w}, b) = \frac{1}{n} \sum_{i=1}^{n} (\mathbf{w}^T \mathbf{x}^{(i)} + b - y^{(i)})^2
+    </div>
+
+    <div class="intuition">
+      Почему квадрат ошибки? Потому что:
+      <ul>
+        <li>большие промахи штрафуются сильнее,</li>
+        <li>ошибки разных знаков не взаимоуничтожаются,</li>
+        <li>получается гладкая, удобно оптимизируемая функция.</li>
+      </ul>
+    </div>
+
+    <div class="info">
+      Линейная регрессия в классическом виде — это задача
+      <span class="hl-blue">least squares</span>:
+      найти такую прямую / гиперплоскость, чтобы сумма квадратов отклонений была минимальна.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Геометрический смысл least squares</h2>
+
+    <p>
+      Если у нас одна переменная, то модель проводит линию через облако точек.
+      Но линия почти никогда не проходит через все точки идеально.
+      Тогда мы выбираем ту, у которой суммарные квадраты вертикальных отклонений минимальны.
+    </p>
+
+    <div class="formula">
+      \min_{w,b}\sum_{i=1}^n (y^{(i)} - (wx^{(i)}+b))^2
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что минимизируется</h3>
+        <ul>
+          <li>не просто количество ошибок,</li>
+          <li>не абсолютные отклонения,</li>
+          <li>а именно квадраты residuals.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Residual</h3>
+        <div class="formula">
+          r^{(i)} = y^{(i)} - \hat{y}^{(i)}
+        </div>
+        <p>
+          Это вертикальное расстояние от точки до линии предсказания.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      MSE очень чувствителен к выбросам:
+      если ошибка выросла в 10 раз, вклад в loss вырастает в 100 раз.
+      Поэтому линейная регрессия может сильно страдать от extreme values.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: линия регрессии и residuals</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Параметры линии</h3>
+
+        <div class="control-group">
+          <label for="slopeRange">w (наклон): <span id="slopeVal" class="hl-green">1.20</span></label>
+          <input type="range" id="slopeRange" min="-3" max="3" value="1.2" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="biasRange">b (сдвиг): <span id="biasVal" class="hl-blue">0.50</span></label>
+          <input type="range" id="biasRange" min="-5" max="5" value="0.5" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="noiseRange">Уровень шума в данных: <span id="noiseVal" class="hl-amber">1.20</span></label>
+          <input type="range" id="noiseRange" min="0" max="3" value="1.2" step="0.05">
+        </div>
+
+        <div class="control-group">
+          <button id="regenDataBtn">Перегенерировать точки</button>
+        </div>
+
+        <div class="info">
+          Подвигай <code>w</code> и <code>b</code> и посмотри,
+          как меняются residuals и MSE.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="regressionCanvas" width="380" height="280"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">MSE</div>
+            <div class="value" id="mseMetric">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="name">Средний residual</div>
+            <div class="value" id="meanResidualMetric">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="name">RMSE</div>
+            <div class="value" id="rmseMetric">0.000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      <strong>Смысл визуализации.</strong>
+      Хорошая линия — это не та, что “на глаз красивая”, а та,
+      которая минимизирует квадратичную ошибку на наборе точек.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Градиентный взгляд: как модель учится</h2>
+
+    <p>
+      Чтобы минимизировать MSE, можно использовать gradient descent.
+      Для этого нужно понять, как loss меняется при изменении параметров.
+    </p>
+
+    <h3>Для случая одной переменной</h3>
+    <div class="formula">
+      \hat{y}^{(i)} = wx^{(i)} + b
+    </div>
+
+    <div class="formula">
+      L(w,b)=\frac{1}{n}\sum_{i=1}^n (wx^{(i)} + b - y^{(i)})^2
+    </div>
+
+    <h3>Градиенты</h3>
+    <div class="formula">
+      \frac{\partial L}{\partial w}
+      =
+      \frac{2}{n}\sum_{i=1}^n (wx^{(i)} + b - y^{(i)})x^{(i)}
+    </div>
+
+    <div class="formula">
+      \frac{\partial L}{\partial b}
+      =
+      \frac{2}{n}\sum_{i=1}^n (wx^{(i)} + b - y^{(i)})
+    </div>
+
+    <div class="step"><strong>Шаг 1.</strong> Считаем предсказания <code>\hat{y}</code>.</div>
+    <div class="step"><strong>Шаг 2.</strong> Считаем ошибки <code>\hat{y} - y</code>.</div>
+    <div class="step"><strong>Шаг 3.</strong> Через эти ошибки считаем градиенты по <code>w</code> и <code>b</code>.</div>
+    <div class="step"><strong>Шаг 4.</strong> Делаем шаг в сторону уменьшения loss.</div>
+
+    <h3>Обновление параметров</h3>
+    <div class="formula">
+      w \leftarrow w - \eta \frac{\partial L}{\partial w}
+    </div>
+
+    <div class="formula">
+      b \leftarrow b - \eta \frac{\partial L}{\partial b}
+    </div>
+
+    <p>
+      Здесь <code>\eta</code> — learning rate.
+    </p>
+
+    <div class="warn">
+      Если learning rate слишком большой — оптимизация может прыгать и расходиться.
+      Если слишком маленький — обучение будет идти очень медленно.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: один шаг gradient descent</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="gdW">Текущий w</label>
+          <input type="number" id="gdW" value="0.0" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="gdB">Текущий b</label>
+          <input type="number" id="gdB" value="0.0" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="gdLr">Learning rate</label>
+          <input type="number" id="gdLr" value="0.05" step="0.01">
+        </div>
+        <div class="control-group">
+          <button id="gdStepBtn">Сделать шаг</button>
+          <button id="gdResetBtn">Сброс</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="gdResult"></div>
+      </div>
+    </div>
+
+    <div class="info">
+      Здесь используется тот же набор точек, что и в графике сверху.
+      Можно руками смотреть, как gradient descent двигает параметры к лучшему решению.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Матричная запись</h2>
+
+    <p>
+      Для всего dataset удобно перейти к матричной форме.
+    </p>
+
+    <div class="formula">
+      X \in \mathbb{R}^{n \times d},\quad
+      \mathbf{w} \in \mathbb{R}^{d},\quad
+      \mathbf{y} \in \mathbb{R}^{n}
+    </div>
+
+    <div class="formula">
+      \hat{\mathbf{y}} = X\mathbf{w} + b\mathbf{1}
+    </div>
+
+    <p>
+      Если bias включить прямо в матрицу признаков, добавив столбец единиц:
+    </p>
+
+    <div class="formula">
+      \tilde{X} = [X \ \mathbf{1}],\quad
+      \tilde{\mathbf{w}} = 
+      \begin{bmatrix}
+      \mathbf{w}\\
+      b
+      \end{bmatrix}
+    </div>
+
+    <div class="formula">
+      \hat{\mathbf{y}} = \tilde{X}\tilde{\mathbf{w}}
+    </div>
+
+    <h3>MSE в матричной форме</h3>
+    <div class="formula">
+      L(\tilde{\mathbf{w}})=\frac{1}{n}\|\tilde{X}\tilde{\mathbf{w}}-\mathbf{y}\|_2^2
+    </div>
+
+    <div class="intuition">
+      Это уже очень важный мост к линейной алгебре:
+      линейная регрессия — это задача минимизации квадратичной нормы ошибки.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Нормальное уравнение: closed-form решение</h2>
+
+    <p>
+      Для линейной регрессии есть не только gradient descent.
+      В чистом least squares случае можно получить решение аналитически.
+    </p>
+
+    <div class="formula">
+      \mathbf{w}^* = (X^T X)^{-1} X^T \mathbf{y}
+    </div>
+
+    <p>
+      Это и есть <span class="hl-amber">normal equation</span>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюсы</h3>
+        <ul>
+          <li>не нужен learning rate,</li>
+          <li>не нужны итерации,</li>
+          <li>получаем точное решение least squares.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>дорого для больших данных,</li>
+          <li>нужно обращаться с матрицей <code>X^T X</code>,</li>
+          <li>могут быть проблемы с вырожденностью / мультиколлинеарностью.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      На практике часто используют не прямое обращение матрицы,
+      а более устойчивые методы: QR, SVD, lstsq-решатели.
+    </div>
+
+    <div class="info">
+      Смысл closed-form решения важен концептуально:
+      линейная регрессия — одна из редких моделей,
+      где связь между геометрией, алгеброй и оптимизацией видна особенно прозрачно.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Статистический смысл линейной регрессии</h2>
+
+    <p>
+      Часто линейную регрессию пишут так:
+    </p>
+
+    <div class="formula">
+      y = \mathbf{w}^T\mathbf{x} + b + \varepsilon
+    </div>
+
+    <p>
+      где <code>\varepsilon</code> — шум, который модель не может объяснить.
+    </p>
+
+    <p>
+      Если предположить, что:
+    </p>
+    <ul>
+      <li>ошибки независимы,</li>
+      <li>ошибки имеют нулевое среднее,</li>
+      <li>ошибки нормально распределены: <code>\varepsilon \sim \mathcal{N}(0,\sigma^2)</code>,</li>
+    </ul>
+
+    <p>
+      то минимизация MSE эквивалентна максимизации правдоподобия.
+    </p>
+
+    <div class="formula">
+      p(y \mid x) = \mathcal{N}(\mathbf{w}^T \mathbf{x} + b,\sigma^2)
+    </div>
+
+    <div class="intuition">
+      Это очень важная связь:
+      <span class="hl-green">MSE — не просто удобная функция ошибки</span>,
+      а логичный выбор при гауссовском шуме.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Когда линейная регрессия работает хорошо</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ситуация</th>
+          <th>Что происходит</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Связь почти линейная</td>
+          <td>модель хорошо аппроксимирует зависимость</td>
+          <td>идеальный сценарий</td>
+        </tr>
+        <tr>
+          <td>Немного шума</td>
+          <td>least squares даёт устойчивую оценку</td>
+          <td>если нет тяжёлых выбросов</td>
+        </tr>
+        <tr>
+          <td>Много признаков, но мало данных</td>
+          <td>может переобучаться</td>
+          <td>понадобится регуляризация</td>
+        </tr>
+        <tr>
+          <td>Сильная нелинейность</td>
+          <td>модель систематически недообучается</td>
+          <td>нужны новые признаки или другая модель</td>
+        </tr>
+        <tr>
+          <td>Сильные выбросы</td>
+          <td>MSE начинает тянуть решение к outliers</td>
+          <td>нужны robust-подходы</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warn">
+      Линейная регрессия не “плохая”, если зависимость сложная.
+      Она просто имеет ограниченный класс функций.
+      Это вопрос bias модели, а не “устарелости”.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Коэффициенты и интерпретация</h2>
+
+    <p>
+      Один из главных плюсов линейной регрессии — интерпретируемость.
+    </p>
+
+    <div class="formula">
+      \hat{y} = w_1x_1 + w_2x_2 + \dots + w_dx_d + b
+    </div>
+
+    <p>
+      При прочих равных коэффициент <code>w_j</code> показывает,
+      как меняется предсказание при увеличении признака <code>x_j</code> на 1.
+    </p>
+
+    <div class="formula">
+      \Delta x_j = 1 \Rightarrow \Delta \hat{y} = w_j
+    </div>
+
+    <div class="info">
+      Но эта интерпретация корректна только если:
+      <ul>
+        <li>масштабы признаков понятны,</li>
+        <li>нет сильной мультиколлинеарности,</li>
+        <li>мы говорим “при прочих равных”,</li>
+        <li>модель вообще адекватно описывает зависимость.</li>
+      </ul>
+    </div>
+
+    <div class="warn">
+      Если признаки сильно коррелируют,
+      коэффициенты могут стать нестабильными:
+      знак и величина весов начинают “делить ответственность” друг с другом.
+      Это одна из причин, почему дальше появится регуляризация.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: эффект масштаба признака на коэффициент</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="coefScaleW">Коэффициент w</label>
+          <input type="number" id="coefScaleW" value="2" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="coefScaleFactor">Во сколько раз масштабируем признак x</label>
+          <input type="number" id="coefScaleFactor" value="10" step="1">
+        </div>
+        <div class="control-group">
+          <label for="coefScaleX">Значение x</label>
+          <input type="number" id="coefScaleX" value="3" step="0.1">
+        </div>
+        <div class="control-group">
+          <button id="coefScaleBtn">Посчитать</button>
+        </div>
+      </div>
+      <div>
+        <div class="result-box" id="coefScaleResult"></div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Если заменить признак <code>x</code> на <code>x' = 10x</code>,
+      то “правильный” коэффициент должен уменьшиться в 10 раз,
+      чтобы предсказания остались теми же.
+      Поэтому сравнивать веса признаков без учёта scale опасно.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Bias, variance и роль линейной регрессии</h2>
+
+    <p>
+      Линейная регрессия — модель с довольно высоким inductive bias:
+      она предполагает, что зависимость близка к линейной.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюсы такого bias</h3>
+        <ul>
+          <li>простая и понятная модель,</li>
+          <li>часто мало variance,</li>
+          <li>устойчива при умеренном количестве признаков,</li>
+          <li>легко интерпретируется.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Минусы</h3>
+        <ul>
+          <li>может сильно недообучаться на сложных данных,</li>
+          <li>не умеет сама ловить нелинейности,</li>
+          <li>чувствительна к выбросам и коллинеарности.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="success">
+      Именно поэтому линейная регрессия — отличный baseline:
+      она быстро показывает, есть ли в данных хотя бы простая линейная структура.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>NumPy / sklearn / PyTorch</h2>
+
+    <div class="tabs" id="codeTabs">
+      <button class="tab-btn active" data-tab="tab1">NumPy вручную</button>
+      <button class="tab-btn" data-tab="tab2">sklearn</button>
+      <button class="tab-btn" data-tab="tab3">PyTorch</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">import numpy as np
+
+# X: (n, d), y: (n,)
+X = np.array([
+    [1.0, 2.0],
+    [2.0, 1.0],
+    [3.0, 3.0],
+    [4.0, 5.0]
+])
+
+y = np.array([8.0, 7.0, 13.0, 19.0])
+
+# Добавим столбец единиц для bias
+X_aug = np.c_[X, np.ones(len(X))]
+
+# Closed-form least squares
+w_full = np.linalg.inv(X_aug.T @ X_aug) @ X_aug.T @ y
+# w_full = [w1, w2, b]
+
+pred = X_aug @ w_full
+mse = np.mean((pred - y) ** 2)
+
+print("weights:", w_full)
+print("pred:", pred)
+print("mse:", mse)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+pred_train = model.predict(X_train)
+pred_val = model.predict(X_val)
+
+print("coef_:", model.coef_)
+print("intercept_:", model.intercept_)
+print("train MSE:", mean_squared_error(y_train, pred_train))
+print("val MSE:", mean_squared_error(y_val, pred_val))</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">import torch
+import torch.nn as nn
+
+X = torch.tensor([[1.0],[2.0],[3.0],[4.0]])
+y = torch.tensor([[3.0],[5.0],[7.0],[9.0]])  # примерно y = 2x + 1
+
+model = nn.Linear(in_features=1, out_features=1)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+loss_fn = nn.MSELoss()
+
+for epoch in range(1000):
+    pred = model(X)
+    loss = loss_fn(pred, y)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+print("weight:", model.weight.data)
+print("bias:", model.bias.data)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>использовать линейную регрессию для classification,</li>
+        <li>не проверять выбросы,</li>
+        <li>интерпретировать коэффициенты без scaling и без понимания единиц измерения,</li>
+        <li>забывать про leakage в preprocessing,</li>
+        <li>считать высокий train R² доказательством хорошей модели,</li>
+        <li>игнорировать residual analysis,</li>
+        <li>не замечать мультиколлинеарность.</li>
+      </ul>
+    </div>
+
+    <div class="info">
+      Хороший workflow с линейной регрессией почти всегда включает:
+      preprocessing, baseline, анализ residuals, сравнение train/val ошибки
+      и проверку, не нужна ли регуляризация.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий шаг</h3>
+        <ul>
+          <li><strong>5.4 Регуляризация линейных моделей</strong> — Ridge, Lasso, Elastic Net,</li>
+          <li>борьба с переобучением,</li>
+          <li>стабилизация коэффициентов,</li>
+          <li>multicollinearity и shrinkage.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Позже в курсе</h3>
+        <ul>
+          <li><strong>5.6 Метрики регрессии</strong> — MAE, RMSE, R²,</li>
+          <li><strong>5.17 Валидация</strong> — честная оценка качества,</li>
+          <li><strong>5.19 Интерпретация моделей</strong> — веса, влияние признаков,</li>
+          <li><strong>5.20 Pipeline</strong> — полная практическая сборка.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Линейная регрессия — это базовая модель для предсказания числовой цели
+      через линейную комбинацию признаков.
+    </p>
+    <ul>
+      <li>Модель имеет вид <code>\hat{y} = \mathbf{w}^T \mathbf{x} + b</code>.</li>
+      <li>Классический loss — <code>MSE</code>, сумма / среднее квадратов ошибок.</li>
+      <li>Обучать можно через gradient descent или closed-form least squares.</li>
+      <li>Модель очень интерпретируема, но чувствительна к выбросам и коллинеарности.</li>
+      <li>Это один из лучших baseline-алгоритмов во всём classical ML.</li>
+    </ul>
+    <p>
+      Самая важная мысль: линейная регрессия — это не просто “прямая на графике”,
+      а целый концентрат ключевых идей ML:
+      модель, loss, оптимизация, статистическая интерпретация и обобщение.
+    </p>
+  </div>
+
+  <script src="shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Data generation ----------
+    const regressionCanvas = document.getElementById('regressionCanvas');
+    const rctx = regressionCanvas.getContext('2d');
+
+    const slopeRange = document.getElementById('slopeRange');
+    const biasRange = document.getElementById('biasRange');
+    const noiseRange = document.getElementById('noiseRange');
+    const slopeVal = document.getElementById('slopeVal');
+    const biasVal = document.getElementById('biasVal');
+    const noiseVal = document.getElementById('noiseVal');
+    const regenDataBtn = document.getElementById('regenDataBtn');
+
+    const mseMetric = document.getElementById('mseMetric');
+    const meanResidualMetric = document.getElementById('meanResidualMetric');
+    const rmseMetric = document.getElementById('rmseMetric');
+
+    let dataPoints = [];
+
+    function randn() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function generateData() {
+      const noise = Number(noiseRange.value);
+      dataPoints = [];
+      for (let i = 0; i < 18; i++) {
+        const x = i * 0.6 + 0.5;
+        const trueY = 1.4 * x + 1.0;
+        const y = trueY + randn() * noise;
+        dataPoints.push({ x, y });
+      }
+      drawRegression();
+      updateGDInfo();
+    }
+
+    function drawRegression() {
+      const w = Number(slopeRange.value);
+      const b = Number(biasRange.value);
+
+      slopeVal.textContent = w.toFixed(2);
+      biasVal.textContent = b.toFixed(2);
+      noiseVal.textContent = Number(noiseRange.value).toFixed(2);
+
+      const W = regressionCanvas.width;
+      const H = regressionCanvas.height;
+      rctx.clearRect(0, 0, W, H);
+
+      rctx.fillStyle = '#0d1117';
+      rctx.fillRect(0, 0, W, H);
+
+      const xMin = 0;
+      const xMax = 12;
+      const yMin = -2;
+      const yMax = 22;
+
+      function px(x){ return 40 + (x - xMin) / (xMax - xMin) * (W - 60); }
+      function py(y){ return H - 30 - (y - yMin) / (yMax - yMin) * (H - 50); }
+
+      // grid
+      rctx.strokeStyle = '#30363d';
+      rctx.lineWidth = 1;
+      for(let gx = 0; gx <= 12; gx += 2){
+        rctx.beginPath();
+        rctx.moveTo(px(gx), 10);
+        rctx.lineTo(px(gx), H - 30);
+        rctx.stroke();
+      }
+      for(let gy = 0; gy <= 20; gy += 4){
+        rctx.beginPath();
+        rctx.moveTo(40, py(gy));
+        rctx.lineTo(W - 20, py(gy));
+        rctx.stroke();
+      }
+
+      // axes
+      rctx.strokeStyle = '#8b949e';
+      rctx.lineWidth = 1.3;
+      rctx.beginPath();
+      rctx.moveTo(40, 10);
+      rctx.lineTo(40, H - 30);
+      rctx.lineTo(W - 20, H - 30);
+      rctx.stroke();
+
+      rctx.fillStyle = '#8b949e';
+      rctx.font = '12px system-ui';
+      rctx.fillText('x', W - 16, H - 12);
+      rctx.fillText('y', 18, 18);
+
+      // regression line
+      rctx.strokeStyle = '#f59e0b';
+      rctx.lineWidth = 2.5;
+      rctx.beginPath();
+      const y1 = w * xMin + b;
+      const y2 = w * xMax + b;
+      rctx.moveTo(px(xMin), py(y1));
+      rctx.lineTo(px(xMax), py(y2));
+      rctx.stroke();
+
+      // points and residuals
+      let mse = 0;
+      let meanResidual = 0;
+
+      dataPoints.forEach(pt => {
+        const yHat = w * pt.x + b;
+        const residual = yHat - pt.y;
+        mse += residual * residual;
+        meanResidual += residual;
+
+        // residual line
+        rctx.strokeStyle = residual >= 0 ? '#ef4444' : '#10b981';
+        rctx.lineWidth = 1.5;
+        rctx.beginPath();
+        rctx.moveTo(px(pt.x), py(pt.y));
+        rctx.lineTo(px(pt.x), py(yHat));
+        rctx.stroke();
+
+        // prediction point on line
+        rctx.fillStyle = '#a78bfa';
+        rctx.beginPath();
+        rctx.arc(px(pt.x), py(yHat), 3.5, 0, Math.PI * 2);
+        rctx.fill();
+
+        // actual data point
+        rctx.fillStyle = '#60a5fa';
+        rctx.beginPath();
+        rctx.arc(px(pt.x), py(pt.y), 5, 0, Math.PI * 2);
+        rctx.fill();
+        rctx.strokeStyle = '#ffffff';
+        rctx.lineWidth = 1;
+        rctx.stroke();
+      });
+
+      mse /= dataPoints.length;
+      meanResidual /= dataPoints.length;
+      const rmse = Math.sqrt(mse);
+
+      mseMetric.textContent = mse.toFixed(3);
+      meanResidualMetric.textContent = meanResidual.toFixed(3);
+      rmseMetric.textContent = rmse.toFixed(3);
+    }
+
+    [slopeRange, biasRange, noiseRange].forEach(el => {
+      el.addEventListener('input', () => {
+        if(el === noiseRange){
+          generateData();
+        } else {
+          drawRegression();
+          updateGDInfo();
+        }
+      });
+    });
+
+    regenDataBtn.addEventListener('click', generateData);
+
+    // ---------- Gradient descent one step ----------
+    const gdW = document.getElementById('gdW');
+    const gdB = document.getElementById('gdB');
+    const gdLr = document.getElementById('gdLr');
+    const gdStepBtn = document.getElementById('gdStepBtn');
+    const gdResetBtn = document.getElementById('gdResetBtn');
+    const gdResult = document.getElementById('gdResult');
+
+    function computeLossAndGrad(w, b) {
+      const n = dataPoints.length;
+      let loss = 0;
+      let dw = 0;
+      let db = 0;
+
+      dataPoints.forEach(pt => {
+        const yHat = w * pt.x + b;
+        const err = yHat - pt.y;
+        loss += err * err;
+        dw += err * pt.x;
+        db += err;
+      });
+
+      loss /= n;
+      dw = 2 * dw / n;
+      db = 2 * db / n;
+
+      return { loss, dw, db };
+    }
+
+    function updateGDInfo() {
+      const w = Number(gdW.value);
+      const b = Number(gdB.value);
+      const lr = Number(gdLr.value);
+      const { loss, dw, db } = computeLossAndGrad(w, b);
+
+      gdResult.innerHTML = `
+        <div><strong>Текущие параметры:</strong> w = <span class="hl-green">${w.toFixed(4)}</span>, b = <span class="hl-blue">${b.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Текущий loss (MSE):</strong> <span class="hl-amber">${loss.toFixed(6)}</span></div>
+        <div style="margin-top:8px"><strong>Градиенты:</strong> dL/dw = ${dw.toFixed(6)}, dL/db = ${db.toFixed(6)}</div>
+        <div style="margin-top:8px"><strong>После шага с lr=${lr}:</strong></div>
+        <div class="formula" style="margin-top:8px">
+          w_{new} = ${w.toFixed(4)} - ${lr} · (${dw.toFixed(6)}) = ${(w - lr * dw).toFixed(6)}<br>
+          b_{new} = ${b.toFixed(4)} - ${lr} · (${db.toFixed(6)}) = ${(b - lr * db).toFixed(6)}
+        </div>
+      `;
+    }
+
+    gdStepBtn.addEventListener('click', () => {
+      const w = Number(gdW.value);
+      const b = Number(gdB.value);
+      const lr = Number(gdLr.value);
+      const { dw, db } = computeLossAndGrad(w, b);
+
+      gdW.value = (w - lr * dw).toFixed(6);
+      gdB.value = (b - lr * db).toFixed(6);
+      updateGDInfo();
+    });
+
+    gdResetBtn.addEventListener('click', () => {
+      gdW.value = 0.0;
+      gdB.value = 0.0;
+      gdLr.value = 0.05;
+      updateGDInfo();
+    });
+
+    gdW.addEventListener('input', updateGDInfo);
+    gdB.addEventListener('input', updateGDInfo);
+    gdLr.addEventListener('input', updateGDInfo);
+
+    // ---------- Coefficient scaling ----------
+    const coefScaleW = document.getElementById('coefScaleW');
+    const coefScaleFactor = document.getElementById('coefScaleFactor');
+    const coefScaleX = document.getElementById('coefScaleX');
+    const coefScaleBtn = document.getElementById('coefScaleBtn');
+    const coefScaleResult = document.getElementById('coefScaleResult');
+
+    function updateCoefScale() {
+      const w = Number(coefScaleW.value);
+      const k = Number(coefScaleFactor.value);
+      const x = Number(coefScaleX.value);
+
+      const oldPred = w * x;
+      const xNew = k * x;
+      const wNew = w / k;
+      const newPred = wNew * xNew;
+
+      coefScaleResult.innerHTML = `
+        <div><strong>Исходно:</strong> \\hat{y} = w·x = ${w} · ${x} = <span class="hl-green">${oldPred.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Новый признак:</strong> x' = ${k}x = ${xNew.toFixed(4)}</div>
+        <div style="margin-top:8px"><strong>Чтобы предсказание сохранилось:</strong> w' = w / ${k} = <span class="hl-blue">${wNew.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Проверка:</strong> w'·x' = ${wNew.toFixed(4)} · ${xNew.toFixed(4)} = <span class="hl-amber">${newPred.toFixed(4)}</span></div>
+      `;
+    }
+
+    coefScaleBtn.addEventListener('click', updateCoefScale);
+    updateCoefScale();
+
+    // init
+    generateData();
+  </script>
+</body>
+</html>
