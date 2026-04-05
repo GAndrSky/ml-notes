@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+.kpi { font-family: monospace; color: var(--amber); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Блок 2 — Классическое машинное обучение</span>
+  <span class="tag tag-active">2.1 Введение в классическое ML</span>
+  <span class="tag tag-block">2.2 Предобработка данных</span>
+  <span class="tag tag-block">2.3 Линейная регрессия</span>
+  <span class="tag tag-block">2.4 Регуляризация</span>
+</div>
+
+<h1>2.1 Введение в классическое машинное обучение</h1>
+<p class="muted">Supervised / unsupervised / semi-supervised · объект / признак / таргет · train / validation / test · bias / variance · underfitting / overfitting · pipeline модели</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>🤖 Что вообще называется классическим машинным обучением?</h2>
+  <p>Под классическим ML обычно понимают методы, которые работают с <strong>табличными признаками</strong>, статистическими моделями, деревьями, ядровыми методами, линейными моделями и ансамблями — без глубокой многослойной нейросетевой архитектуры как основной идеи.</p>
+
+  <div class="formula">
+    \text{Classical ML} \approx \text{features} + \text{model} + \text{loss} + \text{evaluation}
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Линейные модели</h3>
+      <p class="small">Linear / Logistic Regression, Ridge, Lasso.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Нелинейные модели</h3>
+      <p class="small">k-NN, SVM, Decision Trees, Kernel methods.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ансамбли</h3>
+      <p class="small">Random Forest, Gradient Boosting, XGBoost, CatBoost.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 <strong>Очень важная мысль:</strong> classical ML — это не “устаревший ML”. Для табличных данных он до сих пор часто сильнее и практичнее глубоких сетей.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>📦 Из чего состоит задача машинного обучения?</h2>
+
+  <h3>Базовые сущности</h3>
+  <table>
+    <tr><th>Термин</th><th>Обозначение</th><th>Смысл</th></tr>
+    <tr><td>Объект / sample</td><td>x<sub>i</sub></td><td>одна строка данных, один наблюдаемый пример</td></tr>
+    <tr><td>Признак / feature</td><td>x<sub>ij</sub></td><td>одно измерение объекта</td></tr>
+    <tr><td>Таргет / target</td><td>y<sub>i</sub></td><td>то, что нужно предсказать</td></tr>
+    <tr><td>Датасет</td><td>(X, y)</td><td>вся таблица объектов и ответов</td></tr>
+    <tr><td>Модель</td><td>f<sub>θ</sub>(x)</td><td>правило, которое из x выдаёт прогноз</td></tr>
+  </table>
+
+  <div class="formula">
+    X \in \mathbb{R}^{n \times d}, \qquad y \in \mathbb{R}^{n}
+  </div>
+
+  <p>Где:</p>
+  <div class="step">n — число объектов</div>
+  <div class="step">d — число признаков</div>
+  <div class="step highlight">каждая строка X — это один объект, каждый столбец — один признак</div>
+
+  <div class="info">
+    ℹ️ В табличном ML львиная доля качества часто зависит не от “магии модели”, а от того, насколько хорошие признаки у тебя есть.
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>🧭 Какие вообще бывают типы ML-задач?</h2>
+
+  <div class="grid-3">
+    <div class="mini-card">
+      <h3>Supervised Learning</h3>
+      <p class="small">Есть вход x и правильный ответ y. Учим отображение x → y.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Unsupervised Learning</h3>
+      <p class="small">Есть только x. Ищем структуру без явных меток.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Semi-Supervised Learning</h3>
+      <p class="small">Часть данных размечена, часть — нет.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:14px;">Supervised Learning</h3>
+  <div class="formula">
+    \text{Дано: } (x_i, y_i)_{i=1}^n
+  </div>
+  <p>Типичные задачи:</p>
+  <div class="step">классификация: spam / not spam, fraud / not fraud</div>
+  <div class="step">регрессия: цена квартиры, спрос, температура</div>
+
+  <h3>Unsupervised Learning</h3>
+  <div class="formula">
+    \text{Дано: } x_1, x_2, ..., x_n
+  </div>
+  <p>Типичные задачи:</p>
+  <div class="step">кластеризация</div>
+  <div class="step">снижение размерности</div>
+  <div class="step">поиск аномалий</div>
+
+  <h3>Semi-Supervised Learning</h3>
+  <p>Используется, когда разметка дорогая, а неразмеченных данных много.</p>
+
+  <div class="warn">
+    ⚠️ На практике люди часто называют “ML” только supervised learning, но это слишком узко. Классическое ML включает и unsupervised методы тоже.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>🏷️ Классификация vs регрессия</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Классификация</h3>
+      <div class="formula">
+        y \in \{1,2,\dots,K\}
+      </div>
+      <p>Модель предсказывает класс или вероятность классов.</p>
+      <div class="step">binary classification</div>
+      <div class="step">multiclass classification</div>
+      <div class="step">multilabel classification</div>
+    </div>
+    <div>
+      <h3>Регрессия</h3>
+      <div class="formula">
+        y \in \mathbb{R}
+      </div>
+      <p>Модель предсказывает численное значение.</p>
+      <div class="step">стоимость</div>
+      <div class="step">количество</div>
+      <div class="step">непрерывная величина</div>
+    </div>
+  </div>
+
+  <div class="info" style="margin-top:12px;">
+    ℹ️ Иногда одна и та же бизнес-задача формулируется по-разному: можно предсказывать точную сумму потерь (регрессия), а можно только “высокий риск / низкий риск” (классификация).
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>🧪 Train / Validation / Test — зачем делить данные?</h2>
+
+  <p>Нельзя оценивать модель на тех же данных, на которых она училась: это даст слишком оптимистичную картину.</p>
+
+  <table>
+    <tr><th>Часть</th><th>Для чего нужна</th><th>Что на ней делать</th></tr>
+    <tr><td>Train</td><td>обучение параметров модели</td><td>fit()</td></tr>
+    <tr><td>Validation</td><td>выбор гиперпараметров, сравнение моделей</td><td>tuning / selection</td></tr>
+    <tr><td>Test</td><td>финальная честная оценка</td><td>трогать только в конце</td></tr>
+  </table>
+
+  <div class="formula">
+    \text{Train} \rightarrow \text{fit parameters}
+    \qquad
+    \text{Validation} \rightarrow \text{choose model}
+    \qquad
+    \text{Test} \rightarrow \text{final unbiased estimate}
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Хорошая практика</h3>
+      <div class="step">train: 60–80%</div>
+      <div class="step">validation: 10–20%</div>
+      <div class="step">test: 10–20%</div>
+    </div>
+    <div>
+      <h3>Плохая практика</h3>
+      <div class="step">смотреть на test каждый раз</div>
+      <div class="step">подбирать модель по test</div>
+      <div class="step highlight">это превращает test в ещё один validation</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    ⚠️ Если ты много раз принимаешь решения, глядя на test, то test перестаёт быть честным показателем обобщающей способности.
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>📉 Train error и generalization error</h2>
+
+  <div class="formula">
+    \text{Train error} \neq \text{Test error}
+  </div>
+
+  <p>На train модель может работать очень хорошо просто потому, что уже подстроилась под эти данные. Нас интересует не только fitting, но и <strong>generalization</strong> — насколько модель переносится на новые объекты.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Train error</h3>
+      <p>Ошибка на тех данных, по которым обучались параметры.</p>
+    </div>
+    <div>
+      <h3>Generalization error</h3>
+      <p>Ошибка на новых, ранее не виденных данных.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 Суть ML не в том, чтобы “выучить таблицу”, а в том, чтобы уловить закономерность, которая продолжит работать за пределами обучающей выборки.
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>🎯 Bias vs Variance</h2>
+
+  <p>Это одна из самых важных идей во всём классическом ML.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Bias</h3>
+      <div class="formula">
+        \text{bias} = \text{ошибка из-за слишком простой модели}
+      </div>
+      <div class="step">слишком жёсткие предположения</div>
+      <div class="step">модель недогибает под данные</div>
+      <div class="step">underfitting</div>
+    </div>
+    <div>
+      <h3>Variance</h3>
+      <div class="formula">
+        \text{variance} = \text{чувствительность к шуму и выборке}
+      </div>
+      <div class="step">модель слишком гибкая</div>
+      <div class="step">ловит шум вместо сигнала</div>
+      <div class="step">overfitting</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    \text{Test Error} \approx \text{Bias}^2 + \text{Variance} + \text{Noise}
+  </div>
+
+  <div class="info">
+    ℹ️ Эта формула в строгом виде зависит от постановки задачи, но как интуитивная рамка она крайне полезна: слишком простая модель даёт большой bias, слишком сложная — большую variance.
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>📈 Интерактив: bias / variance tradeoff</h2>
+  <p class="muted">Меняй сложность модели и смотри, как ведут себя train и validation error</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Сложность модели = <span class="val-display" id="complexityVal">3</span></span>
+        <input type="range" min="1" max="10" step="1" value="3" id="complexity" oninput="updateBiasVariance()">
+      </div>
+      <canvas id="bvCanvas" width="360" height="240" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Интерпретация</h3>
+      <div class="result-box" id="bvInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 В реальности мы ищем не “максимально сложную” модель, а ту, которая лучше всего балансирует между <strong>недообучением</strong> и <strong>переобучением</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>🪤 Underfitting vs Overfitting</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Underfitting</h3>
+      <div class="step">train error высокий</div>
+      <div class="step">validation error тоже высокий</div>
+      <div class="step">модель слишком простая</div>
+      <div class="step">не хватает признаков / мощности / времени обучения</div>
+    </div>
+    <div>
+      <h3>Overfitting</h3>
+      <div class="step">train error очень низкий</div>
+      <div class="step">validation error заметно выше</div>
+      <div class="step">модель выучила шум</div>
+      <div class="step">слишком сложная / слабая регуляризация</div>
+    </div>
+  </div>
+
+  <table style="margin-top:12px;">
+    <tr><th>Симптом</th><th>Вероятная причина</th><th>Что делать</th></tr>
+    <tr><td>train и val оба плохие</td><td>underfitting</td><td>усложнить модель, улучшить признаки</td></tr>
+    <tr><td>train хороший, val плохой</td><td>overfitting</td><td>регуляризация, CV, больше данных</td></tr>
+    <tr><td>оба хорошие</td><td>хороший баланс</td><td>проверить на test</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>🧰 Что такое pipeline в классическом ML?</h2>
+
+  <p>ML-проект — это не только модель. Это цепочка шагов.</p>
+
+  <div class="formula">
+    \text{Data} \rightarrow \text{Cleaning} \rightarrow \text{Features} \rightarrow \text{Model} \rightarrow \text{Validation} \rightarrow \text{Deployment/Evaluation}
+  </div>
+
+  <div class="step blue">1. Понять задачу и метрику</div>
+  <div class="step blue">2. Собрать / проверить данные</div>
+  <div class="step blue">3. Разделить данные на train/val/test</div>
+  <div class="step blue">4. Сделать preprocessing</div>
+  <div class="step blue">5. Построить baseline</div>
+  <div class="step blue">6. Подобрать модель и гиперпараметры</div>
+  <div class="step blue">7. Оценить честно на test</div>
+  <div class="step highlight">8. Только потом делать выводы</div>
+
+  <div class="warn">
+    ⚠️ Одна из самых частых ошибок новичков: сразу прыгать к “крутой модели”, не проверив базовый pipeline, качество разбиения, leakage и корректность метрики.
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>🪣 Baseline model — зачем нужен простой старт?</h2>
+
+  <p>Прежде чем запускать сложные алгоритмы, нужно понять: а простой подход уже даёт разумный результат или нет?</p>
+
+  <div class="grid-3">
+    <div class="mini-card">
+      <h3>Regression baseline</h3>
+      <p class="small">предсказывать среднее или медиану</p>
+    </div>
+    <div class="mini-card">
+      <h3>Classification baseline</h3>
+      <p class="small">всегда предсказывать самый частый класс</p>
+    </div>
+    <div class="mini-card">
+      <h3>Simple model baseline</h3>
+      <p class="small">linear/logistic regression до деревьев и бустинга</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 Если модель не бьёт baseline, то либо проблема в данных, либо в постановке задачи, либо в пайплайне.
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>📌 Что считается хорошей ML-постановкой задачи?</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Хорошая постановка</h3>
+      <div class="step">есть чёткий target</div>
+      <div class="step">метрика соответствует бизнес-цели</div>
+      <div class="step">доступны признаки на момент предсказания</div>
+      <div class="step">данные репрезентативны</div>
+    </div>
+    <div>
+      <h3>Плохая постановка</h3>
+      <div class="step">таргет размыт или шумный</div>
+      <div class="step">метрика не отражает реальную стоимость ошибки</div>
+      <div class="step">используются признаки из будущего</div>
+      <div class="step">train и production живут в разных мирах</div>
+    </div>
+  </div>
+
+  <div class="info">
+    ℹ️ Очень часто основная проблема в ML — это не “плохой алгоритм”, а плохо сформулированная задача.
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>🔍 Интерктив: mini ML lifecycle simulator</h2>
+  <p class="muted">Выбери тип модели и посмотри типичное поведение на train / validation</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Тип модели</span><br>
+        <select id="modelType" onchange="updateLifecycle()">
+          <option value="simple">Очень простая</option>
+          <option value="good">Хорошо подобранная</option>
+          <option value="complex">Слишком сложная</option>
+        </select>
+      </div>
+      <canvas id="lifeCanvas" width="360" height="240" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Что это значит</h3>
+      <div class="result-box" id="lifeInfo"></div>
+      <div class="warn" style="font-size:0.88em;">
+        Не суди о модели только по train score. Для ML гораздо важнее, как она ведёт себя на валидации и новых данных.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>💻 sklearn mindset: как выглядит классический ML в коде</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Train / val / test</button>
+    <button onclick="showCode(1,this)">Baseline + fit</button>
+    <button onclick="showCode(2,this)">Pipeline</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">from sklearn.model_selection import train_test_split
+
+X_train, X_temp, y_train, y_temp = train_test_split(
+    X, y, test_size=0.4, random_state=42
+)
+
+X_val, X_test, y_val, y_test = train_test_split(
+    X_temp, y_temp, test_size=0.5, random_state=42
+)
+
+print(X_train.shape, X_val.shape, X_test.shape)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+# baseline
+dummy = DummyClassifier(strategy="most_frequent")
+dummy.fit(X_train, y_train)
+dummy_pred = dummy.predict(X_val)
+
+# simple real model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+print("Baseline acc:", accuracy_score(y_val, dummy_pred))
+print("Model acc:", accuracy_score(y_val, pred))</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LogisticRegression(max_iter=1000))
+])
+
+pipe.fit(X_train, y_train)
+val_score = pipe.score(X_val, y_val)
+
+print("Validation score:", val_score)</div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>🎯 Что обязательно вынести из 2.1</h2>
+
+  <div class="step highlight">ML-задача = данные + target + модель + loss + evaluation</div>
+  <div class="step highlight">Supervised ≠ Unsupervised</div>
+  <div class="step highlight">Нельзя оценивать модель только на train</div>
+  <div class="step highlight">Validation нужен для выбора, test — только для финала</div>
+  <div class="step highlight">Bias ↔ Variance tradeoff — центральная идея</div>
+  <div class="step highlight">Underfitting и overfitting — две основные крайности</div>
+  <div class="step highlight">Сильный pipeline важнее “модной модели”</div>
+
+  <div class="intuition">
+    💡 Если совсем упростить: классическое ML — это искусство строить модель, которая не просто хорошо объясняет старые данные, а <strong>устойчиво работает на новых</strong>.
+  </div>
+</div>
+
+<script>
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function drawAxes(ctx, W, H){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,H-25); ctx.lineTo(W-10,H-25); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-25); ctx.stroke();
+}
+
+function updateBiasVariance(){
+  const c = +document.getElementById('complexity').value;
+  document.getElementById('complexityVal').textContent = c;
+
+  const trainErr = Math.max(0.05, 0.85 - 0.075*c);
+  const valErr = 0.22 + Math.pow((c-5.5), 2)/40;
+
+  const canvas = document.getElementById('bvCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  // Draw reference U curve
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for(let i=1;i<=10;i++){
+    const x = 30 + (i-1)/9*(W-50);
+    const yVal = 0.22 + Math.pow((i-5.5), 2)/40;
+    const y = 15 + yVal*(H-50);
+    if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // draw train monotonic
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for(let i=1;i<=10;i++){
+    const x = 30 + (i-1)/9*(W-50);
+    const tVal = Math.max(0.05, 0.85 - 0.075*i);
+    const y = 15 + tVal*(H-50);
+    if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // mark current
+  const px = 30 + (c-1)/9*(W-50);
+  const pyTrain = 15 + trainErr*(H-50);
+  const pyVal = 15 + valErr*(H-50);
+
+  ctx.beginPath(); ctx.arc(px, pyTrain, 4, 0, Math.PI*2); ctx.fillStyle='#60a5fa'; ctx.fill();
+  ctx.beginPath(); ctx.arc(px, pyVal, 4, 0, Math.PI*2); ctx.fillStyle='#a78bfa'; ctx.fill();
+
+  let zone = '';
+  if(c <= 3) zone = 'модель слишком простая → высокий bias → underfitting';
+  else if(c >= 8) zone = 'модель слишком сложная → высокая variance → overfitting';
+  else zone = 'разумный баланс сложности и обобщения';
+
+  document.getElementById('bvInfo').innerHTML = `
+    <div class="step">complexity = ${c}</div>
+    <div class="step">train error ≈ <span class="hl-blue">${trainErr.toFixed(3)}</span></div>
+    <div class="step">validation error ≈ <span class="hl-purple">${valErr.toFixed(3)}</span></div>
+    <div class="step highlight">${zone}</div>
+  `;
+}
+
+function updateLifecycle(){
+  const type = document.getElementById('modelType').value;
+  const canvas = document.getElementById('lifeCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const epochs = 12;
+  let trainVals = [], valVals = [];
+
+  for(let i=0;i<epochs;i++){
+    if(type === 'simple'){
+      trainVals.push(0.78 - 0.025*i);
+      valVals.push(0.82 - 0.015*i);
+    } else if(type === 'good'){
+      trainVals.push(0.82 - 0.045*i);
+      valVals.push(0.86 - 0.04*i + (i>8 ? 0.01*(i-8) : 0));
+    } else {
+      trainVals.push(0.84 - 0.06*i);
+      valVals.push(0.88 - 0.03*i + (i>5 ? 0.035*(i-5) : 0));
+    }
+  }
+
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  trainVals.forEach((v,i)=>{
+    const x = 30 + i/(epochs-1)*(W-50);
+    const y = 15 + v*(H-50);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  valVals.forEach((v,i)=>{
+    const x = 30 + i/(epochs-1)*(W-50);
+    const y = 15 + v*(H-50);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  let text = '';
+  if(type === 'simple'){
+    text = 'модель слабая: и train, и validation ошибки остаются высокими → underfitting';
+  } else if(type === 'good'){
+    text = 'модель учится и хорошо обобщает: train и validation улучшаются вместе';
+  } else {
+    text = 'train продолжает улучшаться, но validation начинает ухудшаться → overfitting';
+  }
+
+  document.getElementById('lifeInfo').innerHTML = `
+    <div class="step">синяя кривая = train error</div>
+    <div class="step">оранжевая кривая = validation error</div>
+    <div class="step highlight">${text}</div>
+  `;
+}
+
+updateBiasVariance();
+updateLifecycle();
+</script>
+<script src="shared-nav.js"></script>
+</body>
+</html>

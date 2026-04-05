@@ -4,19 +4,20 @@
     { file: "1_2_calculus.html", label: "1.2 Матанализ" },
     { file: "1_3_analisys.html", label: "1.3 Теория вероятностей" },
     { file: "1_4_inf.html", label: "1.4 Теория информации" },
-    { file: "block_2_1_perceptron_neuron.html", label: "2.1 Нейрон" },
-    { file: "block_2_2_activation_functions.html", label: "2.2 Активации" },
-    { file: "block_2_3_forward_pass.html", label: "2.3 Forward pass" },
-    { file: "block_2_4_loss_functions.html", label: "2.4 Loss" },
-    { file: "block_3_1_backpropagation.html", label: "3.1 Backprop" },
-    { file: "block_3_2_optimizers.html", label: "3.2 Оптимизаторы" },
-    { file: "block_3_3_adam_adamw_lion.html", label: "3.3 Adam / Lion" },
-    { file: "block_3_4_regularization.html", label: "3.4 Регуляризация" },
-    { file: "4_1_cnn_convolutional_networks.html", label: "4.1 CNN" },
-    { file: "4_2_rnn_lstm.html", label: "4.2 RNN / LSTM" },
-    { file: "4_3_transformer_part1_attention.html", label: "4.3 Attention" },
-    { file: "4_3_transformer_part2_architecture.html", label: "4.3 Архитектура" },
-    { file: "4_4_resnet_norm_v3.html", label: "4.4 ResNet / Norm" }
+    { file: "classic_ml_1.html", label: "2.1 Классическое ML" },
+    { file: "block_2_1_perceptron_neuron.html", label: "3.1 Нейрон" },
+    { file: "block_2_2_activation_functions.html", label: "3.2 Активации" },
+    { file: "block_2_3_forward_pass.html", label: "3.3 Forward pass" },
+    { file: "block_2_4_loss_functions.html", label: "3.4 Loss" },
+    { file: "block_3_1_backpropagation.html", label: "4.1 Backprop" },
+    { file: "block_3_2_optimizers.html", label: "4.2 Оптимизаторы" },
+    { file: "block_3_3_adam_adamw_lion.html", label: "4.3 Adam / Lion" },
+    { file: "block_3_4_regularization.html", label: "4.4 Регуляризация" },
+    { file: "4_1_cnn_convolutional_networks.html", label: "5.1 CNN" },
+    { file: "4_2_rnn_lstm.html", label: "5.2 RNN / LSTM" },
+    { file: "4_3_transformer_part1_attention.html", label: "5.3 Attention" },
+    { file: "4_3_transformer_part2_architecture.html", label: "5.3 Архитектура" },
+    { file: "4_4_resnet_norm_v3.html", label: "5.4 ResNet / Norm" }
   ];
 
   const currentFile = window.location.pathname.split("/").pop();
