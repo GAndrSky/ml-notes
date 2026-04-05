@@ -1,0 +1,605 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}.hl-pink{color:var(--pink);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:64px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:8px 13px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}
+.step.blue{border-left-color:var(--blue);background:#0d1426;}
+.node{cursor:pointer;transition:all .3s;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">âœ“ Ð‘Ð»Ð¾Ðº 3</span>
+  <span class="tag tag-active">â–¶ 4.1 Backpropagation</span>
+  <span class="tag tag-next">4.2 ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</span>
+  <span class="tag tag-next">4.3 Adam / AdamW / Lion</span>
+  <span class="tag tag-next">4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+</div>
+
+<h1>4.1 Backpropagation</h1>
+<p class="muted">Chain rule Ð½Ð° Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¼ Ð³Ñ€Ð°Ñ„Ðµ â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ñ Ð½ÑƒÐ»Ñ</p>
+
+<!-- 1. Ð˜Ð´ÐµÑ -->
+<div class="card">
+  <h2>ðŸ’¡ Ð˜Ð´ÐµÑ Ð² Ð¾Ð´Ð½Ð¾Ð¹ Ñ„Ñ€Ð°Ð·Ðµ</h2>
+  <p>Backprop â€” ÑÑ‚Ð¾ <strong>Ð°Ð»Ð³Ð¾Ñ€Ð¸Ñ‚Ð¼ ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ð¾Ð³Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ñ Ð²ÑÐµÑ… Ñ‡Ð°ÑÑ‚Ð½Ñ‹Ñ… Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ñ…</strong> âˆ‚L/âˆ‚Î¸áµ¢ Ð·Ð° Ð¾Ð´Ð¸Ð½ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´ Ð½Ð°Ð·Ð°Ð´ Ð¿Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¼Ñƒ Ð³Ñ€Ð°Ñ„Ñƒ, Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑ Ñ†ÐµÐ¿Ð½Ð¾Ðµ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾.</p>
+  <div class="formula">Ð‘Ñ€ÑƒÑ‚Ñ„Ð¾Ñ€Ñ: Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÑŒ âˆ‚L/âˆ‚Î¸áµ¢ Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¸Ð· P Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾ â†’ O(P) forward pass'Ð¾Ð²
+Backprop: Ð¾Ð´Ð¸Ð½ forward + Ð¾Ð´Ð¸Ð½ backward â†’ O(1) Ð¿Ð¾ Ñ‡Ð¸ÑÐ»Ñƒ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¾Ð²</div>
+  <div class="intuition">
+    ðŸ’¡ ÐŸÑ€Ð¸ P=175 Ð¼Ð»Ñ€Ð´ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² (GPT-3) Ð±Ñ€ÑƒÑ‚Ñ„Ð¾Ñ€Ñ Ð½ÐµÐ²Ð¾Ð·Ð¼Ð¾Ð¶ÐµÐ½. Backprop Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ Ð²ÑÐµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð·Ð° <strong>Ð¾Ð´Ð½Ñƒ Ð¿Ð°Ñ€Ñƒ forward+backward</strong> â€” Ñ‚Ð¾ Ð¶Ðµ Ð²Ñ€ÐµÐ¼Ñ, Ñ‡Ñ‚Ð¾ Ð¾Ð´Ð¸Ð½ forward pass.
+  </div>
+</div>
+
+<!-- 2. Ð¦ÐµÐ¿Ð½Ð¾Ðµ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾ â€” Ð¾ÑÐ²ÐµÐ¶ÐµÐ½Ð¸Ðµ -->
+<div class="card">
+  <h2>ðŸ”— Chain rule â€” Ð¾ÑÐ½Ð¾Ð²Ð° backprop</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Ð¡ÐºÐ°Ð»ÑÑ€Ð½Ñ‹Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹</h3>
+      <div class="formula">z = g(y),  y = f(x)
+dz/dx = dz/dy Â· dy/dx</div>
+      <h3 style="margin-top:14px;">Ð’ÐµÐºÑ‚Ð¾Ñ€Ð½Ñ‹Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹ (VJP)</h3>
+      <div class="formula">z = g(y),  y = f(x),  x,y,z âˆˆ â„â¿
+âˆ‚z/âˆ‚x = (âˆ‚y/âˆ‚x)áµ€ Â· âˆ‚z/âˆ‚y
+       = Jáµ€ Â· v
+v = âˆ‚z/âˆ‚y â€” Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð¸Ð· Ð²Ñ‹ÑˆÐµ,
+J = âˆ‚y/âˆ‚x â€” ÑÐºÐ¾Ð±Ð¸Ð°Ð½ ÑÐ»Ð¾Ñ</div>
+      <p style="font-size:.88em;margin-top:8px;">ÐÐ° Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐµ Ð½Ð°Ð¼ Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½ Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ ÑÐºÐ¾Ð±Ð¸Ð°Ð½ J â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Jáµ€v. Ð­Ñ‚Ð¾ VJP (Vector-Jacobian Product) â€” Ð¸Ð¼ÐµÐ½Ð½Ð¾ ÑÑ‚Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ autograd.</p>
+    </div>
+    <div>
+      <h3>Ð“Ñ€Ð°Ñ„ Ð¸ Ð´ÐµÐ»ÑŒÑ‚Ñ‹</h3>
+      <p style="font-size:.88em;">ÐžÐ±Ð¾Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ: <span class="hl-amber">Î´Ë¡</span> = Â«Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Â» = âˆ‚L/âˆ‚ZË¡</p>
+      <div class="formula" style="font-size:.85em;">Forward:  ZË¡ = AË¡â»Â¹Â·(WË¡)áµ€ + bË¡
+          AË¡ = f(ZË¡)
+
+Backward: Î´Ë¡ = (âˆ‚L/âˆ‚AË¡) âŠ™ fâ€²(ZË¡)   â† Ð¿Ð¾ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð½Ð¾
+          âˆ‚L/âˆ‚WË¡ = (Î´Ë¡)áµ€ Â· AË¡â»Â¹
+          âˆ‚L/âˆ‚bË¡ = sum(Î´Ë¡, axis=0)
+          âˆ‚L/âˆ‚AË¡â»Â¹ = Î´Ë¡ Â· WË¡         â† Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ð¼ Ð½Ð¸Ð¶Ðµ</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        ðŸ’¡ Ð¢Ñ€Ð¸ ÑƒÑ€Ð°Ð²Ð½ÐµÐ½Ð¸Ñ backward â€” Ð²Ð¾Ñ‚ Ð¸ Ð²ÐµÑÑŒ backprop Ð´Ð»Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ. ÐŸÑ€Ð¸Ð¼ÐµÐ½ÑÐµÑˆÑŒ Ð¸Ñ… Ð¾Ñ‚ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ Ðº Ð¿ÐµÑ€Ð²Ð¾Ð¼Ñƒ.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„ -->
+<div class="card">
+  <h2>ðŸŽ¬ Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„</h2>
+  <p class="muted">ÐÐ°Ð¶Ð¸Ð¼Ð°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹ Ð¿Ð¾ Ð¿Ð¾Ñ€ÑÐ´ÐºÑƒ â€” ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ forward (â†’) Ð¸ backward (â†) Ñ Ñ‡Ð¸ÑÐ»Ð°Ð¼Ð¸</p>
+  <br>
+  <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+    <button class="active" id="btnFwd" onclick="setMode('fwd',this)">â–¶ Forward pass</button>
+    <button id="btnBwd" onclick="setMode('bwd',this)">â—€ Backward pass</button>
+    <button onclick="resetGraph()">â†º Ð¡Ð±Ñ€Ð¾Ñ</button>
+  </div>
+  <svg id="cgSvg" viewBox="0 0 860 300" style="width:100%;background:#0a0d14;border:1px solid var(--border);border-radius:8px;"></svg>
+  <div id="cgInfo" style="margin-top:10px;font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:12px 14px;min-height:60px;"></div>
+</div>
+
+<!-- 4. ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ð´Ð»Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ -->
+<div class="card">
+  <h2>ðŸ“ ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ</h2>
+  <div class="tabs" id="derivTabs">
+    <button class="active" onclick="showDeriv('dW',this)">âˆ‚L/âˆ‚W</button>
+    <button onclick="showDeriv('db',this)">âˆ‚L/âˆ‚b</button>
+    <button onclick="showDeriv('dX',this)">âˆ‚L/âˆ‚X (Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‚ÑŒ Ð²Ð½Ð¸Ð·)</button>
+  </div>
+  <div id="derivContent"></div>
+</div>
+
+<!-- 5. ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€: ÑÐµÑ‚ÑŒ 2â†’2â†’1 -->
+<div class="card">
+  <h2>ðŸ”¢ Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€: ÑÐµÑ‚ÑŒ 2â†’2â†’1, MSE loss</h2>
+  <p class="muted">Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹ x Ð¸ y_true â€” Ð²ÑÐµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð¿ÐµÑ€ÐµÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÑŽÑ‚ÑÑ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸</p>
+  <br>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;">
+    <div><div class="muted" style="font-size:.82em;">xâ‚</div><input type="number" id="nx1" value="1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">xâ‚‚</div><input type="number" id="nx2" value="-1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">y_true</div><input type="number" id="ny" value="1.0" step=".1" oninput="calcNet()"></div>
+    <button onclick="randNet()">ðŸŽ² Ð¡Ð»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹Ðµ</button>
+  </div>
+  <!-- Fixed weights display -->
+  <div class="muted" style="font-size:.82em;margin-bottom:6px;">Ð’ÐµÑÐ° (Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°):</div>
+  <div class="formula" style="font-size:.82em;" id="netWeightsDisplay"></div>
+  <br>
+  <div id="netSteps"></div>
+</div>
+
+<!-- 6. Backprop Ð´Ð»Ñ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¹ -->
+<div class="card">
+  <h2>âš¡ Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ñ‡ÐµÑ€ÐµÐ· Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula" style="font-size:.88em;">ReLU:
+  forward:  A = max(0, Z)
+  backward: Î´_prev = Î´ âŠ™ ðŸ™[Z > 0]
+  â†’ Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Â«Ð¼Ð°ÑÐºÐ°Â»: Ð¿Ñ€Ð¾Ð¿ÑƒÑÐºÐ°ÐµÑ‚ grad Ñ‚Ð°Ð¼, Ð³Ð´Ðµ Z>0
+
+Sigmoid:
+  forward:  A = Ïƒ(Z)
+  backward: Î´_prev = Î´ âŠ™ AâŠ™(1âˆ’A)
+  â†’ ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÐµÑ‚ÑÑ Ð½Ð° Ïƒâ€² = Ïƒ(1âˆ’Ïƒ) â‰¤ 0.25
+
+Tanh:
+  forward:  A = tanh(Z)
+  backward: Î´_prev = Î´ âŠ™ (1âˆ’AÂ²)
+  â†’ ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÐµÑ‚ÑÑ Ð½Ð° tanhâ€² = 1âˆ’tanhÂ² â‰¤ 1</div>
+    </div>
+    <div>
+      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð¼Ð°ÑÐºÐ¸ ReLU</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Ð’Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Î´: <span id="maskDeltaVal" style="color:var(--green);font-weight:600;">1.0</span></span>
+        <input type="range" min="-3" max="3" step=".1" value="1" id="maskDelta" oninput="drawMask()">
+      </div>
+      <canvas id="maskCanvas" width="340" height="160" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="maskInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹ backprop -->
+<div class="card">
+  <h2>ðŸ—‚ ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹ backprop â€” ÑˆÐ¿Ð°Ñ€Ð³Ð°Ð»ÐºÐ°</h2>
+  <div class="formula" style="font-size:.88em;">Ð¡Ð»Ð¾Ð¹ l: Z = A_prev Â· Wáµ€ + b,  A = f(Z)
+
+FORWARD:
+  Z^l      = A^(l-1) Â· (W^l)áµ€ + b^l        shape: (B, n_out)
+  A^l      = f(Z^l)                          shape: (B, n_out)
+
+BACKWARD (Ð´Ð°Ð½Ð¾ Î´^l = âˆ‚L/âˆ‚A^l, shape (B, n_out)):
+  âˆ‚L/âˆ‚Z^l  = Î´^l âŠ™ fâ€²(Z^l)                 shape: (B, n_out)
+  âˆ‚L/âˆ‚W^l  = (âˆ‚L/âˆ‚Z^l)áµ€ Â· A^(l-1)          shape: (n_out, n_in)
+  âˆ‚L/âˆ‚b^l  = Î£_B âˆ‚L/âˆ‚Z^l                   shape: (n_out,)
+  Î´^(l-1)  = âˆ‚L/âˆ‚A^(l-1)  = âˆ‚L/âˆ‚Z^l Â· W^l shape: (B, n_in)
+
+Ð¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (MSE):  âˆ‚L/âˆ‚A^L = 2(A^L âˆ’ y)/B
+Ð¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (CE):   âˆ‚L/âˆ‚Z^L = (pÌ‚ âˆ’ y)/B   â† softmax+CE Ð²Ð¼ÐµÑÑ‚Ðµ</div>
+  <div class="intuition">
+    ðŸ’¡ <strong>ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ:</strong> âˆ‚L/âˆ‚W = Î´áµ€Â·X Ð¸Ð¼ÐµÐµÑ‚ shape (n_out, n_in) â€” Ñ‚Ð¾ Ð¶Ðµ, Ñ‡Ñ‚Ð¾ Ñƒ W. ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÐ²Ð¾Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸ Ð¸Ð· Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð¾Ð³Ð¾ ÑƒÐ¼Ð½Ð¾Ð¶ÐµÐ½Ð¸Ñ.
+  </div>
+</div>
+
+<!-- 8. ÐšÐ¾Ð´ -->
+<div class="card">
+  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('numpy',this)">NumPy (Ñ Ð½ÑƒÐ»Ñ)</button>
+    <button onclick="showCode('auto',this)">PyTorch autograd</button>
+    <button onclick="showCode('manual',this)">Ð ÑƒÑ‡Ð½Ð¾Ð¹ backward()</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ===================== COMPUTATIONAL GRAPH =====================
+const CG_NODES = [
+  {id:'x',  label:'x', sub:'Ð²Ñ…Ð¾Ð´',      x:60,  y:150, col:'#60a5fa'},
+  {id:'w1', label:'Wâ‚',sub:'Ð²ÐµÑÐ°',      x:60,  y:240, col:'#a78bfa'},
+  {id:'mm', label:'Â·', sub:'matmul',    x:200, y:150, col:'#f59e0b'},
+  {id:'b1', label:'bâ‚',sub:'bias',      x:200, y:240, col:'#a78bfa'},
+  {id:'add1',label:'+',sub:'add bias',  x:320, y:150, col:'#f59e0b'},
+  {id:'relu',label:'f', sub:'ReLU',     x:440, y:150, col:'#10b981'},
+  {id:'w2', label:'Wâ‚‚',sub:'Ð²ÐµÑÐ°',      x:440, y:240, col:'#a78bfa'},
+  {id:'mm2',label:'Â·', sub:'matmul',    x:560, y:150, col:'#f59e0b'},
+  {id:'b2', label:'bâ‚‚',sub:'bias',      x:560, y:240, col:'#a78bfa'},
+  {id:'add2',label:'+',sub:'add bias',  x:680, y:150, col:'#f59e0b'},
+  {id:'loss',label:'L', sub:'loss',     x:800, y:150, col:'#ef4444'},
+];
+const CG_EDGES = [
+  ['x','mm'],['w1','mm'],['mm','add1'],['b1','add1'],
+  ['add1','relu'],['relu','mm2'],['w2','mm2'],
+  ['mm2','add2'],['b2','add2'],['add2','loss']
+];
+const FWD_INFO = {
+  'x':    'Ð’Ñ…Ð¾Ð´ x\nshape: (B, n_in)',
+  'w1':   'Ð’ÐµÑÐ° Wâ‚\nshape: (n_h, n_in)',
+  'mm':   'Z_pre = x Â· Wâ‚áµ€\nmatmul: (B,n_in)Â·(n_in,n_h)=(B,n_h)',
+  'b1':   'bias bâ‚, shape: (n_h,)',
+  'add1': 'Zâ‚ = Z_pre + bâ‚\nbroadcast bias Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ',
+  'relu': 'Aâ‚ = ReLU(Zâ‚) = max(0, Zâ‚)\nÐ¿Ð¾ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð½Ð¾, shape ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ÑÑ',
+  'w2':   'Ð’ÐµÑÐ° Wâ‚‚\nshape: (n_out, n_h)',
+  'mm2':  'Z_pre2 = Aâ‚ Â· Wâ‚‚áµ€\nmatmul: (B,n_h)Â·(n_h,n_out)=(B,n_out)',
+  'b2':   'bias bâ‚‚, shape: (n_out,)',
+  'add2': 'Å¶ = Z_pre2 + bâ‚‚  (logits/output)\nshape: (B, n_out)',
+  'loss': 'L = MSE(Å¶, y)\nÑÐºÐ°Ð»ÑÑ€',
+};
+const BWD_INFO = {
+  'loss': 'âˆ‚L/âˆ‚Å¶ = 2(Å¶âˆ’y)/B\nÐ¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚, shape: (B, n_out)',
+  'add2': 'âˆ‚L/âˆ‚bâ‚‚ = Î£_B âˆ‚L/âˆ‚Å¶\nâˆ‚L/âˆ‚Z_pre2 = âˆ‚L/âˆ‚Å¶ (bias Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚)',
+  'b2':   'âˆ‚L/âˆ‚bâ‚‚ = Î£_B Î´   shape: (n_out,)',
+  'mm2':  'âˆ‚L/âˆ‚Wâ‚‚ = Î´áµ€ Â· Aâ‚   shape: (n_out, n_h)\nâˆ‚L/âˆ‚Aâ‚ = Î´ Â· Wâ‚‚   shape: (B, n_h)',
+  'w2':   'âˆ‚L/âˆ‚Wâ‚‚ = Î´áµ€ Â· Aâ‚',
+  'relu': 'âˆ‚L/âˆ‚Zâ‚ = âˆ‚L/âˆ‚Aâ‚ âŠ™ ðŸ™[Zâ‚>0]\nReLU Ð¼Ð°ÑÐºÐ°: grad=0 Ð³Ð´Ðµ Zâ‚â‰¤0',
+  'add1': 'âˆ‚L/âˆ‚bâ‚ = Î£_B âˆ‚L/âˆ‚Zâ‚',
+  'b1':   'âˆ‚L/âˆ‚bâ‚ = Î£_B Î´',
+  'mm':   'âˆ‚L/âˆ‚Wâ‚ = Î´áµ€ Â· x   shape: (n_h, n_in)\nâˆ‚L/âˆ‚x = Î´ Â· Wâ‚   shape: (B, n_in)',
+  'w1':   'âˆ‚L/âˆ‚Wâ‚ = Î´áµ€ Â· x',
+  'x':    'âˆ‚L/âˆ‚x = Î´ Â· Wâ‚\n(Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½ ÐµÑÐ»Ð¸ x â€” Ð´Ð°Ð½Ð½Ñ‹Ðµ, Ð½Ð¾ Ð½ÑƒÐ¶ÐµÐ½ Ð´Ð»Ñ Ð¿Ñ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ)',
+};
+const FWD_ORDER = ['x','w1','w2','b1','b2','mm','add1','relu','mm2','add2','loss'];
+const BWD_ORDER = ['loss','add2','b2','mm2','w2','relu','add1','b1','mm','w1','x'];
+
+let cgMode='fwd', cgStep=-1, cgVisited=new Set();
+function setMode(m,btn){
+  cgMode=m; cgStep=-1; cgVisited=new Set();
+  document.querySelectorAll('.card button[id^=btn]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawCG();
+  document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¸Ð¼Ð°Ð¹ Ð½Ð° ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÐ·ÐµÐ» Ð² Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ð¸ '+(m==='fwd'?'â†’ forward':'â† backward');
+}
+function resetGraph(){cgStep=-1;cgVisited=new Set();drawCG();document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¼Ð¸ ÐºÐ½Ð¾Ð¿ÐºÑƒ forward Ð¸Ð»Ð¸ backward, Ð·Ð°Ñ‚ÐµÐ¼ ÐºÐ»Ð¸ÐºÐ°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹';}
+
+function drawCG(){
+  const svg=document.getElementById('cgSvg');
+  svg.innerHTML='';
+  const order=cgMode==='fwd'?FWD_ORDER:BWD_ORDER;
+  const nextId=cgStep+1<order.length?order[cgStep+1]:null;
+
+  // edges
+  CG_EDGES.forEach(([a,b])=>{
+    const na=CG_NODES.find(n=>n.id===a), nb=CG_NODES.find(n=>n.id===b);
+    const visited=cgVisited.has(a)&&cgVisited.has(b);
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',na.x);line.setAttribute('y1',na.y);
+    line.setAttribute('x2',nb.x);line.setAttribute('y2',nb.y);
+    line.setAttribute('stroke',visited?(cgMode==='fwd'?'#f59e0b':'#10b981'):'#30363d');
+    line.setAttribute('stroke-width',visited?2:1);
+    svg.appendChild(line);
+  });
+
+  // nodes
+  CG_NODES.forEach(n=>{
+    const visited=cgVisited.has(n.id);
+    const isNext=n.id===nextId;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','node');
+    g.setAttribute('onclick',`clickNode('${n.id}')`);
+
+    const r=isNext?26:22;
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',n.x);circle.setAttribute('cy',n.y);circle.setAttribute('r',r);
+    circle.setAttribute('fill',visited?n.col+'33':'#161b22');
+    circle.setAttribute('stroke',isNext?'#fff':visited?n.col:'#30363d');
+    circle.setAttribute('stroke-width',isNext?2.5:1.5);
+    g.appendChild(circle);
+
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',n.x);txt.setAttribute('y',n.y+5);
+    txt.setAttribute('text-anchor','middle');txt.setAttribute('fill',visited?n.col:'#8b949e');
+    txt.setAttribute('font-size','13');txt.setAttribute('font-weight','700');
+    txt.setAttribute('font-family','monospace');
+    txt.textContent=n.label;g.appendChild(txt);
+
+    const sub=document.createElementNS('http://www.w3.org/2000/svg','text');
+    sub.setAttribute('x',n.x);sub.setAttribute('y',n.y+r+14);
+    sub.setAttribute('text-anchor','middle');sub.setAttribute('fill','#8b949e');
+    sub.setAttribute('font-size','9');sub.setAttribute('font-family','system-ui');
+    sub.textContent=n.sub;g.appendChild(sub);
+
+    if(isNext){
+      const pulse=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      pulse.setAttribute('cx',n.x);pulse.setAttribute('cy',n.y);pulse.setAttribute('r',r+6);
+      pulse.setAttribute('fill','none');pulse.setAttribute('stroke','#ffffff44');pulse.setAttribute('stroke-width','1');
+      g.appendChild(pulse);
+    }
+    svg.appendChild(g);
+  });
+
+  // direction arrow
+  const arrow=document.createElementNS('http://www.w3.org/2000/svg','text');
+  arrow.setAttribute('x',430);arrow.setAttribute('y',295);
+  arrow.setAttribute('text-anchor','middle');arrow.setAttribute('fill','#8b949e');
+  arrow.setAttribute('font-size','11');arrow.setAttribute('font-family','system-ui');
+  arrow.textContent=cgMode==='fwd'?'â†’ Forward: x â†’ L':'â† Backward: L â†’ x';
+  svg.appendChild(arrow);
+}
+
+function clickNode(id){
+  const order=cgMode==='fwd'?FWD_ORDER:BWD_ORDER;
+  const nextIdx=cgStep+1;
+  if(nextIdx>=order.length){document.getElementById('cgInfo').textContent='âœ… Ð“Ð¾Ñ‚Ð¾Ð²Ð¾! ÐÐ°Ð¶Ð¼Ð¸ Â«Ð¡Ð±Ñ€Ð¾ÑÂ» Ð´Ð»Ñ Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð°.';return;}
+  if(order[nextIdx]!==id){
+    const n=CG_NODES.find(n=>n.id===id);
+    document.getElementById('cgInfo').innerHTML=`<span style="color:var(--red)">Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÐ·ÐµÐ»: ${order[nextIdx]}. Ð¢Ñ‹ ÐºÐ»Ð¸ÐºÐ½ÑƒÐ»: ${id}</span>`;
+    return;
+  }
+  cgStep++;cgVisited.add(id);
+  const info=cgMode==='fwd'?FWD_INFO[id]:BWD_INFO[id];
+  document.getElementById('cgInfo').innerHTML=`<span style="color:${cgMode==='fwd'?'var(--amber)':'var(--green)'};font-weight:700;">${id}</span>  ${cgStep+1}/${order.length}\n${info||''}`;
+  drawCG();
+}
+
+// ===================== DERIVATIONS =====================
+const DERIVS={
+dW:[
+  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b,  L = scalar', c:'Ð˜Ñ‰ÐµÐ¼: âˆ‚L/âˆ‚W', hl:false},
+  {t:'Ð¨Ð°Ð³ 1: chain rule Ñ‡ÐµÑ€ÐµÐ· Z', c:'âˆ‚L/âˆ‚W = âˆ‚L/âˆ‚Z Â· âˆ‚Z/âˆ‚W', hl:false},
+  {t:'Ð¨Ð°Ð³ 2: âˆ‚Z/âˆ‚W Ð¿Ñ€Ð¸ Z=AÂ·Wáµ€', c:'(Ð²Ð°Ñ€Ð¸Ð°Ñ†Ð¸Ñ Ð¿Ð¾ W Ð¿Ñ€Ð¸ Ñ„Ð¸ÐºÑ. A)\nâˆ‚Z_{ij}/âˆ‚W_{kl} = A_{ik}Â·Î´_{jl}  â† ÑÐºÐ¾Ð±Ð¸Ð°Ð½ 4D Ñ‚ÐµÐ½Ð·Ð¾Ñ€', hl:false},
+  {t:'Ð¨Ð°Ð³ 3: VJP â€” ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° Ñ Î´=âˆ‚L/âˆ‚Z', c:'âˆ‚L/âˆ‚W = Î´áµ€ Â· A_prev\n\nshape: (n_out, B) Â· (B, n_in) = (n_out, n_in) âœ“', hl:true},
+  {t:'Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ', c:'âˆ‚L/âˆ‚W[i,j] = Î£_b Î´[b,i] Â· A_prev[b,j]\nÐšÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ W[i,j] Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ = ÑÐºÐ°Ð»ÑÑ€Ð½Ð¾Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ ÑÐ²Ð¾ÐµÐ¹ "ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð²Ñ…Ð¾Ð´Ð¾Ð²" Ð¸ "ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð´ÐµÐ»ÑŒÑ‚"', hl:false},
+],
+db:[
+  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b,  b broadcast Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ', c:'âˆ‚Z_{bi,j}/âˆ‚b_k = Î´_{jk}  (b Ð½Ðµ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ b Ð¸Ð½Ð´ÐµÐºÑÐ° Ð±Ð°Ñ‚Ñ‡Ð°)', hl:false},
+  {t:'Ð¨Ð°Ð³ 1: ÑÑƒÐ¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ', c:'âˆ‚L/âˆ‚b = Î£_b âˆ‚L/âˆ‚Z[b,:]', hl:false},
+  {t:'Ð¨Ð°Ð³ 2: Ð¸Ñ‚Ð¾Ð³', c:'âˆ‚L/âˆ‚b = sum(Î´, axis=0)\n\nshape: (n_out,) â€” ÑÑƒÐ¼Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼ Ð±Ð°Ñ‚Ñ‡Ð°', hl:true},
+  {t:'ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ sum, Ð° Ð½Ðµ mean?', c:'Bias Ð¾Ð´Ð¸Ð½ Ð½Ð° Ð²ÑÐµÑ… Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð² Ð² Ð±Ð°Ñ‚Ñ‡Ðµ â†’ ÐµÐ³Ð¾ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ = ÑÑƒÐ¼Ð¼Ð° Ð´ÐµÐ»ÑŒÑ‚ Ð¾Ñ‚ Ð²ÑÐµÑ… B Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð²', hl:false},
+],
+dX:[
+  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b', c:'Ð˜Ñ‰ÐµÐ¼: âˆ‚L/âˆ‚A_prev (Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð² ÑÐ»Ð¾Ð¹ l-1)', hl:false},
+  {t:'Ð¨Ð°Ð³ 1: âˆ‚Z/âˆ‚A_prev Ð¿Ñ€Ð¸ Z=A_prevÂ·Wáµ€', c:'âˆ‚Z_{bi,j}/âˆ‚A_prev_{bk,l} = Î´_{bb_k}Â·W_{j,l}\nâ† ÑÐºÐ¾Ð±Ð¸Ð°Ð½ ÑÐ½Ð¾Ð²Ð° 4D', hl:false},
+  {t:'Ð¨Ð°Ð³ 2: VJP', c:'âˆ‚L/âˆ‚A_prev = Î´ Â· W\n\nshape: (B, n_out) Â· (n_out, n_in) = (B, n_in) âœ“', hl:true},
+  {t:'ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ', c:'Forward:  Z = A Â· Wáµ€\nBackward: Î´_prev = Î´ Â· W\nâ†’ Ñ‚Ñ€Ð°Ð½ÑÐ¿Ð¾Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ "Ð¾Ñ‚Ð¼ÐµÐ½ÑÐµÑ‚" Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸ÑŽ ÑƒÐ¼Ð½Ð¾Ð¶ÐµÐ½Ð¸Ñ!', hl:false},
+],
+};
+function showDeriv(key,btn){
+  document.querySelectorAll('#derivTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('derivContent').innerHTML=DERIVS[key].map(s=>
+    `<div class="step ${s.hl?'hl':''}">`+
+    `<span style="color:var(--muted);font-size:.82em;">${s.t}</span><br>`+
+    `<span style="color:var(--amber);">${s.c.replace(/\n/g,'<br>')}</span></div>`
+  ).join('');
+}
+
+// ===================== NUMERICAL EXAMPLE =====================
+// Fixed weights for the example
+const W1=[[0.5,-0.3],[0.8,0.2]],b1=[0.1,-0.1];
+const W2=[[0.6,-0.4]],b2=[0.0];
+
+function sig(z){return 1/(1+Math.exp(-z));}
+function relu(z){return Math.max(0,z);}
+
+function calcNet(){
+  const x1=+document.getElementById('nx1').value;
+  const x2=+document.getElementById('nx2').value;
+  const y=+document.getElementById('ny').value;
+
+  // forward
+  const z1=[W1[0][0]*x1+W1[0][1]*x2+b1[0], W1[1][0]*x1+W1[1][1]*x2+b1[1]];
+  const a1=[relu(z1[0]),relu(z1[1])];
+  const z2=[W2[0][0]*a1[0]+W2[0][1]*a1[1]+b2[0]];
+  const yhat=z2[0];
+  const loss=(yhat-y)**2;
+
+  // backward
+  const dL_dyhat=2*(yhat-y);        // âˆ‚L/âˆ‚Å·
+  const dL_dz2=[dL_dyhat];           // âˆ‚L/âˆ‚Zâ‚‚ (no activation)
+  const dL_dW2=[dL_dz2[0]*a1[0],dL_dz2[0]*a1[1]]; // âˆ‚L/âˆ‚Wâ‚‚
+  const dL_db2=[dL_dz2[0]];
+  const dL_da1=[dL_dz2[0]*W2[0][0], dL_dz2[0]*W2[0][1]]; // âˆ‚L/âˆ‚Aâ‚ = Î´Â·Wâ‚‚
+  const mask1=[z1[0]>0?1:0, z1[1]>0?1:0];
+  const dL_dz1=[dL_da1[0]*mask1[0], dL_da1[1]*mask1[1]]; // ReLU backward
+  const dL_dW1=[[dL_dz1[0]*x1,dL_dz1[0]*x2],[dL_dz1[1]*x1,dL_dz1[1]*x2]];
+  const dL_db1=[dL_dz1[0],dL_dz1[1]];
+
+  document.getElementById('netWeightsDisplay').textContent=
+    `Wâ‚=[[${W1[0].join(',')}],[${W1[1].join(',')}]]  bâ‚=[${b1.join(',')}]\n`+
+    `Wâ‚‚=[[${W2[0].join(',')}]]  bâ‚‚=[${b2.join(',')}]`;
+
+  const f=(v,d=4)=>v.toFixed(d);
+  document.getElementById('netSteps').innerHTML=`
+    <div class="step blue">FORWARD PASS</div>
+    <div class="step">Zâ‚ = Wâ‚Â·x + bâ‚ = [${f(z1[0])}, ${f(z1[1])}]</div>
+    <div class="step">Aâ‚ = ReLU(Zâ‚) = [${f(a1[0])}, ${f(a1[1])}]  (Ð¼Ð°ÑÐºÐ°: [${mask1}])</div>
+    <div class="step">Zâ‚‚ = Wâ‚‚Â·Aâ‚ + bâ‚‚ = ${f(z2[0])}</div>
+    <div class="step hl">Å· = ${f(yhat)},  y = ${y},  L = (Å·âˆ’y)Â² = ${f(loss)}</div>
+
+    <div class="step blue" style="margin-top:10px;">BACKWARD PASS</div>
+    <div class="step hl">âˆ‚L/âˆ‚Å· = 2(Å·âˆ’y) = ${f(dL_dyhat)}  â† ÑÑ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚</div>
+    <div class="step">âˆ‚L/âˆ‚Wâ‚‚ = Î´Â·Aâ‚ = [${dL_dW2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">âˆ‚L/âˆ‚bâ‚‚ = Î´ = [${dL_db2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step green">âˆ‚L/âˆ‚Aâ‚ = Î´Â·Wâ‚‚ = [${dL_da1.map(v=>f(v)).join(', ')}]  â† Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ð¼ Ñ‡ÐµÑ€ÐµÐ· ReLU</div>
+    <div class="step">âˆ‚L/âˆ‚Zâ‚ = âˆ‚L/âˆ‚Aâ‚ âŠ™ mask = [${dL_dz1.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">âˆ‚L/âˆ‚Wâ‚ = [[${dL_dW1[0].map(v=>f(v)).join(', ')}],[${dL_dW1[1].map(v=>f(v)).join(', ')}]]</div>
+    <div class="step hl">âˆ‚L/âˆ‚bâ‚ = [${dL_db1.map(v=>f(v)).join(', ')}]</div>
+  `;
+}
+function randNet(){
+  document.getElementById('nx1').value=(Math.random()*4-2).toFixed(2);
+  document.getElementById('nx2').value=(Math.random()*4-2).toFixed(2);
+  document.getElementById('ny').value=(Math.random()*2-1).toFixed(2);
+  calcNet();
+}
+
+// ===================== RELU MASK CANVAS =====================
+function drawMask(){
+  const delta=+document.getElementById('maskDelta').value;
+  document.getElementById('maskDeltaVal').textContent=delta.toFixed(1);
+  const c=document.getElementById('maskCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  const zs=[-2,-1.5,-1,-0.5,0,0.5,1,1.5,2];
+  const n=zs.length, bw=W/n-4;
+
+  zs.forEach((z,i)=>{
+    const active=z>0;
+    const grad=active?delta:0;
+    const bh=Math.abs(grad)*(H*0.6);
+    const x=i*(W/n)+4;
+    const by=H*0.7;
+
+    // Z bar
+    ctx.fillStyle=active?'#1f2d1a':'#1a1212';
+    ctx.strokeStyle=active?'#10b981':'#ef4444';
+    ctx.lineWidth=1;
+    const zh=Math.abs(z)*20;
+    ctx.fillRect(x,by-zh,bw*0.45,zh);
+    ctx.strokeRect(x,by-zh,bw*0.45,zh);
+
+    // grad bar
+    ctx.fillStyle=active?'rgba(16,185,129,.4)':'rgba(239,68,68,.15)';
+    ctx.strokeStyle=active?'#10b981':'#ef4444';
+    if(bh>0){ctx.fillRect(x+bw*0.5,by-bh,bw*0.45,bh);ctx.strokeRect(x+bw*0.5,by-bh,bw*0.45,bh);}
+
+    ctx.fillStyle='#8b949e';ctx.font='8px monospace';ctx.textAlign='center';
+    ctx.fillText(z,x+bw/2,by+12);
+    ctx.fillStyle=active?'#10b981':'#ef4444';
+    ctx.fillText(active?'Î´':'0',x+bw*0.75,by-bh-4);
+  });
+
+  ctx.strokeStyle='#333';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H*0.7);ctx.lineTo(W,H*0.7);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='left';
+  ctx.fillText('Z (Ð½ÐµÐ¹Ñ€Ð¾Ð½)',4,12);ctx.fillText('grad Ñ‡ÐµÑ€ÐµÐ· ReLU',W/2+4,12);
+
+  document.getElementById('maskInfo').innerHTML=
+    `Î´_in = ${delta.toFixed(2)}: ${zs.filter(z=>z>0).length} Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² Ð¿Ñ€Ð¾Ð¿ÑƒÑÐºÐ°ÑŽÑ‚ grad, `+
+    `${zs.filter(z=>z<=0).length} Ð±Ð»Ð¾ÐºÐ¸Ñ€ÑƒÑŽÑ‚ (zâ‰¤0)`;
+}
+
+// ===================== CODE =====================
+const CODES={
+numpy:`import numpy as np
+
+class LinearLayer:
+    def __init__(self, n_in, n_out):
+        self.W = np.random.randn(n_out, n_in) * np.sqrt(2/n_in)
+        self.b = np.zeros(n_out)
+
+    def forward(self, X):
+        self.X = X                        # ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÐ¼ Ð´Ð»Ñ backward
+        return X @ self.W.T + self.b      # (B, n_in)â†’(B, n_out)
+
+    def backward(self, delta):
+        # delta = âˆ‚L/âˆ‚Z, shape: (B, n_out)
+        self.dW = delta.T @ self.X        # (n_out, n_in)
+        self.db = delta.sum(axis=0)       # (n_out,)
+        return delta @ self.W             # âˆ‚L/âˆ‚X = Î´Â·W, (B, n_in)
+
+class ReLULayer:
+    def forward(self, Z):
+        self.mask = Z > 0
+        return Z * self.mask
+
+    def backward(self, delta):
+        return delta * self.mask          # âŠ™ Ð¼Ð°ÑÐºÐ°
+
+# MSE loss
+def mse_backward(y_pred, y_true):
+    B = y_pred.shape[0]
+    return 2 * (y_pred - y_true) / B    # âˆ‚L/âˆ‚Å·
+
+# Full backprop pass
+X = np.random.randn(32, 784)
+y = np.random.randn(32, 1)
+
+l1 = LinearLayer(784, 256)
+r1 = ReLULayer()
+l2 = LinearLayer(256, 1)
+
+# Forward
+a1 = r1.forward(l1.forward(X))
+yhat = l2.forward(a1)
+loss = ((yhat - y)**2).mean()
+
+# Backward
+d = mse_backward(yhat, y)
+d = l2.backward(d)
+d = r1.backward(d)
+d = l1.backward(d)
+
+# Gradients in l1.dW, l1.db, l2.dW, l2.db`,
+
+auto:`import torch
+import torch.nn as nn
+
+# PyTorch autograd Ð´ÐµÐ»Ð°ÐµÑ‚ Ð²ÑÑ‘ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸
+model = nn.Sequential(
+    nn.Linear(784, 256),
+    nn.ReLU(),
+    nn.Linear(256, 1)
+)
+
+X = torch.randn(32, 784, requires_grad=False)
+y = torch.randn(32, 1)
+
+# Forward
+y_pred = model(X)
+loss = ((y_pred - y) ** 2).mean()
+
+# Backward â€” Ð¾Ð´Ð¸Ð½ Ð²Ñ‹Ð·Ð¾Ð² ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¸Ñ‚ Ð³Ñ€Ð°Ñ„
+loss.backward()
+
+# Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ñ‚ÐµÐ¿ÐµÑ€ÑŒ Ð² .grad ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°
+for name, param in model.named_parameters():
+    print(f"{name}: grad shape={param.grad.shape}, "
+          f"norm={param.grad.norm():.4f}")
+
+# Ð’Ð°Ð¶Ð½Ð¾: Ð¾Ñ‡Ð¸Ñ‰Ð°Ñ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð¿ÐµÑ€ÐµÐ´ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¼ Ð±Ð°Ñ‚Ñ‡ÐµÐ¼!
+optimizer.zero_grad()   # Ð¸Ð»Ð¸ model.zero_grad()`,
+
+manual:`import torch
+import torch.nn as nn
+
+# ÐšÐ°ÑÑ‚Ð¾Ð¼Ð½Ñ‹Ð¹ backward Ñ‡ÐµÑ€ÐµÐ· Function (Ð´Ð»Ñ Ð¸ÑÑÐ»ÐµÐ´Ð¾Ð²Ð°Ð½Ð¸Ð¹)
+class SquaredLoss(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, y_pred, y_true):
+        ctx.save_for_backward(y_pred, y_true)
+        return ((y_pred - y_true)**2).mean()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        y_pred, y_true = ctx.saved_tensors
+        B = y_pred.shape[0]
+        # âˆ‚L/âˆ‚y_pred = 2(y_predâˆ’y_true)/B
+        grad = 2 * (y_pred - y_true) / B * grad_output
+        return grad, None   # None Ð´Ð»Ñ y_true (Ð½Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€)
+
+# ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ñ‡ÐµÑ€ÐµÐ· gradcheck
+from torch.autograd import gradcheck
+loss_fn = SquaredLoss.apply
+inp = (torch.randn(4,1, dtype=torch.float64, requires_grad=True),
+       torch.randn(4,1, dtype=torch.float64))
+print(gradcheck(loss_fn, inp))   # True = Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð²ÐµÑ€ÐµÐ½`,
+};
+function showCode(key,btn){
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent=CODES[key];
+}
+
+// INIT
+drawCG();
+document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¼Ð¸ Â«Forward passÂ» Ð¸Ð»Ð¸ Â«Backward passÂ», Ð·Ð°Ñ‚ÐµÐ¼ ÐºÐ»Ð¸ÐºÐ°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹ Ð¿Ð¾ Ð¿Ð¾Ñ€ÑÐ´ÐºÑƒ';
+showDeriv('dW',document.querySelector('#derivTabs button'));
+showCode('numpy',document.querySelector('#codeTabs button'));
+calcNet();
+drawMask();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+

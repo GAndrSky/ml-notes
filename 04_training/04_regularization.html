@@ -1,0 +1,696 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:68px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}
+table{width:100%;border-collapse:collapse;}
+th{background:#1a1a2e;color:var(--amber);padding:8px 10px;text-align:left;font-size:.85em;}
+td{padding:7px 10px;border-top:1px solid var(--border);font-size:.85em;}
+td.mono{font-family:monospace;font-size:.82em;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">âœ“ 4.1 Backprop</span>
+  <span class="tag tag-done">âœ“ 4.2 SGD/Momentum</span>
+  <span class="tag tag-done">âœ“ 4.3 Adam/AdamW/Lion</span>
+  <span class="tag tag-active">â–¶ 4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+</div>
+
+<h1>4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</h1>
+<p class="muted">Dropout, BatchNorm, LayerNorm, Weight Decay â€” Ð¿Ð¾Ñ‡ÐµÐ¼Ñƒ Ð¿ÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ, ÐºÐ°Ðº Ð±Ð¾Ñ€Ð¾Ñ‚ÑŒÑÑ</p>
+
+<!-- 0. ÐŸÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ -->
+<div class="card">
+  <h2>ðŸŽ¯ ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Ð²Ð¾Ð·Ð½Ð¸ÐºÐ°ÐµÑ‚ Ð¿ÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ?</h2>
+  <div class="grid-2">
+    <div>
+      <p>ÐÐµÐ¹Ñ€Ð¾Ð½Ð½Ð°Ñ ÑÐµÑ‚ÑŒ Ñ P >> N Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² <em>ÑÐ¿Ð¾ÑÐ¾Ð±Ð½Ð° Ð·Ð°Ð¿Ð¾Ð¼Ð½Ð¸Ñ‚ÑŒ</em> Ð²ÐµÑÑŒ Ð´Ð°Ñ‚Ð°ÑÐµÑ‚ Ð½Ð°Ð¸Ð·ÑƒÑÑ‚ÑŒ. Ð—Ð°Ð´Ð°Ñ‡Ð° Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ð¸ â€” Ð½Ðµ Ð´Ð°Ñ‚ÑŒ ÐµÐ¹ ÑÑ‚Ð¾ ÑÐ´ÐµÐ»Ð°Ñ‚ÑŒ.</p>
+      <div class="formula" style="font-size:.85em;">ÐŸÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ:  train loss â†“â†“  test loss â†‘
+Underfitting:  train loss â†‘   test loss â†‘
+Ð—Ð¾Ð»Ð¾Ñ‚Ð¾:        train loss â†“   test loss â†“ (Ð¾Ð±Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ)</div>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        ðŸ’¡ <strong>Bias-variance tradeoff:</strong><br>
+        ÐŸÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ = Ð²Ñ‹ÑÐ¾ÐºÐ°Ñ variance (Ñ‡ÑƒÑ‚ÐºÐ¾ÑÑ‚ÑŒ Ðº ÑˆÑƒÐ¼Ñƒ Ð¾Ð±ÑƒÑ‡Ð°ÑŽÑ‰ÐµÐ¹ Ð²Ñ‹Ð±Ð¾Ñ€ÐºÐ¸).<br>
+        Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÐµÑ‚ bias, ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ°ÐµÑ‚ variance.
+      </div>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ Ð´ÐµÐ¼Ð¾Ð½ÑÑ‚Ñ€Ð°Ñ†Ð¸Ñ</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Ð¡Ð»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»Ð¸: <span id="compVal" style="color:var(--green);font-weight:600;">5</span></span>
+        <input type="range" min="1" max="12" step="1" value="5" id="compRange" oninput="drawOverfit()">
+      </div>
+      <canvas id="overfitCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="overfitInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 1. Weight Decay -->
+<div class="card">
+  <h2>âš–ï¸ Weight Decay â€” L2 Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">L_reg = L_data + (Î»/2)Â·Î£áµ¢ Î¸áµ¢Â²
+
+âˆ‚L_reg/âˆ‚Î¸ = âˆ‚L_data/âˆ‚Î¸ + Î»Â·Î¸
+
+ÐžÐ±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ðµ SGD:
+Î¸ â† Î¸ âˆ’ Î·Â·(g + Î»Â·Î¸)
+  = (1 âˆ’ Î·Î»)Â·Î¸ âˆ’ Î·Â·g   â† Â«ÑÐ¶Ð°Ñ‚Ð¸ÐµÂ» Ð²ÐµÑÐ¾Ð²</div>
+      <p style="font-size:.88em;margin-top:8px;">ÐŸÑ€Ð¸ ÐºÐ°Ð¶Ð´Ð¾Ð¼ ÑˆÐ°Ð³Ðµ Ð²ÐµÑÐ° <strong>ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÑŽÑ‚ÑÑ Ð½Ð° (1âˆ’Î·Î») < 1</strong> â€” Â«Ñ‚ÑÐ½ÑƒÑ‚ÑÑ Ðº Ð½ÑƒÐ»ÑŽÂ». Ð­Ñ‚Ð¾ ÑÐºÐ²Ð¸Ð²Ð°Ð»ÐµÐ½Ñ‚Ð½Ð¾ MAP-Ð¾Ñ†ÐµÐ½ÐºÐµ Ñ Ð³Ð°ÑƒÑÑÐ¾Ð²Ñ‹Ð¼ Ð¿Ñ€Ð¸Ð¾Ñ€Ð¾Ð¼ Î¸ ~ N(0, 1/Î»).</p>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        ðŸ’¡ Ð‘Ð¾Ð»ÑŒÑˆÐ¸Ðµ Ð²ÐµÑÐ° â†’ ÑÐ»Ð¾Ð¶Ð½Ð°Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ â†’ Ð¿ÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ.<br>
+        ÐœÐ°Ð»ÐµÐ½ÑŒÐºÐ¸Ðµ Ð²ÐµÑÐ° â†’ Ð³Ð»Ð°Ð´ÐºÐ°Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ â†’ Ð»ÑƒÑ‡ÑˆÐµ Ð¾Ð±Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ.<br>
+        Ð¡Ð²ÑÐ·ÑŒ Ñ Ð±Ð»Ð¾ÐºÐ¾Ð¼ 1.3: MAP Ñ Ð³Ð°ÑƒÑÑÐ¾Ð²Ñ‹Ð¼ Ð¿Ñ€Ð¸Ð¾Ñ€Ð¾Ð¼ = L2.
+      </div>
+    </div>
+    <div>
+      <h3>Ð­Ñ„Ñ„ÐµÐºÑ‚ Î» Ð½Ð° Ð²ÐµÑÐ°</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Î» = <span id="wdVal" style="color:var(--green);font-weight:600;">0.01</span></span>
+        <input type="range" min="0" max=".5" step=".005" value=".01" id="wdRange" oninput="drawWD()">
+      </div>
+      <canvas id="wdCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="wdInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Dropout -->
+<div class="card">
+  <h2>ðŸŽ² Dropout</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">Train:   mask ~ Bernoulli(1âˆ’p)
+         Ã£ = a âŠ™ mask / (1âˆ’p)   â† inverted dropout
+         (Ð´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð½Ð° (1âˆ’p) ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ E[Ã£] = E[a])
+
+Test:    Ã£ = a                  â† Ð±ÐµÐ· Ð¼Ð°ÑÐºÐ¸, Ð±ÐµÐ· Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð°</div>
+      <p style="font-size:.88em;margin-top:8px;">ÐŸÑ€Ð¸ ÐºÐ°Ð¶Ð´Ð¾Ð¼ forward pass ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾ <strong>Ð¾Ð±Ð½ÑƒÐ»ÑÐµÐ¼ Ð´Ð¾Ð»ÑŽ (1âˆ’p) Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð²</strong>. Ð¡ÐµÑ‚ÑŒ Ð½Ðµ Ð¼Ð¾Ð¶ÐµÑ‚ Ð¿Ð¾Ð»Ð°Ð³Ð°Ñ‚ÑŒÑÑ Ð½Ð° Ð»ÑŽÐ±Ð¾Ð¹ ÐºÐ¾Ð½ÐºÑ€ÐµÑ‚Ð½Ñ‹Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½.</p>
+      <div class="intuition" style="font-size:.85em;margin-top:8px;">
+        ðŸ’¡ <strong>Ð‘Ð°Ð¹ÐµÑÐ¾Ð²ÑÐºÐ°Ñ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ:</strong><br>
+        Dropout â‰ˆ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð°Ð½ÑÐ°Ð¼Ð±Ð»Ñ Ð¸Ð· 2^H ÑÐµÑ‚ÐµÐ¹ (H Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² ÑÐºÑ€Ñ‹Ñ‚Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ) Ñ Ð¾Ð±Ñ‰Ð¸Ð¼Ð¸ Ð²ÐµÑÐ°Ð¼Ð¸. Inference = Ð³ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡ÐµÑÐºÐ¾Ðµ ÑÑ€ÐµÐ´Ð½ÐµÐµ Ð°Ð½ÑÐ°Ð¼Ð±Ð»Ñ.<br><br>
+        <strong>MC Dropout:</strong> Ð¾ÑÑ‚Ð°Ð²ÑŒ dropout Ð½Ð° inference, Ð·Ð°Ð¿ÑƒÑÑ‚Ð¸ N Ñ€Ð°Ð· â†’ Ð¿Ñ€Ð¸Ð±Ð»Ð¸Ð·Ð¸Ñ‚ posterior uncertainty.
+      </div>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Dropout</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">p (dropout rate): <span id="dpVal" style="color:var(--green);font-weight:600;">0.50</span></span>
+        <input type="range" min="0" max=".9" step=".05" value=".5" id="dpRange" oninput="drawDropout()">
+      </div>
+      <div style="margin:4px 0;display:flex;gap:8px;">
+        <button class="active" id="btnTrain" onclick="setDPMode('train',this)">Train mode</button>
+        <button id="btnTest" onclick="setDPMode('test',this)">Test mode</button>
+        <button onclick="drawDropout()">ðŸŽ² Resample</button>
+      </div>
+      <canvas id="dpCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;margin-top:8px;"></canvas>
+      <div id="dpInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <br>
+  <h3>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ inverted dropout, Ð° Ð½Ðµ Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð½Ð° test?</h3>
+  <div class="formula" style="font-size:.85em;">Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚ 1 (Ð½Ð°Ð¸Ð²Ð½Ñ‹Ð¹): train Ð±ÐµÐ· Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ñ, test Ã— (1âˆ’p)
+  ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°: Ð½ÑƒÐ¶Ð½Ð¾ Ð¼ÐµÐ½ÑÑ‚ÑŒ Ð²ÑÐµ forward-Ð²Ñ‹Ð·Ð¾Ð²Ñ‹ Ð½Ð° inference
+
+Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚ 2 (inverted dropout, ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚):
+  train:  Ð´ÐµÐ»Ð¸Ð¼ Ð½Ð° (1âˆ’p) â†’ E[output] ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ÑÑ
+  test:   Ð½Ð¸Ñ‡ÐµÐ³Ð¾ Ð½Ðµ Ð¼ÐµÐ½ÑÐµÐ¼ â†’ Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹ forward pass</div>
+</div>
+
+<!-- 3. BatchNorm -->
+<div class="card">
+  <h2>ðŸ“Š Batch Normalization (Ioffe & Szegedy, 2015)</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">Train (Ð±Ð°Ñ‚Ñ‡ X âˆˆ â„^(BÃ—H)):
+
+Î¼_B = (1/B)Â·Î£áµ¢ xáµ¢            â† ÑÑ€ÐµÐ´Ð½ÐµÐµ Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ
+ÏƒÂ²_B = (1/B)Â·Î£áµ¢ (xáµ¢âˆ’Î¼_B)Â²   â† Ð´Ð¸ÑÐ¿ÐµÑ€ÑÐ¸Ñ Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ
+
+xÌ‚áµ¢ = (xáµ¢ âˆ’ Î¼_B) / âˆš(ÏƒÂ²_B+Îµ) â† Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ°
+yáµ¢ = Î³Â·xÌ‚áµ¢ + Î²                â† Ð¼Ð°ÑÑˆÑ‚Ð°Ð±+ÑÐ´Ð²Ð¸Ð³ (learnable)</div>
+      <p style="font-size:.88em;margin-top:8px;">Î³, Î² â€” Ð¾Ð±ÑƒÑ‡Ð°ÐµÐ¼Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹. ÐÑƒÐ¶Ð½Ñ‹, Ñ‡Ñ‚Ð¾Ð±Ñ‹ BN Ð½Ðµ Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡Ð¸Ð²Ð°Ð» Ð²Ñ‹Ñ€Ð°Ð·Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ: ÑÐµÑ‚ÑŒ Ð¼Ð¾Ð¶ÐµÑ‚ Â«Ð¾Ñ‚Ð¼ÐµÐ½Ð¸Ñ‚ÑŒÂ» Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÑƒ, Ð²Ñ‹ÑÑ‚Ð°Ð²Ð¸Ð² Î³=Ïƒ, Î²=Î¼.</p>
+      <div class="warn" style="font-size:.85em;margin-top:8px;">
+        âš ï¸ Test (inference): Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ÑÑ <strong>running mean/var</strong>, Ð½Ð°ÐºÐ¾Ð¿Ð»ÐµÐ½Ð½Ñ‹Ðµ Ð·Ð° Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ â€” Ð½Ðµ ÑÑ‚Ð°Ñ‚Ð¸ÑÑ‚Ð¸ÐºÐ¸ Ð±Ð°Ñ‚Ñ‡Ð°!<br>
+        running_mean â† (1âˆ’m)Â·running_mean + mÂ·Î¼_B
+      </div>
+    </div>
+    <div>
+      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸ Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Ð Ð°Ð·Ð¼ÐµÑ€ Ð±Ð°Ñ‚Ñ‡Ð° B: <span id="bnBVal" style="color:var(--green);font-weight:600;">8</span></span>
+        <input type="range" min="2" max="32" step="1" value="8" id="bnBRange" oninput="drawBN()">
+      </div>
+      <div style="margin:4px 0;display:flex;gap:8px;">
+        <button class="active" id="btnBNbefore" onclick="setBNMode('before',this)">Ð”Ð¾ BN</button>
+        <button id="btnBNafter" onclick="setBNMode('after',this)">ÐŸÐ¾ÑÐ»Ðµ BN</button>
+      </div>
+      <canvas id="bnCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;margin-top:8px;"></canvas>
+      <div id="bnInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <br>
+  <h3>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ BN Ð¿Ð¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸ÑŽ?</h3>
+  <div class="grid-2">
+    <div class="intuition" style="font-size:.85em;">
+      ðŸ’¡ <strong>Internal Covariate Shift:</strong><br>
+      Ð‘ÐµÐ· BN: Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¹ Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ð¾ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ð¿Ñ€Ð¸ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ð¸ Ð²ÐµÑÐ¾Ð² Ð¿Ñ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ. ÐšÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»Ð¾Ð¹ Ð²Ñ‹Ð½ÑƒÐ¶Ð´ÐµÐ½ Ð°Ð´Ð°Ð¿Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒÑÑ Ðº Â«Ð´Ð²Ð¸Ð¶ÑƒÑ‰ÐµÐ¹ÑÑ Ñ†ÐµÐ»Ð¸Â».<br>
+      Ð¡ BN: Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸ Ð²ÑÐµÐ³Ð´Ð° Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ â†’ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑÐ»Ð¾Ð¹ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ.
+    </div>
+    <div class="intuition" style="font-size:.85em;">
+      ðŸ’¡ <strong>Ð‘Ð¾Ð»ÐµÐµ Ð³Ð»Ð°Ð´ÐºÐ°Ñ loss surface:</strong><br>
+      Lipschitz-ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚Ð° loss Ð¸ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ°ÐµÑ‚ÑÑ. ÐœÐ¾Ð¶Ð½Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ð¹ lr. ÐœÐµÐ½ÐµÐµ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð° Ðº Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸.<br>
+      BN â†’ lr Ð² 10Ã— Ð±Ð¾Ð»ÑŒÑˆÐµ â†’ Ð±Ñ‹ÑÑ‚Ñ€ÐµÐµ ÑÑ…Ð¾Ð´Ð¸Ð¼Ð¾ÑÑ‚ÑŒ.
+    </div>
+  </div>
+
+  <h3 style="margin-top:12px;">Backward pass BatchNorm</h3>
+  <div class="formula" style="font-size:.85em;">âˆ‚L/âˆ‚Î³ = Î£áµ¢ âˆ‚L/âˆ‚yáµ¢ Â· xÌ‚áµ¢
+âˆ‚L/âˆ‚Î² = Î£áµ¢ âˆ‚L/âˆ‚yáµ¢
+
+âˆ‚L/âˆ‚xÌ‚áµ¢ = âˆ‚L/âˆ‚yáµ¢ Â· Î³
+âˆ‚L/âˆ‚ÏƒÂ² = Î£áµ¢ âˆ‚L/âˆ‚xÌ‚áµ¢ Â· (xáµ¢âˆ’Î¼) Â· (âˆ’Â½)(ÏƒÂ²+Îµ)^(âˆ’3/2)
+âˆ‚L/âˆ‚Î¼  = Î£áµ¢ âˆ‚L/âˆ‚xÌ‚áµ¢ Â· (âˆ’1/âˆš(ÏƒÂ²+Îµ)) + âˆ‚L/âˆ‚ÏƒÂ² Â· (âˆ’2/B)Â·Î£(xáµ¢âˆ’Î¼)
+âˆ‚L/âˆ‚xáµ¢ = âˆ‚L/âˆ‚xÌ‚áµ¢/âˆš(ÏƒÂ²+Îµ) + âˆ‚L/âˆ‚ÏƒÂ²Â·2(xáµ¢âˆ’Î¼)/B + âˆ‚L/âˆ‚Î¼/B</div>
+</div>
+
+<!-- 4. LayerNorm -->
+<div class="card">
+  <h2>ðŸ”² Layer Normalization (Ba et al., 2016)</h2>
+  <div class="grid-2">
+    <div>
+      <div class="formula">x âˆˆ â„^H (Ð¾Ð´Ð¸Ð½ Ð¿Ñ€Ð¸Ð¼ÐµÑ€, H Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð²):
+
+Î¼ = (1/H)Â·Î£â±¼ xâ±¼            â† ÑÑ€ÐµÐ´Ð½ÐµÐµ Ð¿Ð¾ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°Ð¼
+ÏƒÂ² = (1/H)Â·Î£â±¼ (xâ±¼âˆ’Î¼)Â²
+
+xÌ‚â±¼ = (xâ±¼ âˆ’ Î¼) / âˆš(ÏƒÂ²+Îµ)
+yâ±¼ = Î³â±¼Â·xÌ‚â±¼ + Î²â±¼           â† Î³,Î² shape (H,)</div>
+
+      <h3 style="margin-top:12px;">BatchNorm vs LayerNorm</h3>
+      <div class="formula" style="font-size:.85em;">BatchNorm: Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾ <span class="hl-amber">Ð±Ð°Ñ‚Ñ‡Ñƒ</span> (Ð¾ÑÑŒ B)
+  â†’ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ B, Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ Ð¿Ñ€Ð¸ B=1
+
+LayerNorm: Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾ <span class="hl-green">Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°Ð¼</span> (Ð¾ÑÑŒ H)
+  â†’ Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼ Ð¾Ñ‚ Ñ€Ð°Ð·Ð¼ÐµÑ€Ð° Ð±Ð°Ñ‚Ñ‡Ð°
+  â†’ Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ð¾ Ð½Ð° train Ð¸ inference</div>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾Ðµ ÑÑ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ Ð¾ÑÐµÐ¹ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸</h3>
+      <div style="margin:6px 0;display:flex;gap:8px;">
+        <button class="active" id="btnBatch" onclick="setNormAxis('batch',this)">BatchNorm</button>
+        <button id="btnLayer" onclick="setNormAxis('layer',this)">LayerNorm</button>
+        <button id="btnInst" onclick="setNormAxis('instance',this)">InstanceNorm</button>
+      </div>
+      <canvas id="normCanvas" width="340" height="210" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;margin-top:8px;"></canvas>
+      <div id="normInfo" style="font-size:.82em;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <br>
+  <div class="grid-2">
+    <div class="intuition" style="font-size:.85em;">
+      ðŸ’¡ <strong>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Transformer Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ LayerNorm:</strong><br>
+      â€¢ Sequence Ð´Ð»Ð¸Ð½Ð° Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ â†’ Ð±Ð°Ñ‚Ñ‡ Ð¸Ð· Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÐµÐ¹ Ñ€Ð°Ð·Ð½Ð¾Ð¹ Ð´Ð»Ð¸Ð½Ñ‹<br>
+      â€¢ ÐÐ²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð¾Ðµ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ: Ð½ÐµÐ»ÑŒÐ·Ñ ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ Â«Ð²Ð¿ÐµÑ€Ñ‘Ð´Â» Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ<br>
+      â€¢ ÐŸÑ€Ð¸ inference Ð³ÐµÐ½ÐµÑ€Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¾Ð´Ð½Ð¾Ð¼Ñƒ Ñ‚Ð¾ÐºÐµÐ½Ñƒ (B=1) â†’ BatchNorm ÑÐ»Ð¾Ð¼Ð°ÐµÑ‚ÑÑ
+    </div>
+    <div class="info" style="font-size:.85em;">
+      ðŸ“Œ <strong>Pre-LN vs Post-LN:</strong><br>
+      Original Transformer (2017): Post-LN (Ð¿Ð¾ÑÐ»Ðµ Attention)<br>
+      GPT-2+, ÑÐ¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ðµ LLM: Pre-LN (Ð¿ÐµÑ€ÐµÐ´ Attention)<br>
+      Pre-LN ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½ÐµÐµ, Ð½Ðµ Ð½ÑƒÐ¶Ð½Ð° lr warmup Ñ‚Ð°ÐºÐ¾Ð¹ Ð´Ð»Ð¸Ð½Ð½Ñ‹Ð¹.
+    </div>
+  </div>
+</div>
+
+<!-- 5. Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ BN vs LN -->
+<div class="card">
+  <h2>ðŸ”¢ Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€: BN vs LN Ð½Ð° Ð¾Ð´Ð½Ð¸Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…</h2>
+  <p class="muted">ÐœÐ°Ñ‚Ñ€Ð¸Ñ†Ð° X âˆˆ â„^(3Ã—4): 3 Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°, 4 Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°. Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹ â€” Ð¿ÐµÑ€ÐµÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ÑÑ.</p>
+  <br>
+  <div id="xlInputs" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+  <br>
+  <div id="xlResult" style="font-family:monospace;font-size:.83em;background:#0d1117;border-radius:8px;padding:12px 14px;"></div>
+</div>
+
+<!-- 6. Ð¡Ñ€Ð°Ð²Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð° -->
+<div class="card">
+  <h2>ðŸ“‹ ÐšÐ¾Ð³Ð´Ð° Ñ‡Ñ‚Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ</h2>
+  <table>
+    <tr><th>ÐœÐµÑ‚Ð¾Ð´</th><th>ÐÐ¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾</th><th>Ð—Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ B</th><th>Ð“Ð´Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÑ‚ÑŒ</th></tr>
+    <tr><td><strong>BatchNorm</strong></td><td class="mono">Ð‘Ð°Ñ‚Ñ‡ (B)</td><td>âœ“ Ð”Ð°</td><td>CNN, MLP â€” ÑƒÑÐºÐ¾Ñ€ÑÐµÑ‚ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ</td></tr>
+    <tr><td><strong>LayerNorm</strong></td><td class="mono">ÐŸÑ€Ð¸Ð·Ð½Ð°ÐºÐ¸ (H)</td><td>âœ— ÐÐµÑ‚</td><td>Transformer, RNN, NLP</td></tr>
+    <tr><td><strong>InstanceNorm</strong></td><td class="mono">ÐšÐ°Ñ€Ñ‚Ð° (HÃ—W)</td><td>âœ— ÐÐµÑ‚</td><td>Style Transfer, Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ñ</td></tr>
+    <tr><td><strong>GroupNorm</strong></td><td class="mono">Ð“Ñ€ÑƒÐ¿Ð¿Ñ‹ ÐºÐ°Ð½Ð°Ð»Ð¾Ð²</td><td>âœ— ÐÐµÑ‚</td><td>Object Detection (Ð¼Ð°Ð»Ñ‹Ð¹ B)</td></tr>
+    <tr><td><strong>Dropout</strong></td><td>â€”</td><td>âœ— ÐÐµÑ‚</td><td>Dense ÑÐ»Ð¾Ð¸, â‰¤Transformer</td></tr>
+    <tr><td><strong>Weight Decay</strong></td><td>â€”</td><td>âœ— ÐÐµÑ‚</td><td>Ð’ÐµÐ·Ð´Ðµ (Ñ‡ÐµÑ€ÐµÐ· Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€)</td></tr>
+  </table>
+</div>
+
+<!-- 7. ÐšÐ¾Ð´ -->
+<div class="card">
+  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('bn',this)">BatchNorm Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('ln',this)">LayerNorm Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('dropout',this)">Dropout Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('api',this)">PyTorch API</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ===================== OVERFIT VIZ =====================
+const TRUE_FN = x => Math.sin(2*Math.PI*x);
+const N_DATA = 12;
+let dataX, dataY;
+function initData(){
+  dataX=Array.from({length:N_DATA},(_,i)=>i/(N_DATA-1));
+  dataY=dataX.map(x=>TRUE_FN(x)+(Math.random()-.5)*.5);
+}
+initData();
+
+function polyFit(xs,ys,deg){
+  // Vandermonde least squares
+  const n=xs.length,m=deg+1;
+  const A=xs.map(x=>Array.from({length:m},(_,i)=>Math.pow(x,i)));
+  // Normal equations Aáµ€AÂ·c = Aáµ€y
+  const AtA=Array.from({length:m},(_,i)=>Array.from({length:m},(_,j)=>A.reduce((s,r)=>s+r[i]*r[j],0)));
+  const Aty=Array.from({length:m},(_,i)=>A.reduce((s,r,k)=>s+r[i]*ys[k],0));
+  // Gaussian elimination
+  const M=AtA.map((r,i)=>[...r,Aty[i]]);
+  for(let i=0;i<m;i++){
+    let mx=i;for(let j=i+1;j<m;j++)if(Math.abs(M[j][i])>Math.abs(M[mx][i]))mx=j;
+    [M[i],M[mx]]=[M[mx],M[i]];
+    for(let j=i+1;j<=m;j++)M[i][j]/=M[i][i];
+    M[i][i]=1;
+    for(let j=0;j<m;j++)if(j!==i){const f=M[j][i];for(let k=i;k<=m;k++)M[j][k]-=f*M[i][k];}
+  }
+  return M.map(r=>r[m]);
+}
+
+function drawOverfit(){
+  const deg=+document.getElementById('compRange').value;
+  document.getElementById('compVal').textContent=deg;
+  const c=document.getElementById('overfitCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const tx=x=>x*W, ty=y=>H/2-y*(H/3);
+  // axes
+  ctx.strokeStyle='#222';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  // true fn
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const x=i/100;ctx.lineTo(tx(x),ty(TRUE_FN(x)));}
+  ctx.stroke();ctx.setLineDash([]);
+  // fit
+  const coefs=polyFit(dataX,dataY,deg);
+  const col=deg<=2?'#10b981':deg<=5?'#f59e0b':'#ef4444';
+  ctx.strokeStyle=col;ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){
+    const x=i/200;
+    const y=coefs.reduce((s,c,k)=>s+c*Math.pow(x,k),0);
+    i===0?ctx.moveTo(tx(x),ty(y)):ctx.lineTo(tx(x),ty(y));
+  }
+  ctx.stroke();
+  // data
+  dataX.forEach((x,i)=>{
+    ctx.beginPath();ctx.arc(tx(x),ty(dataY[i]),4,0,Math.PI*2);
+    ctx.fillStyle='#60a5fa';ctx.fill();
+  });
+  // MSE
+  const mse=dataX.reduce((s,x,i)=>{const yhat=coefs.reduce((a,c,k)=>a+c*Math.pow(x,k),0);return s+(yhat-dataY[i])**2;},0)/N_DATA;
+  const label=deg<=2?'Underfitting':deg<=5?'Ð¥Ð¾Ñ€Ð¾ÑˆÐµÐµ Ð¾Ð±Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ':'ÐŸÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ';
+  ctx.fillStyle=col;ctx.font='11px system-ui';ctx.fillText(`ÑÑ‚ÐµÐ¿ÐµÐ½ÑŒ ${deg}  MSE=${mse.toFixed(4)}  ${label}`,6,14);
+  document.getElementById('overfitInfo').innerHTML=`<span style="color:${col}">${label}</span> | ÑÑ‚ÐµÐ¿ÐµÐ½ÑŒ Ð¿Ð¾Ð»Ð¸Ð½Ð¾Ð¼Ð° = ${deg}`;
+}
+
+// ===================== WEIGHT DECAY =====================
+function drawWD(){
+  const wd=+document.getElementById('wdRange').value;
+  document.getElementById('wdVal').textContent=wd.toFixed(3);
+  const c=document.getElementById('wdCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  // Show weight norm over steps
+  const steps=150, lr=0.01;
+  let th=2.0, thNoReg=2.0;
+  const pts=[th], ptsNoReg=[thNoReg];
+  for(let i=0;i<steps;i++){
+    const g=0.1; // constant small gradient
+    th=(1-lr*wd)*th-lr*g;
+    thNoReg=thNoReg-lr*g;
+    pts.push(Math.abs(th)); ptsNoReg.push(Math.abs(thNoReg));
+  }
+  const mx=Math.max(...ptsNoReg,2.5);
+  const ty=v=>H-(v/mx)*(H*.82)-H*.08;
+  const tx=i=>i/steps*W;
+  ctx.strokeStyle='#1e2533';ctx.lineWidth=1;
+  [0,1,2].forEach(v=>{ctx.beginPath();ctx.moveTo(0,ty(v));ctx.lineTo(W,ty(v));ctx.stroke();});
+  [[ptsNoReg,'#60a5fa'],[pts,'#10b981']].forEach(([p,col])=>{
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();p.forEach((v,i)=>i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v)));
+    ctx.stroke();
+  });
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
+  ctx.fillText('Ð‘ÐµÐ· Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ð¸ (ÑÐ¸Ð½Ð¸Ð¹)',4,12);
+  ctx.fillText('Ð¡ L2 Î»='+wd.toFixed(3)+' (Ð·ÐµÐ»Ñ‘Ð½Ñ‹Ð¹)',4,24);
+  document.getElementById('wdInfo').textContent=`Î»=${wd.toFixed(3)}  Î¸_final: Ð±ÐµÐ· reg=${ptsNoReg[steps].toFixed(3)}, Ñ reg=${pts[steps].toFixed(3)}`;
+}
+
+// ===================== DROPOUT =====================
+let dpMode='train';
+function setDPMode(m,btn){dpMode=m;document.getElementById('btnTrain').classList.toggle('active',m==='train');document.getElementById('btnTest').classList.toggle('active',m==='test');drawDropout();}
+function drawDropout(){
+  const p=+document.getElementById('dpRange').value;
+  document.getElementById('dpVal').textContent=p.toFixed(2);
+  const c=document.getElementById('dpCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const n=20, vals=Array.from({length:n},()=>Math.random()*0.8+0.2);
+  const mask=Array.from({length:n},()=>Math.random()>p);
+  const scale=1/(1-p||0.01);
+  const bw=W/n-3;
+  vals.forEach((v,i)=>{
+    const active=dpMode==='train'?mask[i]:true;
+    const disp=dpMode==='train'?(active?v*scale:0):v;
+    const bh=disp*(H*0.75);
+    const x=i*(W/n)+2;
+    ctx.fillStyle=dpMode==='test'?'#10b981':active?'#10b981':'#2d1212';
+    ctx.strokeStyle=active?'#10b981':'#ef4444';
+    ctx.lineWidth=1;
+    if(bh>0){ctx.fillRect(x,H*.9-bh,bw,bh);ctx.strokeRect(x,H*.9-bh,bw,bh);}
+    else{ctx.beginPath();ctx.arc(x+bw/2,H*.85,3,0,Math.PI*2);ctx.strokeStyle='#ef4444';ctx.stroke();}
+  });
+  const active_n=dpMode==='test'?n:mask.filter(Boolean).length;
+  const kept_pct=(active_n/n*100).toFixed(0);
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.fillText(dpMode==='train'?`p=${p.toFixed(2)}: ${active_n}/${n} Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹ (${kept_pct}%)`:`Test mode: Ð²ÑÐµ ${n} Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð²`,4,12);
+  document.getElementById('dpInfo').innerHTML=dpMode==='train'
+    ?`ÐœÐ°ÑÐºÐ° Bernoulli(${(1-p).toFixed(2)}): ${active_n} Ð¸Ð· ${n} Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð². ÐœÐ°ÑÑˆÑ‚Ð°Ð± Ã—${scale.toFixed(2)}`
+    :`Inference: Ð¼Ð°ÑÐºÐ¸ Ð½ÐµÑ‚. E[output] = E[train output] Ð±Ð»Ð°Ð³Ð¾Ð´Ð°Ñ€Ñ inverted dropout.`;
+}
+
+// ===================== BATCHNORM =====================
+let bnMode='before';
+function setBNMode(m,btn){bnMode=m;document.getElementById('btnBNbefore').classList.toggle('active',m==='before');document.getElementById('btnBNafter').classList.toggle('active',m==='after');drawBN();}
+function drawBN(){
+  const B=+document.getElementById('bnBRange').value;
+  document.getElementById('bnBVal').textContent=B;
+  const c=document.getElementById('bnCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  // Generate data with mean=3, std=2
+  const data=Array.from({length:B},()=>3+2*(Math.random()+Math.random()+Math.random()-1.5));
+  const mu=data.reduce((a,b)=>a+b,0)/B;
+  const variance=data.reduce((s,v)=>s+(v-mu)**2,0)/B;
+  const std=Math.sqrt(variance+1e-5);
+  const normed=data.map(v=>(v-mu)/std);
+  const display=bnMode==='before'?data:normed;
+  const dmu=display.reduce((a,b)=>a+b,0)/B;
+  const dstd=Math.sqrt(display.reduce((s,v)=>s+(v-dmu)**2,0)/B+1e-5);
+  const lo=Math.min(...display)-0.5,hi=Math.max(...display)+0.5;
+  const bw=Math.max(4,Math.min(W/B-2,30));
+  const ty=v=>H*.85-(v-lo)/(hi-lo||1)*(H*.7);
+  // zero line
+  ctx.strokeStyle='#444';ctx.lineWidth=1;
+  const z0=ty(bnMode==='after'?0:dmu);
+  ctx.beginPath();ctx.moveTo(0,z0);ctx.lineTo(W,z0);ctx.stroke();
+  const col=bnMode==='after'?'#10b981':'#f59e0b';
+  display.forEach((v,i)=>{
+    const x=((i+.5)/B)*W-bw/2;
+    const y=ty(v),base=ty(bnMode==='after'?0:dmu);
+    const h=Math.abs(y-base);
+    ctx.fillStyle=col+'88';ctx.strokeStyle=col;ctx.lineWidth=1;
+    ctx.fillRect(x,Math.min(y,base),bw,h||1);ctx.strokeRect(x,Math.min(y,base),bw,h||1);
+  });
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
+  ctx.fillText(bnMode==='before'?`Ð”Ð¾ BN: Î¼=${dmu.toFixed(2)}, Ïƒ=${dstd.toFixed(2)}`:`ÐŸÐ¾ÑÐ»Ðµ BN: Î¼â‰ˆ${dmu.toFixed(3)}, Ïƒâ‰ˆ${dstd.toFixed(3)}`,4,12);
+  document.getElementById('bnInfo').innerHTML=bnMode==='before'
+    ?`Ð‘Ð°Ñ‚Ñ‡ B=${B}: Î¼=${mu.toFixed(2)}, Ïƒ=${std.toFixed(2)}`
+    :`ÐŸÐ¾ÑÐ»Ðµ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸: Î¼â‰ˆ0, Ïƒâ‰ˆ1  (+ learnable Î³,Î²)`;
+}
+
+// ===================== NORM AXIS =====================
+let normAxis='batch';
+function setNormAxis(ax,btn){
+  normAxis=ax;
+  ['btnBatch','btnLayer','btnInst'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  btn.classList.add('active');
+  drawNormAxis();
+}
+function drawNormAxis(){
+  const c=document.getElementById('normCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+  // Draw BÃ—H grid with highlighted normalization axis
+  const B=4, H_dim=6;
+  const cw=Math.floor((W-20)/(H_dim)), ch=Math.floor((H-50)/B);
+  const ox=10, oy=20;
+  // Generate data
+  const data=Array.from({length:B},()=>Array.from({length:H_dim},()=>Math.random()*4+1));
+  for(let b=0;b<B;b++) for(let h=0;h<H_dim;h++){
+    let highlighted=false;
+    if(normAxis==='batch') highlighted=true; // all in same feature col
+    if(normAxis==='layer') highlighted=(b===0);
+    if(normAxis==='instance') highlighted=(b===0);
+    const v=data[b][h];
+    const t=(v-1)/4;
+    const col=highlighted?(normAxis==='batch'&&true?`rgba(245,158,11,${0.3+t*.5})`:(normAxis==='layer'&&b===0)?`rgba(16,185,129,${0.3+t*.5})`:`rgba(164,120,250,${0.3+t*.5})`):'#1e2533';
+    ctx.fillStyle=col;
+    ctx.strokeStyle='#30363d';ctx.lineWidth=.5;
+    ctx.fillRect(ox+h*cw,oy+b*ch,cw-2,ch-2);
+    ctx.strokeRect(ox+h*cw,oy+b*ch,cw-2,ch-2);
+    ctx.fillStyle='#e6edf3';ctx.font='8px monospace';ctx.textAlign='center';
+    ctx.fillText(v.toFixed(1),ox+h*cw+cw/2-1,oy+b*ch+ch/2+3);
+  }
+  // Labels
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';
+  for(let h=0;h<H_dim;h++) ctx.fillText(`f${h+1}`,ox+h*cw+cw/2-1,oy-4);
+  ctx.textAlign='right';ctx.font='9px system-ui';
+  for(let b=0;b<B;b++) ctx.fillText(`x${b+1}`,ox-4,oy+b*ch+ch/2+3);
+  ctx.textAlign='left';
+  const descs={batch:'BatchNorm: Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¾ÑÐ¸ Batch (ÐºÐ°Ð¶Ð´Ñ‹Ð¹ feature Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾)',layer:'LayerNorm: Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¾ÑÐ¸ Features (ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾)',instance:'InstanceNorm: Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ñƒ HÃ—W (Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€)'};
+  ctx.fillStyle='#f59e0b';ctx.font='9px system-ui';
+  ctx.fillText(descs[normAxis],4,H-4);
+  document.getElementById('normInfo').innerHTML={batch:'<span style="color:var(--amber)">â—</span> ÐÐ¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð²ÐµÑ€Ñ‚Ð¸ÐºÐ°Ð»ÑŒÐ½Ð¾: Î¼ Ð¸ Ïƒ Ð¿Ð¾ B Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ feature',layer:'<span style="color:var(--green)">â—</span> ÐÐ¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð³Ð¾Ñ€Ð¸Ð·Ð¾Ð½Ñ‚Ð°Ð»ÑŒÐ½Ð¾: Î¼ Ð¸ Ïƒ Ð¿Ð¾ H Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°',instance:'<span style="color:var(--purple)">â—</span> ÐÐ¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ñƒ: Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ per-sample per-channel'}[normAxis];
+}
+
+// ===================== BN vs LN NUMBERS =====================
+const xlData=[[1,2,3,4],[5,3,1,2],[2,4,6,1]];
+function buildXLInputs(){
+  document.getElementById('xlInputs').innerHTML=xlData.map((row,i)=>
+    `<div><div class="muted" style="font-size:.8em;margin-bottom:4px;">ÐŸÑ€Ð¸Ð¼ÐµÑ€ x${i+1}</div>`+
+    row.map((v,j)=>`<input type="number" value="${v}" step=".1" style="background:#0d1117;border:1px solid var(--border);color:var(--text);padding:4px;border-radius:5px;width:52px;text-align:center;margin:2px;"
+      oninput="xlData[${i}][${j}]=+this.value;calcXL()">`).join('')+
+    '</div>'
+  ).join('');
+}
+function calcXL(){
+  const eps=1e-5;
+  const X=xlData;
+  const B=X.length,H=X[0].length;
+  // BN: mean/var per feature
+  const bnMu=Array.from({length:H},(_,j)=>X.reduce((s,r)=>s+r[j],0)/B);
+  const bnVar=Array.from({length:H},(_,j)=>X.reduce((s,r)=>s+(r[j]-bnMu[j])**2,0)/B);
+  const bnOut=X.map(row=>row.map((v,j)=>(v-bnMu[j])/Math.sqrt(bnVar[j]+eps)));
+  // LN: mean/var per example
+  const lnOut=X.map(row=>{const mu=row.reduce((a,b)=>a+b,0)/H;const va=row.reduce((s,v)=>s+(v-mu)**2,0)/H;return row.map(v=>(v-mu)/Math.sqrt(va+eps));});
+  const f=(v,d=3)=>v.toFixed(d);
+  const fmt=m=>m.map(r=>'['+r.map(v=>f(v)).join(', ')+']').join('\n     ');
+  document.getElementById('xlResult').innerHTML=
+    `X:\n     ${fmt(X)}\n\n`+
+    `BatchNorm:\n  Î¼_B = [${bnMu.map(v=>f(v)).join(', ')}]  (Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°)\n  ÏƒÂ²_B= [${bnVar.map(v=>f(v)).join(', ')}]\n  BN(X):\n     ${fmt(bnOut)}\n\n`+
+    `LayerNorm:\n  Î¼_L = [${X.map(r=>f(r.reduce((a,b)=>a+b,0)/H)).join(', ')}]  (Ð¿Ð¾ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°Ð¼ Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°)\n  LN(X):\n     ${fmt(lnOut)}`;
+}
+
+// ===================== CODE =====================
+const CODES={
+bn:`import numpy as np
+
+class BatchNorm1d:
+    def __init__(self, H, eps=1e-5, momentum=0.1):
+        self.gamma = np.ones(H)    # learnable scale
+        self.beta  = np.zeros(H)   # learnable shift
+        self.eps   = eps
+        self.momentum = momentum
+        self.running_mean = np.zeros(H)
+        self.running_var  = np.ones(H)
+        self.training = True
+
+    def forward(self, x):  # x: (B, H)
+        if self.training:
+            mu  = x.mean(axis=0)           # (H,)
+            var = x.var(axis=0)            # (H,)
+            # Update running stats
+            self.running_mean = (1-self.momentum)*self.running_mean + self.momentum*mu
+            self.running_var  = (1-self.momentum)*self.running_var  + self.momentum*var
+        else:
+            mu, var = self.running_mean, self.running_var
+        self.cache = (x, mu, var)
+        x_hat = (x - mu) / np.sqrt(var + self.eps)
+        return self.gamma * x_hat + self.beta
+
+    def backward(self, dout):  # Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ backward â€” ÑÐ¼. Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹
+        x, mu, var = self.cache
+        B = x.shape[0]
+        x_hat = (x - mu) / np.sqrt(var + self.eps)
+        self.dgamma = (dout * x_hat).sum(axis=0)
+        self.dbeta  = dout.sum(axis=0)
+        # Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ x (Ð¿Ð¾Ð´Ñ€Ð¾Ð±Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ð² ÐºÐ¾Ð½ÑÐ¿ÐµÐºÑ‚Ðµ)
+        dx_hat = dout * self.gamma
+        dvar = (dx_hat * (x - mu) * (-0.5) * (var+self.eps)**(-1.5)).sum(0)
+        dmu  = (-dx_hat / np.sqrt(var+self.eps)).sum(0) + dvar*(-2*(x-mu)).mean(0)
+        return dx_hat/np.sqrt(var+self.eps) + dvar*2*(x-mu)/B + dmu/B`,
+
+ln:`import numpy as np
+
+class LayerNorm:
+    def __init__(self, H, eps=1e-5):
+        self.gamma = np.ones(H)   # (H,)
+        self.beta  = np.zeros(H)  # (H,)
+        self.eps = eps
+
+    def forward(self, x):  # x: (B, H) Ð¸Ð»Ð¸ (B, T, H)
+        # Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ¹ Ð¾ÑÐ¸
+        mu  = x.mean(axis=-1, keepdims=True)   # (B, 1)
+        var = x.var(axis=-1, keepdims=True)    # (B, 1)
+        self.cache = (x, mu, var)
+        x_hat = (x - mu) / np.sqrt(var + self.eps)
+        return self.gamma * x_hat + self.beta
+
+    def backward(self, dout):
+        x, mu, var = self.cache
+        H = x.shape[-1]
+        x_hat = (x - mu) / np.sqrt(var + self.eps)
+        self.dgamma = (dout * x_hat).sum(axis=tuple(range(dout.ndim-1)))
+        self.dbeta  = dout.sum(axis=tuple(range(dout.ndim-1)))
+        # Ð¸Ð´ÐµÐ½Ñ‚Ð¸Ñ‡ÐµÐ½ BN Ð½Ð¾ ÑÑƒÐ¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð¿Ð¾ H Ð° Ð½Ðµ B
+        dx_hat = dout * self.gamma
+        dvar = (dx_hat*(x-mu)*(-0.5)*(var+self.eps)**(-1.5)).sum(-1,keepdims=True)
+        dmu  = (-dx_hat/np.sqrt(var+self.eps)).sum(-1,keepdims=True)
+        return dx_hat/np.sqrt(var+self.eps) + dvar*2*(x-mu)/H + dmu/H`,
+
+dropout:`import numpy as np
+
+class Dropout:
+    def __init__(self, p=0.5):
+        self.p = p          # Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ ÐžÐ‘ÐÐ£Ð›Ð•ÐÐ˜Ð¯
+        self.training = True
+
+    def forward(self, x):
+        if not self.training or self.p == 0:
+            return x
+        # Inverted dropout: Ð´ÐµÐ»Ð¸Ð¼ Ð½Ð° (1-p) Ð¿Ñ€Ð¸ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ð¸
+        self.mask = (np.random.rand(*x.shape) > self.p) / (1 - self.p)
+        return x * self.mask
+
+    def backward(self, dout):
+        # Ð¢Ð° Ð¶Ðµ Ð¼Ð°ÑÐºÐ°: Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ 0 Ð³Ð´Ðµ Ð½ÐµÐ¹Ñ€Ð¾Ð½ Ð±Ñ‹Ð» Ð²Ñ‹ÐºÐ»ÑŽÑ‡ÐµÐ½
+        return dout * self.mask
+
+# Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ðµ
+layer = Dropout(p=0.3)
+layer.training = True   # train mode
+out = layer.forward(x)
+
+layer.training = False  # eval mode
+out = layer.forward(x)  # pass-through, Ð±ÐµÐ· Ð¼Ð°ÑÐºÐ¸`,
+
+api:`import torch.nn as nn
+
+# Dropout
+nn.Dropout(p=0.5)         # Ð´Ð»Ñ dense ÑÐ»Ð¾Ñ‘Ð²
+nn.Dropout2d(p=0.5)       # Ð´Ð»Ñ ÐºÐ°Ð½Ð°Ð»Ð¾Ð² CNN
+
+# BatchNorm
+nn.BatchNorm1d(num_features=256)    # Ð´Ð»Ñ (B, H) Ð¸Ð»Ð¸ (B, H, L)
+nn.BatchNorm2d(num_features=64)     # Ð´Ð»Ñ (B, C, H, W) â€” CNN
+
+# LayerNorm
+nn.LayerNorm(normalized_shape=256)           # Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½Ð¸Ðµ d=256
+nn.LayerNorm(normalized_shape=[T, H])        # Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾ (T, H)
+
+# ÐŸÑ€Ð¸Ð¼ÐµÑ€: Transformer Ð±Ð»Ð¾Ðº
+class TransformerBlock(nn.Module):
+    def __init__(self, d_model, nhead, dropout=0.1):
+        super().__init__()
+        self.attn  = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.ff    = nn.Sequential(
+            nn.Linear(d_model, 4*d_model),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(4*d_model, d_model),
+        )
+        self.norm1 = nn.LayerNorm(d_model)   # Pre-LN
+        self.norm2 = nn.LayerNorm(d_model)
+        self.drop  = nn.Dropout(dropout)
+
+    def forward(self, x):
+        # Pre-LN residual
+        x = x + self.drop(self.attn(self.norm1(x),self.norm1(x),self.norm1(x))[0])
+        x = x + self.drop(self.ff(self.norm2(x)))
+        return x`
+};
+function showCode(key,btn){
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent=CODES[key];
+}
+
+// INIT
+drawOverfit();
+drawWD();
+drawDropout();
+drawBN();
+drawNormAxis();
+buildXLInputs();
+calcXL();
+showCode('bn',document.querySelector('#codeTabs button'));
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,634 @@
+﻿
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:980px;margin:0 auto;line-height:1.55}
+h1{font-size:1.5em;margin-bottom:4px}
+h2{font-size:1.15em;color:var(--amber);margin:18px 0 8px}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0}
+.formula{font-family:'Courier New',monospace;font-size:.98em;background:#0d1117;padding:10px 14px;border-radius:8px;border-left:3px solid var(--amber);margin:10px 0;overflow-x:auto;white-space:pre}
+.hl-a{color:var(--amber);font-weight:600}
+.hl-g{color:var(--green);font-weight:600}
+.hl-b{color:var(--blue);font-weight:600}
+.hl-r{color:var(--red);font-weight:600}
+.hl-p{color:var(--purple);font-weight:600}
+.muted{color:var(--muted);font-size:.88em}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .15s}
+.tab.active{border-color:var(--amber);color:var(--amber)}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=range]{width:100%;accent-color:var(--green);margin:4px 0}
+.sr{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.9em}
+.sv{color:var(--green);font-weight:600;min-width:42px;text-align:right}
+.step-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:.88em}
+.sn{color:var(--amber);font-weight:700;margin-right:6px}
+.info-box{background:#161b22;border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.warn-box{background:#161b22;border-left:3px solid var(--red);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.9em}
+.code-block{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:.78em;overflow-x:auto;margin:10px 0;white-space:pre}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th{background:#0d1117;padding:8px 10px;text-align:left;color:var(--amber);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid #21262d}
+canvas{border-radius:6px;display:block}
+.tok{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:6px;font-size:.85em;font-weight:600;cursor:pointer;transition:all .2s;margin:3px}
+.tok-inactive{background:#161b22;border:1px solid var(--border);color:var(--muted)}
+.tok-active{background:rgba(245,158,11,.2);border:1px solid var(--amber);color:var(--amber)}
+.tok-ctx{background:rgba(96,165,250,.15);border:1px solid var(--blue);color:var(--blue)}
+</style>
+
+<h1>5.3 â€” Transformer (Ð§Ð°ÑÑ‚ÑŒ 1): Attention</h1>
+<p class="muted">Scaled Dot-Product Attention Â· Multi-Head Attention Â· Ð¼Ð°ÑÐºÐ¸ Â· Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('t-why')">ÐœÐ¾Ñ‚Ð¸Ð²Ð°Ñ†Ð¸Ñ</button>
+  <button class="tab" onclick="sw('t-sdpa')">Scaled Dot-Product</button>
+  <button class="tab" onclick="sw('t-viz')">Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²</button>
+  <button class="tab" onclick="sw('t-mha')">Multi-Head</button>
+  <button class="tab" onclick="sw('t-mask')">ÐœÐ°ÑÐºÐ¸</button>
+  <button class="tab" onclick="sw('t-math')">ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð°</button>
+  <button class="tab" onclick="sw('t-code')">PyTorch</button>
+</div>
+
+<!-- ===== 1. ÐœÐžÐ¢Ð˜Ð’ÐÐ¦Ð˜Ð¯ ===== -->
+<div id="t-why" class="tab-content active">
+<h2>Ð—Ð°Ñ‡ÐµÐ¼ Attention? ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ RNN</h2>
+<div class="card">
+<div class="grid2">
+<div>
+<h3 class="hl-r">RNN â€” ÑƒÐ·ÐºÐ¾Ðµ Ð¼ÐµÑÑ‚Ð¾</h3>
+<div class="step-box"><span class="sn">1.</span>Ð˜Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ Ð¾ ÑˆÐ°Ð³Ðµ t=1 Ð´Ð¾Ð»Ð¶Ð½Ð° Ð¿Ñ€Ð¾Ð¹Ñ‚Ð¸ Ñ‡ÐµÑ€ÐµÐ· Ð²ÑÐµ T hidden states Ð´Ð¾ ÑˆÐ°Ð³Ð° T â†’ Ð·Ð°Ñ‚ÑƒÑ…Ð°Ð½Ð¸Ðµ</div>
+<div class="step-box"><span class="sn">2.</span>ÐŸÐ¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ð¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° â€” Ð½ÐµÐ»ÑŒÐ·Ñ Ñ€Ð°ÑÐ¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»Ð¸Ñ‚ÑŒ</div>
+<div class="step-box"><span class="sn">3.</span>Ð¤Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ð½Ñ‚ÐµÐºÑÑ‚Ð° Ð² seq2seq â€” Â«Ð±ÑƒÑ‚Ñ‹Ð»Ð¾Ñ‡Ð½Ð¾Ðµ Ð³Ð¾Ñ€Ð»Ñ‹ÑˆÐºÐ¾Â»</div>
+</div>
+<div>
+<h3 class="hl-g">Attention â€” Ñ€ÐµÑˆÐµÐ½Ð¸Ðµ</h3>
+<div class="step-box"><span class="sn">1.</span>ÐŸÑ€ÑÐ¼Ð¾Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¼ÐµÐ¶Ð´Ñƒ Ð»ÑŽÐ±Ñ‹Ð¼Ð¸ Ð´Ð²ÑƒÐ¼Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸ÑÐ¼Ð¸ â€” O(1) Ð¿ÑƒÑ‚ÑŒ</div>
+<div class="step-box"><span class="sn">2.</span>Ð’ÐµÑÑŒ Ð²Ñ…Ð¾Ð´ Ð¾Ð±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»ÑŒÐ½Ð¾</div>
+<div class="step-box"><span class="sn">3.</span>ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ñ‚Ð¾ÐºÐµÐ½ Â«ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚Â» Ð½Ð° Ð²ÑÐµ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ðµ Ñ Ñ€Ð°Ð·Ð½Ñ‹Ð¼Ð¸ Ð²ÐµÑÐ°Ð¼Ð¸</div>
+</div>
+</div>
+
+<h3>ÐšÐ»ÑŽÑ‡ÐµÐ²Ð°Ñ Ð¸Ð´ÐµÑ: Ð·Ð°Ð¿Ñ€Ð¾Ñ, ÐºÐ»ÑŽÑ‡, Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ</h3>
+<p>ÐÐ½Ð°Ð»Ð¾Ð³Ð¸Ñ: <strong>Ð¿Ð¾Ð¸ÑÐº Ð¿Ð¾ Ð±Ð°Ð·Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ…</strong>.</p>
+<div class="step-box"><span class="sn" style="color:var(--amber)">Query Q</span> â€” Â«Ñ‡Ñ‚Ð¾ Ñ Ð¸Ñ‰Ñƒ?Â» (Ð·Ð°Ð¿Ñ€Ð¾Ñ Ð¾Ñ‚ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð°)</div>
+<div class="step-box"><span class="sn" style="color:var(--blue)">Key K</span> â€” Â«Ñ‡Ñ‚Ð¾ Ñƒ Ð¼ÐµÐ½Ñ ÐµÑÑ‚ÑŒ?Â» (Ð¼ÐµÑ‚ÐºÐ° ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð° Ð² ÐºÐ¾Ð½Ñ‚ÐµÐºÑÑ‚Ðµ)</div>
+<div class="step-box"><span class="sn" style="color:var(--green)">Value V</span> â€” Â«Ñ‡Ñ‚Ð¾ Ð²ÐµÑ€Ð½ÑƒÑ‚ÑŒ?Â» (ÐºÐ¾Ð½Ñ‚ÐµÐ½Ñ‚ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð°)</div>
+
+<div class="info-box">Softmax(QÂ·Káµ€/âˆšdâ‚–) Ð´Ð°Ñ‘Ñ‚ Ð²ÐµÑÐ° ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸ Q Ñ ÐºÐ°Ð¶Ð´Ñ‹Ð¼ K. Ð­Ñ‚Ð¸ Ð²ÐµÑÐ° Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ÑÑ Ð´Ð»Ñ Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð¾Ð¹ ÑÑƒÐ¼Ð¼Ñ‹ V.</div>
+</div>
+
+<h2>Ð˜ÑÑ‚Ð¾Ñ€Ð¸Ñ: Ð¾Ñ‚ Bahdanau (2015) Ðº Transformer (2017)</h2>
+<div class="card">
+<table>
+<tr><th>Ð“Ð¾Ð´</th><th>Ð Ð°Ð±Ð¾Ñ‚Ð°</th><th>Ð’ÐºÐ»Ð°Ð´</th></tr>
+<tr><td>2015</td><td>Bahdanau et al.</td><td>Additive attention Ð´Ð»Ñ seq2seq NMT</td></tr>
+<tr><td>2015</td><td>Luong et al.</td><td>Multiplicative (dot-product) attention</td></tr>
+<tr><td>2017</td><td>Vaswani et al.</td><td>Â«Attention is All You NeedÂ» â€” Transformer Ð±ÐµÐ· RNN</td></tr>
+<tr><td>2018</td><td>BERT / GPT</td><td>Pre-training Ð½Ð° Transformer encoder / decoder</td></tr>
+</table>
+</div>
+</div>
+
+<!-- ===== 2. SCALED DOT-PRODUCT ===== -->
+<div id="t-sdpa" class="tab-content">
+<h2>Scaled Dot-Product Attention â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´</h2>
+<div class="card">
+<div class="formula">Attention(Q, K, V) = <span class="hl-g">softmax</span>( <span class="hl-a">QÂ·Káµ€</span> / <span class="hl-b">âˆšdâ‚–</span> ) Â· <span class="hl-p">V</span></div>
+<p>Q âˆˆ â„<sup>LÃ—dâ‚–</sup>, K âˆˆ â„<sup>SÃ—dâ‚–</sup>, V âˆˆ â„<sup>SÃ—dáµ¥</sup> â†’ Ð²Ñ‹Ñ…Ð¾Ð´ âˆˆ â„<sup>LÃ—dáµ¥</sup></p>
+
+<h3>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Ð´ÐµÐ»Ð¸Ð¼ Ð½Ð° âˆšdâ‚–?</h3>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 1.</span>Q Ð¸ K Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ Ð¸Ð· N(0,1). Ð¡ÐºÐ°Ð»ÑÑ€Ð½Ð¾Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ qáµ¢áµ€kâ±¼ = Î£â‚– qâ‚–kâ‚– â€” ÑÑƒÐ¼Ð¼Ð° dâ‚– Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼Ñ‹Ñ… ÑÐ»Ð°Ð³Ð°ÐµÐ¼Ñ‹Ñ….</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 2.</span>Var[qáµ¢áµ€kâ±¼] = dâ‚– â†’ std = <span class="hl-b">âˆšdâ‚–</span></div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 3.</span>Ð‘ÐµÐ· Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸ Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¼ dâ‚– Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹ Ð¾Ð³Ñ€Ð¾Ð¼Ð½Ñ‹ â†’ softmax Ð½Ð°ÑÑ‹Ñ‰Ð°ÐµÑ‚ÑÑ â†’ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ â‰ˆ 0</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 4.</span>Ð”ÐµÐ»Ð¸Ð¼ Ð½Ð° âˆšdâ‚– â†’ Var[qáµ¢áµ€kâ±¼/âˆšdâ‚–] = 1 â†’ softmax Ð² Ñ€Ð°Ð±Ð¾Ñ‡ÐµÐ¼ Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½Ðµ âœ“</div>
+
+<h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ ÑÑ„Ñ„ÐµÐºÑ‚Ð° âˆšdâ‚–</h3>
+<canvas id="softmax-canvas" width="800" height="180" style="width:100%;margin-top:10px"></canvas>
+<div class="sr" style="margin-top:8px"><span>dâ‚–</span><input type="range" id="dk-sl" min="1" max="512" value="64" oninput="drawSoftmaxEffect()"><span class="sv" id="dk-v">64</span></div>
+
+<h3>Additive vs Dot-Product Attention</h3>
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Dot-Product (Luong)</strong><br>
+  score(q,k) = qáµ€k / âˆšdâ‚–<br>
+  Ð‘Ñ‹ÑÑ‚Ñ€ÐµÐµ (matmul), Ð»ÑƒÑ‡ÑˆÐµ Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ñ… dâ‚–
+</div>
+<div class="step-box">
+  <strong class="hl-g">Additive (Bahdanau)</strong><br>
+  score(q,k) = váµ€Â·tanh(WqÂ·q + WkÂ·k)<br>
+  ÐœÐµÐ´Ð»ÐµÐ½Ð½ÐµÐµ, Ð¸Ð½Ð¾Ð³Ð´Ð° Ð»ÑƒÑ‡ÑˆÐµ Ð¿Ñ€Ð¸ Ð¼Ð°Ð»Ñ‹Ñ… dâ‚–
+</div>
+</div>
+</div>
+
+<h2>ÐŸÐ¾ÑˆÐ°Ð³Ð¾Ð²Ð¾Ðµ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ (Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€)</h2>
+<div class="card">
+<p class="muted">L=3 Ñ‚Ð¾ÐºÐµÐ½Ð°, dâ‚–=2, dáµ¥=2</p>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 1.</span>Q = [[1,0],[0,1],[1,1]], K = [[1,0],[0,1],[1,1]], V = [[1,0],[0,1],[1,1]]</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 2.</span>QKáµ€ = [[1,0,1],[0,1,1],[1,1,2]]  (Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸ 3Ã—3)</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 3.</span>/ âˆš2 = [[0.71,0,0.71],[0,0.71,0.71],[0.71,0.71,1.41]]</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 4.</span>softmax Ð¿Ð¾ ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼ â†’ A[0] = [0.42, 0.21, 0.37] (ÑÑƒÐ¼Ð¼Ð°=1)</div>
+<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 5.</span>AÂ·V â†’ Ð²Ñ‹Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð´Ð»Ñ Ñ‚Ð¾ÐºÐµÐ½Ð° 0: 0.42Â·[1,0]+0.21Â·[0,1]+0.37Â·[1,1] = [0.79, 0.58]</div>
+</div>
+</div>
+
+<!-- ===== 3. Ð˜ÐÐ¢Ð•Ð ÐÐšÐ¢Ð˜Ð’ ===== -->
+<div id="t-viz" class="tab-content">
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ Ð²Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Attention</h2>
+<div class="card">
+<p class="muted">ÐÐ°Ð¶Ð¼Ð¸Ñ‚Ðµ Ð½Ð° Ñ‚Ð¾ÐºÐµÐ½, Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑƒÐ²Ð¸Ð´ÐµÑ‚ÑŒ ÐµÐ³Ð¾ Ð²ÐµÑÐ° attention ÐºÐ¾ Ð²ÑÐµÐ¼ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ð¼</p>
+<div id="tok-row" style="margin:12px 0;display:flex;flex-wrap:wrap;gap:4px"></div>
+<canvas id="attn-canvas" width="800" height="320" style="width:100%;margin-top:8px"></canvas>
+<div id="attn-info" style="margin-top:10px;font-size:.88em;font-family:'Courier New',monospace;line-height:1.8;color:var(--muted)"></div>
+</div>
+
+<h2>ÐšÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ Attention</h2>
+<div class="card">
+<div class="sr"><span>dâ‚– (Ñ€Ð°Ð·Ð¼ÐµÑ€ ÐºÐ»ÑŽÑ‡Ð°)</span><input type="range" id="calc-dk" min="1" max="8" value="4" oninput="calcAttn()"><span class="sv" id="calc-dk-v">4</span></div>
+<div class="sr"><span>Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° (1/âˆšdâ‚– scale)</span><input type="range" id="calc-temp" min="1" max="40" value="10" oninput="calcAttn()"><span class="sv" id="calc-temp-v">1.0</span></div>
+<div id="calc-result" style="font-size:.85em;font-family:'Courier New',monospace;margin-top:10px;line-height:1.9"></div>
+<canvas id="calc-canvas" width="700" height="120" style="width:100%;margin-top:10px"></canvas>
+</div>
+</div>
+
+<!-- ===== 4. MULTI-HEAD ===== -->
+<div id="t-mha" class="tab-content">
+<h2>Multi-Head Attention</h2>
+<div class="card">
+<p>ÐžÐ´Ð¸Ð½ head Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½ â€” ÑƒÑ‡Ð¸Ñ‚ Ð¾Ð´Ð½Ñƒ Â«Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸ÑŽÂ» ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸. MHA Ð·Ð°Ð¿ÑƒÑÐºÐ°ÐµÑ‚ <span class="hl-a">h</span> Ð¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»ÑŒÐ½Ñ‹Ñ… head, ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ð² ÑÐ²Ð¾Ñ‘Ð¼ Ð¿Ð¾Ð´Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ðµ.</p>
+
+<div class="formula">head<sub>i</sub> = Attention(<span class="hl-a">QÂ·W<sub>i</sub><sup>Q</sup></span>, <span class="hl-b">KÂ·W<sub>i</sub><sup>K</sup></span>, <span class="hl-g">VÂ·W<sub>i</sub><sup>V</sup></span>)
+
+MHA(Q,K,V) = Concat(head<sub>1</sub>, â€¦, head<sub>h</sub>) Â· <span class="hl-p">W<sup>O</sup></span></div>
+
+<p>ÐŸÑ€Ð¾ÐµÐºÑ†Ð¸Ð¸: W<sub>i</sub><sup>Q</sup> âˆˆ â„<sup>d_modelÃ—d_k</sup>, W<sub>i</sub><sup>K</sup> âˆˆ â„<sup>d_modelÃ—d_k</sup>, W<sub>i</sub><sup>V</sup> âˆˆ â„<sup>d_modelÃ—d_v</sup></p>
+<p>Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ð¾: dâ‚– = dáµ¥ = d_model / h. Ð”Ð»Ñ d_model=512, h=8: <span class="hl-a">dâ‚– = 64</span></p>
+
+<h3>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ MHA</h3>
+<div class="formula">hÂ·(d_modelÂ·dâ‚– + d_modelÂ·dâ‚– + d_modelÂ·dáµ¥) + d_modelÂ·d_model
+= hÂ·d_modelÂ·(2dâ‚– + dáµ¥) + d_modelÂ²
+= 4Â·d_modelÂ²   (Ð¿Ñ€Ð¸ dâ‚–=dáµ¥=d_model/h)</div>
+
+<div class="info-box"><strong>Ð—Ð°Ñ‡ÐµÐ¼ Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð³Ð¾Ð»Ð¾Ð²?</strong><br>
+head 1 Ð¼Ð¾Ð¶ÐµÑ‚ ÑƒÑ‡Ð¸Ñ‚ÑŒ ÑÐ¸Ð½Ñ‚Ð°ÐºÑÐ¸Ñ‡ÐµÑÐºÐ¸Ðµ ÑÐ²ÑÐ·Ð¸ (Ð¿Ð¾Ð´Ð»ÐµÐ¶Ð°Ñ‰ÐµÐµâ†”ÑÐºÐ°Ð·ÑƒÐµÐ¼Ð¾Ðµ),<br>
+head 2 â€” ÐºÐ¾Ñ€ÐµÑ„ÐµÑ€ÐµÐ½Ñ†Ð¸ÑŽ (Ð¼ÐµÑÑ‚Ð¾Ð¸Ð¼ÐµÐ½Ð¸Ðµâ†”Ð°Ð½Ñ‚ÐµÑ†ÐµÐ´ÐµÐ½Ñ‚),<br>
+head 3 â€” Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¾Ð½Ð½Ñ‹Ðµ Ð¿Ð°Ñ‚Ñ‚ÐµÑ€Ð½Ñ‹ (ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ‚Ð¾ÐºÐµÐ½Ñ‹), Ð¸ Ñ‚.Ð´.</div>
+</div>
+
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ MHA</h2>
+<div class="card">
+<div class="sr"><span>Ð“Ð¾Ð»Ð¾Ð² h</span><input type="range" id="mha-h" min="1" max="16" value="8" oninput="drawMHA()"><span class="sv" id="mha-h-v">8</span></div>
+<div class="sr"><span>d_model</span><input type="range" id="mha-d" min="64" max="1024" step="64" value="512" oninput="drawMHA()"><span class="sv" id="mha-d-v">512</span></div>
+<canvas id="mha-canvas" width="800" height="200" style="width:100%;margin-top:10px"></canvas>
+<div id="mha-info" style="margin-top:10px;font-size:.9em;line-height:1.9"></div>
+</div>
+</div>
+
+<!-- ===== 5. ÐœÐÐ¡ÐšÐ˜ ===== -->
+<div id="t-mask" class="tab-content">
+<h2>ÐœÐ°ÑÐºÐ¸ Ð² Attention</h2>
+<div class="card">
+<h3>Padding Mask</h3>
+<p>Ð‘Ð°Ñ‚Ñ‡ ÑÐ¾Ð´ÐµÑ€Ð¶Ð¸Ñ‚ Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸ Ñ€Ð°Ð·Ð½Ð¾Ð¹ Ð´Ð»Ð¸Ð½Ñ‹ â€” Ð´Ð¾Ð¿Ð¾Ð»Ð½ÑÐµÐ¼ PAD-Ñ‚Ð¾ÐºÐµÐ½Ð°Ð¼Ð¸. ÐœÐ°ÑÐºÐ¸Ñ€ÑƒÐµÐ¼, Ñ‡Ñ‚Ð¾Ð±Ñ‹ attention Ð½Ðµ ÑÐ¼Ð¾Ñ‚Ñ€ÐµÐ» Ð½Ð° Ð¿Ð°Ð´Ð´Ð¸Ð½Ð³:</p>
+<div class="formula">score[i][j] = -âˆž,  ÐµÑÐ»Ð¸ j â€” PAD-Ñ‚Ð¾ÐºÐµÐ½
+â†’ softmax: exp(-âˆž)=0  â†’ Ð²ÐµÑ=0  âœ“</div>
+
+<h3>Causal Mask (Look-ahead Mask)</h3>
+<p>Ð’ <strong>Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ðµ</strong> (Ð°Ð²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð°Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ñ) Ñ‚Ð¾ÐºÐµÐ½ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ t Ð½Ðµ Ð´Ð¾Ð»Ð¶ÐµÐ½ Ð²Ð¸Ð´ÐµÑ‚ÑŒ t+1, t+2, â€¦:</p>
+<div class="formula">M[i][j] = -âˆž  Ð¿Ñ€Ð¸ j > i
+M[i][j] = 0   Ð¿Ñ€Ð¸ j â‰¤ i</div>
+<p>Ð­Ñ‚Ð¾ Ð½Ð¸Ð¶Ð½ÐµÑ‚Ñ€ÐµÑƒÐ³Ð¾Ð»ÑŒÐ½Ð°Ñ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° (lower triangular mask).</p>
+</div>
+
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð¼Ð°ÑÐ¾Ðº</h2>
+<div class="card">
+<div class="tabs" style="margin-bottom:12px">
+  <button class="tab active" onclick="switchMask('pad')" id="mask-tab-pad">Padding Mask</button>
+  <button class="tab" onclick="switchMask('causal')" id="mask-tab-causal">Causal Mask</button>
+  <button class="tab" onclick="switchMask('both')" id="mask-tab-both">ÐšÐ¾Ð¼Ð±Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ</button>
+</div>
+<div class="sr"><span>Ð”Ð»Ð¸Ð½Ð° L</span><input type="range" id="mask-L" min="4" max="10" value="6" oninput="drawMask()"><span class="sv" id="mask-L-v">6</span></div>
+<div class="sr"><span>PAD Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸</span><input type="range" id="mask-P" min="2" max="10" value="5" oninput="drawMask()"><span class="sv" id="mask-P-v">5</span></div>
+<canvas id="mask-canvas" width="700" height="340" style="width:100%;max-width:500px;margin:10px auto"></canvas>
+</div>
+
+<h2>PyTorch: ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¼Ð°ÑÐ¾Ðº</h2>
+<div class="card">
+<div class="code-block">import torch
+import torch.nn.functional as F
+
+# Causal mask (look-ahead) Ð´Ð»Ñ Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°
+def causal_mask(L, device='cpu'):
+    # True = Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ (Ð·Ð°Ð¿Ñ€ÐµÑ‰ÐµÐ½Ð¾ ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ)
+    mask = torch.triu(torch.ones(L, L, device=device), diagonal=1).bool()
+    return mask          # (L, L) upper triangular
+
+# Padding mask
+def padding_mask(lengths, max_len):
+    # lengths: (B,) â€” Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð´Ð»Ð¸Ð½Ñ‹ Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÐµÐ¹
+    idx = torch.arange(max_len).unsqueeze(0)  # (1, max_len)
+    return idx >= lengths.unsqueeze(1)         # (B, max_len) True=PAD
+
+# ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð² scaled_dot_product_attention
+scores = Q @ K.transpose(-2,-1) / (dk**0.5)
+if mask is not None:
+    scores = scores.masked_fill(mask, float('-inf'))
+attn_weights = F.softmax(scores, dim=-1)</div>
+</div>
+</div>
+
+<!-- ===== 6. ÐœÐÐ¢Ð Ð˜Ð§ÐÐÐ¯ Ð¤ÐžÐ ÐœÐ ===== -->
+<div id="t-math" class="tab-content">
+<h2>ÐŸÐ¾Ð»Ð½Ð°Ñ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð° â€” Ð²ÑÐµ Ð´ÐµÑ‚Ð°Ð»Ð¸</h2>
+<div class="card">
+<h3>Self-Attention vs Cross-Attention</h3>
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Self-Attention</strong><br>
+  Q = K = V = X (Ð¾Ð´Ð¸Ð½ Ð²Ñ…Ð¾Ð´)<br>
+  Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ Ð² ÑÐ½ÐºÐ¾Ð´ÐµÑ€Ðµ Ð¸ Ð² self-attn Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°
+</div>
+<div class="step-box">
+  <strong class="hl-g">Cross-Attention</strong><br>
+  Q Ð¸Ð· Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°, K=V Ð¸Ð· ÑÐ½ÐºÐ¾Ð´ÐµÑ€Ð°<br>
+  ÐŸÐ¾Ð·Ð²Ð¾Ð»ÑÐµÑ‚ Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ñƒ Â«ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒÂ» Ð½Ð° Ð²Ñ…Ð¾Ð´
+</div>
+</div>
+
+<h3>Ð’Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ</h3>
+<div class="formula">Self-Attention:   O(<span class="hl-a">LÂ²</span>Â·d)   â€” ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð¾ Ð¿Ð¾ Ð´Ð»Ð¸Ð½Ðµ!
+FFN:              O(<span class="hl-g">L</span>Â·dÂ²)  â€” Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾ Ð¿Ð¾ Ð´Ð»Ð¸Ð½Ðµ</div>
+<p class="muted">ÐŸÑ€Ð¸ L=1024, d=512: LÂ²Â·d = 536M, LÂ·dÂ² = 268M â€” ÑÐ¾Ð¿Ð¾ÑÑ‚Ð°Ð²Ð¸Ð¼Ð¾</p>
+<p class="muted">ÐŸÑ€Ð¸ L=8192: LÂ²Â·d = 34G â€” attention ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ ÑƒÐ·ÐºÐ¸Ð¼ Ð¼ÐµÑÑ‚Ð¾Ð¼ â†’ Flash Attention, Sparse Attention</p>
+
+<h3>ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ Attention Ð¿Ð¾ Q</h3>
+<div class="formula">ÐŸÑƒÑÑ‚ÑŒ A = softmax(QKáµ€/âˆšdâ‚–), Ð²Ñ‹Ñ…Ð¾Ð´ O = AÂ·V
+
+âˆ‚L/âˆ‚Q = <span class="hl-a">dA/dQ</span> Â· (âˆ‚A_soft/âˆ‚logits) Â· <span class="hl-g">V</span>
+
+dA/dQ: ÐºÐ°Ð¶Ð´Ð°Ñ ÑÑ‚Ñ€Ð¾ÐºÐ° Aáµ¢ = softmax(qáµ¢Káµ€/âˆšdâ‚–)
+âˆ‚Aáµ¢/âˆ‚qáµ¢ = (diag(Aáµ¢) - Aáµ¢Â·Aáµ¢áµ€) Â· Káµ€/âˆšdâ‚–   â† Ð¯ÐºÐ¾Ð±Ð¸Ð°Ð½ softmax Ð¸Ð· 1.2</div>
+
+<h3>Flash Attention â€” Ð·Ð°Ñ‡ÐµÐ¼ Ð½ÑƒÐ¶ÐµÐ½</h3>
+<div class="step-box"><span class="sn">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°:</span>ÐœÐ°Ñ‚Ñ€Ð¸Ñ†Ð° QKáµ€ Ð¿Ñ€Ð¸ L=4096 Ð·Ð°Ð½Ð¸Ð¼Ð°ÐµÑ‚ 4096Â²Ã—4 Ð±Ð°Ð¹Ñ‚ = 64 ÐœÐ‘ Ð½Ð° Ð³Ð¾Ð»Ð¾Ð²Ñƒ Ã— 32 Ð³Ð¾Ð»Ð¾Ð²Ñ‹ = 2 GB â€” Ð½Ðµ Ð²Ð»ÐµÐ·Ð°ÐµÑ‚ Ð² SRAM GPU</div>
+<div class="step-box"><span class="sn">Flash Attention:</span>Ð’Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ attention Ð±Ð»Ð¾ÐºÐ°Ð¼Ð¸ (tiling) Ð±ÐµÐ· Ð¼Ð°Ñ‚ÐµÑ€Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾Ð»Ð½Ð¾Ð¹ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ñ‹ QKáµ€ Ð² HBM. Ð¡Ð»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚Ð¸: O(L) Ð²Ð¼ÐµÑÑ‚Ð¾ O(LÂ²)</div>
+
+<div class="info-box"><strong>Ð¡Ð²ÑÐ·ÑŒ Ñ Info Theory (Ð±Ð»Ð¾Ðº 1.4):</strong> Attention â€” ÑÑ‚Ð¾ Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð°Ñ ÑÑƒÐ¼Ð¼Ð°, Ð³Ð´Ðµ Ð²ÐµÑÐ° â€” ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ. ÐœÐ¾Ð¶Ð½Ð¾ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÐºÐ°Ðº H(attention) â€” ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸ÑŽ Ð²Ð½Ð¸Ð¼Ð°Ð½Ð¸Ñ: Ð½Ð¸Ð·ÐºÐ°Ñ ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ â†’ Â«Ð¾ÑÑ‚Ñ€Ñ‹Ð¹Â» Ñ„Ð¾ÐºÑƒÑ Ð½Ð° Ð¾Ð´Ð½Ð¾Ð¼ Ñ‚Ð¾ÐºÐµÐ½Ðµ, Ð²Ñ‹ÑÐ¾ÐºÐ°Ñ â†’ Ñ€Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½Ð¾Ðµ Ñ€Ð°ÑÑÐµÐ¸Ð²Ð°Ð½Ð¸Ðµ.</div>
+</div>
+
+<h2>ÐšÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚Ð¸</h2>
+<div class="card">
+<div class="sr"><span>L (Ð´Ð»Ð¸Ð½Ð° Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸)</span><input type="range" id="comp-L" min="64" max="16384" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-L-v">512</span></div>
+<div class="sr"><span>d_model</span><input type="range" id="comp-d" min="64" max="2048" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-d-v">512</span></div>
+<div class="sr"><span>Heads h</span><input type="range" id="comp-h" min="1" max="32" value="8" oninput="calcComp()"><span class="sv" id="comp-h-v">8</span></div>
+<div id="comp-result" style="margin-top:10px;font-size:.9em;line-height:2"></div>
+</div>
+</div>
+
+<!-- ===== 7. ÐšÐžÐ” ===== -->
+<div id="t-code" class="tab-content">
+<h2>PyTorch â€” Ñ€ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ Ð½ÑƒÐ»Ñ</h2>
+<div class="card">
+
+<h3>Scaled Dot-Product Attention</h3>
+<div class="code-block">import torch, torch.nn as nn, math
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    """
+    Q: (B, H, L, dâ‚–)
+    K: (B, H, S, dâ‚–)
+    V: (B, H, S, dáµ¥)
+    mask: (B, 1, L, S) Ð¸Ð»Ð¸ (L, S) â€” True = Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ
+    """
+    dk = Q.shape[-1]
+    scores = Q @ K.transpose(-2, -1) / math.sqrt(dk)   # (B,H,L,S)
+    if mask is not None:
+        scores = scores.masked_fill(mask, float('-inf'))
+    weights = F.softmax(scores, dim=-1)                 # (B,H,L,S)
+    return weights @ V, weights                         # (B,H,L,dáµ¥), weights</div>
+
+<h3>Multi-Head Attention</h3>
+<div class="code-block">class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, num_heads, dropout=0.1):
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.h  = num_heads
+        self.dk = d_model // num_heads
+        # ÐžÐ±ÑŠÐµÐ´Ð¸Ð½Ñ‘Ð½Ð½Ñ‹Ðµ Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ð¸ (ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½ÐµÐµ Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ñ‹Ñ…)
+        self.W_q = nn.Linear(d_model, d_model, bias=False)
+        self.W_k = nn.Linear(d_model, d_model, bias=False)
+        self.W_v = nn.Linear(d_model, d_model, bias=False)
+        self.W_o = nn.Linear(d_model, d_model, bias=False)
+        self.drop = nn.Dropout(dropout)
+
+    def split_heads(self, x):
+        B, L, D = x.shape
+        return x.view(B, L, self.h, self.dk).transpose(1, 2)  # (B,H,L,dk)
+
+    def forward(self, Q, K, V, mask=None):
+        B = Q.shape[0]
+        Q = self.split_heads(self.W_q(Q))   # (B,H,L,dk)
+        K = self.split_heads(self.W_k(K))
+        V = self.split_heads(self.W_v(V))
+
+        out, weights = scaled_dot_product_attention(Q, K, V, mask)
+        out = out.transpose(1, 2).contiguous().view(B, -1, self.h * self.dk)
+        return self.W_o(out), weights    # (B,L,d_model)</div>
+
+<h3>Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ðµ PyTorch Ð²ÑÑ‚Ñ€Ð¾ÐµÐ½Ð½Ð¾Ð³Ð¾ MHA</h3>
+<div class="code-block">mha = nn.MultiheadAttention(embed_dim=512, num_heads=8,
+                            dropout=0.1, batch_first=True)
+x   = torch.randn(4, 32, 512)   # (batch, seq, d_model)
+
+# Self-attention
+out, attn_w = mha(x, x, x)                             # (4,32,512)
+
+# Cross-attention (Ð´ÐµÐºÐ¾Ð´ÐµÑ€ ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚ Ð½Ð° ÑÐ½ÐºÐ¾Ð´ÐµÑ€)
+memory = torch.randn(4, 20, 512)
+out2, _ = mha(query=x, key=memory, value=memory)
+
+# Ð¡ causal mask
+causal = torch.triu(torch.ones(32,32), diagonal=1).bool()
+out3, _ = mha(x, x, x, attn_mask=causal)</div>
+
+<h3>PyTorch 2.0: F.scaled_dot_product_attention (Flash Attention)</h3>
+<div class="code-block"># ÐÐ²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸ Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÑ‚ Flash Attention ÐµÑÐ»Ð¸ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð°
+out = F.scaled_dot_product_attention(
+    Q, K, V,
+    attn_mask=None,
+    dropout_p=0.1,
+    is_causal=True    # ÐºÐ°ÑƒÐ·Ð°Ð»ÑŒÐ½Ð°Ñ Ð¼Ð°ÑÐºÐ° Ð±ÐµÐ· Ð¼Ð°Ñ‚ÐµÑ€Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸
+)</div>
+</div>
+</div>
+
+<script>
+const TAB_IDS=['t-why','t-sdpa','t-viz','t-mha','t-mask','t-math','t-code'];
+function sw(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TAB_IDS[i]===id));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===id));
+  if(id==='t-viz'){initAttn();calcAttn();}
+  if(id==='t-mha')drawMHA();
+  if(id==='t-mask')drawMask();
+  if(id==='t-sdpa')drawSoftmaxEffect();
+  if(id==='t-math')calcComp();
+}
+
+// ---- SOFTMAX EFFECT ----
+function drawSoftmaxEffect(){
+  const dk=+document.getElementById('dk-sl').value;
+  document.getElementById('dk-v').textContent=dk;
+  const cv=document.getElementById('softmax-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,180);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,180);
+  const logits=[3.0,1.0,0.5,-0.5,2.0,-1.0,0.8,1.5];
+  const L=logits.length;const px=40,py=20,pw=340,ph=130;
+  const drawBar=(offset,vals,label,color)=>{
+    const sm=softmax(vals);
+    const bw=pw/L-4;
+    vals.forEach((v,i)=>{
+      const bh=(v+2)/5*ph*0.6;const x=offset+i*(pw/L);
+      ctx.fillStyle='rgba(96,165,250,0.3)';ctx.fillRect(x,py+ph-Math.max(bh,2),bw,Math.max(bh,2));
+    });
+    sm.forEach((v,i)=>{
+      const bh=v*ph;const x=offset+i*(pw/L);
+      ctx.fillStyle=color;ctx.fillRect(x,py+ph/2-bh/2,bw,bh);
+    });
+    ctx.fillStyle='#e6edf3';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(label,offset+pw/2,py+ph+18);
+  };
+  // Raw logits scaled by sqrt(dk) vs /sqrt(dk)
+  const raw=logits.map(v=>v*Math.sqrt(dk));
+  const scaled=logits;
+  drawBar(px,raw,`softmax(scoreÂ·âˆš${dk}) â€” Ð±ÐµÐ· Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸`,'#ef4444');
+  drawBar(px+pw+80,scaled,`softmax(score/âˆš${dk}) â€” Ñ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¾Ð¹`,'#10b981');
+  // entropy labels
+  const h1=-softmax(raw).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  const h2=-softmax(scaled).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='center';
+  ctx.fillText(`H=${h1.toFixed(2)} Ð±Ð¸Ñ‚`,px+pw/2,py+ph+34);
+  ctx.fillStyle='#10b981';ctx.fillText(`H=${h2.toFixed(2)} Ð±Ð¸Ñ‚`,px+pw+80+pw/2,py+ph+34);
+}
+function softmax(arr){const m=Math.max(...arr);const e=arr.map(v=>Math.exp(v-m));const s=e.reduce((a,b)=>a+b,0);return e.map(v=>v/s);}
+drawSoftmaxEffect();
+
+// ---- ATTENTION INTERACTIVE ----
+const SENTENCE=['The','cat','sat','on','the','mat'];
+const N=SENTENCE.length;
+// Pre-compute plausible attention weights per query token
+const ATTN_WEIGHTS=[
+  [0.40,0.25,0.10,0.08,0.10,0.07],
+  [0.20,0.35,0.18,0.07,0.12,0.08],
+  [0.12,0.15,0.38,0.12,0.10,0.13],
+  [0.08,0.07,0.15,0.35,0.18,0.17],
+  [0.18,0.10,0.08,0.12,0.35,0.17],
+  [0.07,0.08,0.12,0.18,0.22,0.33],
+];
+let selTok=0;
+function initAttn(){
+  const row=document.getElementById('tok-row');if(!row)return;
+  row.innerHTML='';
+  SENTENCE.forEach((t,i)=>{
+    const b=document.createElement('div');
+    b.className='tok '+(i===selTok?'tok-active':'tok-inactive');
+    b.textContent=t;b.onclick=()=>{selTok=i;initAttn();drawAttn();};
+    row.appendChild(b);
+  });
+  drawAttn();
+}
+function drawAttn(){
+  const cv=document.getElementById('attn-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,320);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,320);
+  const w=ATTN_WEIGHTS[selTok];
+  const bw=Math.floor(750/N)-6;const px=25;
+  // Tokens row (source)
+  SENTENCE.forEach((t,i)=>{
+    const x=px+i*(750/N);
+    const alpha=w[i];
+    ctx.fillStyle=`rgba(245,158,11,${0.1+alpha*0.85})`;
+    ctx.strokeStyle=i===selTok?'#f59e0b':'rgba(245,158,11,0.3)';
+    ctx.lineWidth=i===selTok?2:1;
+    roundRect(ctx,x,220,bw,36,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e6edf3';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+    ctx.fillText(t,x+bw/2,243);
+    ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';
+    ctx.fillText(w[i].toFixed(2),x+bw/2,258);
+  });
+  // Query token (selected)
+  const qx=px+selTok*(750/N);
+  ctx.fillStyle='rgba(96,165,250,0.2)';ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;
+  roundRect(ctx,qx,40,bw,36,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#60a5fa';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+  ctx.fillText(SENTENCE[selTok],qx+bw/2,63);
+  ctx.fillStyle='#60a5fa';ctx.font='10px system-ui';ctx.fillText('Query',qx+bw/2,78);
+  // Attention lines
+  SENTENCE.forEach((t,i)=>{
+    const alpha=w[i];if(alpha<0.03)return;
+    const x=px+i*(750/N)+bw/2;
+    const kx=px+selTok*(750/N)+bw/2;
+    ctx.strokeStyle=`rgba(245,158,11,${alpha*1.2})`;ctx.lineWidth=alpha*6;
+    ctx.beginPath();ctx.moveTo(kx,76);ctx.quadraticCurveTo((kx+x)/2,150,x,220);ctx.stroke();
+  });
+  // Softmax bar chart
+  const chartX=550,chartY=10,chartH=180,chartW=220;
+  ctx.fillStyle='#161b22';ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
+  roundRect(ctx,chartX,chartY,chartW,chartH,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
+  ctx.fillText(`Ð’ÐµÑÐ° Attention (Query: "${SENTENCE[selTok]}")`,chartX+chartW/2,chartY+14);
+  const bh2=12;const gap=4;
+  SENTENCE.forEach((t,i)=>{
+    const y=chartY+22+i*(bh2+gap);
+    const blen=w[i]*(chartW-80);
+    ctx.fillStyle='#21262d';ctx.fillRect(chartX+60,y,chartW-80,bh2);
+    ctx.fillStyle=`rgba(245,158,11,${0.3+w[i]*0.7})`;ctx.fillRect(chartX+60,y,blen,bh2);
+    ctx.fillStyle='#e6edf3';ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText(t,chartX+56,y+10);
+    ctx.fillStyle='#f59e0b';ctx.textAlign='left';
+    ctx.fillText(w[i].toFixed(2),chartX+64+blen,y+10);
+  });
+  // Info
+  const maxI=w.indexOf(Math.max(...w));
+  document.getElementById('attn-info').textContent=
+    `"${SENTENCE[selTok]}" ÑƒÐ´ÐµÐ»ÑÐµÑ‚ Ð½Ð°Ð¸Ð±Ð¾Ð»ÑŒÑˆÐµÐµ Ð²Ð½Ð¸Ð¼Ð°Ð½Ð¸Ðµ "${SENTENCE[maxI]}" (${(w[maxI]*100).toFixed(0)}%). Ð­Ð½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ: H=${(-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0)).toFixed(2)} Ð±Ð¸Ñ‚`;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+initAttn();
+
+// ---- ATTN CALCULATOR ----
+function calcAttn(){
+  const dk=+document.getElementById('calc-dk').value;
+  const tempV=document.getElementById('calc-temp').value/10;
+  document.getElementById('calc-dk-v').textContent=dk;
+  document.getElementById('calc-temp-v').textContent=tempV.toFixed(1);
+  const sqrtdk=Math.sqrt(dk);
+  const rawScores=[2.1,0.8,1.5,-0.3,1.0];
+  const scaled=rawScores.map(v=>v/sqrtdk*tempV);
+  const sm=softmax(scaled);
+  let html=`dâ‚–=${dk}  âˆšdâ‚–=${sqrtdk.toFixed(2)}  scale=1/âˆšdâ‚–=${(1/sqrtdk).toFixed(3)}\n`;
+  html+=`Raw scores:    [${rawScores.map(v=>v.toFixed(2)).join(', ')}]\n`;
+  html+=`Scaled scores: [${scaled.map(v=>v.toFixed(2)).join(', ')}]\n`;
+  html+=`Softmax:       [${sm.map(v=>v.toFixed(3)).join(', ')}]`;
+  document.getElementById('calc-result').innerHTML=`<span style="color:var(--muted)">${html}</span>`;
+  // draw
+  const cv=document.getElementById('calc-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,700,120);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,700,120);
+  const bw=80;const gap=10;const px=30;const ph=80;const py=15;
+  sm.forEach((v,i)=>{
+    const bh=v*ph;const x=px+i*(bw+gap);
+    ctx.fillStyle='rgba(245,158,11,0.8)';ctx.fillRect(x,py+ph-bh,bw,bh);
+    ctx.fillStyle='#e6edf3';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(`k${i+1}`,x+bw/2,py+ph+14);ctx.fillText(v.toFixed(3),x+bw/2,py+ph-bh-4);
+  });
+}
+
+// ---- MHA ----
+function drawMHA(){
+  const h=+document.getElementById('mha-h').value;
+  const d=+document.getElementById('mha-d').value;
+  document.getElementById('mha-h-v').textContent=h;
+  document.getElementById('mha-d-v').textContent=d;
+  const dk=Math.floor(d/h);
+  const params=4*d*d;
+  const cv=document.getElementById('mha-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,200);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,200);
+  const maxH=Math.min(h,16);const bw=Math.floor(720/maxH)-4;const px=40;const py=30;const bh=80;
+  for(let i=0;i<maxH;i++){
+    const x=px+i*(720/maxH);
+    const hue=i/maxH;
+    const r=Math.round(50+180*Math.sin(hue*Math.PI));
+    const g=Math.round(100+100*Math.sin(hue*Math.PI+1));
+    const b=Math.round(180-80*Math.sin(hue*Math.PI));
+    ctx.fillStyle=`rgba(${r},${g},${b},0.2)`;ctx.strokeStyle=`rgba(${r},${g},${b},0.7)`;ctx.lineWidth=1;
+    roundRect(ctx,x,py,bw,bh,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e6edf3';ctx.font='9px system-ui';ctx.textAlign='center';
+    ctx.fillText(`h${i+1}`,x+bw/2,py+30);ctx.fillText(`dâ‚–=${dk}`,x+bw/2,py+45);
+  }
+  // Concat arrow
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(px,py+bh+8);ctx.lineTo(px+720,py+bh+8);ctx.stroke();
+  ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';ctx.textAlign='center';
+  ctx.fillText(`Concat â†’ (L, ${h}Â·${dk}=${d}) â†’ W_O â†’ (L, ${d})`,px+360,py+bh+24);
+  document.getElementById('mha-info').innerHTML=
+    `dâ‚– = dáµ¥ = d_model/h = <span class="hl-a">${dk}</span> &nbsp;|&nbsp; `+
+    `ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² MHA: 4Â·d_modelÂ² = <span class="hl-g">${(4*d*d).toLocaleString()}</span> &nbsp;|&nbsp; `+
+    `FLOPs Ð½Ð° ÑˆÐ°Ð³: â‰ˆ <span class="hl-b">${(8*d*d).toLocaleString()}</span>`;
+}
+drawMHA();
+
+// ---- MASKS ----
+let maskType='pad';
+function switchMask(t){
+  maskType=t;
+  ['pad','causal','both'].forEach(k=>{
+    document.getElementById('mask-tab-'+k)?.classList.toggle('active',k===t);
+  });
+  drawMask();
+}
+function drawMask(){
+  const L=+document.getElementById('mask-L').value;
+  const P=Math.min(+document.getElementById('mask-P').value,L);
+  document.getElementById('mask-L-v').textContent=L;
+  document.getElementById('mask-P-v').textContent=P;
+  const cv=document.getElementById('mask-canvas');if(!cv)return;
+  const ctx=cv.getContext('2d');const W=500,H=340;ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  const cs=Math.floor(Math.min((W-80)/L,(H-80)/L));
+  const ox=Math.floor((W-cs*L)/2);const oy=30;
+  for(let i=0;i<L;i++){
+    for(let j=0;j<L;j++){
+      const pad=(j>=P);
+      const causal=(j>i);
+      let masked=false;
+      if(maskType==='pad')masked=pad;
+      else if(maskType==='causal')masked=causal;
+      else masked=pad||causal;
+      ctx.fillStyle=masked?'rgba(239,68,68,0.35)':'rgba(16,185,129,0.25)';
+      ctx.fillRect(ox+j*cs,oy+i*cs,cs-1,cs-1);
+      ctx.fillStyle=masked?'#ef4444':'#10b981';
+      ctx.font=`${Math.max(9,cs-8)}px system-ui`;ctx.textAlign='center';
+      ctx.fillText(masked?'-âˆž':'0',ox+j*cs+cs/2,oy+i*cs+cs/2+4);
+    }
+  }
+  // Axis labels
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';
+  for(let i=0;i<L;i++){
+    ctx.textAlign='right';ctx.fillText(`q${i+1}`,ox-3,oy+i*cs+cs/2+4);
+    ctx.textAlign='center';ctx.fillText(`k${i+1}`,ox+i*cs+cs/2,oy-5);
+  }
+  // Legend
+  ctx.fillStyle='rgba(239,68,68,0.5)';ctx.fillRect(ox,oy+L*cs+15,14,14);
+  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('-âˆž (Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð¾)',ox+18,oy+L*cs+26);
+  ctx.fillStyle='rgba(16,185,129,0.4)';ctx.fillRect(ox+160,oy+L*cs+15,14,14);
+  ctx.fillStyle='#10b981';ctx.fillText('0 (Ñ€Ð°Ð·Ñ€ÐµÑˆÐµÐ½Ð¾)',ox+178,oy+L*cs+26);
+}
+drawMask();
+
+// ---- COMPLEXITY CALC ----
+function calcComp(){
+  const L=+document.getElementById('comp-L').value;
+  const d=+document.getElementById('comp-d').value;
+  const h=+document.getElementById('comp-h').value;
+  document.getElementById('comp-L-v').textContent=L;
+  document.getElementById('comp-d-v').textContent=d;
+  document.getElementById('comp-h-v').textContent=h;
+  const dk=d/h;
+  const attnFlops=L*L*d*2;
+  const ffnFlops=L*d*4*d*2;
+  const memQK=L*L*4;
+  const fmt=n=>n>=1e9?(n/1e9).toFixed(1)+'G':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
+  document.getElementById('comp-result').innerHTML=
+    `Attention FLOPs (QKáµ€ + AV): <span class="hl-a">${fmt(attnFlops)}</span> &nbsp;| ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ <strong>O(LÂ²Â·d)</strong><br>`+
+    `FFN FLOPs (Ã—4 expand):       <span class="hl-g">${fmt(ffnFlops)}</span> &nbsp;| ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ <strong>O(LÂ·dÂ²)</strong><br>`+
+    `ÐŸÐ°Ð¼ÑÑ‚ÑŒ QKáµ€ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ñ‹:          <span class="hl-b">${(memQK/1e6).toFixed(1)} MB</span> Ã— ${h} heads = <span class="hl-r">${(memQK*h/1e6).toFixed(1)} MB</span><br>`+
+    `dâ‚– = d/h = ${d}/${h} = <span class="hl-p">${dk}</span>`;
+}
+calcComp();
+</script>
+<script src="../shared-nav.js"></script>
+

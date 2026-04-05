@@ -1,0 +1,675 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+.kpi { font-family: monospace; color: var(--amber); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Ð‘Ð»Ð¾Ðº 2 â€” ÐšÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ðµ Ð¼Ð°ÑˆÐ¸Ð½Ð½Ð¾Ðµ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ</span>
+  <span class="tag tag-active">2.1 Ð’Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Ð² ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ðµ ML</span>
+  <span class="tag tag-block">2.2 ÐŸÑ€ÐµÐ´Ð¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° Ð´Ð°Ð½Ð½Ñ‹Ñ…</span>
+  <span class="tag tag-block">2.3 Ð›Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</span>
+  <span class="tag tag-block">2.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+</div>
+
+<h1>2.1 Ð’Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Ð² ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ðµ Ð¼Ð°ÑˆÐ¸Ð½Ð½Ð¾Ðµ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ</h1>
+<p class="muted">Supervised / unsupervised / semi-supervised Â· Ð¾Ð±ÑŠÐµÐºÑ‚ / Ð¿Ñ€Ð¸Ð·Ð½Ð°Ðº / Ñ‚Ð°Ñ€Ð³ÐµÑ‚ Â· train / validation / test Â· bias / variance Â· underfitting / overfitting Â· pipeline Ð¼Ð¾Ð´ÐµÐ»Ð¸</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>ðŸ¤– Ð§Ñ‚Ð¾ Ð²Ð¾Ð¾Ð±Ñ‰Ðµ Ð½Ð°Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¸Ð¼ Ð¼Ð°ÑˆÐ¸Ð½Ð½Ñ‹Ð¼ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸ÐµÐ¼?</h2>
+  <p>ÐŸÐ¾Ð´ ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¸Ð¼ ML Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾ Ð¿Ð¾Ð½Ð¸Ð¼Ð°ÑŽÑ‚ Ð¼ÐµÑ‚Ð¾Ð´Ñ‹, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÑŽÑ‚ Ñ <strong>Ñ‚Ð°Ð±Ð»Ð¸Ñ‡Ð½Ñ‹Ð¼Ð¸ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°Ð¼Ð¸</strong>, ÑÑ‚Ð°Ñ‚Ð¸ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ð¼Ð¸ Ð¼Ð¾Ð´ÐµÐ»ÑÐ¼Ð¸, Ð´ÐµÑ€ÐµÐ²ÑŒÑÐ¼Ð¸, ÑÐ´Ñ€Ð¾Ð²Ñ‹Ð¼Ð¸ Ð¼ÐµÑ‚Ð¾Ð´Ð°Ð¼Ð¸, Ð»Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ð¼Ð¸ Ð¼Ð¾Ð´ÐµÐ»ÑÐ¼Ð¸ Ð¸ Ð°Ð½ÑÐ°Ð¼Ð±Ð»ÑÐ¼Ð¸ â€” Ð±ÐµÐ· Ð³Ð»ÑƒÐ±Ð¾ÐºÐ¾Ð¹ Ð¼Ð½Ð¾Ð³Ð¾ÑÐ»Ð¾Ð¹Ð½Ð¾Ð¹ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÐµÐ²Ð¾Ð¹ Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ñ‹ ÐºÐ°Ðº Ð¾ÑÐ½Ð¾Ð²Ð½Ð¾Ð¹ Ð¸Ð´ÐµÐ¸.</p>
+
+  <div class="formula">
+    Classical ML â‰ˆ features + model + loss + evaluation
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Ð›Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸</h3>
+      <p class="small">Linear / Logistic Regression, Ridge, Lasso.</p>
+    </div>
+    <div class="mini-card">
+      <h3>ÐÐµÐ»Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸</h3>
+      <p class="small">k-NN, SVM, Decision Trees, Kernel methods.</p>
+    </div>
+    <div class="mini-card">
+      <h3>ÐÐ½ÑÐ°Ð¼Ð±Ð»Ð¸</h3>
+      <p class="small">Random Forest, Gradient Boosting, XGBoost, CatBoost.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ <strong>ÐžÑ‡ÐµÐ½ÑŒ Ð²Ð°Ð¶Ð½Ð°Ñ Ð¼Ñ‹ÑÐ»ÑŒ:</strong> classical ML â€” ÑÑ‚Ð¾ Ð½Ðµ â€œÑƒÑÑ‚Ð°Ñ€ÐµÐ²ÑˆÐ¸Ð¹ MLâ€. Ð”Ð»Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ‡Ð½Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¾Ð½ Ð´Ð¾ ÑÐ¸Ñ… Ð¿Ð¾Ñ€ Ñ‡Ð°ÑÑ‚Ð¾ ÑÐ¸Ð»ÑŒÐ½ÐµÐµ Ð¸ Ð¿Ñ€Ð°ÐºÑ‚Ð¸Ñ‡Ð½ÐµÐµ Ð³Ð»ÑƒÐ±Ð¾ÐºÐ¸Ñ… ÑÐµÑ‚ÐµÐ¹.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>ðŸ“¦ Ð˜Ð· Ñ‡ÐµÐ³Ð¾ ÑÐ¾ÑÑ‚Ð¾Ð¸Ñ‚ Ð·Ð°Ð´Ð°Ñ‡Ð° Ð¼Ð°ÑˆÐ¸Ð½Ð½Ð¾Ð³Ð¾ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ñ?</h2>
+
+  <h3>Ð‘Ð°Ð·Ð¾Ð²Ñ‹Ðµ ÑÑƒÑ‰Ð½Ð¾ÑÑ‚Ð¸</h3>
+  <table>
+    <tr><th>Ð¢ÐµÑ€Ð¼Ð¸Ð½</th><th>ÐžÐ±Ð¾Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ</th><th>Ð¡Ð¼Ñ‹ÑÐ»</th></tr>
+    <tr><td>ÐžÐ±ÑŠÐµÐºÑ‚ / sample</td><td>x<sub>i</sub></td><td>Ð¾Ð´Ð½Ð° ÑÑ‚Ñ€Ð¾ÐºÐ° Ð´Ð°Ð½Ð½Ñ‹Ñ…, Ð¾Ð´Ð¸Ð½ Ð½Ð°Ð±Ð»ÑŽÐ´Ð°ÐµÐ¼Ñ‹Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€</td></tr>
+    <tr><td>ÐŸÑ€Ð¸Ð·Ð½Ð°Ðº / feature</td><td>x<sub>ij</sub></td><td>Ð¾Ð´Ð½Ð¾ Ð¸Ð·Ð¼ÐµÑ€ÐµÐ½Ð¸Ðµ Ð¾Ð±ÑŠÐµÐºÑ‚Ð°</td></tr>
+    <tr><td>Ð¢Ð°Ñ€Ð³ÐµÑ‚ / target</td><td>y<sub>i</sub></td><td>Ñ‚Ð¾, Ñ‡Ñ‚Ð¾ Ð½ÑƒÐ¶Ð½Ð¾ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ñ‚ÑŒ</td></tr>
+    <tr><td>Ð”Ð°Ñ‚Ð°ÑÐµÑ‚</td><td>(X, y)</td><td>Ð²ÑÑ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð° Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð² Ð¸ Ð¾Ñ‚Ð²ÐµÑ‚Ð¾Ð²</td></tr>
+    <tr><td>ÐœÐ¾Ð´ÐµÐ»ÑŒ</td><td>f<sub>Î¸</sub>(x)</td><td>Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾, ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ðµ Ð¸Ð· x Ð²Ñ‹Ð´Ð°Ñ‘Ñ‚ Ð¿Ñ€Ð¾Ð³Ð½Ð¾Ð·</td></tr>
+  </table>
+
+  <div class="formula">
+    X âˆˆ â„<sup>n Ã— d</sup>,&nbsp;&nbsp;&nbsp; y âˆˆ â„<sup>n</sup>
+  </div>
+
+  <p>Ð“Ð´Ðµ:</p>
+  <div class="step">n â€” Ñ‡Ð¸ÑÐ»Ð¾ Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð²</div>
+  <div class="step">d â€” Ñ‡Ð¸ÑÐ»Ð¾ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð²</div>
+  <div class="step highlight">ÐºÐ°Ð¶Ð´Ð°Ñ ÑÑ‚Ñ€Ð¾ÐºÐ° X â€” ÑÑ‚Ð¾ Ð¾Ð´Ð¸Ð½ Ð¾Ð±ÑŠÐµÐºÑ‚, ÐºÐ°Ð¶Ð´Ñ‹Ð¹ ÑÑ‚Ð¾Ð»Ð±ÐµÑ† â€” Ð¾Ð´Ð¸Ð½ Ð¿Ñ€Ð¸Ð·Ð½Ð°Ðº</div>
+
+  <div class="info">
+    â„¹ï¸ Ð’ Ñ‚Ð°Ð±Ð»Ð¸Ñ‡Ð½Ð¾Ð¼ ML Ð»ÑŒÐ²Ð¸Ð½Ð°Ñ Ð´Ð¾Ð»Ñ ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð° Ñ‡Ð°ÑÑ‚Ð¾ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð½Ðµ Ð¾Ñ‚ â€œÐ¼Ð°Ð³Ð¸Ð¸ Ð¼Ð¾Ð´ÐµÐ»Ð¸â€, Ð° Ð¾Ñ‚ Ñ‚Ð¾Ð³Ð¾, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¸Ðµ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸ Ñƒ Ñ‚ÐµÐ±Ñ ÐµÑÑ‚ÑŒ.
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>ðŸ§­ ÐšÐ°ÐºÐ¸Ðµ Ð²Ð¾Ð¾Ð±Ñ‰Ðµ Ð±Ñ‹Ð²Ð°ÑŽÑ‚ Ñ‚Ð¸Ð¿Ñ‹ ML-Ð·Ð°Ð´Ð°Ñ‡?</h2>
+
+  <div class="grid-3">
+    <div class="mini-card">
+      <h3>Supervised Learning</h3>
+      <p class="small">Ð•ÑÑ‚ÑŒ Ð²Ñ…Ð¾Ð´ x Ð¸ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ Ð¾Ñ‚Ð²ÐµÑ‚ y. Ð£Ñ‡Ð¸Ð¼ Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ x â†’ y.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Unsupervised Learning</h3>
+      <p class="small">Ð•ÑÑ‚ÑŒ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ x. Ð˜Ñ‰ÐµÐ¼ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñƒ Ð±ÐµÐ· ÑÐ²Ð½Ñ‹Ñ… Ð¼ÐµÑ‚Ð¾Ðº.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Semi-Supervised Learning</h3>
+      <p class="small">Ð§Ð°ÑÑ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ñ€Ð°Ð·Ð¼ÐµÑ‡ÐµÐ½Ð°, Ñ‡Ð°ÑÑ‚ÑŒ â€” Ð½ÐµÑ‚.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:14px;">Supervised Learning</h3>
+  <div class="formula">
+    Ð”Ð°Ð½Ð¾: (x<sub>i</sub>, y<sub>i</sub>)<sub>i=1</sub><sup>n</sup>
+  </div>
+  <p>Ð¢Ð¸Ð¿Ð¸Ñ‡Ð½Ñ‹Ðµ Ð·Ð°Ð´Ð°Ñ‡Ð¸:</p>
+  <div class="step">ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ: spam / not spam, fraud / not fraud</div>
+  <div class="step">Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ: Ñ†ÐµÐ½Ð° ÐºÐ²Ð°Ñ€Ñ‚Ð¸Ñ€Ñ‹, ÑÐ¿Ñ€Ð¾Ñ, Ñ‚ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð°</div>
+
+  <h3>Unsupervised Learning</h3>
+  <div class="formula">
+    Ð”Ð°Ð½Ð¾: x<sub>1</sub>, x<sub>2</sub>, ..., x<sub>n</sub>
+  </div>
+  <p>Ð¢Ð¸Ð¿Ð¸Ñ‡Ð½Ñ‹Ðµ Ð·Ð°Ð´Ð°Ñ‡Ð¸:</p>
+  <div class="step">ÐºÐ»Ð°ÑÑ‚ÐµÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</div>
+  <div class="step">ÑÐ½Ð¸Ð¶ÐµÐ½Ð¸Ðµ Ñ€Ð°Ð·Ð¼ÐµÑ€Ð½Ð¾ÑÑ‚Ð¸</div>
+  <div class="step">Ð¿Ð¾Ð¸ÑÐº Ð°Ð½Ð¾Ð¼Ð°Ð»Ð¸Ð¹</div>
+
+  <h3>Semi-Supervised Learning</h3>
+  <p>Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ, ÐºÐ¾Ð³Ð´Ð° Ñ€Ð°Ð·Ð¼ÐµÑ‚ÐºÐ° Ð´Ð¾Ñ€Ð¾Ð³Ð°Ñ, Ð° Ð½ÐµÑ€Ð°Ð·Ð¼ÐµÑ‡ÐµÐ½Ð½Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¼Ð½Ð¾Ð³Ð¾.</p>
+
+  <div class="warn">
+    âš ï¸ ÐÐ° Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐµ Ð»ÑŽÐ´Ð¸ Ñ‡Ð°ÑÑ‚Ð¾ Ð½Ð°Ð·Ñ‹Ð²Ð°ÑŽÑ‚ â€œMLâ€ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ supervised learning, Ð½Ð¾ ÑÑ‚Ð¾ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ ÑƒÐ·ÐºÐ¾. ÐšÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ðµ ML Ð²ÐºÐ»ÑŽÑ‡Ð°ÐµÑ‚ Ð¸ unsupervised Ð¼ÐµÑ‚Ð¾Ð´Ñ‹ Ñ‚Ð¾Ð¶Ðµ.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>ðŸ·ï¸ ÐšÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ vs Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>ÐšÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</h3>
+      <div class="formula">
+        y âˆˆ {1, 2, ..., K}
+      </div>
+      <p>ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ ÐºÐ»Ð°ÑÑ Ð¸Ð»Ð¸ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ ÐºÐ»Ð°ÑÑÐ¾Ð².</p>
+      <div class="step">binary classification</div>
+      <div class="step">multiclass classification</div>
+      <div class="step">multilabel classification</div>
+    </div>
+    <div>
+      <h3>Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</h3>
+      <div class="formula">
+        y âˆˆ â„
+      </div>
+      <p>ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Ñ‡Ð¸ÑÐ»ÐµÐ½Ð½Ð¾Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ.</p>
+      <div class="step">ÑÑ‚Ð¾Ð¸Ð¼Ð¾ÑÑ‚ÑŒ</div>
+      <div class="step">ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾</div>
+      <div class="step">Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ð°Ñ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð°</div>
+    </div>
+  </div>
+
+  <div class="info" style="margin-top:12px;">
+    â„¹ï¸ Ð˜Ð½Ð¾Ð³Ð´Ð° Ð¾Ð´Ð½Ð° Ð¸ Ñ‚Ð° Ð¶Ðµ Ð±Ð¸Ð·Ð½ÐµÑ-Ð·Ð°Ð´Ð°Ñ‡Ð° Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð¸Ñ€ÑƒÐµÑ‚ÑÑ Ð¿Ð¾-Ñ€Ð°Ð·Ð½Ð¾Ð¼Ñƒ: Ð¼Ð¾Ð¶Ð½Ð¾ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ Ñ‚Ð¾Ñ‡Ð½ÑƒÑŽ ÑÑƒÐ¼Ð¼Ñƒ Ð¿Ð¾Ñ‚ÐµÑ€ÑŒ (Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ), Ð° Ð¼Ð¾Ð¶Ð½Ð¾ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ â€œÐ²Ñ‹ÑÐ¾ÐºÐ¸Ð¹ Ñ€Ð¸ÑÐº / Ð½Ð¸Ð·ÐºÐ¸Ð¹ Ñ€Ð¸ÑÐºâ€ (ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ).
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>ðŸ§ª Train / Validation / Test â€” Ð·Ð°Ñ‡ÐµÐ¼ Ð´ÐµÐ»Ð¸Ñ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ?</h2>
+
+  <p>ÐÐµÐ»ÑŒÐ·Ñ Ð¾Ñ†ÐµÐ½Ð¸Ð²Ð°Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð½Ð° Ñ‚ÐµÑ… Ð¶Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ…, Ð½Ð° ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… Ð¾Ð½Ð° ÑƒÑ‡Ð¸Ð»Ð°ÑÑŒ: ÑÑ‚Ð¾ Ð´Ð°ÑÑ‚ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸ÑÑ‚Ð¸Ñ‡Ð½ÑƒÑŽ ÐºÐ°Ñ€Ñ‚Ð¸Ð½Ñƒ.</p>
+
+  <table>
+    <tr><th>Ð§Ð°ÑÑ‚ÑŒ</th><th>Ð”Ð»Ñ Ñ‡ÐµÐ³Ð¾ Ð½ÑƒÐ¶Ð½Ð°</th><th>Ð§Ñ‚Ð¾ Ð½Ð° Ð½ÐµÐ¹ Ð´ÐµÐ»Ð°Ñ‚ÑŒ</th></tr>
+    <tr><td>Train</td><td>Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ð¼Ð¾Ð´ÐµÐ»Ð¸</td><td>fit()</td></tr>
+    <tr><td>Validation</td><td>Ð²Ñ‹Ð±Ð¾Ñ€ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð², ÑÑ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»ÐµÐ¹</td><td>tuning / selection</td></tr>
+    <tr><td>Test</td><td>Ñ„Ð¸Ð½Ð°Ð»ÑŒÐ½Ð°Ñ Ñ‡ÐµÑÑ‚Ð½Ð°Ñ Ð¾Ñ†ÐµÐ½ÐºÐ°</td><td>Ñ‚Ñ€Ð¾Ð³Ð°Ñ‚ÑŒ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² ÐºÐ¾Ð½Ñ†Ðµ</td></tr>
+  </table>
+
+  <div class="formula">
+    Train â†’ fit parameters<br>
+    Validation â†’ choose model<br>
+    Test â†’ final unbiased estimate
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð¥Ð¾Ñ€Ð¾ÑˆÐ°Ñ Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐ°</h3>
+      <div class="step">train: 60â€“80%</div>
+      <div class="step">validation: 10â€“20%</div>
+      <div class="step">test: 10â€“20%</div>
+    </div>
+    <div>
+      <h3>ÐŸÐ»Ð¾Ñ…Ð°Ñ Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐ°</h3>
+      <div class="step">ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ Ð½Ð° test ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ñ€Ð°Ð·</div>
+      <div class="step">Ð¿Ð¾Ð´Ð±Ð¸Ñ€Ð°Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿Ð¾ test</div>
+      <div class="step highlight">ÑÑ‚Ð¾ Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ test Ð² ÐµÑ‰Ñ‘ Ð¾Ð´Ð¸Ð½ validation</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    âš ï¸ Ð•ÑÐ»Ð¸ Ñ‚Ñ‹ Ð¼Ð½Ð¾Ð³Ð¾ Ñ€Ð°Ð· Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÐµÑˆÑŒ Ñ€ÐµÑˆÐµÐ½Ð¸Ñ, Ð³Ð»ÑÐ´Ñ Ð½Ð° test, Ñ‚Ð¾ test Ð¿ÐµÑ€ÐµÑÑ‚Ð°Ñ‘Ñ‚ Ð±Ñ‹Ñ‚ÑŒ Ñ‡ÐµÑÑ‚Ð½Ñ‹Ð¼ Ð¿Ð¾ÐºÐ°Ð·Ð°Ñ‚ÐµÐ»ÐµÐ¼ Ð¾Ð±Ð¾Ð±Ñ‰Ð°ÑŽÑ‰ÐµÐ¹ ÑÐ¿Ð¾ÑÐ¾Ð±Ð½Ð¾ÑÑ‚Ð¸.
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>ðŸ“‰ Train error Ð¸ generalization error</h2>
+
+  <div class="formula">
+    Train error â‰  Test error
+  </div>
+
+  <p>ÐÐ° train Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¼Ð¾Ð¶ÐµÑ‚ Ñ€Ð°Ð±Ð¾Ñ‚Ð°Ñ‚ÑŒ Ð¾Ñ‡ÐµÐ½ÑŒ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¾ Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ, Ñ‡Ñ‚Ð¾ ÑƒÐ¶Ðµ Ð¿Ð¾Ð´ÑÑ‚Ñ€Ð¾Ð¸Ð»Ð°ÑÑŒ Ð¿Ð¾Ð´ ÑÑ‚Ð¸ Ð´Ð°Ð½Ð½Ñ‹Ðµ. ÐÐ°Ñ Ð¸Ð½Ñ‚ÐµÑ€ÐµÑÑƒÐµÑ‚ Ð½Ðµ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ fitting, Ð½Ð¾ Ð¸ <strong>generalization</strong> â€” Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿ÐµÑ€ÐµÐ½Ð¾ÑÐ¸Ñ‚ÑÑ Ð½Ð° Ð½Ð¾Ð²Ñ‹Ðµ Ð¾Ð±ÑŠÐµÐºÑ‚Ñ‹.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Train error</h3>
+      <p>ÐžÑˆÐ¸Ð±ÐºÐ° Ð½Ð° Ñ‚ÐµÑ… Ð´Ð°Ð½Ð½Ñ‹Ñ…, Ð¿Ð¾ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¼ Ð¾Ð±ÑƒÑ‡Ð°Ð»Ð¸ÑÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹.</p>
+    </div>
+    <div>
+      <h3>Generalization error</h3>
+      <p>ÐžÑˆÐ¸Ð±ÐºÐ° Ð½Ð° Ð½Ð¾Ð²Ñ‹Ñ…, Ñ€Ð°Ð½ÐµÐµ Ð½Ðµ Ð²Ð¸Ð´ÐµÐ½Ð½Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ….</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð¡ÑƒÑ‚ÑŒ ML Ð½Ðµ Ð² Ñ‚Ð¾Ð¼, Ñ‡Ñ‚Ð¾Ð±Ñ‹ â€œÐ²Ñ‹ÑƒÑ‡Ð¸Ñ‚ÑŒ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ñƒâ€, Ð° Ð² Ñ‚Ð¾Ð¼, Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑƒÐ»Ð¾Ð²Ð¸Ñ‚ÑŒ Ð·Ð°ÐºÐ¾Ð½Ð¾Ð¼ÐµÑ€Ð½Ð¾ÑÑ‚ÑŒ, ÐºÐ¾Ñ‚Ð¾Ñ€Ð°Ñ Ð¿Ñ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸Ñ‚ Ñ€Ð°Ð±Ð¾Ñ‚Ð°Ñ‚ÑŒ Ð·Ð° Ð¿Ñ€ÐµÐ´ÐµÐ»Ð°Ð¼Ð¸ Ð¾Ð±ÑƒÑ‡Ð°ÑŽÑ‰ÐµÐ¹ Ð²Ñ‹Ð±Ð¾Ñ€ÐºÐ¸.
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>ðŸŽ¯ Bias vs Variance</h2>
+
+  <p>Ð­Ñ‚Ð¾ Ð¾Ð´Ð½Ð° Ð¸Ð· ÑÐ°Ð¼Ñ‹Ñ… Ð²Ð°Ð¶Ð½Ñ‹Ñ… Ð¸Ð´ÐµÐ¹ Ð²Ð¾ Ð²ÑÑ‘Ð¼ ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ð¼ ML.</p>
+
+  <div class="grid-2">
+    <div>
+      <h3>Bias</h3>
+      <div class="formula">
+        bias = Ð¾ÑˆÐ¸Ð±ÐºÐ° Ð¸Ð·-Ð·Ð° ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¿Ñ€Ð¾ÑÑ‚Ð¾Ð¹ Ð¼Ð¾Ð´ÐµÐ»Ð¸
+      </div>
+      <div class="step">ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¶Ñ‘ÑÑ‚ÐºÐ¸Ðµ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð¾Ð¶ÐµÐ½Ð¸Ñ</div>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð½ÐµÐ´Ð¾Ð³Ð¸Ð±Ð°ÐµÑ‚ Ð¿Ð¾Ð´ Ð´Ð°Ð½Ð½Ñ‹Ðµ</div>
+      <div class="step">underfitting</div>
+    </div>
+    <div>
+      <h3>Variance</h3>
+      <div class="formula">
+        variance = Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ Ðº ÑˆÑƒÐ¼Ñƒ Ð¸ Ð²Ñ‹Ð±Ð¾Ñ€ÐºÐµ
+      </div>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð³Ð¸Ð±ÐºÐ°Ñ</div>
+      <div class="step">Ð»Ð¾Ð²Ð¸Ñ‚ ÑˆÑƒÐ¼ Ð²Ð¼ÐµÑÑ‚Ð¾ ÑÐ¸Ð³Ð½Ð°Ð»Ð°</div>
+      <div class="step">overfitting</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    Test Error â‰ˆ Bias<sup>2</sup> + Variance + Noise
+  </div>
+
+  <div class="info">
+    â„¹ï¸ Ð­Ñ‚Ð° Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð° Ð² ÑÑ‚Ñ€Ð¾Ð³Ð¾Ð¼ Ð²Ð¸Ð´Ðµ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ Ð·Ð°Ð´Ð°Ñ‡Ð¸, Ð½Ð¾ ÐºÐ°Ðº Ð¸Ð½Ñ‚ÑƒÐ¸Ñ‚Ð¸Ð²Ð½Ð°Ñ Ñ€Ð°Ð¼ÐºÐ° Ð¾Ð½Ð° ÐºÑ€Ð°Ð¹Ð½Ðµ Ð¿Ð¾Ð»ÐµÐ·Ð½Ð°: ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¿Ñ€Ð¾ÑÑ‚Ð°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð´Ð°Ñ‘Ñ‚ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ bias, ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ ÑÐ»Ð¾Ð¶Ð½Ð°Ñ â€” Ð±Ð¾Ð»ÑŒÑˆÑƒÑŽ variance.
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>ðŸ“ˆ Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: bias / variance tradeoff</h2>
+  <p class="muted">ÐœÐµÐ½ÑÐ¹ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¸ ÑÐ¼Ð¾Ñ‚Ñ€Ð¸, ÐºÐ°Ðº Ð²ÐµÐ´ÑƒÑ‚ ÑÐµÐ±Ñ train Ð¸ validation error</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Ð¡Ð»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»Ð¸ = <span class="val-display" id="complexityVal">3</span></span>
+        <input type="range" min="1" max="10" step="1" value="3" id="complexity" oninput="updateBiasVariance()">
+      </div>
+      <canvas id="bvCanvas" width="360" height="240" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h3>
+      <div class="result-box" id="bvInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Ð’ Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾ÑÑ‚Ð¸ Ð¼Ñ‹ Ð¸Ñ‰ÐµÐ¼ Ð½Ðµ â€œÐ¼Ð°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð¾ ÑÐ»Ð¾Ð¶Ð½ÑƒÑŽâ€ Ð¼Ð¾Ð´ÐµÐ»ÑŒ, Ð° Ñ‚Ñƒ, ÐºÐ¾Ñ‚Ð¾Ñ€Ð°Ñ Ð»ÑƒÑ‡ÑˆÐµ Ð²ÑÐµÐ³Ð¾ Ð±Ð°Ð»Ð°Ð½ÑÐ¸Ñ€ÑƒÐµÑ‚ Ð¼ÐµÐ¶Ð´Ñƒ <strong>Ð½ÐµÐ´Ð¾Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸ÐµÐ¼</strong> Ð¸ <strong>Ð¿ÐµÑ€ÐµÐ¾Ð±ÑƒÑ‡ÐµÐ½Ð¸ÐµÐ¼</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>ðŸª¤ Underfitting vs Overfitting</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Underfitting</h3>
+      <div class="step">train error Ð²Ñ‹ÑÐ¾ÐºÐ¸Ð¹</div>
+      <div class="step">validation error Ñ‚Ð¾Ð¶Ðµ Ð²Ñ‹ÑÐ¾ÐºÐ¸Ð¹</div>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¿Ñ€Ð¾ÑÑ‚Ð°Ñ</div>
+      <div class="step">Ð½Ðµ Ñ…Ð²Ð°Ñ‚Ð°ÐµÑ‚ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð² / Ð¼Ð¾Ñ‰Ð½Ð¾ÑÑ‚Ð¸ / Ð²Ñ€ÐµÐ¼ÐµÐ½Ð¸ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ñ</div>
+    </div>
+    <div>
+      <h3>Overfitting</h3>
+      <div class="step">train error Ð¾Ñ‡ÐµÐ½ÑŒ Ð½Ð¸Ð·ÐºÐ¸Ð¹</div>
+      <div class="step">validation error Ð·Ð°Ð¼ÐµÑ‚Ð½Ð¾ Ð²Ñ‹ÑˆÐµ</div>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð²Ñ‹ÑƒÑ‡Ð¸Ð»Ð° ÑˆÑƒÐ¼</div>
+      <div class="step">ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ ÑÐ»Ð¾Ð¶Ð½Ð°Ñ / ÑÐ»Ð°Ð±Ð°Ñ Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</div>
+    </div>
+  </div>
+
+  <table style="margin-top:12px;">
+    <tr><th>Ð¡Ð¸Ð¼Ð¿Ñ‚Ð¾Ð¼</th><th>Ð’ÐµÑ€Ð¾ÑÑ‚Ð½Ð°Ñ Ð¿Ñ€Ð¸Ñ‡Ð¸Ð½Ð°</th><th>Ð§Ñ‚Ð¾ Ð´ÐµÐ»Ð°Ñ‚ÑŒ</th></tr>
+    <tr><td>train Ð¸ val Ð¾Ð±Ð° Ð¿Ð»Ð¾Ñ…Ð¸Ðµ</td><td>underfitting</td><td>ÑƒÑÐ»Ð¾Ð¶Ð½Ð¸Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ, ÑƒÐ»ÑƒÑ‡ÑˆÐ¸Ñ‚ÑŒ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸</td></tr>
+    <tr><td>train Ñ…Ð¾Ñ€Ð¾ÑˆÐ¸Ð¹, val Ð¿Ð»Ð¾Ñ…Ð¾Ð¹</td><td>overfitting</td><td>Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ, CV, Ð±Ð¾Ð»ÑŒÑˆÐµ Ð´Ð°Ð½Ð½Ñ‹Ñ…</td></tr>
+    <tr><td>Ð¾Ð±Ð° Ñ…Ð¾Ñ€Ð¾ÑˆÐ¸Ðµ</td><td>Ñ…Ð¾Ñ€Ð¾ÑˆÐ¸Ð¹ Ð±Ð°Ð»Ð°Ð½Ñ</td><td>Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ð½Ð° test</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>ðŸ§° Ð§Ñ‚Ð¾ Ñ‚Ð°ÐºÐ¾Ðµ pipeline Ð² ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ð¼ ML?</h2>
+
+  <p>ML-Ð¿Ñ€Ð¾ÐµÐºÑ‚ â€” ÑÑ‚Ð¾ Ð½Ðµ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¼Ð¾Ð´ÐµÐ»ÑŒ. Ð­Ñ‚Ð¾ Ñ†ÐµÐ¿Ð¾Ñ‡ÐºÐ° ÑˆÐ°Ð³Ð¾Ð².</p>
+
+  <div class="formula">
+    Data â†’ Cleaning â†’ Features â†’ Model â†’ Validation â†’ Deployment / Evaluation
+  </div>
+
+  <div class="step blue">1. ÐŸÐ¾Ð½ÑÑ‚ÑŒ Ð·Ð°Ð´Ð°Ñ‡Ñƒ Ð¸ Ð¼ÐµÑ‚Ñ€Ð¸ÐºÑƒ</div>
+  <div class="step blue">2. Ð¡Ð¾Ð±Ñ€Ð°Ñ‚ÑŒ / Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ñ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ</div>
+  <div class="step blue">3. Ð Ð°Ð·Ð´ÐµÐ»Ð¸Ñ‚ÑŒ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð½Ð° train/val/test</div>
+  <div class="step blue">4. Ð¡Ð´ÐµÐ»Ð°Ñ‚ÑŒ preprocessing</div>
+  <div class="step blue">5. ÐŸÐ¾ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ÑŒ baseline</div>
+  <div class="step blue">6. ÐŸÐ¾Ð´Ð¾Ð±Ñ€Ð°Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¸ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹</div>
+  <div class="step blue">7. ÐžÑ†ÐµÐ½Ð¸Ñ‚ÑŒ Ñ‡ÐµÑÑ‚Ð½Ð¾ Ð½Ð° test</div>
+  <div class="step highlight">8. Ð¢Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ð¾Ñ‚Ð¾Ð¼ Ð´ÐµÐ»Ð°Ñ‚ÑŒ Ð²Ñ‹Ð²Ð¾Ð´Ñ‹</div>
+
+  <div class="warn">
+    âš ï¸ ÐžÐ´Ð½Ð° Ð¸Ð· ÑÐ°Ð¼Ñ‹Ñ… Ñ‡Ð°ÑÑ‚Ñ‹Ñ… Ð¾ÑˆÐ¸Ð±Ð¾Ðº Ð½Ð¾Ð²Ð¸Ñ‡ÐºÐ¾Ð²: ÑÑ€Ð°Ð·Ñƒ Ð¿Ñ€Ñ‹Ð³Ð°Ñ‚ÑŒ Ðº â€œÐºÑ€ÑƒÑ‚Ð¾Ð¹ Ð¼Ð¾Ð´ÐµÐ»Ð¸â€, Ð½Ðµ Ð¿Ñ€Ð¾Ð²ÐµÑ€Ð¸Ð² Ð±Ð°Ð·Ð¾Ð²Ñ‹Ð¹ pipeline, ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð¾ Ñ€Ð°Ð·Ð±Ð¸ÐµÐ½Ð¸Ñ, leakage Ð¸ ÐºÐ¾Ñ€Ñ€ÐµÐºÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¼ÐµÑ‚Ñ€Ð¸ÐºÐ¸.
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>ðŸª£ Baseline model â€” Ð·Ð°Ñ‡ÐµÐ¼ Ð½ÑƒÐ¶ÐµÐ½ Ð¿Ñ€Ð¾ÑÑ‚Ð¾Ð¹ ÑÑ‚Ð°Ñ€Ñ‚?</h2>
+
+  <p>ÐŸÑ€ÐµÐ¶Ð´Ðµ Ñ‡ÐµÐ¼ Ð·Ð°Ð¿ÑƒÑÐºÐ°Ñ‚ÑŒ ÑÐ»Ð¾Ð¶Ð½Ñ‹Ðµ Ð°Ð»Ð³Ð¾Ñ€Ð¸Ñ‚Ð¼Ñ‹, Ð½ÑƒÐ¶Ð½Ð¾ Ð¿Ð¾Ð½ÑÑ‚ÑŒ: Ð° Ð¿Ñ€Ð¾ÑÑ‚Ð¾Ð¹ Ð¿Ð¾Ð´Ñ…Ð¾Ð´ ÑƒÐ¶Ðµ Ð´Ð°Ñ‘Ñ‚ Ñ€Ð°Ð·ÑƒÐ¼Ð½Ñ‹Ð¹ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚ Ð¸Ð»Ð¸ Ð½ÐµÑ‚?</p>
+
+  <div class="grid-3">
+    <div class="mini-card">
+      <h3>Regression baseline</h3>
+      <p class="small">Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ ÑÑ€ÐµÐ´Ð½ÐµÐµ Ð¸Ð»Ð¸ Ð¼ÐµÐ´Ð¸Ð°Ð½Ñƒ</p>
+    </div>
+    <div class="mini-card">
+      <h3>Classification baseline</h3>
+      <p class="small">Ð²ÑÐµÐ³Ð´Ð° Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ ÑÐ°Ð¼Ñ‹Ð¹ Ñ‡Ð°ÑÑ‚Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ</p>
+    </div>
+    <div class="mini-card">
+      <h3>Simple model baseline</h3>
+      <p class="small">linear/logistic regression Ð´Ð¾ Ð´ÐµÑ€ÐµÐ²ÑŒÐµÐ² Ð¸ Ð±ÑƒÑÑ‚Ð¸Ð½Ð³Ð°</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð•ÑÐ»Ð¸ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð½Ðµ Ð±ÑŒÑ‘Ñ‚ baseline, Ñ‚Ð¾ Ð»Ð¸Ð±Ð¾ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ð° Ð² Ð´Ð°Ð½Ð½Ñ‹Ñ…, Ð»Ð¸Ð±Ð¾ Ð² Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐµ Ð·Ð°Ð´Ð°Ñ‡Ð¸, Ð»Ð¸Ð±Ð¾ Ð² Ð¿Ð°Ð¹Ð¿Ð»Ð°Ð¹Ð½Ðµ.
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>ðŸ“Œ Ð§Ñ‚Ð¾ ÑÑ‡Ð¸Ñ‚Ð°ÐµÑ‚ÑÑ Ñ…Ð¾Ñ€Ð¾ÑˆÐµÐ¹ ML-Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¾Ð¹ Ð·Ð°Ð´Ð°Ñ‡Ð¸?</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3>Ð¥Ð¾Ñ€Ð¾ÑˆÐ°Ñ Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ°</h3>
+      <div class="step">ÐµÑÑ‚ÑŒ Ñ‡Ñ‘Ñ‚ÐºÐ¸Ð¹ target</div>
+      <div class="step">Ð¼ÐµÑ‚Ñ€Ð¸ÐºÐ° ÑÐ¾Ð¾Ñ‚Ð²ÐµÑ‚ÑÑ‚Ð²ÑƒÐµÑ‚ Ð±Ð¸Ð·Ð½ÐµÑ-Ñ†ÐµÐ»Ð¸</div>
+      <div class="step">Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ñ‹ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸ Ð½Ð° Ð¼Ð¾Ð¼ÐµÐ½Ñ‚ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ñ</div>
+      <div class="step">Ð´Ð°Ð½Ð½Ñ‹Ðµ Ñ€ÐµÐ¿Ñ€ÐµÐ·ÐµÐ½Ñ‚Ð°Ñ‚Ð¸Ð²Ð½Ñ‹</div>
+    </div>
+    <div>
+      <h3>ÐŸÐ»Ð¾Ñ…Ð°Ñ Ð¿Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ°</h3>
+      <div class="step">Ñ‚Ð°Ñ€Ð³ÐµÑ‚ Ñ€Ð°Ð·Ð¼Ñ‹Ñ‚ Ð¸Ð»Ð¸ ÑˆÑƒÐ¼Ð½Ñ‹Ð¹</div>
+      <div class="step">Ð¼ÐµÑ‚Ñ€Ð¸ÐºÐ° Ð½Ðµ Ð¾Ñ‚Ñ€Ð°Ð¶Ð°ÐµÑ‚ Ñ€ÐµÐ°Ð»ÑŒÐ½ÑƒÑŽ ÑÑ‚Ð¾Ð¸Ð¼Ð¾ÑÑ‚ÑŒ Ð¾ÑˆÐ¸Ð±ÐºÐ¸</div>
+      <div class="step">Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ÑÑ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸ Ð¸Ð· Ð±ÑƒÐ´ÑƒÑ‰ÐµÐ³Ð¾</div>
+      <div class="step">train Ð¸ production Ð¶Ð¸Ð²ÑƒÑ‚ Ð² Ñ€Ð°Ð·Ð½Ñ‹Ñ… Ð¼Ð¸Ñ€Ð°Ñ…</div>
+    </div>
+  </div>
+
+  <div class="info">
+    â„¹ï¸ ÐžÑ‡ÐµÐ½ÑŒ Ñ‡Ð°ÑÑ‚Ð¾ Ð¾ÑÐ½Ð¾Ð²Ð½Ð°Ñ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ð° Ð² ML â€” ÑÑ‚Ð¾ Ð½Ðµ â€œÐ¿Ð»Ð¾Ñ…Ð¾Ð¹ Ð°Ð»Ð³Ð¾Ñ€Ð¸Ñ‚Ð¼â€, Ð° Ð¿Ð»Ð¾Ñ…Ð¾ ÑÑ„Ð¾Ñ€Ð¼ÑƒÐ»Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ Ð·Ð°Ð´Ð°Ñ‡Ð°.
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>ðŸ” Ð˜Ð½Ñ‚ÐµÑ€ÐºÑ‚Ð¸Ð²: mini ML lifecycle simulator</h2>
+  <p class="muted">Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ñ‚Ð¸Ð¿ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¸ Ð¿Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ Ñ‚Ð¸Ð¿Ð¸Ñ‡Ð½Ð¾Ðµ Ð¿Ð¾Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Ð½Ð° train / validation</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Ð¢Ð¸Ð¿ Ð¼Ð¾Ð´ÐµÐ»Ð¸</span><br>
+        <select id="modelType" onchange="updateLifecycle()">
+          <option value="simple">ÐžÑ‡ÐµÐ½ÑŒ Ð¿Ñ€Ð¾ÑÑ‚Ð°Ñ</option>
+          <option value="good">Ð¥Ð¾Ñ€Ð¾ÑˆÐ¾ Ð¿Ð¾Ð´Ð¾Ð±Ñ€Ð°Ð½Ð½Ð°Ñ</option>
+          <option value="complex">Ð¡Ð»Ð¸ÑˆÐºÐ¾Ð¼ ÑÐ»Ð¾Ð¶Ð½Ð°Ñ</option>
+        </select>
+      </div>
+      <canvas id="lifeCanvas" width="360" height="240" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð§Ñ‚Ð¾ ÑÑ‚Ð¾ Ð·Ð½Ð°Ñ‡Ð¸Ñ‚</h3>
+      <div class="result-box" id="lifeInfo"></div>
+      <div class="warn" style="font-size:0.88em;">
+        ÐÐµ ÑÑƒÐ´Ð¸ Ð¾ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ð¾ train score. Ð”Ð»Ñ ML Ð³Ð¾Ñ€Ð°Ð·Ð´Ð¾ Ð²Ð°Ð¶Ð½ÐµÐµ, ÐºÐ°Ðº Ð¾Ð½Ð° Ð²ÐµÐ´Ñ‘Ñ‚ ÑÐµÐ±Ñ Ð½Ð° Ð²Ð°Ð»Ð¸Ð´Ð°Ñ†Ð¸Ð¸ Ð¸ Ð½Ð¾Ð²Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ….
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>ðŸ’» sklearn mindset: ÐºÐ°Ðº Ð²Ñ‹Ð³Ð»ÑÐ´Ð¸Ñ‚ ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¸Ð¹ ML Ð² ÐºÐ¾Ð´Ðµ</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Train / val / test</button>
+    <button onclick="showCode(1,this)">Baseline + fit</button>
+    <button onclick="showCode(2,this)">Pipeline</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">from sklearn.model_selection import train_test_split
+
+X_train, X_temp, y_train, y_temp = train_test_split(
+    X, y, test_size=0.4, random_state=42
+)
+
+X_val, X_test, y_val, y_test = train_test_split(
+    X_temp, y_temp, test_size=0.5, random_state=42
+)
+
+print(X_train.shape, X_val.shape, X_test.shape)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+# baseline
+dummy = DummyClassifier(strategy="most_frequent")
+dummy.fit(X_train, y_train)
+dummy_pred = dummy.predict(X_val)
+
+# simple real model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+print("Baseline acc:", accuracy_score(y_val, dummy_pred))
+print("Model acc:", accuracy_score(y_val, pred))</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LogisticRegression(max_iter=1000))
+])
+
+pipe.fit(X_train, y_train)
+val_score = pipe.score(X_val, y_val)
+
+print("Validation score:", val_score)</div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>ðŸŽ¯ Ð§Ñ‚Ð¾ Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð²Ñ‹Ð½ÐµÑÑ‚Ð¸ Ð¸Ð· 2.1</h2>
+
+  <div class="step highlight">ML-Ð·Ð°Ð´Ð°Ñ‡Ð° = Ð´Ð°Ð½Ð½Ñ‹Ðµ + target + Ð¼Ð¾Ð´ÐµÐ»ÑŒ + loss + evaluation</div>
+  <div class="step highlight">Supervised â‰  Unsupervised</div>
+  <div class="step highlight">ÐÐµÐ»ÑŒÐ·Ñ Ð¾Ñ†ÐµÐ½Ð¸Ð²Ð°Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð½Ð° train</div>
+  <div class="step highlight">Validation Ð½ÑƒÐ¶ÐµÐ½ Ð´Ð»Ñ Ð²Ñ‹Ð±Ð¾Ñ€Ð°, test â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð´Ð»Ñ Ñ„Ð¸Ð½Ð°Ð»Ð°</div>
+  <div class="step highlight">Bias â†” Variance tradeoff â€” Ñ†ÐµÐ½Ñ‚Ñ€Ð°Ð»ÑŒÐ½Ð°Ñ Ð¸Ð´ÐµÑ</div>
+  <div class="step highlight">Underfitting Ð¸ overfitting â€” Ð´Ð²Ðµ Ð¾ÑÐ½Ð¾Ð²Ð½Ñ‹Ðµ ÐºÑ€Ð°Ð¹Ð½Ð¾ÑÑ‚Ð¸</div>
+  <div class="step highlight">Ð¡Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ pipeline Ð²Ð°Ð¶Ð½ÐµÐµ â€œÐ¼Ð¾Ð´Ð½Ð¾Ð¹ Ð¼Ð¾Ð´ÐµÐ»Ð¸â€</div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð•ÑÐ»Ð¸ ÑÐ¾Ð²ÑÐµÐ¼ ÑƒÐ¿Ñ€Ð¾ÑÑ‚Ð¸Ñ‚ÑŒ: ÐºÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ¾Ðµ ML â€” ÑÑ‚Ð¾ Ð¸ÑÐºÑƒÑÑÑ‚Ð²Ð¾ ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ, ÐºÐ¾Ñ‚Ð¾Ñ€Ð°Ñ Ð½Ðµ Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¾ Ð¾Ð±ÑŠÑÑÐ½ÑÐµÑ‚ ÑÑ‚Ð°Ñ€Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ, Ð° <strong>ÑƒÑÑ‚Ð¾Ð¹Ñ‡Ð¸Ð²Ð¾ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÐµÑ‚ Ð½Ð° Ð½Ð¾Ð²Ñ‹Ñ…</strong>.
+  </div>
+</div>
+
+<script>
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function drawAxes(ctx, W, H){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,H-25); ctx.lineTo(W-10,H-25); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-25); ctx.stroke();
+}
+
+function updateBiasVariance(){
+  const c = +document.getElementById('complexity').value;
+  document.getElementById('complexityVal').textContent = c;
+
+  const trainErr = Math.max(0.05, 0.85 - 0.075*c);
+  const valErr = 0.22 + Math.pow((c-5.5), 2)/40;
+
+  const canvas = document.getElementById('bvCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  // Draw reference U curve
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for(let i=1;i<=10;i++){
+    const x = 30 + (i-1)/9*(W-50);
+    const yVal = 0.22 + Math.pow((i-5.5), 2)/40;
+    const y = 15 + yVal*(H-50);
+    if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // draw train monotonic
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for(let i=1;i<=10;i++){
+    const x = 30 + (i-1)/9*(W-50);
+    const tVal = Math.max(0.05, 0.85 - 0.075*i);
+    const y = 15 + tVal*(H-50);
+    if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // mark current
+  const px = 30 + (c-1)/9*(W-50);
+  const pyTrain = 15 + trainErr*(H-50);
+  const pyVal = 15 + valErr*(H-50);
+
+  ctx.beginPath(); ctx.arc(px, pyTrain, 4, 0, Math.PI*2); ctx.fillStyle='#60a5fa'; ctx.fill();
+  ctx.beginPath(); ctx.arc(px, pyVal, 4, 0, Math.PI*2); ctx.fillStyle='#a78bfa'; ctx.fill();
+
+  let zone = '';
+  if(c <= 3) zone = 'Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¿Ñ€Ð¾ÑÑ‚Ð°Ñ â†’ Ð²Ñ‹ÑÐ¾ÐºÐ¸Ð¹ bias â†’ underfitting';
+  else if(c >= 8) zone = 'Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ ÑÐ»Ð¾Ð¶Ð½Ð°Ñ â†’ Ð²Ñ‹ÑÐ¾ÐºÐ°Ñ variance â†’ overfitting';
+  else zone = 'Ñ€Ð°Ð·ÑƒÐ¼Ð½Ñ‹Ð¹ Ð±Ð°Ð»Ð°Ð½Ñ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚Ð¸ Ð¸ Ð¾Ð±Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ñ';
+
+  document.getElementById('bvInfo').innerHTML = `
+    <div class="step">complexity = ${c}</div>
+    <div class="step">train error â‰ˆ <span class="hl-blue">${trainErr.toFixed(3)}</span></div>
+    <div class="step">validation error â‰ˆ <span class="hl-purple">${valErr.toFixed(3)}</span></div>
+    <div class="step highlight">${zone}</div>
+  `;
+}
+
+function updateLifecycle(){
+  const type = document.getElementById('modelType').value;
+  const canvas = document.getElementById('lifeCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const epochs = 12;
+  let trainVals = [], valVals = [];
+
+  for(let i=0;i<epochs;i++){
+    if(type === 'simple'){
+      trainVals.push(0.78 - 0.025*i);
+      valVals.push(0.82 - 0.015*i);
+    } else if(type === 'good'){
+      trainVals.push(0.82 - 0.045*i);
+      valVals.push(0.86 - 0.04*i + (i>8 ? 0.01*(i-8) : 0));
+    } else {
+      trainVals.push(0.84 - 0.06*i);
+      valVals.push(0.88 - 0.03*i + (i>5 ? 0.035*(i-5) : 0));
+    }
+  }
+
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  trainVals.forEach((v,i)=>{
+    const x = 30 + i/(epochs-1)*(W-50);
+    const y = 15 + v*(H-50);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  valVals.forEach((v,i)=>{
+    const x = 30 + i/(epochs-1)*(W-50);
+    const y = 15 + v*(H-50);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  let text = '';
+  if(type === 'simple'){
+    text = 'Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ»Ð°Ð±Ð°Ñ: Ð¸ train, Ð¸ validation Ð¾ÑˆÐ¸Ð±ÐºÐ¸ Ð¾ÑÑ‚Ð°ÑŽÑ‚ÑÑ Ð²Ñ‹ÑÐ¾ÐºÐ¸Ð¼Ð¸ â†’ underfitting';
+  } else if(type === 'good'){
+    text = 'Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑƒÑ‡Ð¸Ñ‚ÑÑ Ð¸ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¾ Ð¾Ð±Ð¾Ð±Ñ‰Ð°ÐµÑ‚: train Ð¸ validation ÑƒÐ»ÑƒÑ‡ÑˆÐ°ÑŽÑ‚ÑÑ Ð²Ð¼ÐµÑÑ‚Ðµ';
+  } else {
+    text = 'train Ð¿Ñ€Ð¾Ð´Ð¾Ð»Ð¶Ð°ÐµÑ‚ ÑƒÐ»ÑƒÑ‡ÑˆÐ°Ñ‚ÑŒÑÑ, Ð½Ð¾ validation Ð½Ð°Ñ‡Ð¸Ð½Ð°ÐµÑ‚ ÑƒÑ…ÑƒÐ´ÑˆÐ°Ñ‚ÑŒÑÑ â†’ overfitting';
+  }
+
+  document.getElementById('lifeInfo').innerHTML = `
+    <div class="step">ÑÐ¸Ð½ÑÑ ÐºÑ€Ð¸Ð²Ð°Ñ = train error</div>
+    <div class="step">Ð¾Ñ€Ð°Ð½Ð¶ÐµÐ²Ð°Ñ ÐºÑ€Ð¸Ð²Ð°Ñ = validation error</div>
+    <div class="step highlight">${text}</div>
+  `;
+}
+
+updateBiasVariance();
+updateLifecycle();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+

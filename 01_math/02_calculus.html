@@ -1,0 +1,790 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.02em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; text-decoration:none; transition:all 0.2s; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+.tag-block:hover { border-color: var(--amber); color: var(--amber); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.center { text-align:center; }
+.codeTabs button { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Ð‘Ð»Ð¾Ðº 1 â€” ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ðµ Ð¾ÑÐ½Ð¾Ð²Ñ‹</span>
+  <a class="tag tag-block" href="01_linear_algebra.html">1.1 Ð›Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð°Ð»Ð³ÐµÐ±Ñ€Ð°</a>
+  <span class="tag tag-active">1.2 ÐœÐ°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð·</span>
+  <a class="tag tag-block" href="03_probability_theory.html">1.3 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹</a>
+  <a class="tag tag-block" href="04_information_theory.html">1.4 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</a>
+</div>
+
+<h1>1.2 ÐœÐ°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð·</h1>
+<p class="muted">ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ Â· chain rule Â· gradient Â· Jacobian Â· Hessian Â· Taylor intuition Â· ÑÐ²ÑÐ·ÑŒ Ñ backprop Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸ÐµÐ¹</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>ðŸ“ˆ Ð—Ð°Ñ‡ÐµÐ¼ Ð¼Ð°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð· Ð² ML?</h2>
+  <p>ÐžÐ±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚Ð¸ â€” ÑÑ‚Ð¾ Ð¿Ð¾Ð¸ÑÐº Ñ‚Ð°ÐºÐ¸Ñ… Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð², Ð¿Ñ€Ð¸ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ñ… Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¿Ð¾Ñ‚ÐµÑ€ÑŒ ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ Ð¼Ð¸Ð½Ð¸Ð¼Ð°Ð»ÑŒÐ½Ð¾Ð¹. Ð§Ñ‚Ð¾Ð±Ñ‹ Ð¿Ð¾Ð½ÑÑ‚ÑŒ, <strong>Ð² ÐºÐ°ÐºÑƒÑŽ ÑÑ‚Ð¾Ñ€Ð¾Ð½Ñƒ Ð´Ð²Ð¸Ð³Ð°Ñ‚ÑŒ Ð²ÐµÑÐ°</strong>, Ð½Ð°Ð¼ Ð½ÑƒÐ¶Ð½Ñ‹ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ.</p>
+
+  <div class="formula">
+    Î¸ â† Î¸ - Î· âˆ‡<sub>Î¸</sub>L(Î¸)
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ</h3>
+      <p class="small">ÐšÐ°Ðº Ð±Ñ‹ÑÑ‚Ñ€Ð¾ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¿Ñ€Ð¸ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ð¸ Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ð¾Ð¹.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚</h3>
+      <p class="small">ÐžÐ±Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð¾Ð¹ Ð½Ð° Ð¼Ð½Ð¾Ð³Ð¾ Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ñ….</p>
+    </div>
+    <div class="mini-card">
+      <h3>Chain rule</h3>
+      <p class="small">ÐŸÑ€Ð°Ð²Ð¸Ð»Ð¾ ÐºÐ¾Ð¼Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸, Ð½Ð° ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ð¼ ÑÑ‚Ð¾Ð¸Ñ‚ backpropagation.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ <strong>ÐžÐ´Ð½Ð° Ñ„Ñ€Ð°Ð·Ð°:</strong> Ð¼Ð°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð· Ð² ML Ð½ÑƒÐ¶ÐµÐ½, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¸Ð·Ð¼ÐµÑ€ÑÑ‚ÑŒ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ Ð²Ñ‹Ñ…Ð¾Ð´Ð¾Ð² Ð¸ loss Ðº Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°Ð¼ Ð¼Ð¾Ð´ÐµÐ»Ð¸.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>ðŸ§  Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð¾Ð¹</h2>
+
+  <h3>Ð¤Ð¾Ñ€Ð¼Ð°Ð»ÑŒÐ½Ð¾Ðµ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ</h3>
+  <div class="formula">
+    f'(x) = lim<sub>hâ†’0</sub> (f(x+h) - f(x)) / h
+  </div>
+
+  <h3>Ð¡Ð¼Ñ‹ÑÐ»</h3>
+  <div class="step">1. Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð±Ñ‹ÑÑ‚Ñ€Ð¾ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð² Ñ‚Ð¾Ñ‡ÐºÐµ x</div>
+  <div class="step">2. Ð½Ð°ÐºÐ»Ð¾Ð½ ÐºÐ°ÑÐ°Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹ Ðº Ð³Ñ€Ð°Ñ„Ð¸ÐºÑƒ</div>
+  <div class="step">3. Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð°Ñ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ: Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¾Ðµ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ x â†’ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ f(x)</div>
+
+  <div class="info">
+    â„¹ï¸ Ð•ÑÐ»Ð¸ <strong>fâ€²(x) &gt; 0</strong>, Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ Ñ€Ð°ÑÑ‚Ñ‘Ñ‚. Ð•ÑÐ»Ð¸ <strong>fâ€²(x) &lt; 0</strong>, ÑƒÐ±Ñ‹Ð²Ð°ÐµÑ‚. Ð•ÑÐ»Ð¸ <strong>fâ€²(x)=0</strong>, ÑÑ‚Ð¾ ÐºÐ°Ð½Ð´Ð¸Ð´Ð°Ñ‚ Ð½Ð° ÑÐºÑÑ‚Ñ€ÐµÐ¼ÑƒÐ¼ Ð¸Ð»Ð¸ ÑÐµÐ´Ð»Ð¾.
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>ðŸŽ›ï¸ Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ ÐºÐ°Ðº Ð½Ð°ÐºÐ»Ð¾Ð½ ÐºÐ°ÑÐ°Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¹</h2>
+  <p class="muted">Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑŽ Ð¸ Ð´Ð²Ð¸Ð³Ð°Ð¹ Ñ‚Ð¾Ñ‡ÐºÑƒ xâ‚€</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ</span><br>
+        <select id="fnSelect" onchange="drawDerivativeDemo()">
+          <option value="quad">f(x)=xÂ²</option>
+          <option value="cube">f(x)=xÂ³-3x</option>
+          <option value="sin">f(x)=sin(x)</option>
+          <option value="exp">f(x)=e^(0.6x)</option>
+        </select>
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">xâ‚€ = <span class="val-display" id="x0val">1.00</span></span>
+        <input type="range" min="-4" max="4" step="0.01" value="1" id="x0slider" oninput="drawDerivativeDemo()">
+      </div>
+      <canvas id="derivativeCanvas" width="380" height="280" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>ÐŸÐ¾ÑˆÐ°Ð³Ð¾Ð²Ð°Ñ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h3>
+      <div class="result-box" id="derivativeInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ ÐšÐ°ÑÐ°Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ â€” ÑÑ‚Ð¾ <strong>Ð»ÑƒÑ‡ÑˆÐ°Ñ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ</strong> Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð² Ð¾Ñ‡ÐµÐ½ÑŒ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¾Ð¹ Ð¾ÐºÑ€ÐµÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ Ñ‚Ð¾Ñ‡ÐºÐ¸. Ð˜Ð¼ÐµÐ½Ð½Ð¾ ÑÑ‚Ð° Ð¸Ð´ÐµÑ Ð¿Ð¾Ñ‚Ð¾Ð¼ Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ÑÑ Ð² gradient descent Ð¸ Taylor expansion.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>ðŸ“Ž Ð‘Ð°Ð·Ð¾Ð²Ñ‹Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ð¾ Ð²ÑÑ‚Ñ€ÐµÑ‡Ð°ÑŽÑ‚ÑÑ Ð² ML</h2>
+
+  <table>
+    <tr><th>Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ</th><th>ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ</th><th>Ð“Ð´Ðµ Ð²ÑÑ‚Ñ€ÐµÑ‡Ð°ÐµÑ‚ÑÑ</th></tr>
+    <tr><td>xâ¿</td><td>nxâ¿â»Â¹</td><td>Ð¿Ð¾Ð»Ð¸Ð½Ð¾Ð¼Ñ‹, loss, regularization</td></tr>
+    <tr><td>eË£</td><td>eË£</td><td>softmax, exp-family</td></tr>
+    <tr><td>ln x</td><td>1/x</td><td>MLE, entropy, cross-entropy</td></tr>
+    <tr><td>sin x</td><td>cos x</td><td>PE, toy examples</td></tr>
+    <tr><td>Ïƒ(x)=1/(1+eâ»Ë£)</td><td>Ïƒ(x)(1-Ïƒ(x))</td><td>Ð»Ð¾Ð³Ð¸ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ°Ñ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ, BCE</td></tr>
+    <tr><td>tanh(x)</td><td>1-tanhÂ²(x)</td><td>RNN, hidden activations</td></tr>
+    <tr><td>ReLU(x)=max(0,x)</td><td>1(x&gt;0)</td><td>Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð²ÑÐµ MLP/CNN</td></tr>
+  </table>
+
+  <div class="warn" style="margin-top:12px;">
+    âš ï¸ Ð£ ReLU Ð² Ñ‚Ð¾Ñ‡ÐºÐµ 0 Ñ„Ð¾Ñ€Ð¼Ð°Ð»ÑŒÐ½Ð¾ Ð½ÐµÑ‚ Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾Ð¹ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð¾Ð¹. ÐÐ° Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐµ Ð² DL Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÑŽÑ‚ ÑÑƒÐ±Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚.
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>â›“ï¸ Chain Rule â€” Ñ„ÑƒÐ½Ð´Ð°Ð¼ÐµÐ½Ñ‚ backpropagation</h2>
+
+  <h3>ÐžÐ´Ð½Ð° Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ð°Ñ</h3>
+  <div class="formula">
+    y = f(g(x))  âŸ¹  dy/dx = (dy/dg)(dg/dx) = f'(g(x)) Â· g'(x)
+  </div>
+
+  <h3>Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ</h3>
+  <p>Ð•ÑÐ»Ð¸ x Ð²Ð»Ð¸ÑÐµÑ‚ Ð½Ð° g, Ð° g Ð²Ð»Ð¸ÑÐµÑ‚ Ð½Ð° y, Ñ‚Ð¾ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ y Ðº x Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ÑÑ ÐºÐ°Ðº Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ñ… Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÐµÐ¹ Ð½Ð° ÐºÐ°Ð¶Ð´Ð¾Ð¼ ÑˆÐ°Ð³Ðµ.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Ñ†ÐµÐ¿Ð¾Ñ‡ÐºÐ° Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ð¹</h3>
+      <p class="small">Ð‘ÐµÑ€Ñ‘Ð¼ h(x)=sin(xÂ²+1)</p>
+      <div style="margin:8px 0;">
+        <span class="muted">x = <span class="val-display" id="chainXVal">1.20</span></span>
+        <input type="range" min="-3" max="3" step="0.01" value="1.2" id="chainX" oninput="calcChainRule()">
+      </div>
+      <div class="result-box" id="chainInfo"></div>
+    </div>
+    <div>
+      <h3>Ð Ð°Ð·Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ Ð¿Ð¾ ÑƒÐ·Ð»Ð°Ð¼</h3>
+      <div class="step blue">u = xÂ²</div>
+      <div class="step blue">v = u + 1</div>
+      <div class="step green">h = sin(v)</div>
+      <div class="formula">
+        dh/dx = dh/dv Â· dv/du Â· du/dx
+      </div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Ð­Ñ‚Ð¾ Ð¸ ÐµÑÑ‚ÑŒ backprop Ð² Ð¼Ð¸Ð½Ð¸Ð°Ñ‚ÑŽÑ€Ðµ: ÑÐ½Ð°Ñ‡Ð°Ð»Ð° ÑÑ‡Ð¸Ñ‚Ð°ÐµÐ¼ forward, Ð¿Ð¾Ñ‚Ð¾Ð¼ Ð¸Ð´Ñ‘Ð¼ Ð½Ð°Ð·Ð°Ð´ Ð¿Ð¾ Ð³Ñ€Ð°Ñ„Ñƒ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ð¹ Ð¸ Ð¿ÐµÑ€ÐµÐ¼Ð½Ð¾Ð¶Ð°ÐµÐ¼ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>ðŸŒŠ Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð¼Ð½Ð¾Ð³Ð¸Ñ… Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ñ…</h2>
+
+  <p>Ð•ÑÐ»Ð¸ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð½Ðµ Ð¾Ñ‚ Ð¾Ð´Ð½Ð¾Ð³Ð¾ x, Ð° Ð¾Ñ‚ Ñ†ÐµÐ»Ð¾Ð³Ð¾ Ð²ÐµÐºÑ‚Ð¾Ñ€Ð° x = (xâ‚, ..., xâ‚™), Ñ‚Ð¾ Ð¾Ð±Ñ‹Ñ‡Ð½Ð°Ñ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ÑÑ Ð² Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚.</p>
+
+  <div class="formula">
+    f: â„â¿ â†’ â„, &nbsp;
+    âˆ‡f(x) =
+    [ âˆ‚f/âˆ‚xâ‚,
+      âˆ‚f/âˆ‚xâ‚‚,
+      ...,
+      âˆ‚f/âˆ‚xâ‚™ ]<sup>âŠ¤</sup>
+  </div>
+
+  <h3>Ð¡Ð¼Ñ‹ÑÐ» Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð°</h3>
+  <div class="step">1. Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð½Ð°Ð¸Ð±Ð¾Ð»ÑŒÑˆÐµÐ³Ð¾ Ñ€Ð¾ÑÑ‚Ð° Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</div>
+  <div class="step">2. ÐµÐ³Ð¾ Ð½Ð¾Ñ€Ð¼Ð° Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð±Ñ‹ÑÑ‚Ñ€Ð¾ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ñ€Ð°ÑÑ‚Ñ‘Ñ‚</div>
+  <div class="step">3. Ð°Ð½Ñ‚Ð¸Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ -âˆ‡f ÑƒÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÑÐ¿ÑƒÑÐºÐ°</div>
+
+  <div class="info">
+    â„¹ï¸ Ð’ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð¼Ñ‹ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð²ÑÐµÐ³Ð´Ð° Ð´Ð²Ð¸Ð¶ÐµÐ¼ÑÑ Ð¿Ð¾ <strong>-âˆ‡f</strong>, Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ Ñ…Ð¾Ñ‚Ð¸Ð¼ Ð¼Ð¸Ð½Ð¸Ð¼Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ loss.
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>ðŸ§® Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: gradient descent Ð½Ð° ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð¾Ð¹ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</h2>
+  <p class="muted">Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ: f(x,y)=axÂ²+byÂ²</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">a = <span class="val-display" id="qaVal">1.0</span></span>
+        <input type="range" min="0.2" max="3" step="0.1" value="1" id="qa" oninput="updateGD()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">b = <span class="val-display" id="qbVal">2.0</span></span>
+        <input type="range" min="0.2" max="3" step="0.1" value="2" id="qb" oninput="updateGD()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">Î· = <span class="val-display" id="lrVal">0.12</span></span>
+        <input type="range" min="0.01" max="0.4" step="0.01" value="0.12" id="lr" oninput="updateGD()">
+      </div>
+      <canvas id="gdCanvas" width="380" height="280" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="stepGD()">Ð¨Ð°Ð³ descent</button>
+        <button onclick="resetGD()">Ð¡Ð±Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ</button>
+      </div>
+    </div>
+    <div>
+      <h3>Ð§Ñ‚Ð¾ Ð¿Ñ€Ð¾Ð¸ÑÑ…Ð¾Ð´Ð¸Ñ‚</h3>
+      <div class="result-box" id="gdInfo"></div>
+      <div class="formula">
+        âˆ‡f(x,y) = [2ax, 2by]<sup>âŠ¤</sup>
+      </div>
+      <div class="step highlight">
+        [x, y] â† [x, y] - Î· âˆ‡f(x,y)
+      </div>
+      <div class="warn" style="font-size:0.88em;">
+        Ð•ÑÐ»Ð¸ Î· ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹, Ð¼Ð¾Ð¶Ð½Ð¾ Ð½Ð°Ñ‡Ð°Ñ‚ÑŒ Ð¿Ñ€Ñ‹Ð³Ð°Ñ‚ÑŒ Ñ‡ÐµÑ€ÐµÐ· Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼ Ð¸Ð»Ð¸ Ð´Ð°Ð¶Ðµ Ñ€Ð°ÑÑ…Ð¾Ð´Ð¸Ñ‚ÑŒÑÑ. Ð•ÑÐ»Ð¸ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹ â€” Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð±ÑƒÐ´ÐµÑ‚ Ð¾Ñ‡ÐµÐ½ÑŒ Ð¼ÐµÐ´Ð»ÐµÐ½Ð½Ñ‹Ð¼.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>ðŸ“š Ð§Ð°ÑÑ‚Ð½Ñ‹Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ Ð¸ Jacobian</h2>
+
+  <p>ÐšÐ¾Ð³Ð´Ð° Ð²Ñ…Ð¾Ð´ Ð¸ Ð²Ñ‹Ñ…Ð¾Ð´ â€” Ð²ÐµÐºÑ‚Ð¾Ñ€Ñ‹, Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†ÐµÐ¹ Jacobian.</p>
+
+  <div class="formula">
+    f: â„â¿ â†’ â„áµ,
+    &nbsp;
+    J<sub>f</sub>(x) =
+    [ âˆ‚fáµ¢/âˆ‚xâ±¼ ] âˆˆ â„<sup>mÃ—n</sup>
+  </div>
+
+  <h3>ÐŸÑ€Ð¸Ð¼ÐµÑ€</h3>
+  <div class="formula">
+    f(x,y) =
+    [ xÂ² + y,
+      sin(xy) ]
+  </div>
+
+  <div class="formula">
+    J =
+    [ 2x &nbsp; 1
+      ycos(xy) &nbsp; xcos(xy) ]
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Jacobian Ð² Ñ‚Ð¾Ñ‡ÐºÐµ</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">x = <span class="val-display" id="jxVal">1.00</span></span>
+        <input type="range" min="-2" max="2" step="0.01" value="1" id="jx" oninput="calcJacobian()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">y = <span class="val-display" id="jyVal">0.50</span></span>
+        <input type="range" min="-2" max="2" step="0.01" value="0.5" id="jy" oninput="calcJacobian()">
+      </div>
+      <div class="result-box" id="jacobianInfo"></div>
+    </div>
+    <div>
+      <h3>Ð¡Ð¼Ñ‹ÑÐ» Jacobian</h3>
+      <div class="step">ÑÑ‚Ñ€Ð¾ÐºÐ¸ â€” ÐºÐ°Ðº Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ð²Ñ‹Ñ…Ð¾Ð´</div>
+      <div class="step">ÑÑ‚Ð¾Ð»Ð±Ñ†Ñ‹ â€” Ð¿Ð¾ ÐºÐ°ÐºÐ¸Ð¼ Ð²Ñ…Ð¾Ð´Ð°Ð¼ Ð¸Ð·Ð¼ÐµÑ€ÑÐµÑ‚ÑÑ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ</div>
+      <div class="step">Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ Jacobian â€” Ð»ÑƒÑ‡ÑˆÐ°Ñ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ Ð²ÐµÐºÑ‚Ð¾Ñ€Ð½Ð¾Ð¹ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</div>
+      <div class="info" style="font-size:0.88em;">
+        â„¹ï¸ Jacobian Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ð¾ ÑÐºÑ€Ñ‹Ñ‚ Ð²Ð½ÑƒÑ‚Ñ€Ð¸ backprop, attention, Ð½Ð¾Ñ€Ð¼Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¹, softmax Ð¸ Ð²Ð¾Ð¾Ð±Ñ‰Ðµ Ð»ÑŽÐ±Ñ‹Ñ… Ð²ÐµÐºÑ‚Ð¾Ñ€Ð½Ñ‹Ñ… Ð¿Ñ€ÐµÐ¾Ð±Ñ€Ð°Ð·Ð¾Ð²Ð°Ð½Ð¸Ð¹.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>ðŸ”ï¸ Hessian Ð¸ ÐºÑ€Ð¸Ð²Ð¸Ð·Ð½Ð°</h2>
+
+  <p>Ð•ÑÐ»Ð¸ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ â€” ÑÑ‚Ð¾ Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð¿ÐµÑ€Ð²Ñ‹Ñ… Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ñ…, Ñ‚Ð¾ Hessian â€” Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° Ð²Ñ‚Ð¾Ñ€Ñ‹Ñ… Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ñ….</p>
+
+  <div class="formula">
+    H<sub>f</sub>(x) = [ âˆ‚Â²f / âˆ‚xáµ¢âˆ‚xâ±¼ ]
+  </div>
+
+  <h3>Ð§Ñ‚Ð¾ Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Hessian</h3>
+  <div class="step">1. Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½ÑƒÑŽ ÐºÑ€Ð¸Ð²Ð¸Ð·Ð½Ñƒ Ð¿Ð¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚Ð¸</div>
+  <div class="step">2. Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð±Ñ‹ÑÑ‚Ñ€Ð¾ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ ÑÐ°Ð¼ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚</div>
+  <div class="step">3. min / max / saddle Ñ‡ÐµÑ€ÐµÐ· Ð·Ð½Ð°ÐºÐ¸ ÑÐ¾Ð±ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ñ… Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ð¹</div>
+
+  <table>
+    <tr><th>Ð¡Ð»ÑƒÑ‡Ð°Ð¹</th><th>Ð¡Ð¾Ð±ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ Hessian</th><th>Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</th></tr>
+    <tr><td>Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼</td><td>Ð²ÑÐµ &gt; 0</td><td>Ð¿Ð¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚ÑŒ "Ñ‡Ð°ÑˆÐ°"</td></tr>
+    <tr><td>Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼</td><td>Ð²ÑÐµ &lt; 0</td><td>Ð¿Ð¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚ÑŒ "ÐºÑƒÐ¿Ð¾Ð»"</td></tr>
+    <tr><td>ÑÐµÐ´Ð»Ð¾</td><td>Ñ€Ð°Ð·Ð½Ñ‹Ñ… Ð·Ð½Ð°ÐºÐ¾Ð²</td><td>Ð² Ð¾Ð´Ð½Ð¾Ð¼ Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ð¸ Ð²Ð²ÐµÑ€Ñ…, Ð² Ð´Ñ€ÑƒÐ³Ð¾Ð¼ Ð²Ð½Ð¸Ð·</td></tr>
+  </table>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð°</h3>
+      <p class="small">f(x,y)=axÂ²+bxy+cyÂ²</p>
+      <div style="margin:8px 0;">
+        <span class="muted">a = <span class="val-display" id="haVal">1.0</span></span>
+        <input type="range" min="-2" max="2" step="0.1" value="1" id="ha" oninput="calcHessian()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">b = <span class="val-display" id="hbVal">0.0</span></span>
+        <input type="range" min="-2" max="2" step="0.1" value="0" id="hb" oninput="calcHessian()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">c = <span class="val-display" id="hcVal">1.5</span></span>
+        <input type="range" min="-2" max="2" step="0.1" value="1.5" id="hc" oninput="calcHessian()">
+      </div>
+      <div class="result-box" id="hessianInfo"></div>
+    </div>
+    <div>
+      <h3>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹</h3>
+      <div class="formula">
+        âˆ‡f =
+        [ 2ax + by,
+          bx + 2cy ]
+      </div>
+      <div class="formula">
+        H =
+        [ 2a &nbsp; b
+          b &nbsp; 2c ]
+      </div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Hessian Ð¾ÑÐ¾Ð±ÐµÐ½Ð½Ð¾ Ð²Ð°Ð¶ÐµÐ½ Ð² Ñ‚ÐµÐ¾Ñ€Ð¸Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸: Ð¾Ð½ Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚ Ð½Ðµ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ ÐºÑƒÐ´Ð° Ð¸Ð´Ñ‚Ð¸, Ð½Ð¾ Ð¸ Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ "ÐºÑ€ÑƒÑ‚Ð°Ñ" Ð¿Ð¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚ÑŒ. Ð­Ñ‚Ð¾ ÑÐ²ÑÐ·Ñ‹Ð²Ð°ÐµÑ‚ Ð¼Ð°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð· Ñ Newton-type Ð¼ÐµÑ‚Ð¾Ð´Ð°Ð¼Ð¸ Ð¸ curvature-aware Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸ÐµÐ¹.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>ðŸªœ Taylor expansion: Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð¸ ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ</h2>
+
+  <h3>ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº</h3>
+  <div class="formula">
+    f(x + Î”x) â‰ˆ f(x) + f'(x)Î”x
+  </div>
+
+  <h3>Ð”Ð»Ñ Ð¼Ð½Ð¾Ð³Ð¸Ñ… Ð¿ÐµÑ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ñ…</h3>
+  <div class="formula">
+    f(x + Î”x) â‰ˆ f(x) + âˆ‡f(x)<sup>âŠ¤</sup>Î”x
+  </div>
+
+  <h3>Ð’Ñ‚Ð¾Ñ€Ð¾Ð¹ Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº</h3>
+  <div class="formula">
+    f(x + Î”x) â‰ˆ f(x) + âˆ‡f(x)<sup>âŠ¤</sup>Î”x + 1/2 Â· Î”x<sup>âŠ¤</sup>HÎ”x
+  </div>
+
+  <div class="info">
+    â„¹ï¸ ÐŸÐµÑ€Ð²Ñ‹Ð¹ Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚ Ð¾ Ð½Ð°ÐºÐ»Ð¾Ð½Ðµ, Ð²Ñ‚Ð¾Ñ€Ð¾Ð¹ â€” Ð¾ ÐºÑ€Ð¸Ð²Ð¸Ð·Ð½Ðµ. ÐŸÐ¾ÑÑ‚Ð¾Ð¼Ñƒ gradient descent Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿ÐµÑ€Ð²Ñ‹Ð¹ Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº, Ð° Newton-like Ð¼ÐµÑ‚Ð¾Ð´Ñ‹ â€” ÐµÑ‰Ñ‘ Ð¸ Ð²Ñ‚Ð¾Ñ€Ð¾Ð¹.
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>ðŸ”— ÐšÐ°Ðº Ð²ÑÑ‘ ÑÑ‚Ð¾ ÑÐ²ÑÐ·Ð°Ð½Ð¾ Ñ backprop</h2>
+
+  <p>ÐŸÑƒÑÑ‚ÑŒ ÑÐµÑ‚ÑŒ â€” ÑÑ‚Ð¾ ÐºÐ¾Ð¼Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹:</p>
+  <div class="formula">
+    x â†’ zÂ¹ â†’ aÂ¹ â†’ zÂ² â†’ aÂ² â†’ ... â†’ L
+  </div>
+
+  <p>Ð¢Ð¾Ð³Ð´Ð° Ð¿Ð¾ chain rule:</p>
+  <div class="formula">
+    âˆ‚L/âˆ‚w = âˆ‚L/âˆ‚a Â· âˆ‚a/âˆ‚z Â· âˆ‚z/âˆ‚w
+  </div>
+
+  <div class="step blue">forward pass ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„</div>
+  <div class="step green">backward pass Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÐµÑ‚ chain rule Ð¾Ñ‚ ÐºÐ¾Ð½Ñ†Ð° Ðº Ð½Ð°Ñ‡Ð°Ð»Ñƒ</div>
+  <div class="step highlight">Ð² ÐºÐ°Ð¶Ð´Ð¾Ð¼ ÑƒÐ·Ð»Ðµ ÑÑ‡Ð¸Ñ‚Ð°ÑŽÑ‚ÑÑ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ðµ</div>
+
+  <div class="intuition">
+    ðŸ’¡ Backpropagation â€” ÑÑ‚Ð¾ Ð½Ðµ "Ð¼Ð°Ð³Ð¸Ñ Ð½ÐµÐ¹Ñ€Ð¾ÑÐµÑ‚ÐµÐ¹", Ð° Ð¿Ñ€Ð¾ÑÑ‚Ð¾ ÑÐ¸ÑÑ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¾Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð¼Ð°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð·Ð° Ðº Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ ÐºÐ¾Ð¼Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹.
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>ðŸ§ª Ð§Ð°ÑÑ‚Ñ‹Ðµ Ð¿Ð°Ñ‚Ñ‚ÐµÑ€Ð½Ñ‹ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ñ… Ð² ML</h2>
+
+  <table>
+    <tr><th>Ð’Ñ‹Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ</th><th>ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ</th><th>ÐšÐ¾Ð¼Ð¼ÐµÐ½Ñ‚Ð°Ñ€Ð¸Ð¹</th></tr>
+    <tr><td>w<sup>âŠ¤</sup>x + b Ð¿Ð¾ w</td><td>x</td><td>Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð²ÐµÑÐ°Ð¼ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð° = Ð²Ñ…Ð¾Ð´</td></tr>
+    <tr><td>w<sup>âŠ¤</sup>x + b Ð¿Ð¾ x</td><td>w</td><td>Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð²Ñ…Ð¾Ð´Ñƒ = Ð²ÐµÑÐ°</td></tr>
+    <tr><td>1/2 ||x||Â²</td><td>x</td><td>Ð¾Ñ‡ÐµÐ½ÑŒ Ñ‡Ð°ÑÑ‚Ñ‹Ð¹ ÑˆÐ°Ð±Ð»Ð¾Ð½</td></tr>
+    <tr><td>||x||Â² = x<sup>âŠ¤</sup>x</td><td>2x</td><td>L2 penalty, distance</td></tr>
+    <tr><td>log Ïƒ(z)</td><td>1-Ïƒ(z)</td><td>Ð»Ð¾Ð³Ð¸ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ°Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒ</td></tr>
+    <tr><td>-log Ïƒ(z)</td><td>Ïƒ(z)-1</td><td>BCE Ð¿Ñ€Ð¸ y=1</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>ðŸ’» NumPy / PyTorch: Ð°Ð½Ð°Ð»Ð¸Ñ‚Ð¸ÐºÐ° Ð¸ autograd</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">NumPy: chain rule Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ</button>
+    <button onclick="showCode(1,this)">PyTorch: autograd</button>
+    <button onclick="showCode(2,this)">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð¾Ð¹ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">import numpy as np
+
+# h(x) = sin(x^2 + 1)
+x = 1.2
+
+u = x**2
+v = u + 1
+h = np.sin(v)
+
+# chain rule
+dh_dv = np.cos(v)
+dv_du = 1.0
+du_dx = 2*x
+
+dh_dx = dh_dv * dv_du * du_dx
+
+print("h(x) =", h)
+print("dh/dx =", dh_dx)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import torch
+
+x = torch.tensor(1.2, requires_grad=True)
+
+h = torch.sin(x**2 + 1)
+h.backward()
+
+print("h =", h.item())
+print("dh/dx =", x.grad.item())
+
+# autograd ÑÐ°Ð¼ Ð¿Ð¾ÑÑ‚Ñ€Ð¾Ð¸Ð» Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„
+# Ð¸ Ð¿Ñ€Ð¸Ð¼ÐµÐ½Ð¸Ð» chain rule Ð½Ð°Ð·Ð°Ð´</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import torch
+
+# f(x, y) = x^2 + 2y^2
+xy = torch.tensor([2.0, -1.0], requires_grad=True)
+
+f = xy[0]**2 + 2*xy[1]**2
+f.backward()
+
+print("f =", f.item())
+print("grad =", xy.grad)  # [2x, 4y] = [4, -4]
+
+# gradient descent step
+lr = 0.1
+with torch.no_grad():
+    xy -= lr * xy.grad
+    xy.grad.zero_()
+
+print("new point =", xy)</div>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>ðŸŽ¯ Ð§Ñ‚Ð¾ Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð²Ñ‹Ð½ÐµÑÑ‚Ð¸ Ð¸Ð· Ñ‚ÐµÐ¼Ñ‹</h2>
+
+  <div class="step highlight">ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ = Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð°Ñ ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</div>
+  <div class="step highlight">ÐšÐ°ÑÐ°Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ = Ð»ÑƒÑ‡ÑˆÐ°Ñ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ</div>
+  <div class="step highlight">Chain rule = Ð¾ÑÐ½Ð¾Ð²Ð° backpropagation</div>
+  <div class="step highlight">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ = Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð½Ð°Ð¸Ð±Ð¾Ð»ÑŒÑˆÐµÐ³Ð¾ Ñ€Ð¾ÑÑ‚Ð°</div>
+  <div class="step highlight">-âˆ‡f = Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÑÐ¿ÑƒÑÐºÐ°</div>
+  <div class="step highlight">Jacobian = Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ Ð²ÐµÐºÑ‚Ð¾Ñ€Ð½Ð¾Ð¹ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</div>
+  <div class="step highlight">Hessian = Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° ÐºÑ€Ð¸Ð²Ð¸Ð·Ð½Ñ‹</div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð•ÑÐ»Ð¸ ÑÐ¾Ð²ÑÐµÐ¼ ÑƒÐ¿Ñ€Ð¾ÑÑ‚Ð¸Ñ‚ÑŒ: Ð¼Ð°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð· Ð² ML â€” ÑÑ‚Ð¾ Ð½Ð°ÑƒÐºÐ° Ð¾ Ñ‚Ð¾Ð¼, ÐºÐ°Ðº Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ðµ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ñ€Ð°ÑÐ¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑŽÑ‚ÑÑ Ð¿Ð¾ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¸ Ð²Ð»Ð¸ÑÑŽÑ‚ Ð½Ð° Ð¸Ñ‚Ð¾Ð³Ð¾Ð²Ñ‹Ð¹ loss.
+  </div>
+</div>
+
+<script>
+// ===== HELPERS =====
+function drawAxes(ctx, W, H, xMin, xMax, yMin, yMax){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 0.8;
+  const x0 = (0 - xMin) / (xMax - xMin) * W;
+  const y0 = H - (0 - yMin) / (yMax - yMin) * H;
+  ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, H); ctx.stroke();
+}
+function fx(type, x){
+  if(type === 'quad') return x*x;
+  if(type === 'cube') return x*x*x - 3*x;
+  if(type === 'sin') return Math.sin(x);
+  if(type === 'exp') return Math.exp(0.6*x);
+}
+function dfx(type, x){
+  if(type === 'quad') return 2*x;
+  if(type === 'cube') return 3*x*x - 3;
+  if(type === 'sin') return Math.cos(x);
+  if(type === 'exp') return 0.6*Math.exp(0.6*x);
+}
+function mapX(x, xMin, xMax, W){ return (x - xMin) / (xMax - xMin) * W; }
+function mapY(y, yMin, yMax, H){ return H - (y - yMin) / (yMax - yMin) * H; }
+
+// ===== SECTION 3: DERIVATIVE DEMO =====
+function drawDerivativeDemo(){
+  const type = document.getElementById('fnSelect').value;
+  const x0 = +document.getElementById('x0slider').value;
+  document.getElementById('x0val').textContent = x0.toFixed(2);
+
+  let xMin=-4, xMax=4, yMin=-8, yMax=8;
+  if(type === 'exp'){ yMin=-1; yMax=12; }
+
+  const c = document.getElementById('derivativeCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx, W, H, xMin, xMax, yMin, yMax);
+
+  // function
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for(let px=0; px<=W; px++){
+    const x = xMin + (px/W)*(xMax-xMin);
+    const y = fx(type,x);
+    const cx = mapX(x,xMin,xMax,W), cy = mapY(y,yMin,yMax,H);
+    if(px===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  // tangent
+  const y0 = fx(type,x0);
+  const m = dfx(type,x0);
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for(let px=0; px<=W; px++){
+    const x = xMin + (px/W)*(xMax-xMin);
+    const y = y0 + m*(x - x0);
+    const cx = mapX(x,xMin,xMax,W), cy = mapY(y,yMin,yMax,H);
+    if(px===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  // point
+  ctx.beginPath();
+  ctx.arc(mapX(x0,xMin,xMax,W), mapY(y0,yMin,yMax,H), 4, 0, Math.PI*2);
+  ctx.fillStyle = '#10b981';
+  ctx.fill();
+
+  document.getElementById('derivativeInfo').innerHTML = `
+    <div class="step">xâ‚€ = ${x0.toFixed(4)}</div>
+    <div class="step">f(xâ‚€) = <span class="hl-blue">${y0.toFixed(6)}</span></div>
+    <div class="step highlight">fâ€²(xâ‚€) = <span class="hl-amber">${m.toFixed(6)}</span></div>
+    <div class="step">${m > 0 ? 'Ð½Ð°ÐºÐ»Ð¾Ð½ Ð¿Ð¾Ð»Ð¾Ð¶Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ â†’ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ Ñ€Ð°ÑÑ‚Ñ‘Ñ‚' : (m < 0 ? 'Ð½Ð°ÐºÐ»Ð¾Ð½ Ð¾Ñ‚Ñ€Ð¸Ñ†Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ â†’ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ ÑƒÐ±Ñ‹Ð²Ð°ÐµÑ‚' : 'Ð½Ð°ÐºÐ»Ð¾Ð½ 0 â†’ ÑÑ‚Ð°Ñ†Ð¸Ð¾Ð½Ð°Ñ€Ð½Ð°Ñ Ñ‚Ð¾Ñ‡ÐºÐ°')}</div>
+    <div class="step">ÐºÐ°ÑÐ°Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ: y â‰ˆ f(xâ‚€) + fâ€²(xâ‚€)(x-xâ‚€)</div>
+  `;
+}
+
+// ===== SECTION 5: CHAIN RULE =====
+function calcChainRule(){
+  const x = +document.getElementById('chainX').value;
+  document.getElementById('chainXVal').textContent = x.toFixed(2);
+
+  const u = x*x;
+  const v = u + 1;
+  const h = Math.sin(v);
+
+  const dh_dv = Math.cos(v);
+  const dv_du = 1;
+  const du_dx = 2*x;
+  const dh_dx = dh_dv * dv_du * du_dx;
+
+  document.getElementById('chainInfo').innerHTML = `
+    <div class="step">u = xÂ² = ${u.toFixed(6)}</div>
+    <div class="step">v = u + 1 = ${v.toFixed(6)}</div>
+    <div class="step">h = sin(v) = <span class="hl-blue">${h.toFixed(6)}</span></div>
+    <div class="step green">dh/dv = cos(v) = ${dh_dv.toFixed(6)}</div>
+    <div class="step green">dv/du = 1</div>
+    <div class="step green">du/dx = 2x = ${du_dx.toFixed(6)}</div>
+    <div class="step highlight">dh/dx = (dh/dv)(dv/du)(du/dx) = <span class="hl-amber">${dh_dx.toFixed(6)}</span></div>
+  `;
+}
+
+// ===== SECTION 7: GD =====
+let gdState = { x: 2.4, y: -1.6 };
+
+function drawGD(){
+  const a = +document.getElementById('qa').value;
+  const b = +document.getElementById('qb').value;
+  const lr = +document.getElementById('lr').value;
+  document.getElementById('qaVal').textContent = a.toFixed(1);
+  document.getElementById('qbVal').textContent = b.toFixed(1);
+  document.getElementById('lrVal').textContent = lr.toFixed(2);
+
+  const c = document.getElementById('gdCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  // contour-like background
+  for(let i=0;i<W;i+=4){
+    for(let j=0;j<H;j+=4){
+      const x = (i/W)*6 - 3;
+      const y = -((j/H)*6 - 3);
+      const f = a*x*x + b*y*y;
+      const v = Math.max(0, Math.min(255, Math.floor(255 - f*18)));
+      ctx.fillStyle = `rgba(${12}, ${20+v/6}, ${28+v/10}, 0.55)`;
+      ctx.fillRect(i,j,4,4);
+    }
+  }
+
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+  const px = (gdState.x + 3)/6 * W;
+  const py = ((3 - gdState.y)/6) * H;
+
+  ctx.beginPath();
+  ctx.arc(px,py,5,0,Math.PI*2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+
+  const gx = 2*a*gdState.x;
+  const gy = 2*b*gdState.y;
+  const scale = 18;
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px,py);
+  ctx.lineTo(px + gx*scale, py - gy*scale);
+  ctx.stroke();
+
+  const fval = a*gdState.x*gdState.x + b*gdState.y*gdState.y;
+  const gnorm = Math.sqrt(gx*gx + gy*gy);
+
+  document.getElementById('gdInfo').innerHTML = `
+    <div class="step">Ñ‚ÐµÐºÑƒÑ‰Ð°Ñ Ñ‚Ð¾Ñ‡ÐºÐ°: [${gdState.x.toFixed(4)}, ${gdState.y.toFixed(4)}]</div>
+    <div class="step">f(x,y) = <span class="hl-blue">${fval.toFixed(6)}</span></div>
+    <div class="step">âˆ‡f = [${gx.toFixed(4)}, ${gy.toFixed(4)}]</div>
+    <div class="step">||âˆ‡f|| = ${gnorm.toFixed(6)}</div>
+    <div class="step highlight">ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑˆÐ°Ð³: [x,y] - Î·âˆ‡f</div>
+  `;
+}
+function stepGD(){
+  const a = +document.getElementById('qa').value;
+  const b = +document.getElementById('qb').value;
+  const lr = +document.getElementById('lr').value;
+  const gx = 2*a*gdState.x;
+  const gy = 2*b*gdState.y;
+  gdState.x -= lr*gx;
+  gdState.y -= lr*gy;
+  drawGD();
+}
+function resetGD(){
+  gdState = { x: 2.4, y: -1.6 };
+  drawGD();
+}
+function updateGD(){ drawGD(); }
+
+// ===== SECTION 8: JACOBIAN =====
+function calcJacobian(){
+  const x = +document.getElementById('jx').value;
+  const y = +document.getElementById('jy').value;
+  document.getElementById('jxVal').textContent = x.toFixed(2);
+  document.getElementById('jyVal').textContent = y.toFixed(2);
+
+  const f1 = x*x + y;
+  const f2 = Math.sin(x*y);
+
+  const j11 = 2*x;
+  const j12 = 1;
+  const cosxy = Math.cos(x*y);
+  const j21 = y*cosxy;
+  const j22 = x*cosxy;
+
+  document.getElementById('jacobianInfo').innerHTML = `
+    <div class="step">fâ‚(x,y)=xÂ²+y = ${f1.toFixed(6)}</div>
+    <div class="step">fâ‚‚(x,y)=sin(xy) = ${f2.toFixed(6)}</div>
+    <div class="step highlight">J = [[${j11.toFixed(6)}, ${j12.toFixed(6)}], [${j21.toFixed(6)}, ${j22.toFixed(6)}]]</div>
+    <div class="step">âˆ‚fâ‚/âˆ‚x = ${j11.toFixed(6)}, âˆ‚fâ‚/âˆ‚y = 1</div>
+    <div class="step">âˆ‚fâ‚‚/âˆ‚x = ${j21.toFixed(6)}, âˆ‚fâ‚‚/âˆ‚y = ${j22.toFixed(6)}</div>
+  `;
+}
+
+// ===== SECTION 9: HESSIAN =====
+function eigen2x2(a,b,c,d){
+  const tr = a + d;
+  const det = a*d - b*c;
+  const disc = Math.sqrt(Math.max(0, tr*tr - 4*det));
+  return [(tr + disc)/2, (tr - disc)/2];
+}
+function calcHessian(){
+  const a = +document.getElementById('ha').value;
+  const b = +document.getElementById('hb').value;
+  const c = +document.getElementById('hc').value;
+  document.getElementById('haVal').textContent = a.toFixed(1);
+  document.getElementById('hbVal').textContent = b.toFixed(1);
+  document.getElementById('hcVal').textContent = c.toFixed(1);
+
+  const H11 = 2*a, H12 = b, H21 = b, H22 = 2*c;
+  const eig = eigen2x2(H11,H12,H21,H22);
+  let kind = '';
+  if(eig[0] > 0 && eig[1] > 0) kind = 'Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ Ð²Ñ‹Ð¿ÑƒÐºÐ»Ð°Ñ Ñ‡Ð°ÑˆÐ° (Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼)';
+  else if(eig[0] < 0 && eig[1] < 0) kind = 'Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ð¾ Ð²Ð¾Ð³Ð½ÑƒÑ‚Ñ‹Ð¹ ÐºÑƒÐ¿Ð¾Ð» (Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼)';
+  else kind = 'ÑÐµÐ´Ð»Ð¾Ð²Ð°Ñ Ð³ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ';
+
+  document.getElementById('hessianInfo').innerHTML = `
+    <div class="step highlight">H = [[${H11.toFixed(4)}, ${H12.toFixed(4)}], [${H21.toFixed(4)}, ${H22.toFixed(4)}]]</div>
+    <div class="step">Î»â‚ â‰ˆ ${eig[0].toFixed(6)}</div>
+    <div class="step">Î»â‚‚ â‰ˆ ${eig[1].toFixed(6)}</div>
+    <div class="step">${kind}</div>
+  `;
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// INIT
+drawDerivativeDemo();
+calcChainRule();
+drawGD();
+calcJacobian();
+calcHessian();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+
+

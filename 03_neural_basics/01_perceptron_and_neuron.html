@@ -1,0 +1,606 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.05em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 68px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.neuron-svg { width: 100%; }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; }
+canvas { border-radius: 8px; cursor: crosshair; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Ð‘Ð»Ð¾Ðº 3 â€” ÐÐµÐ¹Ñ€Ð¾Ð½ Ð¸Ð·Ð½ÑƒÑ‚Ñ€Ð¸</span>
+  <span class="tag tag-active">3.1 ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ Ð¸ Ð½ÐµÐ¹Ñ€Ð¾Ð½</span>
+  <span class="tag tag-block">3.2 Ð¤ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸</span>
+  <span class="tag tag-block">3.3 Forward pass</span>
+  <span class="tag tag-block">3.4 Loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</span>
+</div>
+
+<h1>3.1 ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ Ð¸ Ð½ÐµÐ¹Ñ€Ð¾Ð½</h1>
+<p class="muted">y = f(w<sup>âŠ¤</sup>x + b) â€” Ð¾Ñ‚ Ð±Ð¸Ð¾Ð»Ð¾Ð³Ð¸Ð¸ Ðº Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐµ</p>
+
+<!-- SECTION 1: Ð˜ÑÑ‚Ð¾Ñ€Ð¸Ñ Ð¸ Ð±Ð¸Ð¾Ð»Ð¾Ð³Ð¸Ñ -->
+<div class="card">
+  <h2>ðŸ§  ÐžÑ‚ Ð±Ð¸Ð¾Ð»Ð¾Ð³Ð¸Ð¸ Ðº Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐµ</h2>
+  <p>ÐÐµÐ¹Ñ€Ð¾Ð½ Ð² Ð¼Ð¾Ð·Ð³Ðµ: Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÐ¸Ð³Ð½Ð°Ð»Ñ‹ Ñ‡ÐµÑ€ÐµÐ· Ð´ÐµÐ½Ð´Ñ€Ð¸Ñ‚Ñ‹ â†’ ÑÑƒÐ¼Ð¼Ð¸Ñ€ÑƒÐµÑ‚ â†’ ÐµÑÐ»Ð¸ Ð¿Ñ€ÐµÐ²Ñ‹ÑˆÐ°ÐµÑ‚ Ð¿Ð¾Ñ€Ð¾Ð³, Â«ÑÑ‚Ñ€ÐµÐ»ÑÐµÑ‚Â» Ð¿Ð¾ Ð°ÐºÑÐ¾Ð½Ñƒ.</p>
+  <br>
+  <div class="grid-2">
+    <div style="background:#0d1117;border-radius:8px;padding:14px;">
+      <h3>Ð‘Ð¸Ð¾Ð»Ð¾Ð³Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½</h3>
+      <svg viewBox="0 0 220 120" style="width:100%">
+        <!-- dendrites -->
+        <line x1="20" y1="30" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="20" y1="60" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="20" y1="90" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <text x="5" y="33" fill="#60a5fa" font-size="9">xâ‚</text>
+        <text x="5" y="63" fill="#60a5fa" font-size="9">xâ‚‚</text>
+        <text x="5" y="93" fill="#60a5fa" font-size="9">xâ‚ƒ</text>
+        <!-- body -->
+        <circle cx="100" cy="60" r="22" fill="#1f2d1a" stroke="#10b981" stroke-width="2"/>
+        <text x="100" y="55" fill="#10b981" font-size="9" text-anchor="middle">Î£</text>
+        <text x="100" y="68" fill="#8b949e" font-size="8" text-anchor="middle">soma</text>
+        <!-- axon -->
+        <line x1="122" y1="60" x2="190" y2="60" stroke="#f59e0b" stroke-width="2"/>
+        <polygon points="190,55 200,60 190,65" fill="#f59e0b"/>
+        <text x="155" y="52" fill="#8b949e" font-size="8">axon</text>
+        <!-- threshold label -->
+        <text x="100" y="95" fill="#8b949e" font-size="8" text-anchor="middle">Ð¿Ð¾Ñ€Ð¾Ð³ Î¸</text>
+      </svg>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:14px;">
+      <h3>ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½</h3>
+      <svg viewBox="0 0 220 120" style="width:100%">
+        <line x1="18" y1="30" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="18" y1="60" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <line x1="18" y1="90" x2="80" y2="60" stroke="#60a5fa" stroke-width="2"/>
+        <text x="3" y="33" fill="#60a5fa" font-size="9">xâ‚wâ‚</text>
+        <text x="3" y="63" fill="#60a5fa" font-size="9">xâ‚‚wâ‚‚</text>
+        <text x="3" y="93" fill="#60a5fa" font-size="9">xâ‚ƒwâ‚ƒ</text>
+        <circle cx="100" cy="60" r="22" fill="#1f2d1a" stroke="#10b981" stroke-width="2"/>
+        <text x="100" y="55" fill="#10b981" font-size="9" text-anchor="middle">Î£+b</text>
+        <text x="100" y="67" fill="#8b949e" font-size="8" text-anchor="middle">z=wâŠ¤x+b</text>
+        <!-- activation -->
+        <rect x="134" y="50" width="24" height="20" rx="4" fill="#1a1506" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="146" y="63" fill="#f59e0b" font-size="9" text-anchor="middle">f</text>
+        <line x1="122" y1="60" x2="134" y2="60" stroke="#f59e0b" stroke-width="1.5"/>
+        <line x1="158" y1="60" x2="200" y2="60" stroke="#a78bfa" stroke-width="2"/>
+        <polygon points="198,55 208,60 198,65" fill="#a78bfa"/>
+        <text x="185" y="52" fill="#a78bfa" font-size="8">y</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐ° -->
+<div class="card">
+  <h2>ðŸ“ ÐŸÐ¾Ð»Ð½Ð°Ñ Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐ° Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð°</h2>
+  
+  <h3>Ð’Ñ…Ð¾Ð´Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¸ Ð²ÐµÑÐ°</h3>
+  <div class="formula">
+    x = [xâ‚, xâ‚‚, ..., xâ‚™]<sup>âŠ¤</sup> âˆˆ â„â¿ &nbsp;&nbsp;&nbsp; (Ð²Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€)<br>
+    w = [wâ‚, wâ‚‚, ..., wâ‚™]<sup>âŠ¤</sup> âˆˆ â„â¿ &nbsp;&nbsp;&nbsp; (Ð²ÐµÑÐ°)<br>
+    b âˆˆ â„ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (bias)
+  </div>
+
+  <h3>Ð”Ð²Ð° ÑˆÐ°Ð³Ð° Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ñ</h3>
+  <div class="formula">
+    <span class="hl-blue">z</span> = <span class="hl-amber">w<sup>âŠ¤</sup>x + b</span> = wâ‚xâ‚ + wâ‚‚xâ‚‚ + ... + wâ‚™xâ‚™ + b &nbsp;&nbsp; (pre-activation / Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ)<br>
+    <span class="hl-purple">y</span> = <span class="hl-green">f(z)</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (activation / Ð½ÐµÐ»Ð¸Ð½ÐµÐ¹Ð½Ð¾ÑÑ‚ÑŒ)
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ <strong>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Ð´Ð²Ð° ÑˆÐ°Ð³Ð°?</strong> Ð›Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ñ‡Ð°ÑÑ‚ÑŒ z â€” ÑÑ‚Ð¾ Â«Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð¾Ðµ Ð³Ð¾Ð»Ð¾ÑÐ¾Ð²Ð°Ð½Ð¸ÐµÂ» Ð²Ñ…Ð¾Ð´Ð¾Ð². Ð¤ÑƒÐ½ÐºÑ†Ð¸Ñ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸ f â€” ÑÑ‚Ð¾ Â«Ñ€ÐµÑˆÐµÐ½Ð¸ÐµÂ» Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð° Ñ‡Ñ‚Ð¾ Ð´ÐµÐ»Ð°Ñ‚ÑŒ Ñ Ñ€ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚Ð¾Ð¼. Ð‘ÐµÐ· f Ð²ÑÑ ÑÐµÑ‚ÑŒ ÑÐºÐ¾Ð»Ð»Ð°Ð¿ÑÐ¸Ñ€Ð¾Ð²Ð°Ð»Ð° Ð±Ñ‹ Ð² Ð¾Ð´Ð½Ñƒ Ð»Ð¸Ð½ÐµÐ¹Ð½ÑƒÑŽ Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸ÑŽ.
+  </div>
+
+  <h3>Ð¡ÐºÐ°Ð»ÑÑ€Ð½Ð¾Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ â€” ÑÐµÑ€Ð´Ñ†Ðµ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð°</h3>
+  <div class="formula">
+    w<sup>âŠ¤</sup>x = Î£áµ¢ wáµ¢xáµ¢ = |w|Â·|x|Â·cos(Î¸)
+  </div>
+  <p>Ð­Ñ‚Ð¾ <strong>ÐºÐ¾ÑÐ¸Ð½ÑƒÑÐ½Ð¾Ðµ ÑÑ…Ð¾Ð´ÑÑ‚Ð²Ð¾</strong> Ð´Ð¾ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸: Ð½ÐµÐ¹Ñ€Ð¾Ð½ ÑÐ¸Ð»ÑŒÐ½Ð¾ Ð°ÐºÑ‚Ð¸Ð²Ð¸Ñ€ÑƒÐµÑ‚ÑÑ, ÐºÐ¾Ð³Ð´Ð° Ð²Ñ…Ð¾Ð´ x Ð¿Ð¾Ñ…Ð¾Ð¶ Ð½Ð° Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð²ÐµÑÐ¾Ð² w (ÑƒÐ³Ð¾Ð» Î¸ Ð¼Ð°Ð» â†’ cos(Î¸) â‰ˆ 1).</p>
+</div>
+
+<!-- SECTION 3: Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ ÐºÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð° -->
+<div class="card">
+  <h2>ðŸ§® Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½-ÐºÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€</h2>
+  <p class="muted">Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹ Ð²ÐµÑÐ°, bias Ð¸ Ð²Ñ…Ð¾Ð´Ñ‹ â€” ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ Ð¿Ð¾ÑˆÐ°Ð³Ð¾Ð²Ð¾</p>
+  <br>
+
+  <div class="grid-3">
+    <div>
+      <h3>Ð’Ñ…Ð¾Ð´Ñ‹ x</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">xâ‚</span>
+          <input type="number" id="x1" value="2" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">xâ‚‚</span>
+          <input type="number" id="x2" value="-1" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">xâ‚ƒ</span>
+          <input type="number" id="x3" value="0.5" step="0.1" oninput="calcNeuron()">
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Ð’ÐµÑÐ° w</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">wâ‚</span>
+          <input type="number" id="w1" value="0.5" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">wâ‚‚</span>
+          <input type="number" id="w2" value="-0.3" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">wâ‚ƒ</span>
+          <input type="number" id="w3" value="0.8" step="0.1" oninput="calcNeuron()">
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="muted" style="width:24px">b</span>
+          <input type="number" id="bias" value="0.1" step="0.1" oninput="calcNeuron()">
+        </div>
+        <div style="margin-top:8px;">
+          <span class="muted" style="font-size:0.85em;">ÐÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ñ f:</span><br>
+          <select id="actFn" onchange="calcNeuron()" style="background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;margin-top:4px;width:100%;">
+            <option value="relu">ReLU</option>
+            <option value="sigmoid">Sigmoid</option>
+            <option value="tanh">Tanh</option>
+            <option value="linear">Linear</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box" id="calcResult">
+    <!-- Ð·Ð°Ð¿Ð¾Ð»Ð½ÑÐµÑ‚ÑÑ JS -->
+  </div>
+</div>
+
+<!-- SECTION 4: Ð“ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ ÑÐ¼Ñ‹ÑÐ» -->
+<div class="card">
+  <h2>ðŸ“Š Ð“ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ ÑÐ¼Ñ‹ÑÐ»: Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ-Ñ€Ð°Ð·Ð´ÐµÐ»Ð¸Ñ‚ÐµÐ»ÑŒ</h2>
+  
+  <p>ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ (Ð½ÐµÐ¹Ñ€Ð¾Ð½ ÑÐ¾ step-Ñ„ÑƒÐ½ÐºÑ†Ð¸ÐµÐ¹) Ð´ÐµÐ»Ð¸Ñ‚ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ð¾ Ð½Ð° Ð´Ð²Ð° Ð¿Ð¾Ð»ÑƒÐ¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ð° Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒÑŽ:</p>
+  <div class="formula">
+    w<sup>âŠ¤</sup>x + b = 0 &nbsp;&nbsp; â† Ð³Ñ€Ð°Ð½Ð¸Ñ†Ð° Ñ€ÐµÑˆÐµÐ½Ð¸Ñ (decision boundary)
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ 2D (ÐºÐ»Ð¸ÐºÐ°Ð¹ Ð´Ð»Ñ Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ñ Ñ‚Ð¾Ñ‡ÐµÐº)</h3>
+      <canvas id="hyperCanvas" width="300" height="280" style="background:#0d1117;border:1px solid var(--border);border-radius:8px;" onclick="addPoint(event)"></canvas>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setClass(0)" id="btn0" class="active">ðŸ”µ ÐšÐ»Ð°ÑÑ 0</button>
+        <button onclick="setClass(1)" id="btn1">ðŸ”´ ÐšÐ»Ð°ÑÑ 1</button>
+        <button onclick="clearPoints()">ÐžÑ‡Ð¸ÑÑ‚Ð¸Ñ‚ÑŒ</button>
+      </div>
+    </div>
+    <div>
+      <h3>ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ° Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚Ð¸</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">wâ‚ (Ð½Ð°ÐºÐ»Ð¾Ð½): <span class="val-display" id="hw1v">1.0</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="1" id="hw1" oninput="updateHyperplane()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">wâ‚‚ (Ð½Ð°ÐºÐ»Ð¾Ð½): <span class="val-display" id="hw2v">1.0</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="1" id="hw2" oninput="updateHyperplane()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">b (ÑÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ): <span class="val-display" id="hbv">0.0</span></span>
+        <input type="range" min="-5" max="5" step="0.1" value="0" id="hb" oninput="updateHyperplane()">
+      </div>
+      <div class="result-box" id="hyperInfo" style="font-size:0.88em;margin-top:12px;"></div>
+
+      <div class="intuition" style="margin-top:10px;font-size:0.88em;">
+        ðŸ’¡ <strong>w Ð·Ð°Ð´Ð°Ñ‘Ñ‚ Ð½Ð¾Ñ€Ð¼Ð°Ð»ÑŒ</strong> Ðº Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚Ð¸ â€” Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ "Ñ€Ð¾ÑÑ‚Ð°" Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸.<br>
+        <strong>b ÑÐ´Ð²Ð¸Ð³Ð°ÐµÑ‚</strong> Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ Ð²Ð´Ð¾Ð»ÑŒ Ð½Ð¾Ñ€Ð¼Ð°Ð»Ð¸.<br>
+        |b| / |w| = Ñ€Ð°ÑÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð¾Ñ‚ Ð½Ð°Ñ‡Ð°Ð»Ð° ÐºÐ¾Ð¾Ñ€Ð´Ð¸Ð½Ð°Ñ‚ Ð´Ð¾ Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚Ð¸.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5: Bias -->
+<div class="card">
+  <h2>âš–ï¸ Ð Ð¾Ð»ÑŒ bias b</h2>
+  <div class="grid-2">
+    <div>
+      <p>Bias â€” ÑÑ‚Ð¾ <strong>Ð¿Ð¾Ñ€Ð¾Ð³ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸</strong>. Ð‘ÐµÐ· Ð½ÐµÐ³Ð¾ Ð½ÐµÐ¹Ñ€Ð¾Ð½ Ð²Ñ‹Ð½ÑƒÐ¶Ð´ÐµÐ½ Ð¿Ñ€Ð¾Ð²Ð¾Ð´Ð¸Ñ‚ÑŒ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ Ñ‡ÐµÑ€ÐµÐ· Ð½Ð°Ñ‡Ð°Ð»Ð¾ ÐºÐ¾Ð¾Ñ€Ð´Ð¸Ð½Ð°Ñ‚.</p>
+      <br>
+      <div class="formula">Ð‘ÐµÐ· bias: w<sup>âŠ¤</sup>x = 0 â†’ Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ Ñ‡ÐµÑ€ÐµÐ· (0,0)<br>Ð¡ bias: w<sup>âŠ¤</sup>x + b = 0 â†’ ÑÐ²Ð¾Ð±Ð¾Ð´Ð½Ð°Ñ Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ</div>
+      <br>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Bias = ÑÐ¼ÐµÑ‰Ñ‘Ð½Ð½Ñ‹Ð¹ Ð²Ñ…Ð¾Ð´. ÐœÐ¾Ð¶Ð½Ð¾ Ð·Ð°Ð¿Ð¸ÑÐ°Ñ‚ÑŒ:<br>
+        <code>z = [w; b]<sup>âŠ¤</sup> Â· [x; 1]</code><br>
+        Ñ‚.Ðµ. Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ñ‹Ð¹ Ð²Ñ…Ð¾Ð´ xâ‚€=1 Ñ Ð²ÐµÑÐ¾Ð¼ b.
+      </div>
+    </div>
+    <div>
+      <h3>Bias ÐºÐ°Ðº ÑÐ´Ð²Ð¸Ð³ activation threshold</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">b = <span class="val-display" id="biasViz">0</span></span>
+        <input type="range" min="-4" max="4" step="0.1" value="0" id="biasRange" oninput="drawBiasViz()">
+      </div>
+      <canvas id="biasCanvas" width="290" height="150" style="background:#0d1117;border:1px solid var(--border);border-radius:8px;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ Ð¸ÑÑ‚Ð¾Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸ -->
+<div class="card">
+  <h2>ðŸ“œ ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ Ð Ð¾Ð·ÐµÐ½Ð±Ð»Ð°Ñ‚Ñ‚Ð° (1958) â†’ ÑÐ¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½</h2>
+  <table>
+    <tr><th>Ð¡Ð²Ð¾Ð¹ÑÑ‚Ð²Ð¾</th><th>ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ (1958)</th><th>Ð¡Ð¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½</th></tr>
+    <tr><td>ÐÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ñ f</td><td>step(z): 0 Ð¸Ð»Ð¸ 1</td><td>ReLU, Sigmoid, GELU...</td></tr>
+    <tr><td>Ð’Ñ‹Ð²Ð¾Ð´</td><td>Ð±Ð¸Ð½Ð°Ñ€Ð½Ñ‹Ð¹ (0/1)</td><td>Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ñ‹Ð¹ (â„)</td></tr>
+    <tr><td>Ð”Ð¸Ñ„Ñ„ÐµÑ€ÐµÐ½Ñ†Ð¸Ñ€ÑƒÐµÐ¼Ð¾ÑÑ‚ÑŒ</td><td>âŒ (Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ñ‡ÐµÑ€ÐµÐ· Perceptron Rule)</td><td>âœ… (backprop Ñ‡ÐµÑ€ÐµÐ· âˆ‚L/âˆ‚w)</td></tr>
+    <tr><td>Ð“Ñ€Ð°Ð½Ð¸Ñ†Ð° Ñ€ÐµÑˆÐµÐ½Ð¸Ñ</td><td>Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ</td><td>Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ (Ð½ÐµÐ»Ð¸Ð½ÐµÐ¹Ð½Ð¾ÑÑ‚ÑŒ Ñ‡ÐµÑ€ÐµÐ· ÑÑ‚ÐµÐº ÑÐ»Ð¾Ñ‘Ð²)</td></tr>
+    <tr><td>ÐžÐ³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½Ð¸Ðµ</td><td>Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾-Ñ€Ð°Ð·Ð´ÐµÐ»Ð¸Ð¼Ð¾Ðµ</td><td>ÑƒÐ½Ð¸Ð²ÐµÑ€ÑÐ°Ð»ÑŒÐ½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ (UAT)</td></tr>
+  </table>
+  <div class="warn" style="margin-top:12px;font-size:0.88em;">
+    âš ï¸ <strong>Ð¢ÐµÐ¾Ñ€ÐµÐ¼Ð° ÐœÐ¸Ð½ÑÐºÐ¾Ð³Ð¾ (1969):</strong> ÐŸÐµÑ€Ñ†ÐµÐ¿Ñ‚Ñ€Ð¾Ð½ Ð½Ðµ Ð¼Ð¾Ð¶ÐµÑ‚ Ñ€ÐµÑˆÐ¸Ñ‚ÑŒ XOR â€” Ð½Ðµ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾ Ñ€Ð°Ð·Ð´ÐµÐ»Ð¸Ð¼Ð°. Ð­Ñ‚Ð¾ Ð¿Ð¾Ñ€Ð¾Ð´Ð¸Ð»Ð¾ Â«Ð·Ð¸Ð¼Ñƒ Ð˜Ð˜Â». Ð ÐµÑˆÐµÐ½Ð¸Ðµ: ÑÑ‚ÐµÐº Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² (ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ ÑÐ»Ð¾Ð¸) + Ð´Ð¸Ñ„Ñ„ÐµÑ€ÐµÐ½Ñ†Ð¸Ñ€ÑƒÐµÐ¼Ñ‹Ðµ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸.
+  </div>
+</div>
+
+<!-- SECTION 7: ÐšÐ¾Ð´ -->
+<div class="card">
+  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð² NumPy Ð¸ PyTorch</h2>
+
+  <div class="tabs">
+    <button class="active" onclick="showCode(0, this)">NumPy (Ñ Ð½ÑƒÐ»Ñ)</button>
+    <button onclick="showCode(1, this)">PyTorch (nn.Linear)</button>
+    <button onclick="showCode(2, this)">PyTorch autograd</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;">import numpy as np
+
+# ÐžÐ´Ð¸Ð½ Ð½ÐµÐ¹Ñ€Ð¾Ð½ Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ
+x = np.array([2.0, -1.0, 0.5])     # Ð²Ñ…Ð¾Ð´ (3,)
+w = np.array([0.5, -0.3, 0.8])     # Ð²ÐµÑÐ° (3,)
+b = 0.1                              # bias
+
+# Ð¨Ð°Ð³ 1: pre-activation
+z = w @ x + b                        # dot product + bias
+# z = 0.5*2 + (-0.3)*(-1) + 0.8*0.5 + 0.1 = 1.8
+
+# Ð¨Ð°Ð³ 2: activation (ReLU)
+y = np.maximum(0, z)                 # ReLU: max(0, z)
+
+print(f"z = {z:.4f}")               # z = 1.8000
+print(f"y = {y:.4f}")               # y = 1.8000
+
+# Ð‘Ð°Ñ‚Ñ‡: x.shape = (batch, features)
+X = np.random.randn(32, 3)          # 32 Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°, 3 Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ°
+W = np.array([0.5, -0.3, 0.8])
+Z = X @ W + b                        # shape: (32,)
+Y = np.maximum(0, Z)                 # shape: (32,)</div>
+
+  <div id="code1" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;display:none;">import torch
+import torch.nn as nn
+
+# nn.Linear = Ð¾Ð´Ð¸Ð½ ÑÐ»Ð¾Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð²
+# in_features=3, out_features=1 â†’ Ð¾Ð´Ð¸Ð½ Ð½ÐµÐ¹Ñ€Ð¾Ð½
+layer = nn.Linear(in_features=3, out_features=1)
+
+# Ð’ÐµÑÐ° Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾ (Kaiming uniform Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ)
+print(layer.weight.shape)    # (1, 3) â€” Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° W
+print(layer.bias.shape)      # (1,)   â€” Ð²ÐµÐºÑ‚Ð¾Ñ€ b
+
+# Ð ÑƒÑ‡Ð½Ð°Ñ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° Ð²ÐµÑÐ¾Ð²
+with torch.no_grad():
+    layer.weight.copy_(torch.tensor([[0.5, -0.3, 0.8]]))
+    layer.bias.copy_(torch.tensor([0.1]))
+
+# Forward pass (Ð±Ð°Ñ‚Ñ‡ Ð¸Ð· 4 Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð²)
+x = torch.tensor([[2.0, -1.0, 0.5],
+                   [1.0,  0.0, 2.0],
+                   [-1.0, 1.0, 0.0],
+                   [0.5, -0.5, 1.0]])  # shape: (4, 3)
+
+z = layer(x)                           # shape: (4, 1)
+y = torch.relu(z)                      # shape: (4, 1)
+
+# Ð’Ñ€ÑƒÑ‡Ð½ÑƒÑŽ: z = x @ W.T + b
+z_manual = x @ layer.weight.T + layer.bias
+# Ð¡Ð¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚!</div>
+
+  <div id="code2" class="formula" style="font-size:0.85em;white-space:pre;overflow-x:auto;display:none;">import torch
+
+# ÐÐµÐ¹Ñ€Ð¾Ð½ Ñ autograd Ð´Ð»Ñ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ¸ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð²
+x = torch.tensor([2.0, -1.0, 0.5])
+w = torch.tensor([0.5, -0.3, 0.8], requires_grad=True)
+b = torch.tensor(0.1, requires_grad=True)
+
+# Forward
+z = w @ x + b
+y = torch.relu(z)
+
+# Ð”Ð¾Ð¿ÑƒÑÑ‚Ð¸Ð¼, loss = y (MSE Ñ target=0 Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°)
+loss = y  # ÑƒÐ¿Ñ€Ð¾Ñ‰Ñ‘Ð½Ð½Ð¾
+loss.backward()
+
+# Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹:
+# âˆ‚loss/âˆ‚w = âˆ‚y/âˆ‚z Â· âˆ‚z/âˆ‚w = 1 * x = x (Ñ‚.Ðº. z>0, ReLUâ€²=1)
+print(w.grad)    # tensor([2., -1., 0.5]) = x
+print(b.grad)    # tensor(1.) = 1
+
+# Ð“ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ ÑÐ¼Ñ‹ÑÐ»: âˆ‚z/âˆ‚w = x
+# Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð²ÐµÑÐ°Ð¼ = Ð²Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ x
+# â†’ Ð²ÐµÑ Ð¾Ð±Ð½Ð¾Ð²Ð»ÑÐµÑ‚ÑÑ Ð¿Ñ€Ð¾Ð¿Ð¾Ñ€Ñ†Ð¸Ð¾Ð½Ð°Ð»ÑŒÐ½Ð¾ Ð²Ñ…Ð¾Ð´Ñƒ!</div>
+</div>
+
+<!-- SECTION 8: UAT -->
+<div class="card">
+  <h2>ðŸŽ¯ ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ ÑÑ‚ÐµÐº Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² = ÑƒÐ½Ð¸Ð²ÐµÑ€ÑÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ‚Ð¾Ñ€?</h2>
+  <p>Ð¢ÐµÐ¾Ñ€ÐµÐ¼Ð° Ð¦Ñ‹Ð±ÐµÐ½ÐºÐ¾ (1989): Ð¡ÐµÑ‚ÑŒ Ñ Ð¾Ð´Ð½Ð¸Ð¼ ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ð¼ ÑÐ»Ð¾ÐµÐ¼ Ð¸ ÑÐ¸Ð³Ð¼Ð¾Ð¸Ð´Ð½Ñ‹Ð¼Ð¸ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð°Ð¼Ð¸ Ð¼Ð¾Ð¶ÐµÑ‚ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ <strong>Ð»ÑŽÐ±ÑƒÑŽ Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½ÑƒÑŽ Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑŽ</strong> Ð½Ð° ÐºÐ¾Ð¼Ð¿Ð°ÐºÑ‚Ðµ Ñ Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð»ÑŒÐ½Ð¾Ð¹ Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚ÑŒÑŽ.</p>
+  <br>
+  <div class="formula">
+    âˆ€Îµ>0, âˆ€f âˆˆ C([0,1]â¿), âˆƒ ÑÐµÑ‚ÑŒ F: &nbsp; sup|f(x) âˆ’ F(x)| &lt; Îµ
+  </div>
+  <br>
+  <div class="intuition">
+    ðŸ’¡ ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½ â€” ÑÑ‚Ð¾ Â«Ð´ÐµÑ‚ÐµÐºÑ‚Ð¾Ñ€Â» Ð¿Ð°Ñ‚Ñ‚ÐµÑ€Ð½Ð° (Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÑŒ). ÐšÐ¾Ð¼Ð±Ð¸Ð½Ð¸Ñ€ÑƒÑ Ð¼Ð½Ð¾Ð³Ð¾ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² (=Ð¼Ð½Ð¾Ð³Ð¾ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð»Ð¾ÑÐºÐ¾ÑÑ‚ÐµÐ¹), Ð¼Ð¾Ð¶Ð½Ð¾ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð»ÑŽÐ±ÑƒÑŽ Ð³Ñ€Ð°Ð½Ð¸Ñ†Ñƒ Ñ€ÐµÑˆÐµÐ½Ð¸Ñ. Ð­Ñ‚Ð¾ ÐºÐ°Ðº Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÐºÑ€Ð¸Ð²ÑƒÑŽ ÐºÑƒÑÐ¾Ñ‡ÐºÐ°Ð¼Ð¸ Ð¿Ñ€ÑÐ¼Ñ‹Ñ….
+  </div>
+  <div class="grid-2" style="margin-top:12px;">
+    <div style="background:#0d1117;border-radius:8px;padding:12px;font-size:0.88em;">
+      <span class="hl-amber">ÐÐµÐ¹Ñ€Ð¾Ð½ 1:</span> Ð´ÐµÑ‚ÐµÐºÑ‚Ð¸Ñ€ÑƒÐµÑ‚ "Ð»ÐµÐ²Ñ‹Ð¹ ÑƒÐ³Ð¾Ð»"<br>
+      <span class="hl-green">ÐÐµÐ¹Ñ€Ð¾Ð½ 2:</span> Ð´ÐµÑ‚ÐµÐºÑ‚Ð¸Ñ€ÑƒÐµÑ‚ "Ð¿Ñ€Ð°Ð²Ñ‹Ð¹ ÑƒÐ³Ð¾Ð»"<br>
+      <span class="hl-blue">ÐÐµÐ¹Ñ€Ð¾Ð½ 3:</span> Ð´ÐµÑ‚ÐµÐºÑ‚Ð¸Ñ€ÑƒÐµÑ‚ "Ð³Ð¾Ñ€Ð¸Ð·Ð¾Ð½Ñ‚Ð°Ð»ÑŒ"<br>
+      <span class="muted">âŸ¹ Ð²Ð¼ÐµÑÑ‚Ðµ: Ð´ÐµÑ‚ÐµÐºÑ‚Ð¸Ñ€ÑƒÑŽÑ‚ Ð±ÑƒÐºÐ²Ñƒ "ÐŸ"</span>
+    </div>
+    <div style="background:#0d1117;border-radius:8px;padding:12px;font-size:0.88em;">
+      <span class="hl-amber">1 Ð½ÐµÐ¹Ñ€Ð¾Ð½:</span> Ð»Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ‚Ð¾Ñ€<br>
+      <span class="hl-green">1 ÑÐ»Ð¾Ð¹ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð²:</span> Ð¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð´ÐµÑ‚ÐµÐºÑ‚Ð¾Ñ€Ñ‹<br>
+      <span class="hl-blue">Ð¡Ñ‚ÐµÐº ÑÐ»Ð¾Ñ‘Ð²:</span> Ð¸ÐµÑ€Ð°Ñ€Ñ…Ð¸Ñ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð²<br>
+      <span class="muted">âŸ¹ Ð³Ð»ÑƒÐ±Ð¾ÐºÐ¸Ðµ ÑÐµÑ‚Ð¸ = ÐºÐ¾Ð¼Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== NEURON CALCULATOR =====
+function activate(z, fn) {
+  switch(fn) {
+    case 'relu': return Math.max(0, z);
+    case 'sigmoid': return 1 / (1 + Math.exp(-z));
+    case 'tanh': return Math.tanh(z);
+    case 'linear': return z;
+  }
+}
+function activateName(fn) {
+  return { relu:'ReLU: max(0,z)', sigmoid:'Ïƒ(z) = 1/(1+eâ»á¶»)', tanh:'tanh(z)', linear:'f(z) = z (Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ)' }[fn];
+}
+function calcNeuron() {
+  const x1=+document.getElementById('x1').value, x2=+document.getElementById('x2').value, x3=+document.getElementById('x3').value;
+  const w1=+document.getElementById('w1').value, w2=+document.getElementById('w2').value, w3=+document.getElementById('w3').value;
+  const b=+document.getElementById('bias').value;
+  const fn=document.getElementById('actFn').value;
+  const t1=w1*x1, t2=w2*x2, t3=w3*x3;
+  const z=t1+t2+t3+b;
+  const y=activate(z, fn);
+  document.getElementById('calcResult').innerHTML = `
+    <div class="step highlight">z = wâ‚Â·xâ‚ + wâ‚‚Â·xâ‚‚ + wâ‚ƒÂ·xâ‚ƒ + b</div>
+    <div class="step">  = (${w1})Â·(${x1}) + (${w2})Â·(${x2}) + (${w3})Â·(${x3}) + (${b})</div>
+    <div class="step">  = ${t1.toFixed(4)} + ${t2.toFixed(4)} + ${t3.toFixed(4)} + ${b.toFixed(4)}</div>
+    <div class="step highlight">z = <span class="hl-blue">${z.toFixed(4)}</span></div>
+    <div class="step">f = ${activateName(fn)}</div>
+    <div class="step highlight">y = f(z) = <span class="hl-purple">${y.toFixed(6)}</span></div>
+  `;
+}
+
+// ===== HYPERPLANE CANVAS =====
+let points = [];
+let currentClass = 0;
+function setClass(c) {
+  currentClass = c;
+  document.getElementById('btn0').classList.toggle('active', c===0);
+  document.getElementById('btn1').classList.toggle('active', c===1);
+}
+function addPoint(e) {
+  const canvas = document.getElementById('hyperCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) / rect.width * 6 - 3;
+  const py = -((e.clientY - rect.top) / rect.height * 6 - 3);
+  points.push({x:px, y:py, cls:currentClass});
+  drawHyperplane();
+}
+function clearPoints() { points=[]; drawHyperplane(); }
+function toCanvas(val, size) { return (val + 3) / 6 * size; }
+function updateHyperplane() {
+  const w1=+document.getElementById('hw1').value;
+  const w2=+document.getElementById('hw2').value;
+  const b=+document.getElementById('hb').value;
+  document.getElementById('hw1v').textContent = w1.toFixed(1);
+  document.getElementById('hw2v').textContent = w2.toFixed(1);
+  document.getElementById('hbv').textContent = b.toFixed(1);
+  drawHyperplane();
+}
+function drawHyperplane() {
+  const c = document.getElementById('hyperCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const w1=+document.getElementById('hw1').value;
+  const w2=+document.getElementById('hw2').value;
+  const b=+document.getElementById('hb').value;
+
+  // Background coloring
+  const imgData = ctx.createImageData(W,H);
+  for(let px=0;px<W;px++) for(let py=0;py<H;py++) {
+    const x1 = px/W*6-3, x2 = -(py/H*6-3);
+    const z = w1*x1 + w2*x2 + b;
+    const idx=(py*W+px)*4;
+    if(z>0) { imgData.data[idx]=15;imgData.data[idx+1]=45;imgData.data[idx+2]=26;imgData.data[idx+3]=160; }
+    else { imgData.data[idx]=26;imgData.data[idx+1]=15;imgData.data[idx+2]=15;imgData.data[idx+3]=160; }
+  }
+  ctx.putImageData(imgData,0,0);
+
+  // Grid
+  ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
+  for(let v=-2;v<=2;v++) {
+    ctx.beginPath();ctx.moveTo(toCanvas(v,W),0);ctx.lineTo(toCanvas(v,W),H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,toCanvas(v,H));ctx.lineTo(W,toCanvas(v,H));ctx.stroke();
+  }
+  // Axes
+  ctx.strokeStyle='#8b949e';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();
+
+  // Decision boundary: w1*x + w2*y + b = 0 â†’ y = (-w1*x - b) / w2
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2.5;ctx.setLineDash([]);
+  ctx.beginPath();
+  if(Math.abs(w2)>0.01) {
+    const x0=-3, x1c=3;
+    const y0=(-w1*x0-b)/w2, y1c=(-w1*x1c-b)/w2;
+    ctx.moveTo(toCanvas(x0,W), toCanvas(-y0,H));
+    ctx.lineTo(toCanvas(x1c,W), toCanvas(-y1c,H));
+  } else {
+    const xb = -b/w1;
+    ctx.moveTo(toCanvas(xb,W),0); ctx.lineTo(toCanvas(xb,W),H);
+  }
+  ctx.stroke();
+
+  // Normal vector
+  const norm = Math.sqrt(w1*w1+w2*w2)||1;
+  const cx=W/2, cy=H/2, scale=40;
+  ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;ctx.setLineDash([4,2]);
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+w1/norm*scale,cy-w2/norm*scale);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#60a5fa';ctx.font='11px monospace';
+  ctx.fillText('w (Ð½Ð¾Ñ€Ð¼Ð°Ð»ÑŒ)',cx+w1/norm*scale+4,cy-w2/norm*scale);
+
+  // Points
+  points.forEach(p => {
+    const px=toCanvas(p.x,W), py=toCanvas(-p.y,H);
+    ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);
+    ctx.fillStyle = p.cls===0?'#60a5fa':'#ef4444';
+    ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    const z=w1*p.x+w2*p.y+b;
+    const pred=z>0?1:0;
+    if(pred!==p.cls){
+      ctx.beginPath();ctx.arc(px,py,9,0,Math.PI*2);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+    }
+  });
+
+  // Info
+  let correct=points.filter(p=>{const z=w1*p.x+w2*p.y+b;return (z>0?1:0)===p.cls;}).length;
+  document.getElementById('hyperInfo').innerHTML = `
+    <div>Ð£Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ: <span class="hl-amber">${w1.toFixed(1)}xâ‚ + ${w2.toFixed(1)}xâ‚‚ + ${b.toFixed(1)} = 0</span></div>
+    <div>|w| = ${(Math.sqrt(w1**2+w2**2)).toFixed(2)}</div>
+    <div>Ð Ð°ÑÑÑ‚Ð¾ÑÐ½Ð¸Ðµ Ð¾Ñ‚ (0,0): <span class="hl-green">${points.length>0?Math.abs(b)/norm.toFixed(2):(Math.abs(b)/Math.max(norm,0.01)).toFixed(2)}</span></div>
+    ${points.length>0?`<div>Ð¢Ð¾Ñ‡ÐºÐ¸: ${correct}/${points.length} Ð²ÐµÑ€Ð½Ð¾</div>`:'<div class="muted">ÐšÐ»Ð¸ÐºÐ½Ð¸ Ð½Ð° Ñ…Ð¾Ð»ÑÑ‚ Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð´Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ñ‚Ð¾Ñ‡ÐºÐ¸</div>'}
+  `;
+}
+
+// ===== BIAS VISUALIZATION =====
+function drawBiasViz() {
+  const b = +document.getElementById('biasRange').value;
+  document.getElementById('biasViz').textContent = b.toFixed(1);
+  const c = document.getElementById('biasCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  
+  // Draw ReLU shifted by bias: f(x+b) basically showing threshold shift
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  
+  // Sigmoid curve shifted
+  ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let px=0;px<W;px++) {
+    const x = (px/W*10-5);
+    const z = x + b;
+    const y = 1/(1+Math.exp(-z));
+    const canY = H - y*H*0.8 - H*0.1;
+    if(px===0) ctx.moveTo(px,canY); else ctx.lineTo(px,canY);
+  }
+  ctx.stroke();
+  
+  // threshold line x=0 â†’ where sigmoid = 0.5
+  const threshX = (-b/10+0.5)*W;
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(threshX,0);ctx.lineTo(threshX,H);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#f59e0b';ctx.font='10px monospace';
+  ctx.fillText(`Ð¿Ð¾Ñ€Ð¾Ð³ x=${(-b).toFixed(1)}`,threshX+4,14);
+  
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';
+  ctx.fillText('Ïƒ(x+b)',6,18);
+  ctx.fillText('x',(W-12),H/2+14);
+  ctx.fillText('0',W/2+4,H/2+14);
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Init
+calcNeuron();
+updateHyperplane();
+drawBiasViz();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+

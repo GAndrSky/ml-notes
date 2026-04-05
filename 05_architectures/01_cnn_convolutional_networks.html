@@ -1,0 +1,726 @@
+﻿
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.55}
+h1{font-size:1.5em;margin-bottom:4px}
+h2{font-size:1.15em;color:var(--amber);margin:18px 0 8px}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0}
+.formula{font-family:'Courier New',monospace;font-size:1.05em;background:#0d1117;padding:10px 14px;border-radius:8px;border-left:3px solid var(--amber);margin:10px 0;overflow-x:auto}
+.hl-a{color:var(--amber);font-weight:600}
+.hl-g{color:var(--green);font-weight:600}
+.hl-b{color:var(--blue);font-weight:600}
+.hl-r{color:var(--red);font-weight:600}
+.hl-p{color:var(--purple);font-weight:600}
+.muted{color:var(--muted);font-size:.88em}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.9em;transition:all .2s}
+.tab.active{border-color:var(--amber);color:var(--amber)}
+.tab-content{display:none}.tab-content.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+input[type=range]{width:100%;accent-color:var(--green);margin:6px 0}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px;width:56px;text-align:center;font-size:.95em}
+.slider-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:.9em}
+.slider-val{color:var(--green);font-weight:600;min-width:28px;text-align:right}
+canvas{border:1px solid var(--border);border-radius:6px}
+.step-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;margin:6px 0;font-size:.9em}
+.step-box .step-num{color:var(--amber);font-weight:700;margin-right:6px}
+.info-box{background:#161b22;border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.92em}
+.warn-box{background:#161b22;border-left:3px solid var(--red);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.92em}
+.code-block{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:.82em;overflow-x:auto;margin:10px 0;white-space:pre}
+.conv-cell{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:4px;font-size:.85em;margin:1px}
+.highlight-cell{border-color:var(--amber);background:rgba(245,158,11,.15)}
+.kernel-cell{border-color:var(--green);background:rgba(16,185,129,.15)}
+.result-cell{border-color:var(--blue);background:rgba(96,165,250,.15)}
+.matrix-grid{display:inline-flex;flex-direction:column;gap:1px}
+.matrix-row{display:flex;gap:1px}
+.arch-layer{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;font-size:.85em}
+.arch-arrow{text-align:center;color:var(--muted);font-size:1.2em;margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th{background:#0d1117;padding:8px 10px;text-align:left;color:var(--amber);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid #21262d}
+tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+
+<h1>5.1 â€” Ð¡Ð²Ñ‘Ñ€Ñ‚Ð¾Ñ‡Ð½Ñ‹Ðµ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð½Ñ‹Ðµ ÑÐµÑ‚Ð¸ (CNN)</h1>
+<p class="muted">Ð‘Ð»Ð¾Ðº 5 Â· ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ñ‹ Â· ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ ÐºÐ¾Ð½ÑÐ¿ÐµÐºÑ‚ Ñ Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐ¾Ð¹, Ð²Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸ÑÐ¼Ð¸ Ð¸ ÐºÐ¾Ð´Ð¾Ð¼</p>
+
+<div class="tabs" id="main-tabs">
+  <button class="tab active" onclick="switchTab('t-conv')">Ð¡Ð²Ñ‘Ñ€Ñ‚ÐºÐ°</button>
+  <button class="tab" onclick="switchTab('t-rf')">Ð ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ</button>
+  <button class="tab" onclick="switchTab('t-pool')">Pooling</button>
+  <button class="tab" onclick="switchTab('t-equi')">Equivariance</button>
+  <button class="tab" onclick="switchTab('t-arch')">ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð°</button>
+  <button class="tab" onclick="switchTab('t-back')">Backprop</button>
+  <button class="tab" onclick="switchTab('t-code')">PyTorch</button>
+</div>
+
+<!-- ========== TAB 1: Ð¡Ð²Ñ‘Ñ€Ñ‚ÐºÐ° ========== -->
+<div id="t-conv" class="tab-content active">
+
+<h2>1. Ð”Ð¸ÑÐºÑ€ÐµÑ‚Ð½Ð°Ñ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° â€” Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐ°</h2>
+<div class="card">
+<p>Ð¡Ð²Ñ‘Ñ€Ñ‚ÐºÐ° Ð² DL â€” Ð´Ð¸ÑÐºÑ€ÐµÑ‚Ð½Ð°Ñ ÐºÑ€Ð¾ÑÑ-ÐºÐ¾Ñ€Ñ€ÐµÐ»ÑÑ†Ð¸Ñ (Ð¿Ð¾ Ð¸ÑÑ‚Ð¾Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸Ð¼ Ð¿Ñ€Ð¸Ñ‡Ð¸Ð½Ð°Ð¼ Ð½Ð°Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ¾Ð¹):</p>
+<div class="formula">
+  (I â˜… K)[i,j] = <span class="hl-a">Î£â‚˜ Î£â‚™</span> <span class="hl-g">K[m,n]</span> Â· <span class="hl-b">I[i+m, j+n]</span>
+</div>
+<p>Ð³Ð´Ðµ <span class="hl-b">I</span> â€” Ð²Ñ…Ð¾Ð´Ð½Ð¾Ðµ Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ (HÃ—W), <span class="hl-g">K</span> â€” ÑÐ´Ñ€Ð¾ (kernel) Ñ€Ð°Ð·Ð¼ÐµÑ€Ð¾Ð¼ kÃ—k.</p>
+<p style="margin-top:8px">Ð Ð°Ð·Ð¼ÐµÑ€ Ð²Ñ‹Ñ…Ð¾Ð´Ð° Ð¿Ñ€Ð¸ <em>valid</em> padding:</p>
+<div class="formula">
+  H_out = <span class="hl-a">âŒŠ(H_in + 2P - k) / SâŒ‹</span> + 1
+</div>
+<p class="muted">P â€” padding, S â€” stride (ÑˆÐ°Ð³). ÐÐ½Ð°Ð»Ð¾Ð³Ð¸Ñ‡Ð½Ð¾ Ð´Ð»Ñ W.</p>
+
+<div class="info-box">
+  <strong>Ð˜ÑÑ‚Ð¸Ð½Ð½Ð°Ñ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ°</strong> vs <strong>ÐºÑ€Ð¾ÑÑ-ÐºÐ¾Ñ€Ñ€ÐµÐ»ÑÑ†Ð¸Ñ:</strong> Ð¿Ñ€Ð¸ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐµ ÑÐ´Ñ€Ð¾ Ð¿Ð¾Ð²Ð¾Ñ€Ð°Ñ‡Ð¸Ð²Ð°ÐµÑ‚ÑÑ Ð½Ð° 180Â°: <code>(I * K)[i,j] = Î£ K[-m,-n]Â·I[i+m,j+n]</code>. Ð’ DL ÑÐ´Ñ€Ð¾ Ð¾Ð±ÑƒÑ‡Ð°ÐµÑ‚ÑÑ â€” Ð¿Ð¾Ð²Ð¾Ñ€Ð¾Ñ‚ Ð½Ðµ Ð¸Ð¼ÐµÐµÑ‚ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ, Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ ÐºÑ€Ð¾ÑÑ-ÐºÐ¾Ñ€Ñ€ÐµÐ»ÑÑ†Ð¸ÑŽ, Ð½Ð°Ð·Ñ‹Ð²Ð°Ñ ÐµÑ‘ "ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ¾Ð¹".
+</div>
+
+<h3>ÐŸÐ¾Ð´ÑÑ‡Ñ‘Ñ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²</h3>
+<div class="formula">
+  #params = <span class="hl-g">k Ã— k Ã— C_in Ã— C_out</span> + <span class="hl-b">C_out</span> (bias)
+</div>
+<p class="muted">Ð”Ð»Ñ ÑÐ²ÐµÑ€Ñ…Ñ‚Ð¾Ð½ÐºÐ¾Ð³Ð¾ ÑÐ»Ð¾Ñ Conv2d(3â†’64, 3Ã—3): 3Ã—3Ã—3Ã—64 + 64 = <span class="hl-a">1792</span> Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²</p>
+</div>
+
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ ÐºÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ¸</h2>
+<div class="card">
+<div class="grid2">
+<div>
+<h3>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹</h3>
+<div class="slider-row"><span>H_in</span><input type="range" id="hin" min="3" max="12" value="6" oninput="calcConv()"><span class="slider-val" id="hin-v">6</span></div>
+<div class="slider-row"><span>Kernel k</span><input type="range" id="ksize" min="1" max="5" value="3" oninput="calcConv()"><span class="slider-val" id="ksize-v">3</span></div>
+<div class="slider-row"><span>Padding P</span><input type="range" id="pad" min="0" max="4" value="0" oninput="calcConv()"><span class="slider-val" id="pad-v">0</span></div>
+<div class="slider-row"><span>Stride S</span><input type="range" id="str" min="1" max="4" value="1" oninput="calcConv()"><span class="slider-val" id="str-v">1</span></div>
+<div class="slider-row"><span>C_in</span><input type="range" id="cin" min="1" max="16" value="3" oninput="calcConv()"><span class="slider-val" id="cin-v">3</span></div>
+<div class="slider-row"><span>C_out</span><input type="range" id="cout" min="1" max="64" value="32" oninput="calcConv()"><span class="slider-val" id="cout-v">32</span></div>
+</div>
+<div>
+<h3>Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚</h3>
+<div id="conv-result" style="font-size:.92em;line-height:2"></div>
+</div>
+</div>
+</div>
+
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ: ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° 6Ã—6 â†’ ÑÐ´Ñ€Ð¾ 3Ã—3</h2>
+<div class="card">
+<p class="muted" style="margin-bottom:10px">ÐÐ°Ð¶Ð¼Ð¸Ñ‚Ðµ Ð½Ð° ÑÑ‡ÐµÐ¹ÐºÑƒ Ð²Ñ‹Ñ…Ð¾Ð´Ð°, Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑƒÐ²Ð¸Ð´ÐµÑ‚ÑŒ ÑÐ¾Ð¾Ñ‚Ð²ÐµÑ‚ÑÑ‚Ð²ÑƒÑŽÑ‰Ð¸Ð¹ Ñ€ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð¿Ð°Ñ‚Ñ‡ Ð²Ñ…Ð¾Ð´Ð°</p>
+<div style="display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start">
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Ð’Ñ…Ð¾Ð´ (6Ã—6)</p>
+  <div id="vis-input" class="matrix-grid"></div>
+</div>
+<div style="display:flex;align-items:center;font-size:1.8em;color:var(--amber);padding-top:40px">â˜…</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Ð¯Ð´Ñ€Ð¾ (3Ã—3)</p>
+  <div id="vis-kernel" class="matrix-grid"></div>
+</div>
+<div style="display:flex;align-items:center;font-size:1.8em;color:var(--muted);padding-top:40px">=</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Ð’Ñ‹Ñ…Ð¾Ð´ (4Ã—4)</p>
+  <div id="vis-output" class="matrix-grid"></div>
+</div>
+<div id="conv-calc-box" style="max-width:220px;font-size:.82em;color:var(--muted)"></div>
+</div>
+</div>
+</div>
+
+<!-- ========== TAB 2: Ð ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ ========== -->
+<div id="t-rf" class="tab-content">
+<h2>2. Ð ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ (Receptive Field)</h2>
+<div class="card">
+<p>Ð ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð° â€” Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð¾Ð±Ð»Ð°ÑÑ‚Ð¸ Ð²Ñ…Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ñ, Ð²Ð»Ð¸ÑÑŽÑ‰ÐµÐ¹ Ð½Ð° ÐµÐ³Ð¾ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸ÑŽ.</p>
+<div class="formula">
+  RF<sub>L</sub> = RF<sub>L-1</sub> + (k-1) Â· <span class="hl-a">Î <sub>i=1</sub><sup>L-1</sup> s<sub>i</sub></span>
+</div>
+<p class="muted">k â€” kernel size ÑÐ»Ð¾Ñ L, s<sub>i</sub> â€” stride ÑÐ»Ð¾Ñ‘Ð² Ð´Ð¾ L</p>
+
+<div class="info-box">
+  <strong>Ð—Ð°Ñ‡ÐµÐ¼ Ð²Ð°Ð¶Ð½Ð¾?</strong> Ð”Ð»Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸ Ð¾Ð±ÑŠÐµÐºÑ‚Ð° Ð½ÐµÐ¹Ñ€Ð¾Ð½ Ð´Ð¾Ð»Ð¶ÐµÐ½ "Ð²Ð¸Ð´ÐµÑ‚ÑŒ" Ð²ÐµÑÑŒ Ð¾Ð±ÑŠÐµÐºÑ‚. Ð“Ð»ÑƒÐ±Ð¾ÐºÐ¸Ðµ ÑÐµÑ‚Ð¸ Ñ Ð¼Ð°Ð»Ñ‹Ð¼Ð¸ ÑÐ´Ñ€Ð°Ð¼Ð¸ Ð´Ð¾ÑÑ‚Ð¸Ð³Ð°ÑŽÑ‚ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð³Ð¾ RF Ð±ÐµÐ· Ð¸Ð·Ð±Ñ‹Ñ‚Ð¾Ñ‡Ð½Ð¾Ð³Ð¾ Ñ‡Ð¸ÑÐ»Ð° Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð².
+</div>
+
+<h3>Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ: Ð¾Ð´Ð½Ð¾ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ðµ ÑÐ´Ñ€Ð¾ vs ÑÑ‚ÐµÐº Ð¼Ð°Ð»Ñ‹Ñ…</h3>
+<div class="grid2">
+<div class="step-box">
+  <span class="step-num">7Ã—7</span>conv, 1 ÑÐ»Ð¾Ð¹<br>
+  ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: 7Â·7Â·CÂ·C = <span class="hl-r">49CÂ²</span><br>
+  RF = 7
+</div>
+<div class="step-box">
+  <span class="step-num">3Ã—3</span>conv Ã— 3 ÑÐ»Ð¾Ñ<br>
+  ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: 3Â·(3Â·3Â·CÂ·C) = <span class="hl-g">27CÂ²</span><br>
+  RF = 1+2+2+2 = 7
+</div>
+</div>
+<p>Ð¢Ñ€Ð¸ ÑÐ»Ð¾Ñ 3Ã—3 Ð´Ð°ÑŽÑ‚ Ñ‚Ð¾Ñ‚ Ð¶Ðµ RF, Ñ‡Ñ‚Ð¾ Ð¾Ð´Ð¸Ð½ 7Ã—7, Ð½Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² <span class="hl-g">Ð² 1.8Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ</span> Ð¸ Ð¼ÐµÐ¶Ð´Ñƒ ÑÐ»Ð¾ÑÐ¼Ð¸ â€” Ð½ÐµÐ»Ð¸Ð½ÐµÐ¹Ð½Ð¾ÑÑ‚Ð¸!</p>
+</div>
+
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ ÐºÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ RF</h2>
+<div class="card">
+<div id="rf-layers-ui"></div>
+<button onclick="addRFLayer()" style="margin:8px 0;background:var(--card);border:1px solid var(--border);color:var(--green);padding:6px 14px;border-radius:8px;cursor:pointer">+ Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ ÑÐ»Ð¾Ð¹</button>
+<button onclick="removeRFLayer()" style="margin:8px 4px;background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer">âˆ’ Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ</button>
+<div id="rf-result" style="margin-top:10px;font-size:.95em"></div>
+</div>
+
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ€Ð¾ÑÑ‚Ð° RF</h2>
+<div class="card">
+<canvas id="rf-canvas" width="600" height="300" style="width:100%;max-width:600px"></canvas>
+</div>
+</div>
+
+<!-- ========== TAB 3: Pooling ========== -->
+<div id="t-pool" class="tab-content">
+<h2>3. Pooling â€” ÑÑƒÐ±Ð´Ð¸ÑÐºÑ€ÐµÑ‚Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+<div class="card">
+<p>Pooling ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ°ÐµÑ‚ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ð¹ Ñ€Ð°Ð·Ð¼ÐµÑ€ ÐºÐ°Ñ€Ñ‚Ñ‹ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð², ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÑ Ð²Ð°Ð¶Ð½Ñ‹Ðµ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸.</p>
+
+<h3>Max Pooling</h3>
+<div class="formula">
+  y[i,j] = <span class="hl-a">max</span><sub>m,n âˆˆ window</sub> x[iÂ·s+m, jÂ·s+n]
+</div>
+
+<h3>Average Pooling</h3>
+<div class="formula">
+  y[i,j] = <span class="hl-g">1/(kÂ²)</span> Â· Î£<sub>m,n âˆˆ window</sub> x[iÂ·s+m, jÂ·s+n]
+</div>
+
+<h3>Global Average Pooling (GAP)</h3>
+<div class="formula">
+  y<sub>c</sub> = <span class="hl-b">1/(HÂ·W)</span> Â· Î£<sub>i,j</sub> x<sub>c</sub>[i,j]
+</div>
+<p class="muted">GAP ÑÐ²Ð¾Ñ€Ð°Ñ‡Ð¸Ð²Ð°ÐµÑ‚ ÐºÐ°Ñ€Ñ‚Ñƒ (C, H, W) â†’ (C,). Ð—Ð°Ð¼ÐµÐ½ÑÐµÑ‚ FC-ÑÐ»Ð¾Ð¸ Ð² ResNet, MobileNet â€” <strong>Ð½ÐµÑ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²</strong>!</p>
+
+<div class="info-box">
+  <strong>Ð—Ð°Ñ‡ÐµÐ¼ pooling?</strong> (1) Ð¢Ñ€Ð°Ð½ÑÐ»ÑÑ†Ð¸Ð¾Ð½Ð½Ð°Ñ Ð¸Ð½Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ð½Ð¾ÑÑ‚ÑŒ Ðº Ð½ÐµÐ±Ð¾Ð»ÑŒÑˆÐ¸Ð¼ ÑÐ´Ð²Ð¸Ð³Ð°Ð¼. (2) Ð£Ð¼ÐµÐ½ÑŒÑˆÐµÐ½Ð¸Ðµ Ð¾Ð±ÑŠÑ‘Ð¼Ð° Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ð¹ Ð¸ Ð¿Ð°Ð¼ÑÑ‚Ð¸. (3) ÐÐµÑÐ²Ð½Ð°Ñ Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ.
+</div>
+
+<h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ñ‡ÐµÑ€ÐµÐ· Max Pooling</h3>
+<div class="formula">
+  âˆ‚L/âˆ‚x[i,j] = <span class="hl-a">âˆ‚L/âˆ‚y</span> Â· <span class="hl-g">ðŸ™[x[i,j] = max]</span>
+</div>
+<p class="muted">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¸Ñ‚ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ‡ÐµÑ€ÐµÐ· Ð¼Ð°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ Ð¾ÐºÐ½Ð° ("Ð¼Ð°Ñ€ÑˆÑ€ÑƒÑ‚Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð°").</p>
+
+<div class="warn-box">
+  <span class="hl-r">âš  Stride Ð² conv vs Pooling:</span> Ð¡Ð¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ðµ Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ñ‹ (ResNet, EfficientNet) Ñ‡Ð°ÑÑ‚Ð¾ Ð·Ð°Ð¼ÐµÐ½ÑÑŽÑ‚ MaxPool ÑÐ»Ð¾ÑÐ¼Ð¸ Conv Ñ stride=2 â€” ÑÑ‚Ð¾ Ð¾Ð±ÑƒÑ‡Ð°ÐµÐ¼Ð¾Ðµ Ð¿Ñ€Ð¾Ñ€ÐµÐ¶Ð¸Ð²Ð°Ð½Ð¸Ðµ Ñ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸ÐµÐ¼ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸.
+</div>
+</div>
+
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ Ð´ÐµÐ¼Ð¾Ð½ÑÑ‚Ñ€Ð°Ñ†Ð¸Ñ: Max vs Avg Pool</h2>
+<div class="card">
+<div class="slider-row"><span>Kernel k</span><input type="range" id="pk" min="2" max="4" value="2" oninput="drawPool()"><span class="slider-val" id="pk-v">2</span></div>
+<div class="slider-row"><span>Stride S</span><input type="range" id="ps" min="1" max="4" value="2" oninput="drawPool()"><span class="slider-val" id="ps-v">2</span></div>
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px">
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Ð’Ñ…Ð¾Ð´ (6Ã—6)</p>
+  <div id="pool-input" class="matrix-grid"></div>
+</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Max Pool Ð²Ñ‹Ñ…Ð¾Ð´</p>
+  <div id="pool-max-out" class="matrix-grid"></div>
+</div>
+<div>
+  <p class="muted" style="font-size:.8em;margin-bottom:4px">Avg Pool Ð²Ñ‹Ñ…Ð¾Ð´</p>
+  <div id="pool-avg-out" class="matrix-grid"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== TAB 4: Equivariance ========== -->
+<div id="t-equi" class="tab-content">
+<h2>4. Equivariance Ð¸ Invariance</h2>
+<div class="card">
+<h3>ÐžÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ</h3>
+<div class="formula">
+  Equivariant: f(T(x)) = <span class="hl-a">T'(f(x))</span><br>
+  Invariant:   f(T(x)) = <span class="hl-g">f(x)</span>
+</div>
+
+<div class="grid2">
+<div class="step-box">
+  <strong class="hl-a">Equivariance (ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ°)</strong><br><br>
+  Ð¡Ð´Ð²Ð¸Ð³ Ð²Ñ…Ð¾Ð´Ð° â†’ ÑÐ´Ð²Ð¸Ð³ ÐºÐ°Ñ€Ñ‚Ñ‹ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð². ÐžÐ´Ð½Ð¸ Ð¸ Ñ‚Ðµ Ð¶Ðµ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸ Ð¾Ð±Ð½Ð°Ñ€ÑƒÐ¶Ð¸Ð²Ð°ÑŽÑ‚ÑÑ Ð² Ð»ÑŽÐ±Ð¾Ð¹ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ Ð¾Ð´Ð½Ð¸Ð¼ Ð¸ Ñ‚ÐµÐ¼ Ð¶Ðµ ÑÐ´Ñ€Ð¾Ð¼.
+</div>
+<div class="step-box">
+  <strong class="hl-g">Invariance (MaxPool, GAP)</strong><br><br>
+  ÐÐµÐ±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ ÑÐ´Ð²Ð¸Ð³ Ð¾Ð±ÑŠÐµÐºÑ‚Ð° Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚ Ð¸Ñ‚Ð¾Ð³Ð¾Ð²ÑƒÑŽ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸ÑŽ â€” pooling "Ð¿Ð¾Ð³Ð»Ð¾Ñ‰Ð°ÐµÑ‚" ÑÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ.
+</div>
+</div>
+
+<h3>ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¾Ðµ Ð´Ð¾ÐºÐ°Ð·Ð°Ñ‚ÐµÐ»ÑŒÑÑ‚Ð²Ð¾ equivariance</h3>
+<div class="step-box"><span class="step-num">Ð¨Ð°Ð³ 1.</span>ÐŸÑƒÑÑ‚ÑŒ T_Î´ â€” Ð¾Ð¿ÐµÑ€Ð°Ñ‚Ð¾Ñ€ ÑÐ´Ð²Ð¸Ð³Ð°: (T_Î´ I)[i,j] = I[i-Î´, j]</div>
+<div class="step-box"><span class="step-num">Ð¨Ð°Ð³ 2.</span>(T_Î´ I â˜… K)[i,j] = Î£ K[m,n]Â·I[i+m-Î´, j+n] = (Iâ˜…K)[i-Î´, j]</div>
+<div class="step-box"><span class="step-num">Ð¨Ð°Ð³ 3.</span>Ð¢.Ðµ. f(T_Î´ I) = T_Î´(f(I)) â†’ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° equivariant Ðº ÑÐ´Ð²Ð¸Ð³Ñƒ âœ“</div>
+
+<div class="warn-box">
+  <span class="hl-r">Ð¡Ð²Ñ‘Ñ€Ñ‚ÐºÐ° Ð½Ðµ equivariant Ðº:</span> Ñ€Ð¾Ñ‚Ð°Ñ†Ð¸ÑÐ¼, Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸ÑŽ, Ð¾Ñ‚Ñ€Ð°Ð¶ÐµÐ½Ð¸ÑÐ¼. Ð”Ð»Ñ ÑÑ‚Ð¾Ð³Ð¾: ÑƒÐ²ÐµÐ»Ð¸Ñ‡ÐµÐ½Ð¸Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ… (data augmentation), Ð³Ñ€ÑƒÐ¿Ð¿Ð¾-equivariant ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ¸ (G-CNN), Ð¸Ð»Ð¸ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ð¹ Ñ‚Ñ€Ð°Ð½ÑÑ„Ð¾Ñ€Ð¼ÐµÑ€ (STN).
+</div>
+
+<h3>Parameter Sharing â€” ÑÑƒÑ‚ÑŒ ÑÐºÐ¾Ð½Ð¾Ð¼Ð¸Ð¸</h3>
+<div class="formula">
+  FC-ÑÐ»Ð¾Ð¹ (28Â²â†’128): <span class="hl-r">784 Ã— 128 = 100352</span> Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²<br>
+  Conv(1â†’1, 3Ã—3) Ð½Ð° Ñ‚Ð¾Ð¼ Ð¶Ðµ Ð²Ñ…Ð¾Ð´Ðµ: <span class="hl-g">9</span> Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²
+</div>
+<p>ÐžÐ´Ð½Ð¾ ÑÐ´Ñ€Ð¾ ÑÐºÐ°Ð½Ð¸Ñ€ÑƒÐµÑ‚ <em>Ð²ÑÐµ</em> Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ñ‹Ðµ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ â€” ÑÑ‚Ð¾ Ð¸ ÐµÑÑ‚ÑŒ parameter sharing. Ð¯Ð´Ñ€Ð¾ ÑƒÑ‡Ð¸Ñ‚ Ð´ÐµÑ‚ÐµÐºÑ‚Ð¾Ñ€ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ° (Ð½Ð°Ð¿Ñ€Ð¸Ð¼ÐµÑ€, "Ð²ÐµÑ€Ñ‚Ð¸ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ ÐºÑ€Ð°Ð¹"), ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÐµÑ‚ Ð²ÐµÐ·Ð´Ðµ Ð² Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ð¸.</p>
+</div>
+
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ: equivariance Ðº ÑÐ´Ð²Ð¸Ð³Ñƒ</h2>
+<div class="card">
+<p class="muted" style="margin-bottom:10px">Ð”Ð²Ð¸Ð³Ð°Ð¹Ñ‚Ðµ ÑÐ»Ð°Ð¹Ð´ÐµÑ€ â€” Ð¾Ð±ÑŠÐµÐºÑ‚ ÑÐ´Ð²Ð¸Ð³Ð°ÐµÑ‚ÑÑ, ÐºÐ°Ñ€Ñ‚Ð° Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð² ÑÐ´Ð²Ð¸Ð³Ð°ÐµÑ‚ÑÑ Ñ€Ð¾Ð²Ð½Ð¾ Ð½Ð° ÑÑ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¶Ðµ</p>
+<div class="slider-row"><span>Ð¡Ð´Ð²Ð¸Ð³ Î´</span><input type="range" id="eq-shift" min="0" max="4" value="0" oninput="drawEquivar()"><span class="slider-val" id="eq-shift-v">0</span></div>
+<canvas id="eq-canvas" width="640" height="280" style="width:100%;max-width:640px;margin-top:10px"></canvas>
+</div>
+</div>
+
+<!-- ========== TAB 5: ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð° ========== -->
+<div id="t-arch" class="tab-content">
+<h2>5. Ð¢Ð¸Ð¿Ð¸Ñ‡Ð½Ð°Ñ CNN-Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð°</h2>
+<div class="card">
+<p>ÐšÐ»Ð°ÑÑÐ¸Ñ‡ÐµÑÐºÐ°Ñ CNN â€” ÑÑ‚ÐµÐº Ð±Ð»Ð¾ÐºÐ¾Ð² "Conv â†’ BN â†’ ReLU â†’ Pool", Ð·Ð°Ð²ÐµÑ€ÑˆÑ‘Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ‚Ð¾Ñ€Ð¾Ð¼.</p>
+
+<div style="display:flex;flex-direction:column;gap:6px;margin:14px 0">
+<div class="arch-layer" style="border-color:var(--blue)">Input: (B, 3, H, W) â€” RGB Ð¸Ð·Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(3â†’64, 3Ã—3, P=1) â†’ BN â†’ ReLU â†’ (B, 64, H, W)</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(64â†’128, 3Ã—3, P=1) â†’ BN â†’ ReLU â†’ (B, 128, H, W)</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--green)">MaxPool(2, S=2) â†’ (B, 128, H/2, W/2)</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--amber)">Conv2d(128â†’256, 3Ã—3, P=1) â†’ BN â†’ ReLU â†’ (B, 256, H/2, W/2)</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--green)">GlobalAvgPool â†’ (B, 256)</div>
+<div class="arch-arrow">â†“</div>
+<div class="arch-layer" style="border-color:var(--purple)">Linear(256 â†’ num_classes) â†’ Softmax â†’ (B, C)</div>
+</div>
+
+<h3>Ð Ð°Ð·Ð¼ÐµÑ€Ñ‹ feature map Ð² Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾Ð¹ ÑÐµÑ‚Ð¸ (ImageNet, H=W=224)</h3>
+<table>
+<tr><th>Ð¡Ð»Ð¾Ð¹</th><th>Ð Ð°Ð·Ð¼ÐµÑ€ Ð²Ñ‹Ñ…Ð¾Ð´Ð°</th><th>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹</th></tr>
+<tr><td>Input</td><td>3 Ã— 224 Ã— 224</td><td>â€”</td></tr>
+<tr><td>Conv(3â†’64, 7Ã—7, S=2)</td><td>64 Ã— 112 Ã— 112</td><td>9 408</td></tr>
+<tr><td>MaxPool(3Ã—3, S=2)</td><td>64 Ã— 56 Ã— 56</td><td>0</td></tr>
+<tr><td>ResBlock(64â†’64) Ã—3</td><td>64 Ã— 56 Ã— 56</td><td>â‰ˆ221K</td></tr>
+<tr><td>ResBlock(128â†’128) Ã—4, S=2</td><td>128 Ã— 28 Ã— 28</td><td>â‰ˆ1.2M</td></tr>
+<tr><td>ResBlock(256â†’256) Ã—6, S=2</td><td>256 Ã— 14 Ã— 14</td><td>â‰ˆ7.1M</td></tr>
+<tr><td>ResBlock(512â†’512) Ã—3, S=2</td><td>512 Ã— 7 Ã— 7</td><td>â‰ˆ14.9M</td></tr>
+<tr><td>GAP â†’ Linear(512â†’1000)</td><td>1000</td><td>513K</td></tr>
+</table>
+<p class="muted" style="margin-top:6px">ResNet-34: Ð²ÑÐµÐ³Ð¾ â‰ˆ21.8M Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²</p>
+</div>
+
+<h2>Depthwise Separable Convolution (MobileNet)</h2>
+<div class="card">
+<p>Ð Ð°Ð·Ð´ÐµÐ»ÐµÐ½Ð¸Ðµ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ¸ Ð½Ð° Ð´Ð²Ð° ÑÑ‚Ð°Ð¿Ð° Ñ€ÐµÐ·ÐºÐ¾ ÑÐ¾ÐºÑ€Ð°Ñ‰Ð°ÐµÑ‚ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²:</p>
+<div class="grid2">
+<div>
+<h3>ÐžÐ±Ñ‹Ñ‡Ð½Ð°Ñ Conv</h3>
+<div class="formula">Cost = <span class="hl-r">kÂ·kÂ·C_inÂ·C_outÂ·HÂ·W</span></div>
+</div>
+<div>
+<h3>Depthwise Sep.</h3>
+<div class="formula">Cost = <span class="hl-g">kÂ·kÂ·C_inÂ·HÂ·W + C_inÂ·C_outÂ·HÂ·W</span></div>
+</div>
+</div>
+<div class="formula">
+Ratio = <span class="hl-g">1/C_out + 1/kÂ²</span> â‰ˆ <span class="hl-a">1/kÂ²</span> Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¼ C_out
+</div>
+<p class="muted">Ð”Ð»Ñ k=3: ÑÐºÐ¾Ð½Ð¾Ð¼Ð¸Ñ Ð² <span class="hl-a">~9Ã—</span> Ð¿Ñ€Ð¸ ÑÐ¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¸Ð¸ Ð°Ð½Ð°Ð»Ð¾Ð³Ð¸Ñ‡Ð½Ð¾Ð¹ Ð²Ñ‹Ñ€Ð°Ð·Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸.</p>
+</div>
+</div>
+
+<!-- ========== TAB 6: Backprop ========== -->
+<div id="t-back" class="tab-content">
+<h2>6. Backprop Ð² ÑÐ²Ñ‘Ñ€Ñ‚Ð¾Ñ‡Ð½Ð¾Ð¼ ÑÐ»Ð¾Ðµ</h2>
+<div class="card">
+<p>ÐŸÑ€ÑÐ¼Ð¾Ð¹ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´: <span class="hl-g">Z = I â˜… K + b</span>, Ð·Ð°Ñ‚ÐµÐ¼ A = f(Z)</p>
+<p>ÐŸÑƒÑÑ‚ÑŒ Î´ = âˆ‚L/âˆ‚Z (incoming gradient, shape = Z).</p>
+
+<h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ ÑÐ´Ñ€Ñƒ âˆ‚L/âˆ‚K</h3>
+<div class="formula">
+  âˆ‚L/âˆ‚K[m,n] = <span class="hl-a">Î£<sub>i,j</sub></span> Î´[i,j] Â· <span class="hl-b">I[i+m, j+n]</span>
+</div>
+<div class="step-box"><span class="step-num">Ð¡ÑƒÑ‚ÑŒ:</span> âˆ‚L/âˆ‚K â€” ÑÑ‚Ð¾ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° Ð²Ñ…Ð¾Ð´Ð° I Ñ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð¼ Î´ (ÐºÑ€Ð¾ÑÑ-ÐºÐ¾Ñ€Ñ€ÐµÐ»ÑÑ†Ð¸Ñ Î´ Ð¿Ð¾ I)</div>
+
+<h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð²Ñ…Ð¾Ð´Ñƒ âˆ‚L/âˆ‚I (Ð´Ð»Ñ Ð¿Ñ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ)</h3>
+<div class="formula">
+  âˆ‚L/âˆ‚I[i,j] = <span class="hl-a">Î£<sub>m,n</sub></span> Î´[i-m, j-n] Â· <span class="hl-g">K[m,n]</span>
+</div>
+<div class="step-box"><span class="step-num">Ð¡ÑƒÑ‚ÑŒ:</span> ÑÑ‚Ð¾ Ð¿Ð¾Ð»Ð½Ð°Ñ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° Î´ Ñ <em>Ð¿Ð¾Ð²Ñ‘Ñ€Ð½ÑƒÑ‚Ñ‹Ð¼ Ð½Ð° 180Â°</em> ÑÐ´Ñ€Ð¾Ð¼ K â€” Ð¸Ð»Ð¸ traspÐ¾Ð·Ð¸Ñ†Ð¸Ð¾Ð½Ð½Ð°Ñ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ°</div>
+
+<h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ bias</h3>
+<div class="formula">
+  âˆ‚L/âˆ‚b<sub>c</sub> = <span class="hl-a">Î£<sub>i,j</sub></span> Î´<sub>c</sub>[i,j]
+</div>
+<p class="muted">Ð¡ÑƒÐ¼Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð²ÑÐµÐ¹ Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ð¾Ð¹ ÐºÐ°Ñ€Ñ‚Ðµ â€” ÐºÐ°Ð¶Ð´Ð°Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ Ð¾Ð´Ð¸Ð½ Ð¸ Ñ‚Ð¾Ñ‚ Ð¶Ðµ bias, Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ Ð²ÐºÐ»Ð°Ð´Ñ‹ ÑÐºÐ»Ð°Ð´Ñ‹Ð²Ð°ÑŽÑ‚ÑÑ.</p>
+
+<div class="info-box">
+  <strong>ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ:</strong> backprop Ñ‡ÐµÑ€ÐµÐ· ÑÐ²Ñ‘Ñ€Ñ‚ÐºÑƒ â€” Ñ‚Ð¾Ð¶Ðµ ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° (Ð¸Ð»Ð¸ ÐµÑ‘ Ñ‚Ñ€Ð°Ð½ÑÐ¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ). Ð­Ñ‚Ð¾ Ð´ÐµÐ»Ð°ÐµÑ‚ Ñ€ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸ÑŽ ÑÐ»ÐµÐ³Ð°Ð½Ñ‚Ð½Ð¾Ð¹: Ñ‚Ðµ Ð¶Ðµ Ð¿Ñ€Ð¸Ð¼Ð¸Ñ‚Ð¸Ð²Ñ‹ CUDA/cuDNN.
+</div>
+
+<h3>ÐŸÐ¾ÑˆÐ°Ð³Ð¾Ð²Ñ‹Ð¹ Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€</h3>
+<div class="step-box"><span class="step-num">Ð”Ð°Ð½Ð¾:</span>I = [[1,2,3],[4,5,6],[7,8,9]], K = [[1,0],[-1,0]], stride=1, pad=0</div>
+<div class="step-box"><span class="step-num">Forward:</span>Z[0,0] = 1Â·1+2Â·0+4Â·(-1)+5Â·0 = -3; Z[0,1] = 2Â·1+3Â·0+5Â·(-1)+6Â·0 = -3 Ð¸ Ñ‚.Ð´.</div>
+<div class="step-box"><span class="step-num">ÐŸÑƒÑÑ‚ÑŒ Î´ = [[1,1],[1,1]] (upstream gradient).</span></div>
+<div class="step-box"><span class="step-num">âˆ‚L/âˆ‚K[0,0]</span>= Î´[0,0]Â·I[0,0] + Î´[0,1]Â·I[0,1] + Î´[1,0]Â·I[1,0] + Î´[1,1]Â·I[1,1] = 1+2+4+5 = 12</div>
+<div class="step-box"><span class="step-num">âˆ‚L/âˆ‚K[1,0]</span>= 1Â·4 + 1Â·5 + 1Â·7 + 1Â·8 = 24</div>
+</div>
+</div>
+
+<!-- ========== TAB 7: PyTorch ========== -->
+<div id="t-code" class="tab-content">
+<h2>7. Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð½Ð° PyTorch</h2>
+<div class="card">
+<h3>Ð‘Ð°Ð·Ð¾Ð²Ñ‹Ð¹ ÑÐ²Ñ‘Ñ€Ñ‚Ð¾Ñ‡Ð½Ñ‹Ð¹ Ð±Ð»Ð¾Ðº</h3>
+<div class="code-block">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class ConvBlock(nn.Module):
+    """Conv â†’ BN â†’ ReLU (ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ñ‹Ð¹ Ð±Ð»Ð¾Ðº CNN)"""
+    def __init__(self, in_ch, out_ch, k=3, s=1, p=1):
+        super().__init__()
+        self.conv = nn.Conv2d(in_ch, out_ch, k, stride=s, padding=p, bias=False)
+        self.bn   = nn.BatchNorm2d(out_ch)
+
+    def forward(self, x):
+        return F.relu(self.bn(self.conv(x)))</div>
+
+<h3>ÐŸÑ€Ð¾ÑÑ‚Ð°Ñ CNN Ð´Ð»Ñ CIFAR-10</h3>
+<div class="code-block">class SimpleCNN(nn.Module):
+    def __init__(self, num_classes=10):
+        super().__init__()
+        # Encoder: (3,32,32) â†’ (256,4,4)
+        self.features = nn.Sequential(
+            ConvBlock(3, 64),               # (64,32,32)
+            ConvBlock(64, 128),             # (128,32,32)
+            nn.MaxPool2d(2, 2),             # (128,16,16)
+            ConvBlock(128, 256),            # (256,16,16)
+            ConvBlock(256, 256),            # (256,16,16)
+            nn.MaxPool2d(2, 2),             # (256,8,8)
+            ConvBlock(256, 512),            # (512,8,8)
+            nn.AdaptiveAvgPool2d(1),        # (512,1,1) GAP
+        )
+        self.classifier = nn.Linear(512, num_classes)
+
+    def forward(self, x):
+        x = self.features(x).squeeze(-1).squeeze(-1)  # (B,512)
+        return self.classifier(x)
+
+model = SimpleCNN()
+print(f"ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: {sum(p.numel() for p in model.parameters()):,}")
+# â†’ ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: 3,742,730</div>
+
+<h3>ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ñ€Ð°Ð·Ð¼ÐµÑ€Ð½Ð¾ÑÑ‚ÐµÐ¹ Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ</h3>
+<div class="code-block">x = torch.randn(4, 3, 32, 32)   # batch=4, RGB, 32Ã—32
+conv = nn.Conv2d(3, 64, 3, padding=1)
+out = conv(x)
+print(out.shape)   # â†’ torch.Size([4, 64, 32, 32])
+
+# H_out = (32 + 2*1 - 3) / 1 + 1 = 32 âœ“</div>
+
+<h3>Depthwise Separable Conv</h3>
+<div class="code-block">class DepthwiseSeparable(nn.Module):
+    def __init__(self, in_ch, out_ch, k=3, s=1):
+        super().__init__()
+        # Depthwise: ÐºÐ°Ð¶Ð´Ñ‹Ð¹ ÐºÐ°Ð½Ð°Ð» ÑÐ²Ñ‘Ñ€Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾
+        self.dw = nn.Conv2d(in_ch, in_ch, k, stride=s,
+                            padding=k//2, groups=in_ch, bias=False)
+        self.bn1 = nn.BatchNorm2d(in_ch)
+        # Pointwise: ÑÐ¼ÐµÑˆÐ¸Ð²Ð°ÐµÐ¼ ÐºÐ°Ð½Ð°Ð»Ñ‹ 1Ã—1 conv
+        self.pw  = nn.Conv2d(in_ch, out_ch, 1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_ch)
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.dw(x)))
+        return F.relu(self.bn2(self.pw(x)))
+
+# Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²
+regular = nn.Conv2d(64, 128, 3, padding=1)
+dws     = DepthwiseSeparable(64, 128)
+print(f"ÐžÐ±Ñ‹Ñ‡Ð½Ð°Ñ: {sum(p.numel() for p in regular.parameters()):,}")
+print(f"DW-Sep:  {sum(p.numel() for p in dws.parameters()):,}")
+# â†’ ÐžÐ±Ñ‹Ñ‡Ð½Ð°Ñ: 73,728  DW-Sep: 8,448  (ÑÐºÐ¾Ð½Ð¾Ð¼Ð¸Ñ ~8.7Ã—)</div>
+
+<h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ„Ð¸Ð»ÑŒÑ‚Ñ€Ð¾Ð² Ð¿ÐµÑ€Ð²Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ</h3>
+<div class="code-block">import matplotlib.pyplot as plt
+import torchvision.models as models
+
+resnet = models.resnet18(pretrained=True)
+w = resnet.conv1.weight.data  # (64, 3, 7, 7)
+
+fig, axes = plt.subplots(8, 8, figsize=(10, 10))
+for i, ax in enumerate(axes.flat):
+    f = w[i].permute(1,2,0)  # (7,7,3)
+    f = (f - f.min()) / (f.max() - f.min())
+    ax.imshow(f); ax.axis('off')
+plt.tight_layout(); plt.show()</div>
+
+<h3>NumPy: ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ (2D)</h3>
+<div class="code-block">import numpy as np
+from scipy.signal import correlate2d
+
+def conv2d_manual(img, kernel, padding=0, stride=1):
+    """Ð ÑƒÑ‡Ð½Ð°Ñ 2D ÐºÑ€Ð¾ÑÑ-ÐºÐ¾Ñ€Ñ€ÐµÐ»ÑÑ†Ð¸Ñ (Ð¾Ð´Ð½Ð¾ÐºÐ°Ð½Ð°Ð»ÑŒÐ½Ð°Ñ)"""
+    if padding > 0:
+        img = np.pad(img, padding, mode='constant')
+    H, W = img.shape
+    k = kernel.shape[0]
+    H_out = (H - k) // stride + 1
+    W_out = (W - k) // stride + 1
+    out = np.zeros((H_out, W_out))
+    for i in range(0, H_out):
+        for j in range(0, W_out):
+            out[i,j] = np.sum(img[i*stride:i*stride+k,
+                                   j*stride:j*stride+k] * kernel)
+    return out
+
+# Ð”ÐµÑ‚ÐµÐºÑ‚Ð¾Ñ€ Ð²ÐµÑ€Ñ‚Ð¸ÐºÐ°Ð»ÑŒÐ½Ñ‹Ñ… ÐºÑ€Ð°Ñ‘Ð² (Ñ„Ð¸Ð»ÑŒÑ‚Ñ€ Ð¡Ð¾Ð±ÐµÐ»Ñ)
+sobel_x = np.array([[-1, 0, 1],[-2, 0, 2],[-1, 0, 1]])
+img = np.random.randn(6, 6)
+result = conv2d_manual(img, sobel_x)
+print("Input:", img.shape, "â†’ Output:", result.shape)  # (6,6) â†’ (4,4)</div>
+</div>
+</div>
+
+<script>
+// ---- TAB SWITCHING ----
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ids=['t-conv','t-rf','t-pool','t-equi','t-arch','t-back','t-code'];
+    t.classList.toggle('active', ids[i]===id);
+  });
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id===id));
+}
+
+// ---- CONV CALCULATOR ----
+function calcConv(){
+  const hin=+document.getElementById('hin').value;
+  const k=+document.getElementById('ksize').value;
+  const p=+document.getElementById('pad').value;
+  const s=+document.getElementById('str').value;
+  const cin=+document.getElementById('cin').value;
+  const cout=+document.getElementById('cout').value;
+  document.getElementById('hin-v').textContent=hin;
+  document.getElementById('ksize-v').textContent=k;
+  document.getElementById('pad-v').textContent=p;
+  document.getElementById('str-v').textContent=s;
+  document.getElementById('cin-v').textContent=cin;
+  document.getElementById('cout-v').textContent=cout;
+  const hout=Math.floor((hin+2*p-k)/s)+1;
+  const params=k*k*cin*cout+cout;
+  const flops=2*k*k*cin*hout*hout*cout;
+  const valid=hout>0;
+  document.getElementById('conv-result').innerHTML=`
+    <div>H_in = W_in: <span style="color:var(--blue)">${hin}Ã—${hin}</span></div>
+    <div>H_out = W_out: <span style="color:${valid?'var(--green)':'var(--red)'}">${valid?hout+'Ã—'+hout:'ÐÐµÐ²ÐµÑ€Ð½Ð¾!'}</span></div>
+    <div>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: <span style="color:var(--amber)">${params.toLocaleString()}</span></div>
+    <div>FLOPs (matmul): <span style="color:var(--muted)">${flops.toLocaleString()}</span></div>
+    <div>Padding type: <span style="color:var(--blue)">${p===0?'valid':p===Math.floor(k/2)?'same':'custom'}</span></div>
+  `;
+}
+calcConv();
+
+// ---- CONV VISUALIZATION ----
+const inputData=[
+  [2,1,3,0,1,2],[0,3,1,2,4,1],[1,2,0,3,1,0],
+  [3,0,2,1,0,3],[1,4,1,2,3,0],[0,1,3,0,2,1]
+];
+const kernelData=[[1,0,-1],[1,0,-1],[1,0,-1]];
+let selR=-1,selC=-1;
+
+function buildVis(){
+  buildMatrix('vis-input',inputData,6,6,'input');
+  buildMatrix('vis-kernel',kernelData,3,3,'kernel');
+  const out=[];
+  for(let i=0;i<4;i++){out.push([]);for(let j=0;j<4;j++){let v=0;for(let m=0;m<3;m++)for(let n=0;n<3;n++)v+=kernelData[m][n]*inputData[i+m][j+n];out[i].push(Math.round(v));}}
+  buildMatrix('vis-output',out,4,4,'output');
+}
+
+function buildMatrix(id,data,rows,cols,type){
+  const el=document.getElementById(id);el.innerHTML='';
+  for(let i=0;i<rows;i++){
+    const row=document.createElement('div');row.className='matrix-row';
+    for(let j=0;j<cols;j++){
+      const cell=document.createElement('div');cell.className='conv-cell';
+      cell.textContent=data[i][j];
+      if(type==='output'){cell.style.cursor='pointer';cell.onclick=()=>highlightPatch(i,j,data[i][j]);}
+      if(type==='kernel')cell.classList.add('kernel-cell');
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+
+function highlightPatch(or,oc,val){
+  selR=or;selC=oc;
+  document.querySelectorAll('#vis-input .conv-cell').forEach(c=>c.classList.remove('highlight-cell'));
+  document.querySelectorAll('#vis-output .conv-cell').forEach((c,idx)=>{const r=Math.floor(idx/4),co=idx%4;c.classList.toggle('result-cell',r===or&&co===oc);});
+  for(let m=0;m<3;m++)for(let n=0;n<3;n++){
+    const idx=(or+m)*6+(oc+n);
+    document.querySelectorAll('#vis-input .conv-cell')[idx].classList.add('highlight-cell');
+  }
+  let calc='Ð’Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ Z['+or+','+oc+']:<br>';
+  let total=0;
+  for(let m=0;m<3;m++)for(let n=0;n<3;n++){
+    const iv=inputData[or+m][oc+n],kv=kernelData[m][n],prod=iv*kv;total+=prod;
+    calc+=`K[${m},${n}]Â·I[${or+m},${oc+n}] = ${kv}Â·${iv} = ${prod}<br>`;
+  }
+  calc+=`<br><strong style="color:var(--amber)">Î£ = ${Math.round(total)}</strong>`;
+  document.getElementById('conv-calc-box').innerHTML=calc;
+}
+buildVis();
+
+// ---- RF CALCULATOR ----
+let rfLayers=[{k:3,s:1},{k:3,s:1},{k:3,s:2}];
+function renderRFUI(){
+  const c=document.getElementById('rf-layers-ui');c.innerHTML='';
+  rfLayers.forEach((l,i)=>{
+    const d=document.createElement('div');d.className='slider-row';d.style.gap='12px';
+    d.innerHTML=`<span style="color:var(--muted);width:60px">Ð¡Ð»Ð¾Ð¹ ${i+1}</span>
+      <span>k:</span><input type="range" min="1" max="7" step="2" value="${l.k}" oninput="rfLayers[${i}].k=+this.value;calcRF()">
+      <span class="slider-val">${l.k}</span>
+      <span>s:</span><input type="range" min="1" max="4" value="${l.s}" oninput="rfLayers[${i}].s=+this.value;calcRF()">
+      <span class="slider-val">${l.s}</span>`;
+    c.appendChild(d);
+  });
+  calcRF();
+}
+function addRFLayer(){if(rfLayers.length<6){rfLayers.push({k:3,s:1});renderRFUI();}}
+function removeRFLayer(){if(rfLayers.length>1){rfLayers.pop();renderRFUI();}}
+function calcRF(){
+  // Update display values
+  document.querySelectorAll('#rf-layers-ui .slider-val').forEach((el,i)=>{
+    const idx=Math.floor(i/2),sub=i%2;
+    el.textContent=sub===0?rfLayers[idx].k:rfLayers[idx].s;
+  });
+  let rf=1,stride=1;const rfs=[1];
+  for(const l of rfLayers){rf+=(l.k-1)*stride;stride*=l.s;rfs.push(rf);}
+  let html=`<div class="step-box">`;
+  rfLayers.forEach((l,i)=>html+=`Ð¡Ð»Ð¾Ð¹ ${i+1} (k=${l.k}, s=${l.s}): RF = <span style="color:var(--amber)">${rfs[i+1]}</span><br>`);
+  html+=`<br><strong>Ð˜Ñ‚Ð¾Ð³Ð¾Ð²Ð¾Ðµ RF = <span style="color:var(--green)">${rf}</span></strong></div>`;
+  document.getElementById('rf-result').innerHTML=html;
+  drawRFCanvas(rfs);
+}
+function drawRFCanvas(rfs){
+  const cv=document.getElementById('rf-canvas');
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,600,300);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,600,300);
+  const n=rfs.length;const W=560;const x0=20;const y=150;
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;
+  for(let i=0;i<n;i++){
+    const x=x0+i*(W/(n-1||1));
+    ctx.beginPath();ctx.moveTo(x,50);ctx.lineTo(x,250);ctx.stroke();
+    ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='center';
+    ctx.fillText(i===0?'Input':'Layer '+i,x,270);
+  }
+  for(let i=0;i<n;i++){
+    const x=x0+i*(W/(n-1||1));
+    const rf=rfs[i];const maxRF=rfs[n-1]||1;
+    const h=Math.min((rf/maxRF)*160+4,160);
+    ctx.fillStyle='rgba(245,158,11,0.2)';ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+    ctx.fillRect(x-h/2,y-h/2,h,h);ctx.strokeRect(x-h/2,y-h/2,h,h);
+    ctx.fillStyle='#f59e0b';ctx.font='bold 13px system-ui';ctx.textAlign='center';
+    ctx.fillText(rf,x,y+5);
+  }
+  ctx.strokeStyle='#10b981';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  for(let i=0;i<n-1;i++){
+    const x1=x0+i*(W/(n-1||1)),x2=x0+(i+1)*(W/(n-1||1));
+    const h1=Math.min((rfs[i]/rfs[n-1]||1)*160+4,160),h2=Math.min((rfs[i+1]/rfs[n-1]||1)*160+4,160);
+    ctx.beginPath();ctx.moveTo(x1+h1/2,y);ctx.lineTo(x2-h2/2,y);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle='#e6edf3';ctx.font='12px system-ui';ctx.textAlign='left';
+  ctx.fillText('Ð ÐµÑ†ÐµÐ¿Ñ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¿Ð¾Ð»Ðµ Ð½Ð° ÐºÐ°Ð¶Ð´Ð¾Ð¼ ÑƒÑ€Ð¾Ð²Ð½Ðµ',20,25);
+}
+renderRFUI();
+
+// ---- POOL VISUALIZATION ----
+const poolInput=[
+  [8,2,4,1,3,7],[5,9,6,3,8,2],[1,4,2,7,5,6],
+  [3,6,8,4,1,9],[7,1,5,2,6,3],[2,8,3,9,4,5]
+];
+function drawPool(){
+  const k=+document.getElementById('pk').value,s=+document.getElementById('ps').value;
+  document.getElementById('pk-v').textContent=k;
+  document.getElementById('ps-v').textContent=s;
+  const hout=Math.floor((6-k)/s)+1;
+  buildPoolMatrix('pool-input',poolInput,6,6,false);
+  const maxOut=[],avgOut=[];
+  for(let i=0;i<hout;i++){
+    maxOut.push([]);avgOut.push([]);
+    for(let j=0;j<hout;j++){
+      let mx=-Infinity,sm=0;
+      for(let m=0;m<k;m++)for(let n=0;n<k;n++){const v=poolInput[i*s+m][j*s+n];mx=Math.max(mx,v);sm+=v;}
+      maxOut[i].push(mx);avgOut[i].push(+(sm/(k*k)).toFixed(1));
+    }
+  }
+  buildPoolMatrix('pool-max-out',maxOut,hout,hout,true);
+  buildPoolMatrix('pool-avg-out',avgOut,hout,hout,false);
+}
+function buildPoolMatrix(id,data,r,c,highlight){
+  const el=document.getElementById(id);el.innerHTML='';
+  for(let i=0;i<r;i++){
+    const row=document.createElement('div');row.className='matrix-row';
+    for(let j=0;j<c;j++){
+      const cell=document.createElement('div');cell.className='conv-cell';
+      cell.textContent=data[i][j];
+      if(highlight)cell.classList.add('highlight-cell');
+      row.appendChild(cell);
+    }
+    el.appendChild(row);
+  }
+}
+drawPool();
+
+// ---- EQUIVARIANCE CANVAS ----
+function drawEquivar(){
+  const shift=+document.getElementById('eq-shift').value;
+  document.getElementById('eq-shift-v').textContent=shift;
+  const cv=document.getElementById('eq-canvas');
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,640,280);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,640,280);
+  // Draw input (left side)
+  const cols=8,rows=6,cs=28,ox=20,oy=30;
+  ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='left';
+  ctx.fillText('Ð’Ñ…Ð¾Ð´ (6Ã—8)',ox,20);
+  for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){
+    const isObj=(j===2+shift||j===3+shift)&&i>=1&&i<=4;
+    ctx.fillStyle=isObj?'rgba(245,158,11,0.7)':'rgba(96,165,250,0.15)';
+    ctx.fillRect(ox+j*cs,oy+i*cs,cs-2,cs-2);
+    if(isObj){ctx.fillStyle='#0d1117';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('â– ',ox+j*cs+13,oy+i*cs+15);}
+  }
+  // Arrow
+  ctx.strokeStyle='#8b949e';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ox+cols*cs+12,oy+rows*cs/2);ctx.lineTo(ox+cols*cs+40,oy+rows*cs/2);ctx.stroke();
+  ctx.fillStyle='#8b949e';ctx.font='18px system-ui';ctx.textAlign='center';ctx.fillText('â˜…',ox+cols*cs+26,oy+rows*cs/2+7);
+  // Feature map (right side), shift same amount
+  const ox2=ox+cols*cs+60;const fcols=6,frows=4;
+  ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='left';
+  ctx.fillText('ÐšÐ°Ñ€Ñ‚Ð° Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¾Ð² (4Ã—6)',ox2,20);
+  for(let i=0;i<frows;i++)for(let j=0;j<fcols;j++){
+    const isAct=(j===Math.max(0,shift)||j===Math.max(0,shift)+1)&&i>=0&&i<=3;
+    ctx.fillStyle=isAct?'rgba(16,185,129,0.7)':'rgba(96,165,250,0.08)';
+    ctx.fillRect(ox2+j*cs,oy+i*cs,cs-2,cs-2);
+    if(isAct){ctx.fillStyle='#0d1117';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('âœ“',ox2+j*cs+13,oy+i*cs+15);}
+  }
+  ctx.fillStyle='var(--green)';ctx.font='12px system-ui';ctx.textAlign='center';
+  ctx.fillStyle='#8b949e';
+  ctx.fillText(`ÐžÐ±ÑŠÐµÐºÑ‚ ÑÐ´Ð²Ð¸Ð½ÑƒÑ‚ Ð½Ð° Î´=${shift} â†’ Ð¿Ñ€Ð¸Ð·Ð½Ð°Ðº ÑÐ´Ð²Ð¸Ð½ÑƒÑ‚ Ð½Ð° Î´=${shift}: f(T_Î´ I) = T_Î´ f(I)`,320,260);
+}
+drawEquivar();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+

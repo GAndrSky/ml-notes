@@ -1,5 +1,5 @@
-
-<link rel="stylesheet" href="shared-nav.css">
+﻿
+<link rel="stylesheet" href="../shared-nav.css">
 <style>
 :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--a:#f59e0b;--g:#10b981;--r:#ef4444;--b:#60a5fa;--p:#a78bfa;--tx:#e6edf3;--mu:#8b949e}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -30,15 +30,15 @@ td{padding:5px 8px;border-bottom:1px solid #21262d}
 canvas{display:block;width:100%}
 </style>
 
-<h1>5.4 — Residual Networks & Normalization</h1>
-<p class="mu">ResNet · Degradation problem · Basic/Bottleneck · Gradient highway · BN / LN / GN / RMSNorm</p>
+<h1>5.4 â€” Residual Networks & Normalization</h1>
+<p class="mu">ResNet Â· Degradation problem Â· Basic/Bottleneck Â· Gradient highway Â· BN / LN / GN / RMSNorm</p>
 
 <div class="tabs" id="mtabs">
   <button class="tab active" onclick="sw(0)">Degradation</button>
   <button class="tab" onclick="sw(1)">Residual Block</button>
-  <button class="tab" onclick="sw(2)">Градиент ↗</button>
+  <button class="tab" onclick="sw(2)">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ â†—</button>
   <button class="tab" onclick="sw(3)">ResNet arch</button>
-  <button class="tab" onclick="sw(4)">Norm теория</button>
+  <button class="tab" onclick="sw(4)">Norm Ñ‚ÐµÐ¾Ñ€Ð¸Ñ</button>
   <button class="tab" onclick="sw(5)">BN vs LN vs GN</button>
   <button class="tab" onclick="sw(6)">PyTorch</button>
 </div>
@@ -47,19 +47,19 @@ canvas{display:block;width:100%}
 <div id="t0" class="tc active">
 <h2>1. Degradation Problem</h2>
 <div class="card">
-<p>До ResNet: добавление слоёв ухудшало <strong>train loss</strong>. Это не overfitting — деградация оптимизации.</p>
-<div class="wb"><span class="hr">He et al. 2015:</span> 56-слойная plain сеть хуже 20-слойной на CIFAR-10 — и train, и test. Деградация!</div>
-<div class="sb"><span class="sn">Проблема.</span>Если оптимум — identity H(x)=x, слою надо W→0. Трудно при случайной инициализации.</div>
-<div class="sb"><span class="sn">Решение He.</span>Учим остаток <span class="ha">F(x)=H(x)−x</span>, тогда <span class="hg">H(x)=F(x)+x</span>. Identity → F(x)=0 — легко.</div>
-<div class="sb"><span class="sn">Ансамбль (Veit 2016).</span>ResNet c N блоков = ансамбль из 2ᴺ путей. Удаление блока ≈ не меняет ответ.</div>
+<p>Ð”Ð¾ ResNet: Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÑÐ»Ð¾Ñ‘Ð² ÑƒÑ…ÑƒÐ´ÑˆÐ°Ð»Ð¾ <strong>train loss</strong>. Ð­Ñ‚Ð¾ Ð½Ðµ overfitting â€” Ð´ÐµÐ³Ñ€Ð°Ð´Ð°Ñ†Ð¸Ñ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸.</p>
+<div class="wb"><span class="hr">He et al. 2015:</span> 56-ÑÐ»Ð¾Ð¹Ð½Ð°Ñ plain ÑÐµÑ‚ÑŒ Ñ…ÑƒÐ¶Ðµ 20-ÑÐ»Ð¾Ð¹Ð½Ð¾Ð¹ Ð½Ð° CIFAR-10 â€” Ð¸ train, Ð¸ test. Ð”ÐµÐ³Ñ€Ð°Ð´Ð°Ñ†Ð¸Ñ!</div>
+<div class="sb"><span class="sn">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°.</span>Ð•ÑÐ»Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼ÑƒÐ¼ â€” identity H(x)=x, ÑÐ»Ð¾ÑŽ Ð½Ð°Ð´Ð¾ Wâ†’0. Ð¢Ñ€ÑƒÐ´Ð½Ð¾ Ð¿Ñ€Ð¸ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾Ð¹ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸.</div>
+<div class="sb"><span class="sn">Ð ÐµÑˆÐµÐ½Ð¸Ðµ He.</span>Ð£Ñ‡Ð¸Ð¼ Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ðº <span class="ha">F(x)=H(x)âˆ’x</span>, Ñ‚Ð¾Ð³Ð´Ð° <span class="hg">H(x)=F(x)+x</span>. Identity â†’ F(x)=0 â€” Ð»ÐµÐ³ÐºÐ¾.</div>
+<div class="sb"><span class="sn">ÐÐ½ÑÐ°Ð¼Ð±Ð»ÑŒ (Veit 2016).</span>ResNet c N Ð±Ð»Ð¾ÐºÐ¾Ð² = Ð°Ð½ÑÐ°Ð¼Ð±Ð»ÑŒ Ð¸Ð· 2á´º Ð¿ÑƒÑ‚ÐµÐ¹. Ð£Ð´Ð°Ð»ÐµÐ½Ð¸Ðµ Ð±Ð»Ð¾ÐºÐ° â‰ˆ Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚ Ð¾Ñ‚Ð²ÐµÑ‚.</div>
 </div>
-<h2>Plain vs ResNet — loss по эпохам</h2>
+<h2>Plain vs ResNet â€” loss Ð¿Ð¾ ÑÐ¿Ð¾Ñ…Ð°Ð¼</h2>
 <div class="card">
 <canvas id="cv0" height="200"></canvas>
 </div>
-<h2>Интерактив: точность vs глубина</h2>
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚ÑŒ vs Ð³Ð»ÑƒÐ±Ð¸Ð½Ð°</h2>
 <div class="card">
-<div class="sr"><span>Глубина (слоёв)</span><input type="range" id="sl0" min="5" max="110" step="5" value="20" oninput="updDep()"><span class="sv" id="vsl0">20</span></div>
+<div class="sr"><span>Ð“Ð»ÑƒÐ±Ð¸Ð½Ð° (ÑÐ»Ð¾Ñ‘Ð²)</span><input type="range" id="sl0" min="5" max="110" step="5" value="20" oninput="updDep()"><span class="sv" id="vsl0">20</span></div>
 <canvas id="cv0b" height="160"></canvas>
 <div id="inf0" style="margin-top:6px;font-size:.88em"></div>
 </div>
@@ -67,30 +67,30 @@ canvas{display:block;width:100%}
 
 <!-- 1 -->
 <div id="t1" class="tc">
-<h2>2. Residual Block — математика</h2>
+<h2>2. Residual Block â€” Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸ÐºÐ°</h2>
 <div class="card">
 <h3>Basic Block (ResNet-18/34)</h3>
 <div class="fm">y = <span class="hg">F(x)</span>  +  <span class="hb">x</span>
-F(x) = W₂ · σ(BN(W₁·x))    ← 2× Conv 3×3
-y    = σ(BN(F(x)) + x)      ← ReLU после Add
-Параметров: 2·9·C² = <span class="ha">18C²</span>
+F(x) = Wâ‚‚ Â· Ïƒ(BN(Wâ‚Â·x))    â† 2Ã— Conv 3Ã—3
+y    = Ïƒ(BN(F(x)) + x)      â† ReLU Ð¿Ð¾ÑÐ»Ðµ Add
+ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²: 2Â·9Â·CÂ² = <span class="ha">18CÂ²</span>
 
-Projection shortcut (когда размеры ≠):
-skip(x) = BN(Conv1×1(x, stride=s))</div>
+Projection shortcut (ÐºÐ¾Ð³Ð´Ð° Ñ€Ð°Ð·Ð¼ÐµÑ€Ñ‹ â‰ ):
+skip(x) = BN(Conv1Ã—1(x, stride=s))</div>
 
 <h3>Bottleneck (ResNet-50/101/152)</h3>
-<div class="fm">W₁: 1×1  C→C/4   squeeze
-W₂: 3×3  C/4→C/4 process
-W₃: 1×1  C/4→C   expand
-Параметров ≈ <span class="hg">3.5C²/4</span>  (в ~3× меньше Basic)</div>
+<div class="fm">Wâ‚: 1Ã—1  Câ†’C/4   squeeze
+Wâ‚‚: 3Ã—3  C/4â†’C/4 process
+Wâ‚ƒ: 1Ã—1  C/4â†’C   expand
+ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² â‰ˆ <span class="hg">3.5CÂ²/4</span>  (Ð² ~3Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ Basic)</div>
 
 <h3>Pre-activation (He 2016)</h3>
-<div class="fm">Post-act 2015:  y = σ(BN(<span class="ha">F(x)+x</span>))
-Pre-act  2016:  y = x + F(<span class="hg">BN(σ(x))</span>)
-Skip path чист → градиент без BN и ReLU</div>
-<div class="ib"><strong>Зачем Pre-act лучше:</strong> при Post-act добавление проходит через BN+ReLU — skip не чистый. Pre-act: residual stream = чистая сумма слагаемых.</div>
+<div class="fm">Post-act 2015:  y = Ïƒ(BN(<span class="ha">F(x)+x</span>))
+Pre-act  2016:  y = x + F(<span class="hg">BN(Ïƒ(x))</span>)
+Skip path Ñ‡Ð¸ÑÑ‚ â†’ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð±ÐµÐ· BN Ð¸ ReLU</div>
+<div class="ib"><strong>Ð—Ð°Ñ‡ÐµÐ¼ Pre-act Ð»ÑƒÑ‡ÑˆÐµ:</strong> Ð¿Ñ€Ð¸ Post-act Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¸Ñ‚ Ñ‡ÐµÑ€ÐµÐ· BN+ReLU â€” skip Ð½Ðµ Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹. Pre-act: residual stream = Ñ‡Ð¸ÑÑ‚Ð°Ñ ÑÑƒÐ¼Ð¼Ð° ÑÐ»Ð°Ð³Ð°ÐµÐ¼Ñ‹Ñ….</div>
 </div>
-<h2>Визуализация блоков</h2>
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð±Ð»Ð¾ÐºÐ¾Ð²</h2>
 <div class="card">
 <div class="tabs" id="btabs">
   <button class="tab active" id="bt0" onclick="showBlock(0)">Basic</button>
@@ -100,9 +100,9 @@ Skip path чист → градиент без BN и ReLU</div>
 <canvas id="cv1" height="280"></canvas>
 <div id="inf1" style="margin-top:6px;font-size:.83em;color:var(--mu)"></div>
 </div>
-<h2>Калькулятор параметров Bottleneck</h2>
+<h2>ÐšÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Bottleneck</h2>
 <div class="card">
-<div class="sr"><span>C каналов</span><input type="range" id="slC" min="64" max="2048" step="64" value="256" oninput="calcBN()"><span class="sv" id="vC">256</span></div>
+<div class="sr"><span>C ÐºÐ°Ð½Ð°Ð»Ð¾Ð²</span><input type="range" id="slC" min="64" max="2048" step="64" value="256" oninput="calcBN()"><span class="sv" id="vC">256</span></div>
 <div class="sr"><span>Reduction r</span><input type="range" id="slR" min="2" max="8" value="4" oninput="calcBN()"><span class="sv" id="vR">4</span></div>
 <div id="infBN" style="font-size:.88em;line-height:2;margin-top:6px"></div>
 </div>
@@ -110,21 +110,21 @@ Skip path чист → градиент без BN и ReLU</div>
 
 <!-- 2 -->
 <div id="t2" class="tc">
-<h2>3. Градиент через skip connection</h2>
+<h2>3. Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ñ‡ÐµÑ€ÐµÐ· skip connection</h2>
 <div class="card">
-<p>Стек N блоков: x_L = x_l + Σ F(xᵢ). Backprop:</p>
-<div class="fm">∂L/∂x_l  =  ∂L/∂x_L  ·  <span class="hb">(1</span>  +  <span class="ha">∂ΣF/∂x_l</span><span class="hb">)</span>
+<p>Ð¡Ñ‚ÐµÐº N Ð±Ð»Ð¾ÐºÐ¾Ð²: x_L = x_l + Î£ F(xáµ¢). Backprop:</p>
+<div class="fm">âˆ‚L/âˆ‚x_l  =  âˆ‚L/âˆ‚x_L  Â·  <span class="hb">(1</span>  +  <span class="ha">âˆ‚Î£F/âˆ‚x_l</span><span class="hb">)</span>
 
-Слагаемое <span class="hb">«1»</span> = прямой вклад skip.
-Даже если ∂F/∂x → 0,  градиент ≥ ∂L/∂x_L.
-Plain: ∂L/∂x_l = ∂L/∂x_L · <span class="hr">ΠWᵢ·σ′ᵢ</span> → затухание</div>
-<div class="sb"><span class="sn">Пример N=5, ‖W‖·σ′=0.7.</span> Plain: 0.7⁵=<span class="hr">0.168</span>. ResNet: ≈<span class="hg">1.05</span>.</div>
-<div class="ib"><strong>Аналогия с LSTM:</strong> ∂cₜ/∂cₜ₋₁ = fₜ — тот же gradient highway без матричных умножений.</div>
+Ð¡Ð»Ð°Ð³Ð°ÐµÐ¼Ð¾Ðµ <span class="hb">Â«1Â»</span> = Ð¿Ñ€ÑÐ¼Ð¾Ð¹ Ð²ÐºÐ»Ð°Ð´ skip.
+Ð”Ð°Ð¶Ðµ ÐµÑÐ»Ð¸ âˆ‚F/âˆ‚x â†’ 0,  Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ â‰¥ âˆ‚L/âˆ‚x_L.
+Plain: âˆ‚L/âˆ‚x_l = âˆ‚L/âˆ‚x_L Â· <span class="hr">Î Wáµ¢Â·Ïƒâ€²áµ¢</span> â†’ Ð·Ð°Ñ‚ÑƒÑ…Ð°Ð½Ð¸Ðµ</div>
+<div class="sb"><span class="sn">ÐŸÑ€Ð¸Ð¼ÐµÑ€ N=5, â€–Wâ€–Â·Ïƒâ€²=0.7.</span> Plain: 0.7âµ=<span class="hr">0.168</span>. ResNet: â‰ˆ<span class="hg">1.05</span>.</div>
+<div class="ib"><strong>ÐÐ½Ð°Ð»Ð¾Ð³Ð¸Ñ Ñ LSTM:</strong> âˆ‚câ‚œ/âˆ‚câ‚œâ‚‹â‚ = fâ‚œ â€” Ñ‚Ð¾Ñ‚ Ð¶Ðµ gradient highway Ð±ÐµÐ· Ð¼Ð°Ñ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ñ… ÑƒÐ¼Ð½Ð¾Ð¶ÐµÐ½Ð¸Ð¹.</div>
 </div>
-<h2>Интерактивный градиентный поток</h2>
+<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð½Ñ‹Ð¹ Ð¿Ð¾Ñ‚Ð¾Ðº</h2>
 <div class="card">
-<div class="sr"><span>Блоков N</span><input type="range" id="slGN" min="2" max="20" value="8" oninput="drawGrad()"><span class="sv" id="vGN">8</span></div>
-<div class="sr"><span>‖W‖·σ′</span><input type="range" id="slGW" min="1" max="19" value="8" oninput="drawGrad()"><span class="sv" id="vGW">0.80</span></div>
+<div class="sr"><span>Ð‘Ð»Ð¾ÐºÐ¾Ð² N</span><input type="range" id="slGN" min="2" max="20" value="8" oninput="drawGrad()"><span class="sv" id="vGN">8</span></div>
+<div class="sr"><span>â€–Wâ€–Â·Ïƒâ€²</span><input type="range" id="slGW" min="1" max="19" value="8" oninput="drawGrad()"><span class="sv" id="vGW">0.80</span></div>
 <canvas id="cv2" height="200"></canvas>
 <div id="inf2" style="margin-top:6px;font-size:.88em"></div>
 </div>
@@ -132,117 +132,117 @@ Plain: ∂L/∂x_l = ∂L/∂x_L · <span class="hr">ΠWᵢ·σ′ᵢ</span> →
 
 <!-- 3 -->
 <div id="t3" class="tc">
-<h2>4. Архитектура ResNet</h2>
+<h2>4. ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð° ResNet</h2>
 <div class="card">
 <table>
-<tr><th>Слой</th><th>ResNet-18</th><th>ResNet-50</th><th>Выход (224²)</th></tr>
-<tr><td>conv1</td><td>7×7,64,s=2</td><td>7×7,64,s=2</td><td>64×112×112</td></tr>
-<tr><td>pool</td><td colspan="2">MaxPool 3×3, s=2</td><td>64×56×56</td></tr>
-<tr><td>layer1</td><td>2×Basic(64)</td><td>3×Bottle(256)</td><td>*/256×56×56</td></tr>
-<tr><td>layer2</td><td>2×Basic(128,s=2)</td><td>4×Bottle(512)</td><td>*/512×28×28</td></tr>
-<tr><td>layer3</td><td>2×Basic(256,s=2)</td><td>6×Bottle(1024)</td><td>*/1024×14×14</td></tr>
-<tr><td>layer4</td><td>2×Basic(512,s=2)</td><td>3×Bottle(2048)</td><td>*/2048×7×7</td></tr>
-<tr><td>head</td><td colspan="2">GAP → FC(num_classes)</td><td>C</td></tr>
-<tr><td><b>Params</b></td><td><b>11.7M</b></td><td><b>25.6M</b></td><td>—</td></tr>
+<tr><th>Ð¡Ð»Ð¾Ð¹</th><th>ResNet-18</th><th>ResNet-50</th><th>Ð’Ñ‹Ñ…Ð¾Ð´ (224Â²)</th></tr>
+<tr><td>conv1</td><td>7Ã—7,64,s=2</td><td>7Ã—7,64,s=2</td><td>64Ã—112Ã—112</td></tr>
+<tr><td>pool</td><td colspan="2">MaxPool 3Ã—3, s=2</td><td>64Ã—56Ã—56</td></tr>
+<tr><td>layer1</td><td>2Ã—Basic(64)</td><td>3Ã—Bottle(256)</td><td>*/256Ã—56Ã—56</td></tr>
+<tr><td>layer2</td><td>2Ã—Basic(128,s=2)</td><td>4Ã—Bottle(512)</td><td>*/512Ã—28Ã—28</td></tr>
+<tr><td>layer3</td><td>2Ã—Basic(256,s=2)</td><td>6Ã—Bottle(1024)</td><td>*/1024Ã—14Ã—14</td></tr>
+<tr><td>layer4</td><td>2Ã—Basic(512,s=2)</td><td>3Ã—Bottle(2048)</td><td>*/2048Ã—7Ã—7</td></tr>
+<tr><td>head</td><td colspan="2">GAP â†’ FC(num_classes)</td><td>C</td></tr>
+<tr><td><b>Params</b></td><td><b>11.7M</b></td><td><b>25.6M</b></td><td>â€”</td></tr>
 </table>
 </div>
-<h2>Семейство ResNet: params и accuracy</h2>
+<h2>Ð¡ÐµÐ¼ÐµÐ¹ÑÑ‚Ð²Ð¾ ResNet: params Ð¸ accuracy</h2>
 <div class="card"><canvas id="cv3" height="180"></canvas></div>
-<h2>Связи с другими архитектурами</h2>
+<h2>Ð¡Ð²ÑÐ·Ð¸ Ñ Ð´Ñ€ÑƒÐ³Ð¸Ð¼Ð¸ Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð°Ð¼Ð¸</h2>
 <div class="card">
 <div class="g2">
-<div><h3>DenseNet</h3><div class="fm">x_l = H([x₀,x₁,…,x_{l-1}])
-Concat вместо Add</div></div>
+<div><h3>DenseNet</h3><div class="fm">x_l = H([xâ‚€,xâ‚,â€¦,x_{l-1}])
+Concat Ð²Ð¼ÐµÑÑ‚Ð¾ Add</div></div>
 <div><h3>Transformer</h3><div class="fm">x = x + MHA(LN(x))
 x = x + FFN(LN(x))
-— тот же residual, Pre-LN</div></div>
+â€” Ñ‚Ð¾Ñ‚ Ð¶Ðµ residual, Pre-LN</div></div>
 </div>
 </div>
 </div>
 
 <!-- 4 -->
 <div id="t4" class="tc">
-<h2>5. Normalization — единая формула</h2>
+<h2>5. Normalization â€” ÐµÐ´Ð¸Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð°</h2>
 <div class="card">
-<div class="fm">x̂ = (x − <span class="ha">μ</span>) / √(<span class="hb">σ²</span> + ε)
-y  =  <span class="hg">γ · x̂  +  β</span>
+<div class="fm">xÌ‚ = (x âˆ’ <span class="ha">Î¼</span>) / âˆš(<span class="hb">ÏƒÂ²</span> + Îµ)
+y  =  <span class="hg">Î³ Â· xÌ‚  +  Î²</span>
 
-Разница — только ОСИ для μ и σ²</div>
+Ð Ð°Ð·Ð½Ð¸Ñ†Ð° â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ ÐžÐ¡Ð˜ Ð´Ð»Ñ Î¼ Ð¸ ÏƒÂ²</div>
 
 <h3>Batch Norm (Ioffe & Szegedy, 2015)</h3>
-<div class="fm">μ_c = <span class="ha">1/(B·H·W)</span> · Σ_{b,h,w} x_{b,c,h,w}   ← per channel
+<div class="fm">Î¼_c = <span class="ha">1/(BÂ·HÂ·W)</span> Â· Î£_{b,h,w} x_{b,c,h,w}   â† per channel
 Train: batch stats   Test: running EMA (momentum=0.1)</div>
 
 <h3>Layer Norm (Ba et al., 2016)</h3>
-<div class="fm">μ_b = <span class="hg">1/(C·H·W)</span> · Σ_{c,h,w} x_{b,c,h,w}   ← per sample
-Train ≡ Test. Стандарт Transformer/NLP.</div>
+<div class="fm">Î¼_b = <span class="hg">1/(CÂ·HÂ·W)</span> Â· Î£_{c,h,w} x_{b,c,h,w}   â† per sample
+Train â‰¡ Test. Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚ Transformer/NLP.</div>
 
 <h3>Instance Norm (Ulyanov 2016)</h3>
-<div class="fm">μ_{b,c} = <span class="hb">1/(H·W)</span> · Σ_{h,w} x_{b,c,h,w}   ← per (B,C)
-Style transfer — убирает стиль, держит структуру</div>
+<div class="fm">Î¼_{b,c} = <span class="hb">1/(HÂ·W)</span> Â· Î£_{h,w} x_{b,c,h,w}   â† per (B,C)
+Style transfer â€” ÑƒÐ±Ð¸Ñ€Ð°ÐµÑ‚ ÑÑ‚Ð¸Ð»ÑŒ, Ð´ÐµÑ€Ð¶Ð¸Ñ‚ ÑÑ‚Ñ€ÑƒÐºÑ‚ÑƒÑ€Ñƒ</div>
 
 <h3>Group Norm (Wu & He, 2018)</h3>
-<div class="fm">Делим C на G групп, нормируем внутри:
-G=1 → LayerNorm   G=C → InstanceNorm
-G=32 стандарт, не зависит от B → detection</div>
+<div class="fm">Ð”ÐµÐ»Ð¸Ð¼ C Ð½Ð° G Ð³Ñ€ÑƒÐ¿Ð¿, Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð²Ð½ÑƒÑ‚Ñ€Ð¸:
+G=1 â†’ LayerNorm   G=C â†’ InstanceNorm
+G=32 ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚, Ð½Ðµ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ B â†’ detection</div>
 
 <h3>RMSNorm (Zhang & Sennrich, 2019)</h3>
-<div class="fm">RMS(x) = √(1/d · Σ xᵢ²)
-y = <span class="ha">γ · x / RMS(x)</span>    ← нет μ, нет β!
-~7% быстрее LN. LLaMA, Mistral, Gemma.</div>
+<div class="fm">RMS(x) = âˆš(1/d Â· Î£ xáµ¢Â²)
+y = <span class="ha">Î³ Â· x / RMS(x)</span>    â† Ð½ÐµÑ‚ Î¼, Ð½ÐµÑ‚ Î²!
+~7% Ð±Ñ‹ÑÑ‚Ñ€ÐµÐµ LN. LLaMA, Mistral, Gemma.</div>
 </div>
 
-<h2>Backward BatchNorm — полный вывод</h2>
+<h2>Backward BatchNorm â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´</h2>
 <div class="card">
-<div class="sb"><span class="sn">1.</span> ∂L/∂γ = Σ_b ∂L/∂y_b · x̂_b &nbsp;&nbsp; ∂L/∂β = Σ_b ∂L/∂y_b</div>
-<div class="sb"><span class="sn">2.</span> ∂L/∂x̂_b = ∂L/∂y_b · γ</div>
-<div class="sb"><span class="sn">3.</span> ∂L/∂σ² = Σ_b ∂L/∂x̂_b · (x_b−μ) · (−½)(σ²+ε)^(−3/2)</div>
-<div class="sb"><span class="sn">4.</span> ∂L/∂μ = Σ_b ∂L/∂x̂_b · (−1/√(σ²+ε)) + ∂L/∂σ² · (−2/B)·Σ(x_b−μ)</div>
-<div class="sb"><span class="sn">5.</span> ∂L/∂x_b = ∂L/∂x̂_b/√(σ²+ε) + ∂L/∂σ²·2(x_b−μ)/B + ∂L/∂μ/B</div>
-<div class="ib">Градиент ∂L/∂x_b зависит от всех примеров батча через μ,σ² — неявная регуляризация.</div>
+<div class="sb"><span class="sn">1.</span> âˆ‚L/âˆ‚Î³ = Î£_b âˆ‚L/âˆ‚y_b Â· xÌ‚_b &nbsp;&nbsp; âˆ‚L/âˆ‚Î² = Î£_b âˆ‚L/âˆ‚y_b</div>
+<div class="sb"><span class="sn">2.</span> âˆ‚L/âˆ‚xÌ‚_b = âˆ‚L/âˆ‚y_b Â· Î³</div>
+<div class="sb"><span class="sn">3.</span> âˆ‚L/âˆ‚ÏƒÂ² = Î£_b âˆ‚L/âˆ‚xÌ‚_b Â· (x_bâˆ’Î¼) Â· (âˆ’Â½)(ÏƒÂ²+Îµ)^(âˆ’3/2)</div>
+<div class="sb"><span class="sn">4.</span> âˆ‚L/âˆ‚Î¼ = Î£_b âˆ‚L/âˆ‚xÌ‚_b Â· (âˆ’1/âˆš(ÏƒÂ²+Îµ)) + âˆ‚L/âˆ‚ÏƒÂ² Â· (âˆ’2/B)Â·Î£(x_bâˆ’Î¼)</div>
+<div class="sb"><span class="sn">5.</span> âˆ‚L/âˆ‚x_b = âˆ‚L/âˆ‚xÌ‚_b/âˆš(ÏƒÂ²+Îµ) + âˆ‚L/âˆ‚ÏƒÂ²Â·2(x_bâˆ’Î¼)/B + âˆ‚L/âˆ‚Î¼/B</div>
+<div class="ib">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ âˆ‚L/âˆ‚x_b Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ð²ÑÐµÑ… Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð² Ð±Ð°Ñ‚Ñ‡Ð° Ñ‡ÐµÑ€ÐµÐ· Î¼,ÏƒÂ² â€” Ð½ÐµÑÐ²Ð½Ð°Ñ Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ.</div>
 </div>
 </div>
 
 <!-- 5 -->
 <div id="t5" class="tc">
-<h2>6. BN vs LN vs GN — когда что</h2>
+<h2>6. BN vs LN vs GN â€” ÐºÐ¾Ð³Ð´Ð° Ñ‡Ñ‚Ð¾</h2>
 <div class="card">
 <table>
-<tr><th>Тип</th><th>Оси μ,σ²</th><th>Зависит от B</th><th>Train=Test</th><th>Применение</th></tr>
-<tr><td><span class="ha">BatchNorm</span></td><td>B,H,W → per C</td><td>Да</td><td>Нет</td><td>CNN, B≥16</td></tr>
-<tr><td><span class="hg">LayerNorm</span></td><td>C,H,W → per B</td><td>Нет</td><td>Да</td><td>Transformer, NLP</td></tr>
-<tr><td><span class="hb">GroupNorm</span></td><td>C/G,H,W</td><td>Нет</td><td>Да</td><td>Detection, B=1-2</td></tr>
-<tr><td><span class="hp">InstanceNorm</span></td><td>H,W → per B,C</td><td>Нет</td><td>Да</td><td>Style transfer</td></tr>
-<tr><td>RMSNorm</td><td>C (без μ)</td><td>Нет</td><td>Да</td><td>LLM (LLaMA)</td></tr>
+<tr><th>Ð¢Ð¸Ð¿</th><th>ÐžÑÐ¸ Î¼,ÏƒÂ²</th><th>Ð—Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ B</th><th>Train=Test</th><th>ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ</th></tr>
+<tr><td><span class="ha">BatchNorm</span></td><td>B,H,W â†’ per C</td><td>Ð”Ð°</td><td>ÐÐµÑ‚</td><td>CNN, Bâ‰¥16</td></tr>
+<tr><td><span class="hg">LayerNorm</span></td><td>C,H,W â†’ per B</td><td>ÐÐµÑ‚</td><td>Ð”Ð°</td><td>Transformer, NLP</td></tr>
+<tr><td><span class="hb">GroupNorm</span></td><td>C/G,H,W</td><td>ÐÐµÑ‚</td><td>Ð”Ð°</td><td>Detection, B=1-2</td></tr>
+<tr><td><span class="hp">InstanceNorm</span></td><td>H,W â†’ per B,C</td><td>ÐÐµÑ‚</td><td>Ð”Ð°</td><td>Style transfer</td></tr>
+<tr><td>RMSNorm</td><td>C (Ð±ÐµÐ· Î¼)</td><td>ÐÐµÑ‚</td><td>Ð”Ð°</td><td>LLM (LLaMA)</td></tr>
 </table>
-<div class="wb" style="margin-top:10px"><span class="hr">Проблемы BN:</span> малый batch → GroupNorm; авторегрессия → LayerNorm; Train≠Test → баги с running stats; distributed → SyncBN.</div>
+<div class="wb" style="margin-top:10px"><span class="hr">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ BN:</span> Ð¼Ð°Ð»Ñ‹Ð¹ batch â†’ GroupNorm; Ð°Ð²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ â†’ LayerNorm; Trainâ‰ Test â†’ Ð±Ð°Ð³Ð¸ Ñ running stats; distributed â†’ SyncBN.</div>
 </div>
 
-<h2>Визуализация: по каким осям нормализуем</h2>
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ: Ð¿Ð¾ ÐºÐ°ÐºÐ¸Ð¼ Ð¾ÑÑÐ¼ Ð½Ð¾Ñ€Ð¼Ð°Ð»Ð¸Ð·ÑƒÐµÐ¼</h2>
 <div class="card">
-<p class="mu">Тензор B=4, C=6. Оранжевое = одна группа нормализации (общие μ, σ²)</p>
+<p class="mu">Ð¢ÐµÐ½Ð·Ð¾Ñ€ B=4, C=6. ÐžÑ€Ð°Ð½Ð¶ÐµÐ²Ð¾Ðµ = Ð¾Ð´Ð½Ð° Ð³Ñ€ÑƒÐ¿Ð¿Ð° Ð½Ð¾Ñ€Ð¼Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ (Ð¾Ð±Ñ‰Ð¸Ðµ Î¼, ÏƒÂ²)</p>
 <div class="tabs" id="ntabs">
   <button class="tab active" id="nt0" onclick="setNorm(0)">BatchNorm</button>
   <button class="tab" id="nt1" onclick="setNorm(1)">LayerNorm</button>
   <button class="tab" id="nt2" onclick="setNorm(2)">GroupNorm G=2</button>
   <button class="tab" id="nt3" onclick="setNorm(3)">InstanceNorm</button>
 </div>
-<div class="sr" style="margin-top:6px"><span>Выбрать пример B=</span><input type="range" id="slNB" min="0" max="3" value="0" oninput="drawNorm()"><span class="sv" id="vNB">0</span></div>
+<div class="sr" style="margin-top:6px"><span>Ð’Ñ‹Ð±Ñ€Ð°Ñ‚ÑŒ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ B=</span><input type="range" id="slNB" min="0" max="3" value="0" oninput="drawNorm()"><span class="sv" id="vNB">0</span></div>
 <canvas id="cv5" height="260"></canvas>
 <div id="inf5" style="margin-top:6px;font-size:.84em;color:var(--mu)"></div>
 </div>
 
-<h2>Числовой пример BatchNorm</h2>
+<h2>Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ BatchNorm</h2>
 <div class="card">
-<div class="sr"><span>Сдвиг входов</span><input type="range" id="slBNX" min="-20" max="20" value="0" oninput="drawBNEx()"><span class="sv" id="vBNX">0.0</span></div>
+<div class="sr"><span>Ð¡Ð´Ð²Ð¸Ð³ Ð²Ñ…Ð¾Ð´Ð¾Ð²</span><input type="range" id="slBNX" min="-20" max="20" value="0" oninput="drawBNEx()"><span class="sv" id="vBNX">0.0</span></div>
 <canvas id="cv5b" height="160"></canvas>
-<p class="mu" style="margin-top:5px">x̂ остаётся μ≈0, σ≈1 при любом сдвиге — BN инвариантен к сдвигу входа.</p>
+<p class="mu" style="margin-top:5px">xÌ‚ Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Î¼â‰ˆ0, Ïƒâ‰ˆ1 Ð¿Ñ€Ð¸ Ð»ÑŽÐ±Ð¾Ð¼ ÑÐ´Ð²Ð¸Ð³Ðµ â€” BN Ð¸Ð½Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚ÐµÐ½ Ðº ÑÐ´Ð²Ð¸Ð³Ñƒ Ð²Ñ…Ð¾Ð´Ð°.</p>
 </div>
 </div>
 
 <!-- 6 -->
 <div id="t6" class="tc">
-<h2>7. PyTorch — реализация</h2>
+<h2>7. PyTorch â€” Ñ€ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
 <div class="card">
 <h3>Basic ResBlock</h3>
 <div class="cb">class BasicBlock(nn.Module):
@@ -261,7 +261,7 @@ y = <span class="ha">γ · x / RMS(x)</span>    ← нет μ, нет β!
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
-        return F.relu(out + self.skip(x))   # ← skip!</div>
+        return F.relu(out + self.skip(x))   # â† skip!</div>
 
 <h3>Bottleneck</h3>
 <div class="cb">class Bottleneck(nn.Module):
@@ -313,7 +313,7 @@ def bn_backward(dy, cache):
     dx     = dxhat/np.sqrt(var+eps) + dvar*2*(x-mu)/B + dmu/B
     return dx, dgamma, dbeta</div>
 
-<h3>GroupNorm и RMSNorm</h3>
+<h3>GroupNorm Ð¸ RMSNorm</h3>
 <div class="cb">gn = nn.GroupNorm(num_groups=32, num_channels=256)
 
 class RMSNorm(nn.Module):
@@ -330,13 +330,13 @@ resnet.fc = nn.Linear(2048, num_classes)
 for name, p in resnet.named_parameters():
     if 'fc' not in name: p.requires_grad = False
 # Feature extraction
-feats = nn.Sequential(*list(resnet.children())[:-1])   # → (B, 2048, 1, 1)
-f = feats(x).flatten(1)                                 # → (B, 2048)</div>
+feats = nn.Sequential(*list(resnet.children())[:-1])   # â†’ (B, 2048, 1, 1)
+f = feats(x).flatten(1)                                 # â†’ (B, 2048)</div>
 </div>
 </div>
 
 <script>
-// ── helpers ──────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function g(id){return document.getElementById(id);}
 function getCtx(id){
   const cv=g(id);
@@ -350,7 +350,7 @@ function rr(ctx,x,y,w,h,r=6){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,
 function blk(ctx,x,y,w,h,fc,sc,lbl){ctx.fillStyle=fc;ctx.strokeStyle=sc;ctx.lineWidth=1.2;rr(ctx,x,y,w,h);ctx.fill();ctx.stroke();ctx.fillStyle='#e6edf3';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(lbl,x+w/2,y+h/2+4);}
 function arrDown(ctx,x,y1,y2,col){col=col||'#8b949e';ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2-7);ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y2);ctx.lineTo(x-4,y2-8);ctx.lineTo(x+4,y2-8);ctx.closePath();ctx.fill();}
 
-// ── tabs ─────────────────────────────────────────────
+// â”€â”€ tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TABS=['t0','t1','t2','t3','t4','t5','t6'];
 const INITS=[initDeg,initBlock,initGrad,initArch,()=>{},initNorm,()=>{}];
 let inited=new Set([0]);
@@ -360,7 +360,7 @@ function sw(i){
   if(!inited.has(i)){INITS[i]();inited.add(i);}
 }
 
-// ── TAB 0: Degradation ───────────────────────────────
+// â”€â”€ TAB 0: Degradation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function initDeg(){
   drawDegCurves();
   updDep();
@@ -373,7 +373,7 @@ function drawDegCurves(){
   [0,.25,.5,.75,1].forEach(v=>{const y=py+ph*(1-v);ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px+pw,y);ctx.stroke();});
   ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='right';
   ['High','','','','Low'].forEach((l,i)=>{if(l)ctx.fillText(l,px-3,py+ph*i*0.25+4);});
-  ctx.textAlign='center';ctx.fillText('Epochs →',px+pw/2,py+ph+14);
+  ctx.textAlign='center';ctx.fillText('Epochs â†’',px+pw/2,py+ph+14);
 
   function curve(pts,col){
     ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
@@ -384,7 +384,7 @@ function drawDegCurves(){
   curve([[0,.04],[.1,.28],[.25,.44],[.5,.53],[.75,.57],[1,.59]],'#ef4444');
   curve([[0,.04],[.1,.40],[.25,.64],[.5,.82],[.75,.89],[1,.92]],'#60a5fa');
 
-  const leg=[{c:'#10b981',l:'Plain 20-слоёв'},{c:'#ef4444',l:'Plain 56-слоёв (ХУЖЕ!)'},{c:'#60a5fa',l:'ResNet-56'}];
+  const leg=[{c:'#10b981',l:'Plain 20-ÑÐ»Ð¾Ñ‘Ð²'},{c:'#ef4444',l:'Plain 56-ÑÐ»Ð¾Ñ‘Ð² (Ð¥Ð£Ð–Ð•!)'},{c:'#60a5fa',l:'ResNet-56'}];
   leg.forEach(({c,l},i)=>{
     ctx.fillStyle=c;ctx.fillRect(px+6,py+8+i*18,16,9);
     ctx.fillStyle='#e6edf3';ctx.font='10px system-ui';ctx.textAlign='left';ctx.fillText(l,px+26,py+17+i*18);
@@ -406,10 +406,10 @@ function updDep(){
   });
   ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py+ph+1);ctx.stroke();
   [0,50,100].forEach(v=>{ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='right';ctx.fillText(v+'%',px-3,py+ph-v/100*ph+4);});
-  g('inf0').innerHTML=`Глубина: <b>${N}</b> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${(res*100).toFixed(1)}%</span> &nbsp; Plain: <span style="color:var(--r)">${(plain*100).toFixed(1)}%</span> &nbsp;|&nbsp; +<span style="color:var(--g)">${((res-plain)*100).toFixed(1)}%</span>`;
+  g('inf0').innerHTML=`Ð“Ð»ÑƒÐ±Ð¸Ð½Ð°: <b>${N}</b> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${(res*100).toFixed(1)}%</span> &nbsp; Plain: <span style="color:var(--r)">${(plain*100).toFixed(1)}%</span> &nbsp;|&nbsp; +<span style="color:var(--g)">${((res-plain)*100).toFixed(1)}%</span>`;
 }
 
-// ── TAB 1: Blocks ─────────────────────────────────────
+// â”€â”€ TAB 1: Blocks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let curB=0;
 function initBlock(){showBlock(0);calcBN();}
 function showBlock(type){
@@ -419,21 +419,21 @@ function showBlock(type){
   const bw=Math.min(200,W*0.4),bh=32,cx=(W-bw)/2;
 
   const CONFIGS=[
-    {steps:['Input x','Conv 3×3 + BN + ReLU','Conv 3×3 + BN','⊕ Add + ReLU','Output y'],
+    {steps:['Input x','Conv 3Ã—3 + BN + ReLU','Conv 3Ã—3 + BN','âŠ• Add + ReLU','Output y'],
      fills:['rgba(96,165,250,.18)','rgba(245,158,11,.18)','rgba(245,158,11,.18)','rgba(16,185,129,.25)','rgba(96,165,250,.18)'],
      strokes:['#60a5fa','#f59e0b','#f59e0b','#10b981','#60a5fa'],
      skip:{col:'#10b981',from:0,to:3},
-     info:'Basic Block: 2× Conv 3×3. Параметров: 18C². ResNet-18/34.'},
-    {steps:['Input x (C ch.)','1×1 Conv → C/4','3×3 Conv C/4','1×1 Conv → C','⊕ Add + ReLU','Output'],
+     info:'Basic Block: 2Ã— Conv 3Ã—3. ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²: 18CÂ². ResNet-18/34.'},
+    {steps:['Input x (C ch.)','1Ã—1 Conv â†’ C/4','3Ã—3 Conv C/4','1Ã—1 Conv â†’ C','âŠ• Add + ReLU','Output'],
      fills:['rgba(96,165,250,.18)','rgba(245,158,11,.18)','rgba(245,158,11,.18)','rgba(245,158,11,.18)','rgba(16,185,129,.25)','rgba(96,165,250,.18)'],
      strokes:['#60a5fa','#f59e0b','#f59e0b','#f59e0b','#10b981','#60a5fa'],
      skip:{col:'#10b981',from:0,to:4},
-     info:'Bottleneck: 1×1→3×3→1×1. Параметров ≈ 3.5C²/4 — ~3× меньше Basic. ResNet-50/101/152.'},
-    {steps:['Input x','BN + ReLU','Conv 3×3','BN + ReLU','Conv 3×3','Output y'],
+     info:'Bottleneck: 1Ã—1â†’3Ã—3â†’1Ã—1. ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² â‰ˆ 3.5CÂ²/4 â€” ~3Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ Basic. ResNet-50/101/152.'},
+    {steps:['Input x','BN + ReLU','Conv 3Ã—3','BN + ReLU','Conv 3Ã—3','Output y'],
      fills:['rgba(96,165,250,.18)','rgba(16,185,129,.18)','rgba(245,158,11,.18)','rgba(16,185,129,.18)','rgba(245,158,11,.18)','rgba(96,165,250,.18)'],
      strokes:['#60a5fa','#10b981','#f59e0b','#10b981','#f59e0b','#60a5fa'],
      skip:{col:'#a78bfa',from:0,to:5},
-     info:'Pre-activation: BN+ReLU перед Conv. Skip = чистый residual. Стабильнее для очень глубоких сетей.'},
+     info:'Pre-activation: BN+ReLU Ð¿ÐµÑ€ÐµÐ´ Conv. Skip = Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹ residual. Ð¡Ñ‚Ð°Ð±Ð¸Ð»ÑŒÐ½ÐµÐµ Ð´Ð»Ñ Ð¾Ñ‡ÐµÐ½ÑŒ Ð³Ð»ÑƒÐ±Ð¾ÐºÐ¸Ñ… ÑÐµÑ‚ÐµÐ¹.'},
   ];
   const cfg=CONFIGS[type];
   const n=cfg.steps.length;
@@ -461,10 +461,10 @@ function calcBN(){
   const C=+g('slC').value,r=+g('slR').value;
   g('vC').textContent=C; g('vR').textContent=r;
   const m=C/r,p1=C*m,p2=9*m*m,p3=m*C,tot=p1+p2+p3,bas=18*C*C;
-  g('infBN').innerHTML=`1×1 (${C}→${m}): <span class="ha">${p1.toLocaleString()}</span><br>3×3 (${m}→${m}): <span class="ha">${p2.toLocaleString()}</span><br>1×1 (${m}→${C}): <span class="ha">${p3.toLocaleString()}</span><br><b>Bottleneck: <span class="ha">${tot.toLocaleString()}</span></b> &nbsp;|&nbsp; Basic: <span class="hr">${bas.toLocaleString()}</span> &nbsp;|&nbsp; Экономия: <span class="hg">×${(bas/tot).toFixed(2)}</span>`;
+  g('infBN').innerHTML=`1Ã—1 (${C}â†’${m}): <span class="ha">${p1.toLocaleString()}</span><br>3Ã—3 (${m}â†’${m}): <span class="ha">${p2.toLocaleString()}</span><br>1Ã—1 (${m}â†’${C}): <span class="ha">${p3.toLocaleString()}</span><br><b>Bottleneck: <span class="ha">${tot.toLocaleString()}</span></b> &nbsp;|&nbsp; Basic: <span class="hr">${bas.toLocaleString()}</span> &nbsp;|&nbsp; Ð­ÐºÐ¾Ð½Ð¾Ð¼Ð¸Ñ: <span class="hg">Ã—${(bas/tot).toFixed(2)}</span>`;
 }
 
-// ── TAB 2: Gradient ───────────────────────────────────
+// â”€â”€ TAB 2: Gradient â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function initGrad(){drawGrad();}
 function drawGrad(){
   const N=+g('slGN').value, Wv=g('slGW').value/10;
@@ -485,14 +485,14 @@ function drawGrad(){
   }
   line(plain,'#ef4444'); line(res,'#60a5fa');
   ctx.font='10px system-ui';ctx.textAlign='left';
-  ctx.fillStyle='#ef4444';ctx.fillText('Plain: (‖W‖·σ′)^(N−l) — затухает',px+6,py+13);
-  ctx.fillStyle='#60a5fa';ctx.fillText('ResNet: 1 + мало — всегда ≥ 1',px+6,py+27);
-  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText('← дальше от loss',px+pw/2,py+ph+14);
+  ctx.fillStyle='#ef4444';ctx.fillText('Plain: (â€–Wâ€–Â·Ïƒâ€²)^(Nâˆ’l) â€” Ð·Ð°Ñ‚ÑƒÑ…Ð°ÐµÑ‚',px+6,py+13);
+  ctx.fillStyle='#60a5fa';ctx.fillText('ResNet: 1 + Ð¼Ð°Ð»Ð¾ â€” Ð²ÑÐµÐ³Ð´Ð° â‰¥ 1',px+6,py+27);
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText('â† Ð´Ð°Ð»ÑŒÑˆÐµ Ð¾Ñ‚ loss',px+pw/2,py+ph+14);
   const mi=plain[plain.length-1];
-  g('inf2').innerHTML=`Plain на входе: <span style="color:var(--r)">${mi<0.001?mi.toExponential(2):mi.toFixed(3)}</span> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${res[res.length-1].toFixed(3)}</span> &nbsp;|&nbsp; Разница: <span style="color:var(--g)">×${(res[res.length-1]/Math.max(mi,1e-9)).toFixed(0)}</span>`;
+  g('inf2').innerHTML=`Plain Ð½Ð° Ð²Ñ…Ð¾Ð´Ðµ: <span style="color:var(--r)">${mi<0.001?mi.toExponential(2):mi.toFixed(3)}</span> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${res[res.length-1].toFixed(3)}</span> &nbsp;|&nbsp; Ð Ð°Ð·Ð½Ð¸Ñ†Ð°: <span style="color:var(--g)">Ã—${(res[res.length-1]/Math.max(mi,1e-9)).toFixed(0)}</span>`;
 }
 
-// ── TAB 3: Arch ───────────────────────────────────────
+// â”€â”€ TAB 3: Arch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function initArch(){drawFamily();}
 function drawFamily(){
   const{ctx,W,H}=getCtx('cv3');
@@ -516,7 +516,7 @@ function drawFamily(){
   ctx.fillText('Params',px+18,22); ctx.fillText('Top-1 Acc%',px+108,22);
 }
 
-// ── TAB 5: Norm ───────────────────────────────────────
+// â”€â”€ TAB 5: Norm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let normIdx=0;
 function initNorm(){drawNorm();drawBNEx();}
 function setNorm(i){
@@ -536,7 +536,7 @@ function drawNorm(){
     for(let c=0;c<C;c++){
       const v=TV[b][c];
       let hl=false;
-      if(normIdx===0) hl=(c===0); // BN: same channel across batch — show col 0
+      if(normIdx===0) hl=(c===0); // BN: same channel across batch â€” show col 0
       if(normIdx===1) hl=(b===nb); // LN: whole row
       if(normIdx===2) hl=(b===nb && c<3); // GN G=2: first group
       if(normIdx===3) hl=(b===nb && c===0); // IN: single cell
@@ -555,10 +555,10 @@ function drawNorm(){
   for(let c=0;c<C;c++){ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText('C='+c,ox+c*cw+cw/2,oy-6);}
   ctx.save();ctx.translate(36,oy+B*ch/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.fillText('Batch B',0,0);ctx.restore();
   const descs={
-    0:`BatchNorm: оранжевое = канал C=0 по всем 4 примерам батча. μ,σ² считаются вместе по B,H,W.`,
-    1:`LayerNorm: оранжевое = вся строка B=${nb} (все 6 каналов). μ,σ² по C для одного примера.`,
-    2:`GroupNorm (G=2): оранжевое = первая группа (C<3) примера B=${nb}. Нет зависимости от batch.`,
-    3:`InstanceNorm: оранжевое = ячейка (B=${nb}, C=0). В реальности нормируем по H,W — здесь упрощение.`
+    0:`BatchNorm: Ð¾Ñ€Ð°Ð½Ð¶ÐµÐ²Ð¾Ðµ = ÐºÐ°Ð½Ð°Ð» C=0 Ð¿Ð¾ Ð²ÑÐµÐ¼ 4 Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°Ð¼ Ð±Ð°Ñ‚Ñ‡Ð°. Î¼,ÏƒÂ² ÑÑ‡Ð¸Ñ‚Ð°ÑŽÑ‚ÑÑ Ð²Ð¼ÐµÑÑ‚Ðµ Ð¿Ð¾ B,H,W.`,
+    1:`LayerNorm: Ð¾Ñ€Ð°Ð½Ð¶ÐµÐ²Ð¾Ðµ = Ð²ÑÑ ÑÑ‚Ñ€Ð¾ÐºÐ° B=${nb} (Ð²ÑÐµ 6 ÐºÐ°Ð½Ð°Ð»Ð¾Ð²). Î¼,ÏƒÂ² Ð¿Ð¾ C Ð´Ð»Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°.`,
+    2:`GroupNorm (G=2): Ð¾Ñ€Ð°Ð½Ð¶ÐµÐ²Ð¾Ðµ = Ð¿ÐµÑ€Ð²Ð°Ñ Ð³Ñ€ÑƒÐ¿Ð¿Ð° (C<3) Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð° B=${nb}. ÐÐµÑ‚ Ð·Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ÑÑ‚Ð¸ Ð¾Ñ‚ batch.`,
+    3:`InstanceNorm: Ð¾Ñ€Ð°Ð½Ð¶ÐµÐ²Ð¾Ðµ = ÑÑ‡ÐµÐ¹ÐºÐ° (B=${nb}, C=0). Ð’ Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾ÑÑ‚Ð¸ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ H,W â€” Ð·Ð´ÐµÑÑŒ ÑƒÐ¿Ñ€Ð¾Ñ‰ÐµÐ½Ð¸Ðµ.`
   };
   g('inf5').textContent=descs[normIdx];
 }
@@ -572,7 +572,7 @@ function drawBNEx(){
   const{ctx,W,H}=getCtx('cv5b');
   const bw=Math.min(52,Math.floor((W-60)/4/3-8));
   const px=20,py=14,ph=H-36;
-  [[raw,'#60a5fa','Вход x'],[norm,'#f59e0b','Норм. x̂'],[out,'#10b981','Вых. γx̂+β']].forEach(([vals,col,lbl],ai)=>{
+  [[raw,'#60a5fa','Ð’Ñ…Ð¾Ð´ x'],[norm,'#f59e0b','ÐÐ¾Ñ€Ð¼. xÌ‚'],[out,'#10b981','Ð’Ñ‹Ñ…. Î³xÌ‚+Î²']].forEach(([vals,col,lbl],ai)=>{
     const ox=px+ai*Math.floor((W-px*2)/3);
     ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='center';ctx.fillText(lbl,ox+bw*2,py-2);
     const mn=Math.min(...vals)-0.3,mx=Math.max(...vals)+0.3;
@@ -586,9 +586,10 @@ function drawBNEx(){
   });
 }
 
-// ── init on load ──────────────────────────────────────
+// â”€â”€ init on load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('load',()=>{
   initDeg();
 });
 </script>
-<script src="shared-nav.js"></script>
+<script src="../shared-nav.js"></script>
+

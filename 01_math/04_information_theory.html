@@ -1,0 +1,653 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; text-decoration:none; transition:all 0.2s; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+.tag-block:hover { border-color: var(--amber); color: var(--amber); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Ð‘Ð»Ð¾Ðº 1 â€” ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ðµ Ð¾ÑÐ½Ð¾Ð²Ñ‹</span>
+  <a class="tag tag-block" href="01_linear_algebra.html">1.1 Ð›Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð°Ð»Ð³ÐµÐ±Ñ€Ð°</a>
+  <a class="tag tag-block" href="02_calculus.html">1.2 ÐœÐ°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð·</a>
+  <a class="tag tag-block" href="03_probability_theory.html">1.3 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹</a>
+  <span class="tag tag-active">1.4 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</span>
+</div>
+
+<h1>1.4 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</h1>
+<p class="muted">Self-information Â· entropy Â· cross-entropy Â· KL-divergence Â· ÑÐ²ÑÐ·ÑŒ Ñ likelihood, loss Ð¸ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸ÐµÐ¼ Ð¼Ð¾Ð´ÐµÐ»ÐµÐ¹</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>ðŸ“¡ Ð—Ð°Ñ‡ÐµÐ¼ Ñ‚ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð² ML?</h2>
+  <p>Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚ Ð½Ð° Ð²Ð¾Ð¿Ñ€Ð¾Ñ: <strong>ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸</strong> Ð² Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ð¸ Ð¸ <strong>ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</strong> Ð½ÐµÑÑ‘Ñ‚ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ. Ð’ ML Ð¾Ð½Ð° Ð»ÐµÐ¶Ð¸Ñ‚ Ð¿Ñ€ÑÐ¼Ð¾ Ð¿Ð¾Ð´ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸ÐµÐ¹, language modeling, compression, variational inference Ð¸ Ð¼Ð½Ð¾Ð³Ð¸Ð¼Ð¸ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑÐ¼Ð¸.</p>
+
+  <div class="formula">
+    good model â‡” Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ°Ñ Ð½ÐµÐ¾Ð¶Ð¸Ð´Ð°Ð½Ð½Ð¾ÑÑ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Entropy</h3>
+      <p class="small">Ð¡ÐºÐ¾Ð»ÑŒÐºÐ¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸ Ð² Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ð¸.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Cross-Entropy</h3>
+      <p class="small">ÐÐ°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð´Ð¾Ñ€Ð¾Ð³Ð¾ ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¼Ð¾Ð´ÐµÐ»ÑŒÐ½Ñ‹Ð¼ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸ÐµÐ¼.</p>
+    </div>
+    <div class="mini-card">
+      <h3>KL</h3>
+      <p class="small">ÐÐ°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¾Ð´Ð½Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¾Ñ‚Ð»Ð¸Ñ‡Ð°ÐµÑ‚ÑÑ Ð¾Ñ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð³Ð¾.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ <strong>Ð“Ð»Ð°Ð²Ð½Ð°Ñ Ð¸Ð´ÐµÑ:</strong> Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¼Ð¾Ð¶Ð½Ð¾ Ð¿Ð¾Ð½Ð¸Ð¼Ð°Ñ‚ÑŒ ÐºÐ°Ðº Ð¿Ñ€Ð¾Ñ†ÐµÑÑ ÑƒÐ¼ÐµÐ½ÑŒÑˆÐµÐ½Ð¸Ñ ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð° â€œÐ»Ð¸ÑˆÐ½ÐµÐ³Ð¾ ÑƒÐ´Ð¸Ð²Ð»ÐµÐ½Ð¸Ñâ€ Ð¿Ñ€Ð¸ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ð¸ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ñ… Ð¾Ñ‚Ð²ÐµÑ‚Ð¾Ð².
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>âš¡ Self-Information: ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð² Ð¾Ð´Ð½Ð¾Ð¼ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ð¸</h2>
+
+  <div class="formula">
+    I(x) = -log p(x)
+  </div>
+
+  <h3>Ð¡Ð¼Ñ‹ÑÐ»</h3>
+  <div class="step">Ñ€ÐµÐ´ÐºÐ¾Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ â†’ Ð±Ð¾Ð»ÑŒÑˆÐ°Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ</div>
+  <div class="step">Ñ‡Ð°ÑÑ‚Ð¾Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ â†’ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ°Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ</div>
+  <div class="step">ÐµÑÐ»Ð¸ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ Ð³Ð°Ñ€Ð°Ð½Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾, Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð½ÐµÑ‚</div>
+
+  <div class="info">
+    â„¹ï¸ Ð›Ð¾Ð³Ð°Ñ€Ð¸Ñ„Ð¼ Ð·Ð´ÐµÑÑŒ Ð½Ðµ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾ÑÑ‚ÑŒ: Ð¾Ð½ Ð´ÐµÐ»Ð°ÐµÑ‚ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸ÑŽ Ð°Ð´Ð´Ð¸Ñ‚Ð¸Ð²Ð½Ð¾Ð¹. Ð•ÑÐ»Ð¸ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼Ñ‹, Ñ‚Ð¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ Ð¾ ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð½Ð¾Ð¼ Ð¸ÑÑ…Ð¾Ð´Ðµ ÑÐºÐ»Ð°Ð´Ñ‹Ð²Ð°ÐµÑ‚ÑÑ.
+  </div>
+
+  <div class="formula">
+    I(x, y) = -log p(x, y) = -log p(x) - log p(y)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: surprise ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p(x) = <span class="val-display" id="infoPVal">0.50</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.50" id="infoP" oninput="calcSelfInfo()">
+      </div>
+      <canvas id="infoCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h3>
+      <div class="result-box" id="infoBox"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Ð•ÑÐ»Ð¸ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€Ð¸ÑÐ²Ð°Ð¸Ð²Ð°ÐµÑ‚ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ð¼Ñƒ ÐºÐ»Ð°ÑÑÑƒ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÑƒÑŽ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ, Ñ‚Ð¾ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ÑÑ Ð¾Ñ‡ÐµÐ½ÑŒ â€œÐ´Ð¾Ñ€Ð¾Ð³Ð¸Ð¼â€ Ð¿Ð¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸. Ð˜Ð¼ÐµÐ½Ð½Ð¾ Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ bad predictions Ð´Ð°ÑŽÑ‚ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ loss.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>ðŸŽ¯ Entropy: ÑÑ€ÐµÐ´Ð½ÑÑ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ</h2>
+
+  <div class="formula">
+    H(P) = -âˆ‘<sub>x</sub> p(x) log p(x)
+  </div>
+
+  <p>Ð­Ð½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ â€” ÑÑ‚Ð¾ ÑÑ€ÐµÐ´Ð½ÑÑ self-information Ð¿Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸ÑŽ.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>ÐšÐ¾Ð³Ð´Ð° ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ Ð¼Ð°Ð»Ð°</h3>
+      <div class="step">Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð´ÐµÑ‚ÐµÑ€Ð¼Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð¾Ðµ</div>
+      <div class="step">Ð¾Ð´Ð¸Ð½ Ð¸ÑÑ…Ð¾Ð´ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð³Ð°Ñ€Ð°Ð½Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½</div>
+      <div class="step">Ð¼Ð°Ð»Ð¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸</div>
+    </div>
+    <div>
+      <h3>ÐšÐ¾Ð³Ð´Ð° ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ Ð²ÐµÐ»Ð¸ÐºÐ°</h3>
+      <div class="step">Ð¼Ð°ÑÑÐ° Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð° Ñ€Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½ÐµÐµ</div>
+      <div class="step">Ð¸ÑÑ…Ð¾Ð´ Ñ‚Ñ€ÑƒÐ´Ð½ÐµÐµ ÑƒÐ³Ð°Ð´Ð°Ñ‚ÑŒ</div>
+      <div class="step">Ð¼Ð½Ð¾Ð³Ð¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    H(Bernoulli(p)) = -p log p - (1-p) log(1-p)
+  </div>
+
+  <div class="warn">
+    âš ï¸ Ð­Ð½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ Ð¸Ð·Ð¼ÐµÑ€ÑÐµÑ‚ Ð½Ðµ â€œÑ…Ð°Ð¾Ñ Ð²Ð¾Ð¾Ð±Ñ‰Ðµâ€, Ð° Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ Ð¾Ñ‚Ð½Ð¾ÑÐ¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾Ð¹ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ñ‹.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>ðŸ“Š Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: entropy Ð´Ð»Ñ Bernoulli</h2>
+  <p class="muted">ÐœÐ°ÐºÑÐ¸Ð¼ÑƒÐ¼ ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ð¸ Ð¿Ñ€Ð¸ p=0.5 â€” ÐºÐ¾Ð³Ð´Ð° Ð¾Ð±Ð° Ð¸ÑÑ…Ð¾Ð´Ð° Ð¼Ð°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð¾ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ñ‹</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="entPVal">0.50</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.50" id="entP" oninput="drawEntropy()">
+      </div>
+      <canvas id="entropyCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚</h3>
+      <div class="result-box" id="entropyInfo"></div>
+      <div class="info" style="font-size:0.88em;">
+        Ð”Ð»Ñ Ð±Ð¸Ð½Ð°Ñ€Ð½Ð¾Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾Ð¹ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ñ‹ ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ Ð¼Ð°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð° Ð² Ñ‚Ð¾Ñ‡ÐºÐµ <strong>p=0.5</strong>. Ð•ÑÐ»Ð¸ p Ð±Ð»Ð¸Ð·ÐºÐ¾ Ðº 0 Ð¸Ð»Ð¸ 1, Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ Ð±Ð¾Ð»ÐµÐµ â€œÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ñ‹Ð¼â€, Ð¸ ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ Ð¿Ð°Ð´Ð°ÐµÑ‚.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>ðŸŒ Entropy Ð´Ð»Ñ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ð³Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ</h2>
+
+  <div class="formula">
+    H(P) = -âˆ‘<sub>k=1</sub><sup>K</sup> p<sub>k</sub> log p<sub>k</sub>
+  </div>
+
+  <p>Ð•ÑÐ»Ð¸ Ñƒ Ð½Ð°Ñ K ÐºÐ»Ð°ÑÑÐ¾Ð², Ñ‚Ð¾ entropy Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¿Ð¾ ÐºÐ»Ð°ÑÑÐ°Ð¼ â€œÑ€Ð°Ð·Ð¼Ð°Ð·Ð°Ð½Ð¾â€.</p>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>ÐÐ¸Ð·ÐºÐ°Ñ entropy</h3>
+      <p class="small">ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð¿Ð¾Ñ‡Ñ‚Ð¸ ÑƒÐ²ÐµÑ€ÐµÐ½Ð° Ð² Ð¾Ð´Ð½Ð¾Ð¼ ÐºÐ»Ð°ÑÑÐµ.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ð’Ñ‹ÑÐ¾ÐºÐ°Ñ entropy</h3>
+      <p class="small">ÐœÐ¾Ð´ÐµÐ»ÑŒ ÑÐ¾Ð¼Ð½ÐµÐ²Ð°ÐµÑ‚ÑÑ Ð¸ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÑÐµÑ‚ Ð¼Ð°ÑÑÑƒ Ð¿Ð¾ Ð¼Ð½Ð¾Ð³Ð¸Ð¼ ÐºÐ»Ð°ÑÑÐ°Ð¼.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ð’ active learning</h3>
+      <p class="small">Ð’Ñ‹ÑÐ¾ÐºÐ°Ñ entropy Ð¼Ð¾Ð¶ÐµÑ‚ ÑƒÐºÐ°Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ Ð½Ð° â€œÐ½ÐµÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ñ‹Ðµâ€ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ñ‹.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>ðŸŽ­ Cross-Entropy: Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¿Ñ€Ð¾Ñ‚Ð¸Ð² Ð¼Ð¾Ð´ÐµÐ»Ð¸</h2>
+
+  <div class="formula">
+    H(P, Q) = -âˆ‘<sub>x</sub> P(x) log Q(x)
+  </div>
+
+  <p>Cross-entropy Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚ Ð½Ð° Ð²Ð¾Ð¿Ñ€Ð¾Ñ: ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð² ÑÑ€ÐµÐ´Ð½ÐµÐ¼ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð½ÑƒÐ¶Ð½Ð¾, ÐµÑÐ»Ð¸ <strong>Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ Ð¼Ð¸Ñ€ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½ ÐºÐ°Ðº P</strong>, Ð° Ð¼Ñ‹ ÐºÐ¾Ð´Ð¸Ñ€ÑƒÐµÐ¼ ÐµÐ³Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸ÐµÐ¼ <strong>Q</strong>.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð•ÑÐ»Ð¸ Q â‰ˆ P</h3>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¾ ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚ Ñ Ñ€ÐµÐ°Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒÑŽ</div>
+      <div class="step">Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ð½Ðµ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ ÑƒÐ´Ð¸Ð²Ð»ÑÑŽÑ‚</div>
+      <div class="step">cross-entropy Ð¼Ð°Ð»Ð°</div>
+    </div>
+    <div>
+      <h3>Ð•ÑÐ»Ð¸ Q Ð´Ð°Ð»ÐµÐºÐ° Ð¾Ñ‚ P</h3>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¾ÑˆÐ¸Ð±Ð°ÐµÑ‚ÑÑ Ð² Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑÑ…</div>
+      <div class="step">Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÑŽÑ‚ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ðµ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸</div>
+      <div class="step">cross-entropy ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    H(P, Q) = H(P) + D<sub>KL</sub>(P || Q)
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð­Ñ‚Ð° Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð° Ð¾Ñ‡ÐµÐ½ÑŒ Ð²Ð°Ð¶Ð½Ð°: cross-entropy = ÑÐ¾Ð±ÑÑ‚Ð²ÐµÐ½Ð½Ð°Ñ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ñ‹ + ÑˆÑ‚Ñ€Ð°Ñ„ Ð·Ð° Ð¾Ñ‚Ð»Ð¸Ñ‡Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¾Ñ‚ Ð¸ÑÑ‚Ð¸Ð½Ñ‹.
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>ðŸ§® Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: cross-entropy Ð´Ð»Ñ Ð±Ð¸Ð½Ð°Ñ€Ð½Ð¾Ð¹ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸</h2>
+  <p class="muted">ÐŸÑƒÑÑ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð°Ñ Ð¼ÐµÑ‚ÐºÐ° y âˆˆ {0,1}, Ð° Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ q = P(y=1)</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Ð˜ÑÑ‚Ð¸Ð½Ð½Ð°Ñ Ð¼ÐµÑ‚ÐºÐ° y</span><br>
+        <select id="ceLabel" onchange="calcBinaryCE()">
+          <option value="1">y = 1</option>
+          <option value="0">y = 0</option>
+        </select>
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">q = P(y=1) = <span class="val-display" id="ceQVal">0.80</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.80" id="ceQ" oninput="calcBinaryCE()">
+      </div>
+      <canvas id="ceCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð°</h3>
+      <div class="formula">
+        CE(y, q) = -[y log q + (1-y) log(1-q)]
+      </div>
+      <div class="result-box" id="ceInfo"></div>
+      <div class="warn" style="font-size:0.88em;">
+        Ð•ÑÐ»Ð¸ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ Ð¸Ð¼ÐµÐµÑ‚ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ð¾Ñ‡Ñ‚Ð¸ 0, cross-entropy Ñ€ÐµÐ·ÐºÐ¾ Ñ€Ð°ÑÑ‚Ñ‘Ñ‚. ÐŸÐ¾ÑÑ‚Ð¾Ð¼Ñƒ â€œÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾ Ð½ÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ðµâ€ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ñ Ð½Ð°ÐºÐ°Ð·Ñ‹Ð²Ð°ÑŽÑ‚ÑÑ Ð¾ÑÐ¾Ð±ÐµÐ½Ð½Ð¾ ÑÐ¸Ð»ÑŒÐ½Ð¾.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>ðŸ·ï¸ ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ cross-entropy Ð´Ð»Ñ one-hot Ð¼ÐµÑ‚ÐºÐ¸ Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ÑÑ Ð² -log q<sub>true</sub></h2>
+
+  <p>ÐŸÑƒÑÑ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ ÐºÐ¾Ð´Ð¸Ñ€ÑƒÐµÑ‚ÑÑ one-hot Ð²ÐµÐºÑ‚Ð¾Ñ€Ð¾Ð¼:</p>
+  <div class="formula">
+    y = [0, 0, 1, 0, ...]
+  </div>
+
+  <p>Ð¢Ð¾Ð³Ð´Ð°:</p>
+  <div class="formula">
+    CE(y, q) = -âˆ‘<sub>k</sub> y<sub>k</sub> log q<sub>k</sub> = -log q<sub>true</sub>
+  </div>
+
+  <div class="step">Ð²ÑÐµ ÐºÐ¾Ð¼Ð¿Ð¾Ð½ÐµÐ½Ñ‚Ñ‹, ÐºÑ€Ð¾Ð¼Ðµ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ð³Ð¾ ÐºÐ»Ð°ÑÑÐ°, ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÑŽÑ‚ÑÑ Ð½Ð° 0</div>
+  <div class="step">Ð¾ÑÑ‚Ð°Ñ‘Ñ‚ÑÑ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð»Ð¾Ð³-Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾Ð³Ð¾ ÐºÐ»Ð°ÑÑÐ°</div>
+  <div class="step highlight">Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¿Ð¾ ÑÑƒÑ‚Ð¸ Ð·Ð°ÑÑ‚Ð°Ð²Ð»ÑÐµÑ‚ ÑƒÐ²ÐµÐ»Ð¸Ñ‡Ð¸Ð²Ð°Ñ‚ÑŒ q<sub>true</sub></div>
+
+  <div class="info">
+    â„¹ï¸ Ð˜Ð¼ÐµÐ½Ð½Ð¾ Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ softmax + cross-entropy â€” ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ð°Ñ ÑÐ²ÑÐ·ÐºÐ° Ð´Ð»Ñ Ð¼Ð½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð¾Ð¹ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸.
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>ðŸ”€ KL-divergence ÐµÑ‰Ñ‘ Ñ€Ð°Ð·: ÑÐ²ÑÐ·ÑŒ Ñ Ñ‚ÐµÐ¾Ñ€Ð¸ÐµÐ¹ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</h2>
+
+  <div class="formula">
+    D<sub>KL</sub>(P || Q) = âˆ‘<sub>x</sub> P(x) log(P(x) / Q(x))
+  </div>
+
+  <p>KL Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Q Ð½ÐµÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ð¾ ÐºÐ°Ðº Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ðµ Ð¼Ð¸Ñ€Ð°, Ð² ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ð¼ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾ P.</p>
+
+  <div class="formula">
+    D<sub>KL</sub>(P || Q) = H(P, Q) - H(P)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð•ÑÐ»Ð¸ P=Q</h3>
+      <div class="step">KL = 0</div>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚ Ñ Ð¸ÑÑ‚Ð¸Ð½Ð¾Ð¹</div>
+    </div>
+    <div>
+      <h3>Ð•ÑÐ»Ð¸ P Ð¸ Q Ð¾Ñ‚Ð»Ð¸Ñ‡Ð°ÑŽÑ‚ÑÑ</h3>
+      <div class="step">KL &gt; 0</div>
+      <div class="step">ÐµÑÑ‚ÑŒ â€œÐ´Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ñ†ÐµÐ½Ð°â€ Ð·Ð° Ð¿Ð»Ð¾Ñ…ÑƒÑŽ Ð¼Ð¾Ð´ÐµÐ»ÑŒ</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>ðŸ“‰ Negative Log-Likelihood ÐºÐ°Ðº Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¾Ð½Ð½Ð°Ñ Ñ†ÐµÐ½Ð°</h2>
+
+  <p>Ð•ÑÐ»Ð¸ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ð³Ð¾ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ñ, Ñ‚Ð¾ loss Ñ‡Ð°ÑÑ‚Ð¾ Ð²Ñ‹Ð³Ð»ÑÐ´Ð¸Ñ‚ Ñ‚Ð°Ðº:</p>
+
+  <div class="formula">
+    L = -log p<sub>Î¸</sub>(true outcome)
+  </div>
+
+  <p>Ð­Ñ‚Ð¾ Ð±ÑƒÐºÐ²Ð°Ð»ÑŒÐ½Ð¾ self-information Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ð³Ð¾ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ Ñ Ñ‚Ð¾Ñ‡ÐºÐ¸ Ð·Ñ€ÐµÐ½Ð¸Ñ Ð¼Ð¾Ð´ÐµÐ»Ð¸.</p>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Binary CE</h3>
+      <p class="small">Bernoulli NLL</p>
+    </div>
+    <div class="mini-card">
+      <h3>Cross-Entropy</h3>
+      <p class="small">Categorical NLL</p>
+    </div>
+    <div class="mini-card">
+      <h3>MSE</h3>
+      <p class="small">Gaussian NLL Ñ Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚ÑŒÑŽ Ð´Ð¾ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð’ ÑÑ‚Ð¾Ð¼ ÑÐ¼Ñ‹ÑÐ»Ðµ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸ â€” ÑÑ‚Ð¾ Ð¼Ð¸Ð½Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ñ ÑÑ€ÐµÐ´Ð½ÐµÐ¹ Ð½ÐµÐ¾Ð¶Ð¸Ð´Ð°Ð½Ð½Ð¾ÑÑ‚Ð¸ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ñ… Ð¾Ñ‚Ð²ÐµÑ‚Ð¾Ð².
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>ðŸ§  Entropy Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð¸ confidence</h2>
+
+  <p>Ð£ ÑÐ°Ð¼Ð¾Ð¹ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ñ‚Ð¾Ð¶Ðµ ÐµÑÑ‚ÑŒ predictive entropy:</p>
+
+  <div class="formula">
+    H(pÌ‚) = -âˆ‘<sub>k</sub> pÌ‚<sub>k</sub> log pÌ‚<sub>k</sub>
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>ÐÐ¸Ð·ÐºÐ°Ñ entropy prediction</h3>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑƒÐ²ÐµÑ€ÐµÐ½Ð°</div>
+      <div class="step">Ð¾Ð´Ð¸Ð½ ÐºÐ»Ð°ÑÑ Ð´Ð¾Ð¼Ð¸Ð½Ð¸Ñ€ÑƒÐµÑ‚</div>
+    </div>
+    <div>
+      <h3>Ð’Ñ‹ÑÐ¾ÐºÐ°Ñ entropy prediction</h3>
+      <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑÐ¾Ð¼Ð½ÐµÐ²Ð°ÐµÑ‚ÑÑ</div>
+      <div class="step">Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ Ð±Ð¾Ð»ÐµÐµ Ñ€Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½Ñ‹</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    âš ï¸ ÐÐ¸Ð·ÐºÐ°Ñ entropy Ð½Ðµ Ð²ÑÐµÐ³Ð´Ð° Ð¾Ð·Ð½Ð°Ñ‡Ð°ÐµÑ‚, Ñ‡Ñ‚Ð¾ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¿Ñ€Ð°Ð²Ð°. ÐžÐ½Ð° Ð¼Ð¾Ð¶ÐµÑ‚ Ð±Ñ‹Ñ‚ÑŒ ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾ Ð½ÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾Ð¹.
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>ðŸª„ Label Smoothing Ð¸ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¾Ð½Ð½Ð°Ñ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h2>
+
+  <p>Ð’Ð¼ÐµÑÑ‚Ð¾ Ð¶Ñ‘ÑÑ‚ÐºÐ¾Ð¹ one-hot Ð¸ÑÑ‚Ð¸Ð½Ñ‹ Ð¼Ð¾Ð¶Ð½Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ñ‡ÑƒÑ‚ÑŒ ÑÐ³Ð»Ð°Ð¶ÐµÐ½Ð½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ:</p>
+
+  <div class="formula">
+    y<sub>smooth</sub> = (1-Îµ) Â· y<sub>one-hot</sub> + Îµ / K
+  </div>
+
+  <div class="step">ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ°ÐµÑ‚ÑÑ Ð¿ÐµÑ€ÐµÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾ÑÑ‚ÑŒ Ð¼Ð¾Ð´ÐµÐ»Ð¸</div>
+  <div class="step">Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ ÑÑ‚Ð°Ð½Ð¾Ð²ÑÑ‚ÑÑ Ð¼ÑÐ³Ñ‡Ðµ</div>
+  <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ ÑƒÑ‡Ð¸Ñ‚ÑÑ Ð½Ðµ ÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ 1.0 ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ Ð°Ð³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð¾</div>
+
+  <div class="info">
+    â„¹ï¸ Ð¡ Ñ‚Ð¾Ñ‡ÐºÐ¸ Ð·Ñ€ÐµÐ½Ð¸Ñ Ñ‚ÐµÐ¾Ñ€Ð¸Ð¸ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ ÑÑ‚Ð¾ Ð¾Ð·Ð½Ð°Ñ‡Ð°ÐµÑ‚, Ñ‡Ñ‚Ð¾ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð½Ðµ ÑÑ‡Ð¸Ñ‚Ð°ÐµÑ‚ÑÑ Ð°Ð±ÑÐ¾Ð»ÑŽÑ‚Ð½Ð¾ Ð´ÐµÑ‚ÐµÑ€Ð¼Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¼.
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>ðŸ“š Ð¡Ð²Ð¾Ð´ÐºÐ° Ñ„Ð¾Ñ€Ð¼ÑƒÐ»</h2>
+
+  <table>
+    <tr><th>ÐžÐ±ÑŠÐµÐºÑ‚</th><th>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð°</th><th>Ð¡Ð¼Ñ‹ÑÐ»</th></tr>
+    <tr><td>Self-information</td><td>I(x) = -log p(x)</td><td>Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ</td></tr>
+    <tr><td>Entropy</td><td>H(P) = -âˆ‘ p log p</td><td>ÑÑ€ÐµÐ´Ð½ÑÑ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ</td></tr>
+    <tr><td>Cross-Entropy</td><td>H(P, Q) = -âˆ‘ P log Q</td><td>Ñ†ÐµÐ½Ð° ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ñ Ð¸ÑÑ‚Ð¸Ð½Ñ‹ Ð¼Ð¾Ð´ÐµÐ»ÑŒÑŽ</td></tr>
+    <tr><td>KL</td><td>D<sub>KL</sub>(P || Q) = âˆ‘ P log(P / Q)</td><td>Ð»Ð¸ÑˆÐ½ÑÑ Ñ†ÐµÐ½Ð° Ð¸Ð·-Ð·Ð° Ñ€Ð°Ð·Ð»Ð¸Ñ‡Ð¸Ñ P Ð¸ Q</td></tr>
+    <tr><td>Ð¡Ð²ÑÐ·ÑŒ</td><td>H(P, Q) = H(P) + D<sub>KL</sub>(P || Q)</td><td>Ð³Ð»Ð°Ð²Ð½Ð¾Ðµ Ñ‚Ð¾Ð¶Ð´ÐµÑÑ‚Ð²Ð¾</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>ðŸ’» NumPy / PyTorch: entropy Ð¸ cross-entropy</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Entropy Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ</button>
+    <button onclick="showCode(1,this)">Cross-Entropy</button>
+    <button onclick="showCode(2,this)">PyTorch</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">import numpy as np
+
+p = np.array([0.7, 0.2, 0.1])
+
+entropy = -np.sum(p * np.log(p))
+print("Entropy:", entropy)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+P = np.array([1.0, 0.0, 0.0])      # one-hot truth
+Q = np.array([0.8, 0.15, 0.05])    # model probs
+
+cross_entropy = -np.sum(P * np.log(Q))
+print("Cross-Entropy:", cross_entropy)
+
+# since P is one-hot, this is just:
+print(-np.log(Q[0]))</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import torch
+import torch.nn.functional as F
+
+logits = torch.tensor([[2.5, 0.3, -1.2]])
+target = torch.tensor([0])   # true class index
+
+loss = F.cross_entropy(logits, target)
+print(loss.item())
+
+# internally:
+# 1) logits -> softmax probabilities
+# 2) take -log(probability of true class)</div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>ðŸŽ¯ Ð§Ñ‚Ð¾ Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð²Ñ‹Ð½ÐµÑÑ‚Ð¸ Ð¸Ð· Ñ‚ÐµÐ¼Ñ‹</h2>
+
+  <div class="step highlight">Self-information = surprise Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ</div>
+  <div class="step highlight">Entropy = ÑÑ€ÐµÐ´Ð½ÑÑ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ</div>
+  <div class="step highlight">Cross-Entropy = Ñ†ÐµÐ½Ð° ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ñ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾Ð³Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ Ð¼Ð¾Ð´ÐµÐ»ÑŒÑŽ</div>
+  <div class="step highlight">KL = Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Q Ñ…ÑƒÐ¶Ðµ Ð¾Ð¿Ð¸ÑÑ‹Ð²Ð°ÐµÑ‚ Ð¼Ð¸Ñ€, Ð³Ð´Ðµ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾ P</div>
+  <div class="step highlight">Cross-Entropy = Entropy + KL</div>
+  <div class="step highlight">Classification loss = -log(probability of true class)</div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð•ÑÐ»Ð¸ ÑÐ¾Ð²ÑÐµÐ¼ ÑƒÐ¿Ñ€Ð¾ÑÑ‚Ð¸Ñ‚ÑŒ: Ñ‚ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð² ML Ð¾Ð±ÑŠÑÑÐ½ÑÐµÑ‚, Ð¿Ð¾Ñ‡ÐµÐ¼Ñƒ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð´Ð¾Ð»Ð¶Ð½Ð° Ð´Ð°Ð²Ð°Ñ‚ÑŒ Ð²Ñ‹ÑÐ¾ÐºÑƒÑŽ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ð¼ Ð¾Ñ‚Ð²ÐµÑ‚Ð°Ð¼ â€” Ð¸Ð½Ð°Ñ‡Ðµ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ðµ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ ÑÑ‚Ð°Ð½Ð¾Ð²ÑÑ‚ÑÑ ÑÐ»Ð¸ÑˆÐºÐ¾Ð¼ â€œÐ´Ð¾Ñ€Ð¾Ð³Ð¸Ð¼Ð¸â€ Ð¿Ð¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸.
+  </div>
+</div>
+
+<script>
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function safeLog(x){ return Math.log(clamp(x, 1e-9, 1)); }
+function bernEntropy(p){
+  p = clamp(p, 1e-9, 1-1e-9);
+  return -p*safeLog(p) - (1-p)*safeLog(1-p);
+}
+function drawAxes(ctx, W, H){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-20); ctx.stroke();
+}
+
+// ===== SELF INFORMATION =====
+function calcSelfInfo(){
+  const p = +document.getElementById('infoP').value;
+  document.getElementById('infoPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('infoCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  // draw curve I(p) = -log p
+  const xMin=0.01, xMax=0.99, yMax=5;
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for(let i=0;i<=300;i++){
+    const px = xMin + (i/300)*(xMax-xMin);
+    const y = -Math.log(px);
+    const xCanvas = 30 + ((px-xMin)/(xMax-xMin))*(W-50);
+    const yCanvas = (H-20) - (y/yMax)*(H-40);
+    if(i===0) ctx.moveTo(xCanvas,yCanvas); else ctx.lineTo(xCanvas,yCanvas);
+  }
+  ctx.stroke();
+
+  const surprise = -Math.log(p);
+  const xC = 30 + ((p-xMin)/(xMax-xMin))*(W-50);
+  const yC = (H-20) - (surprise/yMax)*(H-40);
+  ctx.beginPath();
+  ctx.arc(xC,yC,4,0,Math.PI*2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+
+  document.getElementById('infoBox').innerHTML = `
+    <div class="step">p(x) = ${p.toFixed(6)}</div>
+    <div class="step highlight">I(x) = -log p(x) = <span class="hl-amber">${surprise.toFixed(6)}</span></div>
+    <div class="step">${p < 0.2 ? 'ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ Ñ€ÐµÐ´ÐºÐ¾Ðµ â†’ Ð¼Ð½Ð¾Ð³Ð¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸/ÑƒÐ´Ð¸Ð²Ð»ÐµÐ½Ð¸Ñ' : (p > 0.8 ? 'ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ Ð¾Ð¶Ð¸Ð´Ð°ÐµÐ¼Ð¾Ðµ â†’ Ð¼Ð°Ð»Ð¾ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸' : 'ÑƒÐ¼ÐµÑ€ÐµÐ½Ð½Ð°Ñ Ð½ÐµÐ¾Ð¶Ð¸Ð´Ð°Ð½Ð½Ð¾ÑÑ‚ÑŒ')}</div>
+  `;
+}
+
+// ===== ENTROPY =====
+function drawEntropy(){
+  const p = +document.getElementById('entP').value;
+  document.getElementById('entPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('entropyCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const yMax = 0.75;
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.3;
+  ctx.beginPath();
+  for(let i=1;i<=99;i++){
+    const x = i/100;
+    const y = bernEntropy(x);
+    const cx = 30 + (x-0.01)/(0.98)*(W-50);
+    const cy = (H-20) - (y/yMax)*(H-40);
+    if(i===1) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  const h = bernEntropy(p);
+  const cx = 30 + (p-0.01)/(0.98)*(W-50);
+  const cy = (H-20) - (h/yMax)*(H-40);
+  ctx.beginPath();
+  ctx.arc(cx,cy,4,0,Math.PI*2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+
+  document.getElementById('entropyInfo').innerHTML = `
+    <div class="step">P = [${(1-p).toFixed(4)}, ${p.toFixed(4)}]</div>
+    <div class="step highlight">H(P) = <span class="hl-green">${h.toFixed(6)}</span></div>
+    <div class="step">${Math.abs(p-0.5) < 0.05 ? 'Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼ entropy â†’ Ð²Ñ‹ÑÐ¾ÐºÐ°Ñ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒ' : (p < 0.15 || p > 0.85 ? 'Ð½Ð¸Ð·ÐºÐ°Ñ entropy â†’ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¾' : 'ÑÑ€ÐµÐ´Ð½Ð¸Ð¹ ÑƒÑ€Ð¾Ð²ÐµÐ½ÑŒ Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸')}</div>
+  `;
+}
+
+// ===== BINARY CE =====
+function calcBinaryCE(){
+  const y = +document.getElementById('ceLabel').value;
+  const q = +document.getElementById('ceQ').value;
+  document.getElementById('ceQVal').textContent = q.toFixed(2);
+
+  const loss = -(y*Math.log(q) + (1-y)*Math.log(1-q));
+
+  const c = document.getElementById('ceCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const barW = 70;
+  const base = H-20;
+  const p1 = q;
+  const p0 = 1-q;
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(90, base-p0*150, barW, p0*150);
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(210, base-p1*150, barW, p1*150);
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 3;
+  if(y===0){
+    ctx.strokeRect(90, base-p0*150, barW, p0*150);
+  } else {
+    ctx.strokeRect(210, base-p1*150, barW, p1*150);
+  }
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('P(y=0)', 98, base+16);
+  ctx.fillText('P(y=1)', 218, base+16);
+
+  document.getElementById('ceInfo').innerHTML = `
+    <div class="step">Ð¸ÑÑ‚Ð¸Ð½Ð°: y = ${y}</div>
+    <div class="step">Ð¼Ð¾Ð´ÐµÐ»ÑŒ: q = P(y=1) = ${q.toFixed(6)}</div>
+    <div class="step">${y===1 ? `Ð¸ÑÑ‚Ð¸Ð½Ð½Ð°Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ = q = ${q.toFixed(6)}` : `Ð¸ÑÑ‚Ð¸Ð½Ð½Ð°Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ = 1-q = ${(1-q).toFixed(6)}`}</div>
+    <div class="step highlight">CE = <span class="hl-red">${loss.toFixed(6)}</span></div>
+    <div class="step">${loss < 0.2 ? 'Ñ…Ð¾Ñ€Ð¾ÑˆÐµÐµ Ð¸ ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾Ðµ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ðµ' : (loss > 2 ? 'Ð¾Ñ‡ÐµÐ½ÑŒ Ð¿Ð»Ð¾Ñ…Ð¾Ðµ / ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾ Ð½ÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾Ðµ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ðµ' : 'ÑÑ€ÐµÐ´Ð½ÐµÐµ ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ñ')}</div>
+  `;
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// INIT
+calcSelfInfo();
+drawEntropy();
+calcBinaryCE();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+
+

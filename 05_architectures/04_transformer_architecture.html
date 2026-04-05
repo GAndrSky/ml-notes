@@ -1,5 +1,5 @@
-
-<link rel="stylesheet" href="shared-nav.css">
+﻿
+<link rel="stylesheet" href="../shared-nav.css">
 <style>
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -33,15 +33,15 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
 .arch-block{border-radius:8px;padding:10px;text-align:center;font-size:.82em;margin:3px 0;border:1px solid}
 </style>
 
-<h1>5.3 — Transformer (Часть 2): Архитектура</h1>
-<p class="muted">Positional Encoding · Encoder/Decoder · FFN · Layer Norm · обучение</p>
+<h1>5.3 â€” Transformer (Ð§Ð°ÑÑ‚ÑŒ 2): ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð°</h1>
+<p class="muted">Positional Encoding Â· Encoder/Decoder Â· FFN Â· Layer Norm Â· Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ</p>
 
 <div class="tabs">
   <button class="tab active" onclick="sw('t-pe')">Positional Encoding</button>
-  <button class="tab" onclick="sw('t-arch')">Архитектура</button>
+  <button class="tab" onclick="sw('t-arch')">ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð°</button>
   <button class="tab" onclick="sw('t-ffn')">FFN + LayerNorm</button>
-  <button class="tab" onclick="sw('t-train')">Обучение</button>
-  <button class="tab" onclick="sw('t-variants')">Варианты</button>
+  <button class="tab" onclick="sw('t-train')">ÐžÐ±ÑƒÑ‡ÐµÐ½Ð¸Ðµ</button>
+  <button class="tab" onclick="sw('t-variants')">Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ñ‹</button>
   <button class="tab" onclick="sw('t-code2')">PyTorch</button>
 </div>
 
@@ -49,72 +49,72 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
 <div id="t-pe" class="tab-content active">
 <h2>1. Positional Encoding</h2>
 <div class="card">
-<p>Attention — перестановочно-инвариантная операция: порядок токенов не имеет значения без явной информации о позиции. PE вводит её.</p>
+<p>Attention â€” Ð¿ÐµÑ€ÐµÑÑ‚Ð°Ð½Ð¾Ð²Ð¾Ñ‡Ð½Ð¾-Ð¸Ð½Ð²Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ð½Ð°Ñ Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸Ñ: Ð¿Ð¾Ñ€ÑÐ´Ð¾Ðº Ñ‚Ð¾ÐºÐµÐ½Ð¾Ð² Ð½Ðµ Ð¸Ð¼ÐµÐµÑ‚ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ Ð±ÐµÐ· ÑÐ²Ð½Ð¾Ð¹ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸. PE Ð²Ð²Ð¾Ð´Ð¸Ñ‚ ÐµÑ‘.</p>
 
-<h3>Синусоидальный PE (Vaswani et al., 2017)</h3>
+<h3>Ð¡Ð¸Ð½ÑƒÑÐ¾Ð¸Ð´Ð°Ð»ÑŒÐ½Ñ‹Ð¹ PE (Vaswani et al., 2017)</h3>
 <div class="formula">PE[pos, 2i]   = sin(pos / <span class="hl-a">10000^(2i/d_model)</span>)
 PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
-<p>pos — позиция в последовательности, i — индекс измерения (0..d_model/2-1)</p>
+<p>pos â€” Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ Ð² Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸, i â€” Ð¸Ð½Ð´ÐµÐºÑ Ð¸Ð·Ð¼ÐµÑ€ÐµÐ½Ð¸Ñ (0..d_model/2-1)</p>
 
-<h3>Свойства синусоидального PE</h3>
-<div class="step-box"><span class="sn">1.</span>Каждая позиция имеет уникальный паттерн — однозначная кодировка</div>
-<div class="step-box"><span class="sn">2.</span>PE[pos+k] — линейная функция PE[pos] → модель может учить относительные расстояния</div>
-<div class="step-box"><span class="sn">3.</span>Нет параметров — детерминировано, обобщается на любую длину</div>
-<div class="step-box"><span class="sn">4.</span>Частоты: от 2π (i=0) до 20000π (i=d/2-1) — как спектр</div>
+<h3>Ð¡Ð²Ð¾Ð¹ÑÑ‚Ð²Ð° ÑÐ¸Ð½ÑƒÑÐ¾Ð¸Ð´Ð°Ð»ÑŒÐ½Ð¾Ð³Ð¾ PE</h3>
+<div class="step-box"><span class="sn">1.</span>ÐšÐ°Ð¶Ð´Ð°Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ñ Ð¸Ð¼ÐµÐµÑ‚ ÑƒÐ½Ð¸ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð¿Ð°Ñ‚Ñ‚ÐµÑ€Ð½ â€” Ð¾Ð´Ð½Ð¾Ð·Ð½Ð°Ñ‡Ð½Ð°Ñ ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²ÐºÐ°</div>
+<div class="step-box"><span class="sn">2.</span>PE[pos+k] â€” Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ PE[pos] â†’ Ð¼Ð¾Ð´ÐµÐ»ÑŒ Ð¼Ð¾Ð¶ÐµÑ‚ ÑƒÑ‡Ð¸Ñ‚ÑŒ Ð¾Ñ‚Ð½Ð¾ÑÐ¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ñ€Ð°ÑÑÑ‚Ð¾ÑÐ½Ð¸Ñ</div>
+<div class="step-box"><span class="sn">3.</span>ÐÐµÑ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² â€” Ð´ÐµÑ‚ÐµÑ€Ð¼Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾, Ð¾Ð±Ð¾Ð±Ñ‰Ð°ÐµÑ‚ÑÑ Ð½Ð° Ð»ÑŽÐ±ÑƒÑŽ Ð´Ð»Ð¸Ð½Ñƒ</div>
+<div class="step-box"><span class="sn">4.</span>Ð§Ð°ÑÑ‚Ð¾Ñ‚Ñ‹: Ð¾Ñ‚ 2Ï€ (i=0) Ð´Ð¾ 20000Ï€ (i=d/2-1) â€” ÐºÐ°Ðº ÑÐ¿ÐµÐºÑ‚Ñ€</div>
 
-<div class="info-box"><strong>Вход в Transformer:</strong> x_emb + PE, где x_emb ∈ ℝ<sup>L×d</sup> — обученные эмбеддинги токенов, PE — фиксированные синусоиды одного размера.</div>
+<div class="info-box"><strong>Ð’Ñ…Ð¾Ð´ Ð² Transformer:</strong> x_emb + PE, Ð³Ð´Ðµ x_emb âˆˆ â„<sup>LÃ—d</sup> â€” Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð½Ñ‹Ðµ ÑÐ¼Ð±ÐµÐ´Ð´Ð¸Ð½Ð³Ð¸ Ñ‚Ð¾ÐºÐµÐ½Ð¾Ð², PE â€” Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ðµ ÑÐ¸Ð½ÑƒÑÐ¾Ð¸Ð´Ñ‹ Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ñ€Ð°Ð·Ð¼ÐµÑ€Ð°.</div>
 
 <h3>Learnable PE (BERT, GPT)</h3>
-<div class="formula">PE ∈ ℝ<sup>max_len × d_model</sup>   — обучаемая матрица эмбеддингов позиций</div>
-<p class="muted">Гибче, но не обобщается за пределы max_len. BERT: max_len=512, GPT-2: max_len=1024.</p>
+<div class="formula">PE âˆˆ â„<sup>max_len Ã— d_model</sup>   â€” Ð¾Ð±ÑƒÑ‡Ð°ÐµÐ¼Ð°Ñ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° ÑÐ¼Ð±ÐµÐ´Ð´Ð¸Ð½Ð³Ð¾Ð² Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¹</div>
+<p class="muted">Ð“Ð¸Ð±Ñ‡Ðµ, Ð½Ð¾ Ð½Ðµ Ð¾Ð±Ð¾Ð±Ñ‰Ð°ÐµÑ‚ÑÑ Ð·Ð° Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‹ max_len. BERT: max_len=512, GPT-2: max_len=1024.</p>
 
 <h3>RoPE (Rotary Position Embedding, GPT-NeoX, LLaMA)</h3>
-<div class="formula">Применяется к Q и K через вращение в 2D-подпространствах:
-q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|</div>
-<p class="muted">Кодирует относительные позиции прямо в attention, обобщается за max_len.</p>
+<div class="formula">ÐŸÑ€Ð¸Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ðº Q Ð¸ K Ñ‡ÐµÑ€ÐµÐ· Ð²Ñ€Ð°Ñ‰ÐµÐ½Ð¸Ðµ Ð² 2D-Ð¿Ð¾Ð´Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ð°Ñ…:
+q'Â·k' = f(q,pos_q)Â·f(k,pos_k) Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¾Ñ‚ |pos_q - pos_k|</div>
+<p class="muted">ÐšÐ¾Ð´Ð¸Ñ€ÑƒÐµÑ‚ Ð¾Ñ‚Ð½Ð¾ÑÐ¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ Ð¿Ñ€ÑÐ¼Ð¾ Ð² attention, Ð¾Ð±Ð¾Ð±Ñ‰Ð°ÐµÑ‚ÑÑ Ð·Ð° max_len.</p>
 </div>
 
-<h2>Визуализация PE</h2>
+<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ PE</h2>
 <div class="card">
 <div class="sr"><span>d_model</span><input type="range" id="pe-d" min="8" max="128" step="8" value="64" oninput="drawPE()"><span class="sv" id="pe-d-v">64</span></div>
 <div class="sr"><span>max_len</span><input type="range" id="pe-L" min="10" max="100" value="40" oninput="drawPE()"><span class="sv" id="pe-L-v">40</span></div>
 <canvas id="pe-canvas" width="800" height="260" style="width:100%;margin-top:8px"></canvas>
 
-<h3 style="margin-top:14px">Сходство PE через косинус</h3>
-<div class="sr"><span>Позиция pos</span><input type="range" id="pe-pos" min="0" max="39" value="5" oninput="drawPESim()"><span class="sv" id="pe-pos-v">5</span></div>
+<h3 style="margin-top:14px">Ð¡Ñ…Ð¾Ð´ÑÑ‚Ð²Ð¾ PE Ñ‡ÐµÑ€ÐµÐ· ÐºÐ¾ÑÐ¸Ð½ÑƒÑ</h3>
+<div class="sr"><span>ÐŸÐ¾Ð·Ð¸Ñ†Ð¸Ñ pos</span><input type="range" id="pe-pos" min="0" max="39" value="5" oninput="drawPESim()"><span class="sv" id="pe-pos-v">5</span></div>
 <canvas id="pe-sim-canvas" width="800" height="120" style="width:100%"></canvas>
 </div>
 </div>
 
-<!-- ===== АРХИТЕКТУРА ===== -->
+<!-- ===== ÐÐ Ð¥Ð˜Ð¢Ð•ÐšÐ¢Ð£Ð Ð ===== -->
 <div id="t-arch" class="tab-content">
-<h2>2. Полная архитектура Transformer</h2>
+<h2>2. ÐŸÐ¾Ð»Ð½Ð°Ñ Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð° Transformer</h2>
 <div class="card">
 <div class="grid2">
 <div>
-<h3>Encoder Block (×N)</h3>
+<h3>Encoder Block (Ã—N)</h3>
 <div class="arch-block" style="background:rgba(96,165,250,.12);border-color:var(--blue)">Multi-Head Self-Attention</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓ + residual</div>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“ + residual</div>
 <div class="arch-block" style="background:rgba(16,185,129,.1);border-color:var(--green)">LayerNorm</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓</div>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“</div>
 <div class="arch-block" style="background:rgba(245,158,11,.1);border-color:var(--amber)">Feed-Forward (FFN)</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓ + residual</div>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“ + residual</div>
 <div class="arch-block" style="background:rgba(16,185,129,.1);border-color:var(--green)">LayerNorm</div>
-<p class="muted" style="margin-top:8px;font-size:.8em">Нет маски — все видят всех</p>
+<p class="muted" style="margin-top:8px;font-size:.8em">ÐÐµÑ‚ Ð¼Ð°ÑÐºÐ¸ â€” Ð²ÑÐµ Ð²Ð¸Ð´ÑÑ‚ Ð²ÑÐµÑ…</p>
 </div>
 <div>
-<h3>Decoder Block (×N)</h3>
+<h3>Decoder Block (Ã—N)</h3>
 <div class="arch-block" style="background:rgba(239,68,68,.12);border-color:var(--red)">Masked MHA (causal)</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓ + residual → LN</div>
-<div class="arch-block" style="background:rgba(167,139,250,.12);border-color:var(--purple)">Cross-Attention (Q←dec, K,V←enc)</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓ + residual → LN</div>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“ + residual â†’ LN</div>
+<div class="arch-block" style="background:rgba(167,139,250,.12);border-color:var(--purple)">Cross-Attention (Qâ†dec, K,Vâ†enc)</div>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“ + residual â†’ LN</div>
 <div class="arch-block" style="background:rgba(245,158,11,.1);border-color:var(--amber)">Feed-Forward (FFN)</div>
-<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">↓ + residual → LN</div>
-<p class="muted" style="margin-top:8px;font-size:.8em">Causal mask на self-attn</p>
+<div style="text-align:center;color:var(--muted);font-size:.8em;margin:2px">â†“ + residual â†’ LN</div>
+<p class="muted" style="margin-top:8px;font-size:.8em">Causal mask Ð½Ð° self-attn</p>
 </div>
 </div>
 
-<h3 style="margin-top:14px">Полная схема (Vaswani 2017)</h3>
+<h3 style="margin-top:14px">ÐŸÐ¾Ð»Ð½Ð°Ñ ÑÑ…ÐµÐ¼Ð° (Vaswani 2017)</h3>
 <canvas id="arch-canvas" width="800" height="500" style="width:100%;margin-top:8px"></canvas>
 </div>
 
@@ -122,24 +122,24 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
 <div class="card">
 <div class="grid2">
 <div class="step-box">
-  <strong class="hl-r">Post-LN (оригинал 2017)</strong><br>
+  <strong class="hl-r">Post-LN (Ð¾Ñ€Ð¸Ð³Ð¸Ð½Ð°Ð» 2017)</strong><br>
   x = LN(x + Sublayer(x))<br>
-  Нестабильно — нужен warmup, clipnorm
+  ÐÐµÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ â€” Ð½ÑƒÐ¶ÐµÐ½ warmup, clipnorm
 </div>
 <div class="step-box">
   <strong class="hl-g">Pre-LN (GPT-2, BERT-large)</strong><br>
   x = x + Sublayer(LN(x))<br>
-  Стабильнее, быстрее сходится
+  Ð¡Ñ‚Ð°Ð±Ð¸Ð»ÑŒÐ½ÐµÐµ, Ð±Ñ‹ÑÑ‚Ñ€ÐµÐµ ÑÑ…Ð¾Ð´Ð¸Ñ‚ÑÑ
 </div>
 </div>
-<p class="muted" style="margin-top:8px">Pre-LN: градиент идёт по residual path напрямую, минуя LN — аналогично LSTM gradient highway.</p>
+<p class="muted" style="margin-top:8px">Pre-LN: Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¸Ð´Ñ‘Ñ‚ Ð¿Ð¾ residual path Ð½Ð°Ð¿Ñ€ÑÐ¼ÑƒÑŽ, Ð¼Ð¸Ð½ÑƒÑ LN â€” Ð°Ð½Ð°Ð»Ð¾Ð³Ð¸Ñ‡Ð½Ð¾ LSTM gradient highway.</p>
 </div>
 
-<h2>Параметры полного Transformer</h2>
+<h2>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¿Ð¾Ð»Ð½Ð¾Ð³Ð¾ Transformer</h2>
 <div class="card">
-<div class="sr"><span>N слоёв (encoder)</span><input type="range" id="tf-N" min="1" max="24" value="6" oninput="calcTFParams()"><span class="sv" id="tf-N-v">6</span></div>
+<div class="sr"><span>N ÑÐ»Ð¾Ñ‘Ð² (encoder)</span><input type="range" id="tf-N" min="1" max="24" value="6" oninput="calcTFParams()"><span class="sv" id="tf-N-v">6</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="tf-d" min="64" max="2048" step="64" value="512" oninput="calcTFParams()"><span class="sv" id="tf-d-v">512</span></div>
-<div class="sr"><span>FFN d_ff (обычно 4×d)</span><input type="range" id="tf-ff" min="1" max="8" value="4" oninput="calcTFParams()"><span class="sv" id="tf-ff-v">4×</span></div>
+<div class="sr"><span>FFN d_ff (Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾ 4Ã—d)</span><input type="range" id="tf-ff" min="1" max="8" value="4" oninput="calcTFParams()"><span class="sv" id="tf-ff-v">4Ã—</span></div>
 <div id="tf-params-result" style="margin-top:10px;font-size:.9em;line-height:2"></div>
 </div>
 </div>
@@ -148,87 +148,87 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
 <div id="t-ffn" class="tab-content">
 <h2>3. Feed-Forward Network (FFN)</h2>
 <div class="card">
-<div class="formula">FFN(x) = <span class="hl-g">ReLU</span>(<span class="hl-a">x·W₁ + b₁</span>) · <span class="hl-b">W₂ + b₂</span>
+<div class="formula">FFN(x) = <span class="hl-g">ReLU</span>(<span class="hl-a">xÂ·Wâ‚ + bâ‚</span>) Â· <span class="hl-b">Wâ‚‚ + bâ‚‚</span>
 
-W₁ ∈ ℝ<sup>d_model × d_ff</sup>,   W₂ ∈ ℝ<sup>d_ff × d_model</sup>
-d_ff = 4·d_model  (стандарт)</div>
+Wâ‚ âˆˆ â„<sup>d_model Ã— d_ff</sup>,   Wâ‚‚ âˆˆ â„<sup>d_ff Ã— d_model</sup>
+d_ff = 4Â·d_model  (ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚)</div>
 
-<div class="info-box"><strong>Зачем FFN?</strong> MHA — линейная операция над значениями (V взвешиваются, не трансформируются). FFN добавляет нелинейность <em>внутри каждой позиции</em>. Интерпретация: FFN хранит «фактические знания» (Geva et al., 2021 — «Transformer Feed-Forward Layers Are Key-Value Memories»).</div>
+<div class="info-box"><strong>Ð—Ð°Ñ‡ÐµÐ¼ FFN?</strong> MHA â€” Ð»Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸Ñ Ð½Ð°Ð´ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸ÑÐ¼Ð¸ (V Ð²Ð·Ð²ÐµÑˆÐ¸Ð²Ð°ÑŽÑ‚ÑÑ, Ð½Ðµ Ñ‚Ñ€Ð°Ð½ÑÑ„Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÑŽÑ‚ÑÑ). FFN Ð´Ð¾Ð±Ð°Ð²Ð»ÑÐµÑ‚ Ð½ÐµÐ»Ð¸Ð½ÐµÐ¹Ð½Ð¾ÑÑ‚ÑŒ <em>Ð²Ð½ÑƒÑ‚Ñ€Ð¸ ÐºÐ°Ð¶Ð´Ð¾Ð¹ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸</em>. Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ: FFN Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ Â«Ñ„Ð°ÐºÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ðµ Ð·Ð½Ð°Ð½Ð¸ÑÂ» (Geva et al., 2021 â€” Â«Transformer Feed-Forward Layers Are Key-Value MemoriesÂ»).</div>
 
-<h3>Современные вариации FFN</h3>
-<div class="step-box"><span class="sn">SwiGLU (LLaMA):</span>FFN(x) = (W₁x ⊙ σ(W₃x)) · W₂ — вентиль на входе</div>
-<div class="step-box"><span class="sn">GeGLU (PaLM):</span>аналогично, но с GELU вместо sigmoid</div>
-<div class="step-box"><span class="sn">MoE (Mixtral):</span>Mixture of Experts — выбирает Top-k из N FFN через gating network</div>
+<h3>Ð¡Ð¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ðµ Ð²Ð°Ñ€Ð¸Ð°Ñ†Ð¸Ð¸ FFN</h3>
+<div class="step-box"><span class="sn">SwiGLU (LLaMA):</span>FFN(x) = (Wâ‚x âŠ™ Ïƒ(Wâ‚ƒx)) Â· Wâ‚‚ â€” Ð²ÐµÐ½Ñ‚Ð¸Ð»ÑŒ Ð½Ð° Ð²Ñ…Ð¾Ð´Ðµ</div>
+<div class="step-box"><span class="sn">GeGLU (PaLM):</span>Ð°Ð½Ð°Ð»Ð¾Ð³Ð¸Ñ‡Ð½Ð¾, Ð½Ð¾ Ñ GELU Ð²Ð¼ÐµÑÑ‚Ð¾ sigmoid</div>
+<div class="step-box"><span class="sn">MoE (Mixtral):</span>Mixture of Experts â€” Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÑ‚ Top-k Ð¸Ð· N FFN Ñ‡ÐµÑ€ÐµÐ· gating network</div>
 </div>
 
 <h2>4. Layer Normalization (Pre-LN)</h2>
 <div class="card">
-<p>LN из блока 3.4 — напоминание в контексте Transformer:</p>
-<div class="formula">LN(x) = <span class="hl-a">γ</span> ⊙ (x - μ) / √(σ² + ε) + <span class="hl-b">β</span>
+<p>LN Ð¸Ð· Ð±Ð»Ð¾ÐºÐ° 3.4 â€” Ð½Ð°Ð¿Ð¾Ð¼Ð¸Ð½Ð°Ð½Ð¸Ðµ Ð² ÐºÐ¾Ð½Ñ‚ÐµÐºÑÑ‚Ðµ Transformer:</p>
+<div class="formula">LN(x) = <span class="hl-a">Î³</span> âŠ™ (x - Î¼) / âˆš(ÏƒÂ² + Îµ) + <span class="hl-b">Î²</span>
 
-μ = mean(x, dim=-1)   # по оси features
-σ² = var(x, dim=-1)
-γ, β ∈ ℝ<sup>d_model</sup>   — обучаемые</div>
+Î¼ = mean(x, dim=-1)   # Ð¿Ð¾ Ð¾ÑÐ¸ features
+ÏƒÂ² = var(x, dim=-1)
+Î³, Î² âˆˆ â„<sup>d_model</sup>   â€” Ð¾Ð±ÑƒÑ‡Ð°ÐµÐ¼Ñ‹Ðµ</div>
 
-<h3>Residual + Pre-LN в формулах</h3>
-<div class="formula">Encoder слой l:
+<h3>Residual + Pre-LN Ð² Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð°Ñ…</h3>
+<div class="formula">Encoder ÑÐ»Ð¾Ð¹ l:
 
-x' = x + <span class="hl-b">MHA</span>(LN(x))        ← residual + Pre-LN
-x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
+x' = x + <span class="hl-b">MHA</span>(LN(x))        â† residual + Pre-LN
+x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     â† residual + Pre-LN</div>
 
-<div class="info-box"><strong>Почему residual stream важен?</strong> Residual connection создаёт «прямой путь» для градиента от loss до эмбеддингов — аналог LSTM cell state. Можно думать об архитектуре как о последовательном уточнении residual stream через добавление информации от attention и FFN.</div>
+<div class="info-box"><strong>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ residual stream Ð²Ð°Ð¶ÐµÐ½?</strong> Residual connection ÑÐ¾Ð·Ð´Ð°Ñ‘Ñ‚ Â«Ð¿Ñ€ÑÐ¼Ð¾Ð¹ Ð¿ÑƒÑ‚ÑŒÂ» Ð´Ð»Ñ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð° Ð¾Ñ‚ loss Ð´Ð¾ ÑÐ¼Ð±ÐµÐ´Ð´Ð¸Ð½Ð³Ð¾Ð² â€” Ð°Ð½Ð°Ð»Ð¾Ð³ LSTM cell state. ÐœÐ¾Ð¶Ð½Ð¾ Ð´ÑƒÐ¼Ð°Ñ‚ÑŒ Ð¾Ð± Ð°Ñ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ðµ ÐºÐ°Ðº Ð¾ Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¼ ÑƒÑ‚Ð¾Ñ‡Ð½ÐµÐ½Ð¸Ð¸ residual stream Ñ‡ÐµÑ€ÐµÐ· Ð´Ð¾Ð±Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸ Ð¾Ñ‚ attention Ð¸ FFN.</div>
 
-<h3>Визуализация residual stream</h3>
+<h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ residual stream</h3>
 <canvas id="resid-canvas" width="800" height="200" style="width:100%"></canvas>
 </div>
 </div>
 
-<!-- ===== ОБУЧЕНИЕ ===== -->
+<!-- ===== ÐžÐ‘Ð£Ð§Ð•ÐÐ˜Ð• ===== -->
 <div id="t-train" class="tab-content">
-<h2>5. Обучение Transformer</h2>
+<h2>5. ÐžÐ±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Transformer</h2>
 <div class="card">
-<h3>Loss: Cross-Entropy на токенах</h3>
-<div class="formula">L = -<span class="hl-a">1/T</span> · Σ_{t=1}^{T} log p(x_t | x_{&lt;t};θ)</div>
-<p>В seq2seq: суммируем CE по всем целевым токенам. В языковом моделировании (GPT): предсказываем следующий токен авторегрессивно.</p>
+<h3>Loss: Cross-Entropy Ð½Ð° Ñ‚Ð¾ÐºÐµÐ½Ð°Ñ…</h3>
+<div class="formula">L = -<span class="hl-a">1/T</span> Â· Î£_{t=1}^{T} log p(x_t | x_{&lt;t};Î¸)</div>
+<p>Ð’ seq2seq: ÑÑƒÐ¼Ð¼Ð¸Ñ€ÑƒÐµÐ¼ CE Ð¿Ð¾ Ð²ÑÐµÐ¼ Ñ†ÐµÐ»ÐµÐ²Ñ‹Ð¼ Ñ‚Ð¾ÐºÐµÐ½Ð°Ð¼. Ð’ ÑÐ·Ñ‹ÐºÐ¾Ð²Ð¾Ð¼ Ð¼Ð¾Ð´ÐµÐ»Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ð¸ (GPT): Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ Ñ‚Ð¾ÐºÐµÐ½ Ð°Ð²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð¾.</p>
 
 <h3>Label Smoothing (Vaswani et al., 2017)</h3>
-<div class="formula">y_smooth = <span class="hl-g">(1-ε)</span>·y_onehot + <span class="hl-a">ε/V</span>
-ε = 0.1, V = vocab size</div>
-<p class="muted">Регуляризует модель, предотвращает сверхуверенные предсказания. Связь с блоком 1.4 (label smoothing через KL).</p>
+<div class="formula">y_smooth = <span class="hl-g">(1-Îµ)</span>Â·y_onehot + <span class="hl-a">Îµ/V</span>
+Îµ = 0.1, V = vocab size</div>
+<p class="muted">Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·ÑƒÐµÑ‚ Ð¼Ð¾Ð´ÐµÐ»ÑŒ, Ð¿Ñ€ÐµÐ´Ð¾Ñ‚Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ ÑÐ²ÐµÑ€Ñ…ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ñ‹Ðµ Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ñ. Ð¡Ð²ÑÐ·ÑŒ Ñ Ð±Ð»Ð¾ÐºÐ¾Ð¼ 1.4 (label smoothing Ñ‡ÐµÑ€ÐµÐ· KL).</p>
 
 <h3>Warmup + Cosine Schedule (Noam Schedule)</h3>
-<div class="formula">lr(step) = d_model^(-0.5) · min(step^(-0.5), step · warmup^(-1.5))</div>
+<div class="formula">lr(step) = d_model^(-0.5) Â· min(step^(-0.5), step Â· warmup^(-1.5))</div>
 <div class="sr"><span>warmup steps</span><input type="range" id="lr-w" min="100" max="10000" step="100" value="4000" oninput="drawLRSchedule()"><span class="sv" id="lr-w-v">4000</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="lr-d" min="64" max="1024" step="64" value="512" oninput="drawLRSchedule()"><span class="sv" id="lr-d-v">512</span></div>
 <canvas id="lr-canvas" width="800" height="180" style="width:100%;margin-top:10px"></canvas>
 
-<h3>Optimizer: Adam с β₁=0.9, β₂=0.98, ε=10⁻⁹</h3>
-<div class="formula">β₂=0.98 (не 0.999!) — более агрессивное отслеживание второго момента
-ε=10⁻⁹ (не 10⁻⁸) — меньший шум при малых градиентах на старте</div>
+<h3>Optimizer: Adam Ñ Î²â‚=0.9, Î²â‚‚=0.98, Îµ=10â»â¹</h3>
+<div class="formula">Î²â‚‚=0.98 (Ð½Ðµ 0.999!) â€” Ð±Ð¾Ð»ÐµÐµ Ð°Ð³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð¾Ðµ Ð¾Ñ‚ÑÐ»ÐµÐ¶Ð¸Ð²Ð°Ð½Ð¸Ðµ Ð²Ñ‚Ð¾Ñ€Ð¾Ð³Ð¾ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ð°
+Îµ=10â»â¹ (Ð½Ðµ 10â»â¸) â€” Ð¼ÐµÐ½ÑŒÑˆÐ¸Ð¹ ÑˆÑƒÐ¼ Ð¿Ñ€Ð¸ Ð¼Ð°Ð»Ñ‹Ñ… Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð°Ñ… Ð½Ð° ÑÑ‚Ð°Ñ€Ñ‚Ðµ</div>
 
-<h3>Dropout в Transformer</h3>
-<div class="step-box"><span class="sn">1.</span>После каждого Sublayer перед сложением с residual: p=0.1</div>
-<div class="step-box"><span class="sn">2.</span>На attention weights: Dropout(softmax(·))</div>
-<div class="step-box"><span class="sn">3.</span>На embeddings + PE</div>
+<h3>Dropout Ð² Transformer</h3>
+<div class="step-box"><span class="sn">1.</span>ÐŸÐ¾ÑÐ»Ðµ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Sublayer Ð¿ÐµÑ€ÐµÐ´ ÑÐ»Ð¾Ð¶ÐµÐ½Ð¸ÐµÐ¼ Ñ residual: p=0.1</div>
+<div class="step-box"><span class="sn">2.</span>ÐÐ° attention weights: Dropout(softmax(Â·))</div>
+<div class="step-box"><span class="sn">3.</span>ÐÐ° embeddings + PE</div>
 </div>
 
-<h2>Inference: авторегрессивная генерация</h2>
+<h2>Inference: Ð°Ð²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð°Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ñ</h2>
 <div class="card">
-<div class="step-box"><span class="sn">Greedy:</span>x_t = argmax p(x|x_{&lt;t}) — детерминировано, но скучно</div>
-<div class="step-box"><span class="sn">Top-k:</span>сэмплируем из top-k токенов по вероятности</div>
-<div class="step-box"><span class="sn">Top-p (nucleus):</span>сэмплируем из минимального множества с Σp ≥ p (динамический k)</div>
-<div class="step-box"><span class="sn">Temperature:</span>p ← softmax(logits/T); T&lt;1 — острее, T&gt;1 — разнообразнее</div>
-<div class="step-box"><span class="sn">KV-Cache:</span>при каждом шаге пересчитываем только K,V для нового токена, остальные кешируем → O(L) вместо O(L²) на шаг</div>
+<div class="step-box"><span class="sn">Greedy:</span>x_t = argmax p(x|x_{&lt;t}) â€” Ð´ÐµÑ‚ÐµÑ€Ð¼Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾, Ð½Ð¾ ÑÐºÑƒÑ‡Ð½Ð¾</div>
+<div class="step-box"><span class="sn">Top-k:</span>ÑÑÐ¼Ð¿Ð»Ð¸Ñ€ÑƒÐµÐ¼ Ð¸Ð· top-k Ñ‚Ð¾ÐºÐµÐ½Ð¾Ð² Ð¿Ð¾ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸</div>
+<div class="step-box"><span class="sn">Top-p (nucleus):</span>ÑÑÐ¼Ð¿Ð»Ð¸Ñ€ÑƒÐµÐ¼ Ð¸Ð· Ð¼Ð¸Ð½Ð¸Ð¼Ð°Ð»ÑŒÐ½Ð¾Ð³Ð¾ Ð¼Ð½Ð¾Ð¶ÐµÑÑ‚Ð²Ð° Ñ Î£p â‰¥ p (Ð´Ð¸Ð½Ð°Ð¼Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ k)</div>
+<div class="step-box"><span class="sn">Temperature:</span>p â† softmax(logits/T); T&lt;1 â€” Ð¾ÑÑ‚Ñ€ÐµÐµ, T&gt;1 â€” Ñ€Ð°Ð·Ð½Ð¾Ð¾Ð±Ñ€Ð°Ð·Ð½ÐµÐµ</div>
+<div class="step-box"><span class="sn">KV-Cache:</span>Ð¿Ñ€Ð¸ ÐºÐ°Ð¶Ð´Ð¾Ð¼ ÑˆÐ°Ð³Ðµ Ð¿ÐµÑ€ÐµÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÐ¼ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ K,V Ð´Ð»Ñ Ð½Ð¾Ð²Ð¾Ð³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð°, Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ðµ ÐºÐµÑˆÐ¸Ñ€ÑƒÐµÐ¼ â†’ O(L) Ð²Ð¼ÐµÑÑ‚Ð¾ O(LÂ²) Ð½Ð° ÑˆÐ°Ð³</div>
 </div>
 </div>
 
-<!-- ===== ВАРИАНТЫ ===== -->
+<!-- ===== Ð’ÐÐ Ð˜ÐÐÐ¢Ð« ===== -->
 <div id="t-variants" class="tab-content">
-<h2>6. Варианты и эволюция Transformer</h2>
+<h2>6. Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚Ñ‹ Ð¸ ÑÐ²Ð¾Ð»ÑŽÑ†Ð¸Ñ Transformer</h2>
 <div class="card">
 <table>
-<tr><th>Модель</th><th>Тип</th><th>Особенности</th><th>Год</th></tr>
-<tr><td>Transformer</td><td>Enc+Dec</td><td>Оригинал, синус. PE, Post-LN</td><td>2017</td></tr>
+<tr><th>ÐœÐ¾Ð´ÐµÐ»ÑŒ</th><th>Ð¢Ð¸Ð¿</th><th>ÐžÑÐ¾Ð±ÐµÐ½Ð½Ð¾ÑÑ‚Ð¸</th><th>Ð“Ð¾Ð´</th></tr>
+<tr><td>Transformer</td><td>Enc+Dec</td><td>ÐžÑ€Ð¸Ð³Ð¸Ð½Ð°Ð», ÑÐ¸Ð½ÑƒÑ. PE, Post-LN</td><td>2017</td></tr>
 <tr><td>BERT</td><td>Encoder</td><td>MLM, NSP, bidirectional, learnable PE</td><td>2018</td></tr>
 <tr><td>GPT-2</td><td>Decoder</td><td>CLM, Pre-LN, learnable PE</td><td>2019</td></tr>
 <tr><td>T5</td><td>Enc+Dec</td><td>Text-to-text, relative PE</td><td>2020</td></tr>
@@ -237,39 +237,39 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
 </table>
 
 <h3 style="margin-top:14px">Grouped Query Attention (GQA)</h3>
-<div class="formula">MHA: h голов Q, h голов K, h голов V
-GQA: h голов Q, g голов K, g голов V (g &lt;&lt; h)
-MQA: h голов Q, 1 голова K, 1 голова V</div>
-<p class="muted">GQA в LLaMA-3 (h=32, g=8): K,V в 4× меньше — KV-Cache в 4× меньше памяти.</p>
+<div class="formula">MHA: h Ð³Ð¾Ð»Ð¾Ð² Q, h Ð³Ð¾Ð»Ð¾Ð² K, h Ð³Ð¾Ð»Ð¾Ð² V
+GQA: h Ð³Ð¾Ð»Ð¾Ð² Q, g Ð³Ð¾Ð»Ð¾Ð² K, g Ð³Ð¾Ð»Ð¾Ð² V (g &lt;&lt; h)
+MQA: h Ð³Ð¾Ð»Ð¾Ð² Q, 1 Ð³Ð¾Ð»Ð¾Ð²Ð° K, 1 Ð³Ð¾Ð»Ð¾Ð²Ð° V</div>
+<p class="muted">GQA Ð² LLaMA-3 (h=32, g=8): K,V Ð² 4Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ â€” KV-Cache Ð² 4Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ Ð¿Ð°Ð¼ÑÑ‚Ð¸.</p>
 
-<h3>RMSNorm (LLaMA вместо LayerNorm)</h3>
-<div class="formula">RMSNorm(x) = <span class="hl-a">γ</span> ⊙ x / RMS(x)
-RMS(x) = √(1/d · Σ xᵢ²)   ← без вычитания среднего</div>
-<p class="muted">Нет bias — на 7% быстрее LN, аналогичное качество.</p>
+<h3>RMSNorm (LLaMA Ð²Ð¼ÐµÑÑ‚Ð¾ LayerNorm)</h3>
+<div class="formula">RMSNorm(x) = <span class="hl-a">Î³</span> âŠ™ x / RMS(x)
+RMS(x) = âˆš(1/d Â· Î£ xáµ¢Â²)   â† Ð±ÐµÐ· Ð²Ñ‹Ñ‡Ð¸Ñ‚Ð°Ð½Ð¸Ñ ÑÑ€ÐµÐ´Ð½ÐµÐ³Ð¾</div>
+<p class="muted">ÐÐµÑ‚ bias â€” Ð½Ð° 7% Ð±Ñ‹ÑÑ‚Ñ€ÐµÐµ LN, Ð°Ð½Ð°Ð»Ð¾Ð³Ð¸Ñ‡Ð½Ð¾Ðµ ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð¾.</p>
 </div>
 
-<h2>Сравнение: Encoder-only vs Decoder-only vs Enc-Dec</h2>
+<h2>Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ: Encoder-only vs Decoder-only vs Enc-Dec</h2>
 <div class="card">
 <div class="grid2">
 <div>
 <h3>Encoder-only (BERT)</h3>
-<div class="step-box"><span class="sn">Задачи:</span>классификация, NER, QA (extractive)</div>
-<div class="step-box"><span class="sn">Обучение:</span>MLM (маскируем 15% токенов)</div>
-<div class="step-box"><span class="sn">Attn:</span>bidirectional — видит всё</div>
+<div class="step-box"><span class="sn">Ð—Ð°Ð´Ð°Ñ‡Ð¸:</span>ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ, NER, QA (extractive)</div>
+<div class="step-box"><span class="sn">ÐžÐ±ÑƒÑ‡ÐµÐ½Ð¸Ðµ:</span>MLM (Ð¼Ð°ÑÐºÐ¸Ñ€ÑƒÐµÐ¼ 15% Ñ‚Ð¾ÐºÐµÐ½Ð¾Ð²)</div>
+<div class="step-box"><span class="sn">Attn:</span>bidirectional â€” Ð²Ð¸Ð´Ð¸Ñ‚ Ð²ÑÑ‘</div>
 </div>
 <div>
 <h3>Decoder-only (GPT)</h3>
-<div class="step-box"><span class="sn">Задачи:</span>генерация, CLM</div>
-<div class="step-box"><span class="sn">Обучение:</span>next-token prediction</div>
-<div class="step-box"><span class="sn">Attn:</span>causal — только прошлое</div>
+<div class="step-box"><span class="sn">Ð—Ð°Ð´Ð°Ñ‡Ð¸:</span>Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ñ, CLM</div>
+<div class="step-box"><span class="sn">ÐžÐ±ÑƒÑ‡ÐµÐ½Ð¸Ðµ:</span>next-token prediction</div>
+<div class="step-box"><span class="sn">Attn:</span>causal â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ñ€Ð¾ÑˆÐ»Ð¾Ðµ</div>
 </div>
 </div>
 </div>
 </div>
 
-<!-- ===== КОД ===== -->
+<!-- ===== ÐšÐžÐ” ===== -->
 <div id="t-code2" class="tab-content">
-<h2>7. Полный Transformer на PyTorch</h2>
+<h2>7. ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Transformer Ð½Ð° PyTorch</h2>
 <div class="card">
 
 <h3>Positional Encoding</h3>
@@ -283,8 +283,8 @@ class SinusoidalPE(nn.Module):
         pos = torch.arange(max_len).unsqueeze(1).float()        # (max_len,1)
         div = torch.exp(torch.arange(0, d_model, 2).float() *
                         (-math.log(10000) / d_model))            # (d/2,)
-        pe[:, 0::2] = torch.sin(pos * div)   # чётные измерения
-        pe[:, 1::2] = torch.cos(pos * div)   # нечётные
+        pe[:, 0::2] = torch.sin(pos * div)   # Ñ‡Ñ‘Ñ‚Ð½Ñ‹Ðµ Ð¸Ð·Ð¼ÐµÑ€ÐµÐ½Ð¸Ñ
+        pe[:, 1::2] = torch.cos(pos * div)   # Ð½ÐµÑ‡Ñ‘Ñ‚Ð½Ñ‹Ðµ
         self.register_buffer('pe', pe.unsqueeze(0))              # (1,max_len,d)
 
     def forward(self, x):                    # x: (B, L, d)
@@ -344,7 +344,7 @@ class SinusoidalPE(nn.Module):
         x = x + self.drop(self.ffn(self.ln3(x)))
         return x</div>
 
-<h3>Полный Transformer</h3>
+<h3>ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Transformer</h3>
 <div class="code-block">class Transformer(nn.Module):
     def __init__(self, src_vocab, tgt_vocab, d_model=512, N=6,
                  num_heads=8, d_ff=2048, dropout=0.1, max_len=512):
@@ -362,7 +362,7 @@ class SinusoidalPE(nn.Module):
     def _init_weights(self):
         for p in self.parameters():
             if p.dim() > 1:
-                nn.init.xavier_uniform_(p)   # рекомендация оригинальной статьи
+                nn.init.xavier_uniform_(p)   # Ñ€ÐµÐºÐ¾Ð¼ÐµÐ½Ð´Ð°Ñ†Ð¸Ñ Ð¾Ñ€Ð¸Ð³Ð¸Ð½Ð°Ð»ÑŒÐ½Ð¾Ð¹ ÑÑ‚Ð°Ñ‚ÑŒÐ¸
 
     def forward(self, src, tgt, src_pad_mask=None, tgt_causal_mask=None):
         # Encoder
@@ -376,10 +376,10 @@ class SinusoidalPE(nn.Module):
                       memory_key_padding_mask=src_pad_mask)
         return self.proj(self.ln_out(d))    # (B, T, tgt_vocab)
 
-# Пример использования
+# ÐŸÑ€Ð¸Ð¼ÐµÑ€ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ñ
 model = Transformer(src_vocab=32000, tgt_vocab=32000)
-print(f"Параметры: {sum(p.numel() for p in model.parameters()):,}")
-# → Параметры: ~44M при d=512, N=6</div>
+print(f"ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: {sum(p.numel() for p in model.parameters()):,}")
+# â†’ ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: ~44M Ð¿Ñ€Ð¸ d=512, N=6</div>
 
 <h3>Noam LR Schedule</h3>
 <div class="code-block">class NoamScheduler:
@@ -446,9 +446,9 @@ function drawPE(){
     }
   }
   ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='left';
-  ctx.fillText('← dimension i →',4,H-4);
+  ctx.fillText('â† dimension i â†’',4,H-4);
   ctx.save();ctx.translate(W-6,H/2);ctx.rotate(-Math.PI/2);
-  ctx.textAlign='center';ctx.fillText('← position pos →',0,0);ctx.restore();
+  ctx.textAlign='center';ctx.fillText('â† position pos â†’',0,0);ctx.restore();
   drawPESim();
 }
 function drawPESim(){
@@ -478,7 +478,7 @@ function drawPESim(){
     ctx.fillStyle=i===pos?'#f59e0b':'#a78bfa';ctx.beginPath();ctx.arc(x,y,i===pos?5:3,0,Math.PI*2);ctx.fill();
   });
   ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='left';
-  ctx.fillText(`cos-сходство PE[${pos}] с PE[0..${L-1}] — близкие позиции похожи, далёкие нет`,px,H-4);
+  ctx.fillText(`cos-ÑÑ…Ð¾Ð´ÑÑ‚Ð²Ð¾ PE[${pos}] Ñ PE[0..${L-1}] â€” Ð±Ð»Ð¸Ð·ÐºÐ¸Ðµ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ Ð¿Ð¾Ñ…Ð¾Ð¶Ð¸, Ð´Ð°Ð»Ñ‘ÐºÐ¸Ðµ Ð½ÐµÑ‚`,px,H-4);
 }
 drawPE();
 
@@ -514,10 +514,10 @@ function drawArch(){
   block(encX,y=295,bw,bh,'rgba(245,158,11,0.15)','Feed Forward (FFN)');
   arr(ctx,encX+bw/2,295,encX+bw/2,285);
   block(encX,y=250,bw,bh,'rgba(16,185,129,0.15)','Add & Norm');
-  // N× bracket
+  // NÃ— bracket
   ctx.strokeStyle='#30363d';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(encX-25,250);ctx.lineTo(encX-25,430);ctx.stroke();
-  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('×N',encX-25,342);
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Ã—N',encX-25,342);
   // Decoder
   ctx.fillStyle='#8b949e';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('DECODER',decX+bw/2,480);
   block(decX,430,bw,bh,'rgba(167,139,250,0.15)','Output Embedding + PE');
@@ -540,10 +540,10 @@ function drawArch(){
   arr(ctx,decX+bw/2,205,decX+bw/2,195);
   block(decX,160,bw,bh,'rgba(16,185,129,0.15)','Add & Norm');
   arr(ctx,decX+bw/2,160,decX+bw/2,150);
-  block(decX,115,bw,bh,'rgba(245,158,11,0.25)','Linear + Softmax → logits');
+  block(decX,115,bw,bh,'rgba(245,158,11,0.25)','Linear + Softmax â†’ logits');
   ctx.strokeStyle='#30363d';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(decX+bw+20,250);ctx.lineTo(decX+bw+20,430);ctx.stroke();
-  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('×N',decX+bw+20,342);
+  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Ã—N',decX+bw+20,342);
 }
 
 // ---- TF PARAMS ----
@@ -553,7 +553,7 @@ function calcTFParams(){
   const ffmul=+document.getElementById('tf-ff').value;
   document.getElementById('tf-N-v').textContent=N;
   document.getElementById('tf-d-v').textContent=d;
-  document.getElementById('tf-ff-v').textContent=ffmul+'×';
+  document.getElementById('tf-ff-v').textContent=ffmul+'Ã—';
   const dff=d*ffmul;
   const mha_params=4*d*d;
   const ffn_params=2*d*dff;
@@ -562,11 +562,11 @@ function calcTFParams(){
   const total=N*(block_params)*2; // enc+dec (approx)
   const fmt=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
   document.getElementById('tf-params-result').innerHTML=
-    `MHA: 4·d²  = <span class="hl-b">${fmt(mha_params)}</span><br>`+
-    `FFN: 2·d·d_ff = <span class="hl-g">${fmt(ffn_params)}</span>  (d_ff=${dff})<br>`+
-    `LN×2: <span class="hl-a">${fmt(2*ln_params)}</span><br>`+
-    `Один блок: <span class="hl-p">${fmt(block_params)}</span><br>`+
-    `Encoder+Decoder (${N} слоёв ×2): <span class="hl-a">${fmt(total)}</span>`;
+    `MHA: 4Â·dÂ²  = <span class="hl-b">${fmt(mha_params)}</span><br>`+
+    `FFN: 2Â·dÂ·d_ff = <span class="hl-g">${fmt(ffn_params)}</span>  (d_ff=${dff})<br>`+
+    `LNÃ—2: <span class="hl-a">${fmt(2*ln_params)}</span><br>`+
+    `ÐžÐ´Ð¸Ð½ Ð±Ð»Ð¾Ðº: <span class="hl-p">${fmt(block_params)}</span><br>`+
+    `Encoder+Decoder (${N} ÑÐ»Ð¾Ñ‘Ð² Ã—2): <span class="hl-a">${fmt(total)}</span>`;
 }
 
 // ---- RESID CANVAS ----
@@ -594,7 +594,7 @@ function drawResid(){
     ctx.beginPath();ctx.moveTo(x,100-lvl);ctx.lineTo(x,100+lvl);ctx.stroke();ctx.setLineDash([]);
   });
   ctx.fillStyle='#8b949e';ctx.font='11px system-ui';ctx.textAlign='center';
-  ctx.fillText('Residual stream: каждый слой добавляет к потоку, не перезаписывает',W/2,190);
+  ctx.fillText('Residual stream: ÐºÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»Ð¾Ð¹ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÐµÑ‚ Ðº Ð¿Ð¾Ñ‚Ð¾ÐºÑƒ, Ð½Ðµ Ð¿ÐµÑ€ÐµÐ·Ð°Ð¿Ð¸ÑÑ‹Ð²Ð°ÐµÑ‚',W/2,190);
 }
 
 // ---- LR SCHEDULE ----
@@ -621,8 +621,9 @@ function drawLRSchedule(){
   ctx.beginPath();ctx.moveTo(wx,py);ctx.lineTo(wx,py+ph);ctx.stroke();ctx.setLineDash([]);
   ctx.fillStyle='#60a5fa';ctx.font='10px system-ui';ctx.textAlign='center';
   ctx.fillText(`warmup=${ws}`,wx,py-4);
-  ctx.fillStyle='#f59e0b';ctx.fillText(`peak lr ≈ ${maxLR.toExponential(2)}`,px+pw*0.7,py+20);
+  ctx.fillStyle='#f59e0b';ctx.fillText(`peak lr â‰ˆ ${maxLR.toExponential(2)}`,px+pw*0.7,py+20);
 }
 drawArch();calcTFParams();drawResid();drawLRSchedule();
 </script>
-<script src="shared-nav.js"></script>
+<script src="../shared-nav.js"></script>
+

@@ -1,0 +1,798 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; text-decoration:none; transition:all 0.2s; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+.tag-block:hover { border-color: var(--amber); color: var(--amber); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Ð‘Ð»Ð¾Ðº 1 â€” ÐœÐ°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ðµ Ð¾ÑÐ½Ð¾Ð²Ñ‹</span>
+  <a class="tag tag-block" href="01_linear_algebra.html">1.1 Ð›Ð¸Ð½ÐµÐ¹Ð½Ð°Ñ Ð°Ð»Ð³ÐµÐ±Ñ€Ð°</a>
+  <a class="tag tag-block" href="02_calculus.html">1.2 ÐœÐ°Ñ‚Ð°Ð½Ð°Ð»Ð¸Ð·</a>
+  <span class="tag tag-active">1.3 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹</span>
+  <a class="tag tag-block" href="04_information_theory.html">1.4 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸</a>
+</div>
+
+<h1>1.3 Ð¢ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹</h1>
+<p class="muted">Ð¡Ð»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹Ðµ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ñ‹ Â· Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ Â· likelihood Â· MLE Â· MAP Â· posterior Â· KL-Ð´Ð¸Ð²ÐµÑ€Ð³ÐµÐ½Ñ†Ð¸Ñ</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>ðŸŽ² Ð—Ð°Ñ‡ÐµÐ¼ Ñ‚ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹ Ð² ML?</h2>
+  <p>ÐœÐ°ÑˆÐ¸Ð½Ð½Ð¾Ðµ Ð¾Ð±ÑƒÑ‡ÐµÐ½Ð¸Ðµ Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð²ÑÐµÐ³Ð´Ð° Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÐµÑ‚ Ñ <strong>Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚ÑŒÑŽ</strong>: ÑˆÑƒÐ¼ Ð² Ð´Ð°Ð½Ð½Ñ‹Ñ…, Ð½ÐµÐ¸Ð·Ð²ÐµÑÑ‚Ð½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹, Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ ÐºÐ»Ð°ÑÑÐ¾Ð², Ð¿Ñ€Ð¾Ð³Ð½Ð¾Ð·Ñ‹, Ð´Ð¾Ð²ÐµÑ€Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸.</p>
+
+  <div class="formula">
+    ML = Ð¿Ð¾ÑÑ‚Ñ€Ð¾ÐµÐ½Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Ð´Ð»Ñ p(y|x), p(x), p(Î¸|D) Ð¸Ð»Ð¸ ÑÐ²ÑÐ·Ð°Ð½Ð½Ñ‹Ñ… Ñ Ð½Ð¸Ð¼Ð¸ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>ÐšÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</h3>
+      <p class="small">ÐœÐ¾Ð´ÐµÐ»ÑŒ Ð²Ñ‹Ð´Ð°Ñ‘Ñ‚ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ ÐºÐ»Ð°ÑÑÐ¾Ð²: p(y=k|x).</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</h3>
+      <p class="small">ÐœÐ¾Ð¶Ð½Ð¾ Ð¼Ð¾Ð´ÐµÐ»Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð½Ðµ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ ÑÑ€ÐµÐ´Ð½ÐµÐµ, Ð½Ð¾ Ð¸ ÑˆÑƒÐ¼/Ð´Ð¸ÑÐ¿ÐµÑ€ÑÐ¸ÑŽ.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Ð‘Ð°Ð¹ÐµÑÐ¾Ð²ÑÐºÐ¸Ð¹ Ð²Ð·Ð³Ð»ÑÐ´</h3>
+      <p class="small">ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ñ‚Ð¾Ð¶Ðµ Ð¼Ð¾Ð¶Ð½Ð¾ ÑÑ‡Ð¸Ñ‚Ð°Ñ‚ÑŒ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹Ð¼Ð¸ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð°Ð¼Ð¸.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ <strong>Ð“Ð»Ð°Ð²Ð½Ð°Ñ Ð¸Ð´ÐµÑ:</strong> probability Ð² ML â€” ÑÑ‚Ð¾ ÑÐ·Ñ‹Ðº Ð´Ð»Ñ Ð¾Ð¿Ð¸ÑÐ°Ð½Ð¸Ñ <strong>Ð½ÐµÐ¾Ð¿Ñ€ÐµÐ´ÐµÐ»Ñ‘Ð½Ð½Ð¾ÑÑ‚Ð¸, ÑˆÑƒÐ¼Ð° Ð¸ Ð¿Ñ€Ð°Ð²Ð´Ð¾Ð¿Ð¾Ð´Ð¾Ð±Ð¸Ñ Ð´Ð°Ð½Ð½Ñ‹Ñ…</strong>.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>ðŸ§± Ð‘Ð°Ð·Ð°: ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ðµ, Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ, ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð°Ñ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð°</h2>
+
+  <h3>Ð’ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ñ</h3>
+  <div class="formula">
+    P(A) âˆˆ [0,1], &nbsp; P(Î©)=1, &nbsp; P(AâˆªB)=P(A)+P(B), ÐµÑÐ»Ð¸ Aâˆ©B=âˆ…
+  </div>
+
+  <h3>Ð¡Ð»ÑƒÑ‡Ð°Ð¹Ð½Ð°Ñ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð°</h3>
+  <p>Ð¡Ð»ÑƒÑ‡Ð°Ð¹Ð½Ð°Ñ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð° X â€” ÑÑ‚Ð¾ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾, ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ðµ ÐºÐ°Ð¶Ð´Ð¾Ð¼Ñƒ Ð¸ÑÑ…Ð¾Ð´Ñƒ ÑÐ¾Ð¿Ð¾ÑÑ‚Ð°Ð²Ð»ÑÐµÑ‚ Ñ‡Ð¸ÑÐ»Ð¾.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð”Ð¸ÑÐºÑ€ÐµÑ‚Ð½Ð°Ñ</h3>
+      <div class="formula">
+        X âˆˆ {0,1,2,...}<br>
+        p(x)=P(X=x)
+      </div>
+      <p class="small">ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€: Ñ‡Ð¸ÑÐ»Ð¾ Ð¾Ñ€Ð»Ð¾Ð², ÐºÐ»Ð°ÑÑ, ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ð¹.</p>
+    </div>
+    <div>
+      <h3>ÐÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ð°Ñ</h3>
+      <div class="formula">
+        X âˆˆ â„<br>
+        p(x) Ð·Ð°Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ð½Ð° density f(x)
+      </div>
+      <p class="small">ÐÐ°Ð¿Ñ€Ð¸Ð¼ÐµÑ€: Ñ€Ð¾ÑÑ‚, Ð²ÐµÑ, Ñ‚ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð°, Ð¾ÑˆÐ¸Ð±ÐºÐ° Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð¸.</p>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:12px;">
+    âš ï¸ Ð”Ð»Ñ Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ð¾Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾Ð¹ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ñ‹ <strong>P(X=x)=0</strong> Ð² Ñ‚Ð¾Ñ‡ÐºÐµ. ÐŸÐ¾ÑÑ‚Ð¾Ð¼Ñƒ Ñ‚Ð°Ð¼ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÑŽÑ‚ Ñ density Ð¸ Ð¸Ð½Ñ‚ÐµÐ³Ñ€Ð°Ð»Ð°Ð¼Ð¸, Ð° Ð½Ðµ Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒÑŽ Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾Ð³Ð¾ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ.
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>ðŸ“Š Ð Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ = ÐºÐ°Ðº Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ñ€Ð°Ð·Ð¼Ð°Ð·Ð°Ð½Ð° Ð¿Ð¾ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸ÑÐ¼</h2>
+
+  <h3>PMF / PDF / CDF</h3>
+  <table>
+    <tr><th>Ð¢Ð¸Ð¿</th><th>ÐžÐ±Ð¾Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ</th><th>Ð¡Ð¼Ñ‹ÑÐ»</th></tr>
+    <tr><td>PMF</td><td>p(x)=P(X=x)</td><td>Ð´Ð»Ñ Ð´Ð¸ÑÐºÑ€ÐµÑ‚Ð½Ñ‹Ñ… X</td></tr>
+    <tr><td>PDF</td><td>f(x)</td><td>Ð´Ð»Ñ Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ñ‹Ñ… X</td></tr>
+    <tr><td>CDF</td><td>F(x)=P(Xâ‰¤x)</td><td>Ð½Ð°ÐºÐ¾Ð¿Ð»ÐµÐ½Ð½Ð°Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ</td></tr>
+  </table>
+
+  <div class="formula">
+    P(a â‰¤ X â‰¤ b) = âˆ«<sub>a</sub><sup>b</sup> f(x) dx
+  </div>
+
+  <div class="info">
+    â„¹ï¸ Ð’ ML Ñ‡Ð°Ñ‰Ðµ Ð²ÑÐµÐ³Ð¾ Ð²ÑÑ‚Ñ€ÐµÑ‡Ð°ÑŽÑ‚ÑÑ Bernoulli, Categorical, Gaussian, Ð° ÐµÑ‰Ñ‘ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ, Ð¿Ð¾ÑÐ²Ð»ÑÑŽÑ‰Ð¸ÐµÑÑ Ñ‡ÐµÑ€ÐµÐ· softmax, logistic Ð¸ noise assumptions.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>âš–ï¸ ÐœÐ°Ñ‚Ð¾Ð¶Ð¸Ð´Ð°Ð½Ð¸Ðµ Ð¸ Ð´Ð¸ÑÐ¿ÐµÑ€ÑÐ¸Ñ</h2>
+
+  <h3>ÐœÐ°Ñ‚Ð¾Ð¶Ð¸Ð´Ð°Ð½Ð¸Ðµ</h3>
+  <div class="formula">
+    E[X] = âˆ‘<sub>x</sub> x p(x) Ð¸Ð»Ð¸ E[X] = âˆ« x f(x) dx
+  </div>
+
+  <h3>Ð”Ð¸ÑÐ¿ÐµÑ€ÑÐ¸Ñ</h3>
+  <div class="formula">
+    Var(X) = E[(X-E[X])^2]
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð¡Ð¼Ñ‹ÑÐ» E[X]</h3>
+      <p>Ð¡Ñ€ÐµÐ´Ð½Ð¸Ð¹ Ñ†ÐµÐ½Ñ‚Ñ€ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ, "Ð³Ð´Ðµ Ð² ÑÑ€ÐµÐ´Ð½ÐµÐ¼ Ð½Ð°Ñ…Ð¾Ð´Ð¸Ñ‚ÑÑ Ð¼Ð°ÑÑÐ°".</p>
+    </div>
+    <div>
+      <h3>Ð¡Ð¼Ñ‹ÑÐ» Var(X)</h3>
+      <p>ÐÐ°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ ÑÐ¸Ð»ÑŒÐ½Ð¾ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð°Ñ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð° ÐºÐ¾Ð»ÐµÐ±Ð»ÐµÑ‚ÑÑ Ð²Ð¾ÐºÑ€ÑƒÐ³ ÑÑ€ÐµÐ´Ð½ÐµÐ³Ð¾.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð’ Gaussian distribution Ð¸Ð¼ÐµÐ½Ð½Ð¾ <strong>Î¼</strong> Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚ Ð·Ð° Ñ†ÐµÐ½Ñ‚Ñ€, Ð° <strong>ÏƒÂ²</strong> â€” Ð·Ð° ÑˆÐ¸Ñ€Ð¸Ð½Ñƒ/Ñ€Ð°Ð·Ð±Ñ€Ð¾Ñ.
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>ðŸª™ Bernoulli Ð¸ Binomial â€” Ñ„ÑƒÐ½Ð´Ð°Ð¼ÐµÐ½Ñ‚ Ð±Ð¸Ð½Ð°Ñ€Ð½Ð¾Ð¹ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ð¸</h2>
+
+  <h3>Bernoulli</h3>
+  <div class="formula">
+    X âˆˆ {0, 1}, P(X=1)=p, P(X=0)=1-p
+  </div>
+
+  <div class="formula">
+    P(X=x) = p<sup>x</sup>(1-p)<sup>1-x</sup>, x âˆˆ {0, 1}
+  </div>
+
+  <h3>ÐœÐ°Ñ‚Ð¾Ð¶Ð¸Ð´Ð°Ð½Ð¸Ðµ Ð¸ Ð´Ð¸ÑÐ¿ÐµÑ€ÑÐ¸Ñ</h3>
+  <div class="formula">
+    E[X]=p, Var(X)=p(1-p)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Bernoulli</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="bernPVal">0.70</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.70" id="bernP" oninput="drawBernoulli()">
+      </div>
+      <canvas id="bernCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð¡Ð¼Ñ‹ÑÐ» Ð´Ð»Ñ ML</h3>
+      <div class="result-box" id="bernInfo"></div>
+      <div class="info" style="font-size:0.88em;">
+        Bernoulli â€” ÑÑ‚Ð¾ Ð¼Ð°Ñ‚ÐµÐ¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ°Ñ Ð¾ÑÐ½Ð¾Ð²Ð° Ð´Ð»Ñ <strong>Ð»Ð¾Ð³Ð¸ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ¾Ð¹ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð¸</strong>, <strong>binary cross-entropy</strong> Ð¸ Ð²Ñ‹Ñ…Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð° Ñ sigmoid.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>ðŸŒˆ Categorical distribution â€” Ð¼Ð½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</h2>
+
+  <div class="formula">
+    P(Y=k)=p<sub>k</sub>, âˆ‘<sub>k</sub> p<sub>k</sub>=1
+  </div>
+
+  <p>Ð•ÑÐ»Ð¸ Bernoulli Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚ Ð·Ð° 2 ÐºÐ»Ð°ÑÑÐ°, Ñ‚Ð¾ Categorical â€” Ð·Ð° K ÐºÐ»Ð°ÑÑÐ¾Ð².</p>
+
+  <div class="formula">
+    p = [p_1, p_2, ..., p_K]
+  </div>
+
+  <div class="step">softmax Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ logits Ð² Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð¹</div>
+  <div class="step">cross-entropy Ð¾Ñ†ÐµÐ½Ð¸Ð²Ð°ÐµÑ‚, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¼Ð¾Ð´ÐµÐ»Ð¸ ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÐµÑ‚ Ñ Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¼ ÐºÐ»Ð°ÑÑÐ¾Ð¼</div>
+  <div class="step">argmax Ð±ÐµÑ€Ñ‘Ñ‚ ÑÐ°Ð¼Ñ‹Ð¹ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ</div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>ðŸ”” Gaussian / Normal distribution</h2>
+
+  <div class="formula">
+    X âˆ¼ N(Î¼, Ïƒ<sup>2</sup>)
+  </div>
+
+  <div class="formula">
+    f(x) = 1 / âˆš(2Ï€Ïƒ<sup>2</sup>) Â· exp(-(x-Î¼)<sup>2</sup> / (2Ïƒ<sup>2</sup>))
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: Gaussian</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">Î¼ = <span class="val-display" id="muVal">0.00</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="0" id="muSlider" oninput="drawGaussian()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">Ïƒ = <span class="val-display" id="sigmaVal">1.00</span></span>
+        <input type="range" min="0.3" max="3" step="0.1" value="1" id="sigmaSlider" oninput="drawGaussian()">
+      </div>
+      <canvas id="gaussCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h3>
+      <div class="result-box" id="gaussInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Ð’ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð¸ Ð¾Ñ‡ÐµÐ½ÑŒ Ñ‡Ð°ÑÑ‚Ð¾ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÑŽÑ‚ Gaussian noise: <strong>y = f(x) + Îµ, Îµ~N(0,ÏƒÂ²)</strong>. Ð˜Ð· ÑÑ‚Ð¾Ð³Ð¾ ÐµÑÑ‚ÐµÑÑ‚Ð²ÐµÐ½Ð½Ð¾ Ð²Ñ‹Ñ‚ÐµÐºÐ°ÐµÑ‚ MSE ÐºÐ°Ðº negative log-likelihood.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>ðŸ”— Ð¡Ð¾Ð²Ð¼ÐµÑÑ‚Ð½Ñ‹Ðµ, ÑƒÑÐ»Ð¾Ð²Ð½Ñ‹Ðµ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ Ð¸ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð° Ð‘Ð°Ð¹ÐµÑÐ°</h2>
+
+  <h3>Ð¡Ð¾Ð²Ð¼ÐµÑÑ‚Ð½Ð°Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ</h3>
+  <div class="formula">
+    P(X,Y)
+  </div>
+
+  <h3>Ð£ÑÐ»Ð¾Ð²Ð½Ð°Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ</h3>
+  <div class="formula">
+    P(Y|X) = P(X,Y) / P(X)
+  </div>
+
+  <h3>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð° Ð‘Ð°Ð¹ÐµÑÐ°</h3>
+  <div class="formula">
+    P(Î¸|D) = P(D|Î¸)P(Î¸) / P(D)
+  </div>
+
+  <table>
+    <tr><th>Ð¢ÐµÑ€Ð¼Ð¸Ð½</th><th>ÐÐ°Ð·Ð²Ð°Ð½Ð¸Ðµ</th><th>Ð¡Ð¼Ñ‹ÑÐ»</th></tr>
+    <tr><td>P(D|Î¸)</td><td>Likelihood</td><td>Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ñ…Ð¾Ñ€Ð¾ÑˆÐ¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¾Ð±ÑŠÑÑÐ½ÑÑŽÑ‚ Ð´Ð°Ð½Ð½Ñ‹Ðµ</td></tr>
+    <tr><td>P(Î¸)</td><td>Prior</td><td>Ñ‡Ñ‚Ð¾ Ð¼Ñ‹ Ð´ÑƒÐ¼Ð°Ð»Ð¸ Ð¾ Î¸ Ð´Ð¾ Ð´Ð°Ð½Ð½Ñ‹Ñ…</td></tr>
+    <tr><td>P(Î¸|D)</td><td>Posterior</td><td>Ñ‡Ñ‚Ð¾ Ð´ÑƒÐ¼Ð°ÐµÐ¼ Ð¾ Î¸ Ð¿Ð¾ÑÐ»Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ…</td></tr>
+    <tr><td>P(D)</td><td>Evidence</td><td>Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÑŽÑ‰Ð°Ñ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚Ð°</td></tr>
+  </table>
+
+  <div class="info" style="margin-top:12px;">
+    â„¹ï¸ Frequentist ML Ñ‡Ð°Ñ‰Ðµ Ð¼Ð°ÐºÑÐ¸Ð¼Ð¸Ð·Ð¸Ñ€ÑƒÐµÑ‚ likelihood. Bayesian ML Ð¾Ð±Ð½Ð¾Ð²Ð»ÑÐµÑ‚ prior Ð² posterior.
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>ðŸŽ¯ Likelihood vs Probability â€” ÐºÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ñ€Ð°Ð·Ð»Ð¸Ñ‡Ð¸Ðµ</h2>
+
+  <h3>ÐšÐ¾Ð³Ð´Ð° Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹, Ð´Ð°Ð½Ð½Ñ‹Ðµ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹</h3>
+  <div class="formula">
+    P(D|Î¸)
+  </div>
+
+  <p>Ð•ÑÐ»Ð¸ Î¸ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð¾, ÑÑ‚Ð¾ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ/Ð¿Ð»Ð¾Ñ‚Ð½Ð¾ÑÑ‚ÑŒ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ñ Ð´Ð°Ð½Ð½Ñ‹Ñ….</p>
+
+  <h3>ÐšÐ¾Ð³Ð´Ð° Ð´Ð°Ð½Ð½Ñ‹Ðµ ÑƒÐ¶Ðµ Ð·Ð°Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹, Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¼ÐµÐ½ÑÑŽÑ‚ÑÑ</h3>
+  <div class="formula">
+    L(Î¸; D) = P(D|Î¸)
+  </div>
+
+  <p>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð° Ñ‚Ð° Ð¶Ðµ, Ð½Ð¾ Ñ‚ÐµÐ¿ÐµÑ€ÑŒ ÑÑ‚Ð¾ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¾Ñ‚ Î¸ â€” <strong>likelihood</strong>.</p>
+
+  <div class="warn">
+    âš ï¸ ÐžÑ‡ÐµÐ½ÑŒ Ñ‡Ð°ÑÑ‚Ð°Ñ Ð¿ÑƒÑ‚Ð°Ð½Ð¸Ñ†Ð°: likelihood â€” ÑÑ‚Ð¾ <strong>Ð½Ðµ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²</strong>. Ð­Ñ‚Ð¾ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ, ÐºÐ¾Ñ‚Ð¾Ñ€Ð°Ñ Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚, ÐºÐ°ÐºÐ¸Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð»ÑƒÑ‡ÑˆÐµ Ð¾Ð±ÑŠÑÑÐ½ÑÑŽÑ‚ ÑƒÐ¶Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ.
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>ðŸ“Œ Maximum Likelihood Estimation (MLE)</h2>
+
+  <p>MLE Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÑ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð´ÐµÐ»Ð°ÑŽÑ‚ Ð½Ð°Ð±Ð»ÑŽÐ´Ñ‘Ð½Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ Ð¼Ð°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ð¾ Ð¿Ñ€Ð°Ð²Ð´Ð¾Ð¿Ð¾Ð´Ð¾Ð±Ð½Ñ‹Ð¼Ð¸.</p>
+
+  <div class="formula">
+    Î¸Ì‚<sub>MLE</sub> = argmax<sub>Î¸</sub> P(D|Î¸)
+  </div>
+
+  <p>ÐžÐ±Ñ‹Ñ‡Ð½Ð¾ Ð¼Ð°ÐºÑÐ¸Ð¼Ð¸Ð·Ð¸Ñ€ÑƒÑŽÑ‚ log-likelihood:</p>
+  <div class="formula">
+    Î¸Ì‚<sub>MLE</sub> = argmax<sub>Î¸</sub> log P(D|Î¸)
+  </div>
+
+  <h3>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Ð»Ð¾Ð³Ð°Ñ€Ð¸Ñ„Ð¼?</h3>
+  <div class="step">1. Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ñ Ð¿Ñ€ÐµÐ²Ñ€Ð°Ñ‰Ð°ÑŽÑ‚ÑÑ Ð² ÑÑƒÐ¼Ð¼Ñ‹</div>
+  <div class="step">2. Ñ‡Ð¸ÑÐ»ÐµÐ½Ð½Ð¾ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½ÐµÐµ</div>
+  <div class="step">3. Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼ Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ, Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ log Ð¼Ð¾Ð½Ð¾Ñ‚Ð¾Ð½ÐµÐ½</div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>ÐŸÑ€Ð¸Ð¼ÐµÑ€: Bernoulli MLE</h3>
+      <div class="formula">
+        D = {xâ‚,...,xâ‚™}, xáµ¢âˆˆ{0,1}
+      </div>
+      <div class="formula">
+        P(D|p) = âˆ<sub>i</sub> p<sup>x<sub>i</sub></sup>(1-p)<sup>1-x<sub>i</sub></sup>
+      </div>
+      <div class="formula">
+        log P(D|p) = âˆ‘<sub>i</sub> [x<sub>i</sub> log p + (1-x<sub>i</sub>) log(1-p)]
+      </div>
+      <div class="formula">
+        pÌ‚<sub>MLE</sub> = (1/n) âˆ‘<sub>i</sub> x<sub>i</sub>
+      </div>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ</h3>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ Ð”Ð»Ñ Bernoulli MLE Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚: Ð»ÑƒÑ‡ÑˆÐ°Ñ Ð¾Ñ†ÐµÐ½ÐºÐ° Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ ÑƒÑÐ¿ÐµÑ…Ð° â€” ÑÑ‚Ð¾ <strong>ÑÐ¼Ð¿Ð¸Ñ€Ð¸Ñ‡ÐµÑÐºÐ°Ñ Ñ‡Ð°ÑÑ‚Ð¾Ñ‚Ð° ÑƒÑÐ¿ÐµÑ…Ð¾Ð²</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>ðŸ§® Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: MLE Ð´Ð»Ñ Bernoulli</h2>
+  <p class="muted">ÐŸÑƒÑÑ‚ÑŒ Ð² Ð´Ð°Ð½Ð½Ñ‹Ñ… n Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ð¹ Ð¸ k ÐµÐ´Ð¸Ð½Ð¸Ñ†. Ð¡Ð¼Ð¾Ñ‚Ñ€Ð¸Ð¼ likelihood ÐºÐ°Ðº Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑŽ p.</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">n = <span class="val-display" id="mleNVal">10</span></span>
+        <input type="range" min="2" max="30" step="1" value="10" id="mleN" oninput="updateMLEInputs()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">k = <span class="val-display" id="mleKVal">7</span></span>
+        <input type="range" min="0" max="10" step="1" value="7" id="mleK" oninput="drawMLE()">
+      </div>
+      <canvas id="mleCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð ÐµÐ·ÑƒÐ»ÑŒÑ‚Ð°Ñ‚</h3>
+      <div class="result-box" id="mleInfo"></div>
+      <div class="step highlight">Ð”Ð»Ñ Bernoulli: pÌ‚ = k/n</div>
+      <div class="info" style="font-size:0.88em;">
+        Ð›ÐµÐ²Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„Ð¸Ðº Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÑ‚ <strong>log-likelihood</strong>. Ð•Ð³Ð¾ Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼ Ð¸ ÐµÑÑ‚ÑŒ Ñ‚Ð¾Ñ‡ÐºÐ° MLE.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>ðŸ§² Maximum A Posteriori (MAP)</h2>
+
+  <p>MAP Ð¿Ð¾Ñ…Ð¾Ð¶ Ð½Ð° MLE, Ð½Ð¾ ÑƒÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ prior.</p>
+
+  <div class="formula">
+    Î¸Ì‚<sub>MAP</sub> = argmax<sub>Î¸</sub> P(Î¸|D)
+  </div>
+
+  <p>ÐŸÐ¾ Ð‘Ð°Ð¹ÐµÑÑƒ:</p>
+  <div class="formula">
+    Î¸Ì‚<sub>MAP</sub> = argmax<sub>Î¸</sub> P(D|Î¸)P(Î¸)
+  </div>
+
+  <p>Ð’ Ð»Ð¾Ð³Ð°Ñ€Ð¸Ñ„Ð¼Ð°Ñ…:</p>
+  <div class="formula">
+    Î¸Ì‚<sub>MAP</sub> = argmax<sub>Î¸</sub> [log P(D|Î¸) + log P(Î¸)]
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ</h3>
+      <p>MLE ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð½Ð° Ð´Ð°Ð½Ð½Ñ‹Ðµ. MAP ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚ Ð½Ð° Ð´Ð°Ð½Ð½Ñ‹Ðµ <strong>Ð¸</strong> Ð½Ð° Ð½Ð°ÑˆÐ¸ Ð°Ð¿Ñ€Ð¸Ð¾Ñ€Ð½Ñ‹Ðµ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ñ‡Ñ‚ÐµÐ½Ð¸Ñ.</p>
+    </div>
+    <div>
+      <h3>Ð¡Ð²ÑÐ·ÑŒ Ñ regularization</h3>
+      <div class="formula">
+        maximize log P(D|Î¸) - Î» ||Î¸||Â²
+      </div>
+      <p class="small">Ð­Ñ‚Ð¾ ÑÐ¾Ð¾Ñ‚Ð²ÐµÑ‚ÑÑ‚Ð²ÑƒÐµÑ‚ Gaussian prior Ð½Ð° Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹. ÐŸÐ¾ÑÑ‚Ð¾Ð¼Ñƒ L2 regularization Ð¼Ð¾Ð¶Ð½Ð¾ Ð¿Ð¾Ð½Ð¸Ð¼Ð°Ñ‚ÑŒ ÐºÐ°Ðº MAP.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>ðŸ“‰ KL-Ð´Ð¸Ð²ÐµÑ€Ð³ÐµÐ½Ñ†Ð¸Ñ</h2>
+
+  <p>KL Ð¸Ð·Ð¼ÐµÑ€ÑÐµÑ‚, Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¾Ð´Ð½Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð¾Ñ‚Ð»Ð¸Ñ‡Ð°ÐµÑ‚ÑÑ Ð¾Ñ‚ Ð´Ñ€ÑƒÐ³Ð¾Ð³Ð¾.</p>
+
+  <div class="formula">
+    D<sub>KL</sub>(P || Q) = âˆ‘<sub>x</sub> P(x) log(P(x) / Q(x))
+  </div>
+
+  <p>Ð”Ð»Ñ Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ð¾Ð³Ð¾ ÑÐ»ÑƒÑ‡Ð°Ñ:</p>
+  <div class="formula">
+    D<sub>KL</sub>(P || Q) = âˆ« P(x) log(P(x) / Q(x)) dx
+  </div>
+
+  <div class="warn">
+    âš ï¸ KL â€” Ð½Ðµ Ð¼ÐµÑ‚Ñ€Ð¸ÐºÐ°: Ð¾Ð½Ð° Ð½ÐµÑÐ¸Ð¼Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡Ð½Ð°, Ñ‚Ð¾ ÐµÑÑ‚ÑŒ Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾ <strong>KL(P||Q) â‰  KL(Q||P)</strong>.
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²: KL Ð´Ð»Ñ Ð´Ð²ÑƒÑ… Bernoulli</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="klPVal">0.70</span></span>
+        <input type="range" min="0.05" max="0.95" step="0.01" value="0.70" id="klP" oninput="calcKL()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">q = <span class="val-display" id="klQVal">0.40</span></span>
+        <input type="range" min="0.05" max="0.95" step="0.01" value="0.40" id="klQ" oninput="calcKL()">
+      </div>
+      <canvas id="klCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</h3>
+      <div class="result-box" id="klInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        ðŸ’¡ KL(P||Q) Ð¼Ð¾Ð¶Ð½Ð¾ Ñ‡Ð¸Ñ‚Ð°Ñ‚ÑŒ Ñ‚Ð°Ðº: ÑÐºÐ¾Ð»ÑŒÐºÐ¾ "Ð»Ð¸ÑˆÐ½ÐµÐ¹ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸" Ð¸Ð»Ð¸ "Ð»Ð¸ÑˆÐ½ÐµÐ¹ Ð½ÐµÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ð¾ÑÑ‚Ð¸" Ð¼Ñ‹ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼, ÐµÑÐ»Ð¸ ÐºÐ¾Ð´Ð¸Ñ€ÑƒÐµÐ¼ Ð¼Ð¸Ñ€, Ð³Ð´Ðµ Ð¸ÑÑ‚Ð¸Ð½Ð½Ð¾ P, Ñ Ð¿Ð¾Ð¼Ð¾Ñ‰ÑŒÑŽ Ð¼Ð¾Ð´ÐµÐ»Ð¸ Q.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>ðŸ§  ÐšÐ°Ðº probability ÑÐ²ÑÐ·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ñ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑÐ¼Ð¸</h2>
+
+  <table>
+    <tr><th>ÐŸÑ€ÐµÐ´Ð¿Ð¾Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ Ð¾ Ð´Ð°Ð½Ð½Ñ‹Ñ…</th><th>Negative log-likelihood</th><th>ÐŸÐ¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ loss</th></tr>
+    <tr><td>Bernoulli</td><td>-log P(y|x)</td><td>BCE / log loss</td></tr>
+    <tr><td>Categorical</td><td>-log P(y|x)</td><td>Cross-Entropy</td></tr>
+    <tr><td>Gaussian</td><td>-log P(y|x)</td><td>MSE (Ñ Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚ÑŒÑŽ Ð´Ð¾ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚)</td></tr>
+  </table>
+
+  <div class="formula">
+    training = min<sub>Î¸</sub> -log P(D|Î¸)
+  </div>
+
+  <div class="info">
+    â„¹ï¸ ÐžÑ‡ÐµÐ½ÑŒ Ð²Ð°Ð¶Ð½Ð°Ñ Ð¼Ñ‹ÑÐ»ÑŒ: Ð¼Ð½Ð¾Ð³Ð¸Ðµ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð² DL â€” ÑÑ‚Ð¾ Ð½Ðµ "Ð¼Ð°Ð³Ð¸Ñ‡ÐµÑÐºÐ¸Ðµ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹", Ð° Ð¿Ñ€Ð¾ÑÑ‚Ð¾ negative log-likelihood Ð¿Ñ€Ð¸ ÐºÐ¾Ð½ÐºÑ€ÐµÑ‚Ð½Ð¾Ð¼ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð½Ð¾Ð¼ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¸ Ð¾ Ð´Ð°Ð½Ð½Ñ‹Ñ….
+  </div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>ðŸ’» NumPy / PyTorch: likelihood, MLE, MAP</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Bernoulli likelihood</button>
+    <button onclick="showCode(1,this)">MLE Ð² NumPy</button>
+    <button onclick="showCode(2,this)">MAP + prior</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">import numpy as np
+
+# Bernoulli data
+x = np.array([1, 0, 1, 1, 0, 1, 1])
+
+p = 0.7
+
+# likelihood
+L = np.prod(p**x * (1-p)**(1-x))
+
+# log-likelihood
+logL = np.sum(x*np.log(p) + (1-x)*np.log(1-p))
+
+print("Likelihood:", L)
+print("Log-likelihood:", logL)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+x = np.array([1, 0, 1, 1, 0, 1, 1])
+
+# MLE for Bernoulli
+p_hat = x.mean()
+
+print("MLE estimate:", p_hat)</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+# MAP intuition:
+# maximize log P(D|theta) + log P(theta)
+
+# Example: Gaussian prior on theta ~ N(0, sigma^2)
+# then log P(theta) gives a penalty proportional to -||theta||^2
+
+# This is why:
+# MAP â‰ˆ MLE + regularization
+
+theta = np.array([0.8, -1.2, 0.3])
+lambda_ = 0.1
+
+mle_objective = -2.4
+prior_term = -lambda_ * np.sum(theta**2)
+
+map_objective = mle_objective + prior_term
+
+print("MLE objective:", mle_objective)
+print("Prior term:", prior_term)
+print("MAP objective:", map_objective)</div>
+</div>
+
+<!-- SECTION 16 -->
+<div class="card">
+  <h2>ðŸŽ¯ Ð§Ñ‚Ð¾ Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð²Ñ‹Ð½ÐµÑÑ‚Ð¸ Ð¸Ð· Ñ‚ÐµÐ¼Ñ‹</h2>
+
+  <div class="step highlight">Ð Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð³Ð¾Ð²Ð¾Ñ€Ð¸Ñ‚, ÐºÐ°Ðº Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð° Ð¿Ð¾ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸ÑÐ¼</div>
+  <div class="step highlight">Bernoulli Ð¸ Categorical Ð»ÐµÐ¶Ð°Ñ‚ Ð¿Ð¾Ð´ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸ÐµÐ¹</div>
+  <div class="step highlight">Gaussian Ñ‡Ð°ÑÑ‚Ð¾ Ð»ÐµÐ¶Ð¸Ñ‚ Ð¿Ð¾Ð´ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸ÐµÐ¹ Ð¸ MSE</div>
+  <div class="step highlight">Likelihood â€” Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ Ð¾Ñ‚ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ð¿Ñ€Ð¸ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ñ… Ð´Ð°Ð½Ð½Ñ‹Ñ…</div>
+  <div class="step highlight">MLE Ð¼Ð°ÐºÑÐ¸Ð¼Ð¸Ð·Ð¸Ñ€ÑƒÐµÑ‚ likelihood</div>
+  <div class="step highlight">MAP = likelihood + prior</div>
+  <div class="step highlight">KL Ð¸Ð·Ð¼ÐµÑ€ÑÐµÑ‚ Ñ€Ð°Ð·Ð»Ð¸Ñ‡Ð¸Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ð¹</div>
+  <div class="step highlight">ÐœÐ½Ð¾Ð³Ð¸Ðµ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ = negative log-likelihood</div>
+
+  <div class="intuition">
+    ðŸ’¡ Ð•ÑÐ»Ð¸ ÑÐ¾Ð²ÑÐµÐ¼ ÑƒÐ¿Ñ€Ð¾ÑÑ‚Ð¸Ñ‚ÑŒ: Ñ‚ÐµÐ¾Ñ€Ð¸Ñ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÐµÐ¹ Ð² ML Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚ Ð½Ð° Ñ‚Ñ€Ð¸ Ð²Ð¾Ð¿Ñ€Ð¾ÑÐ° â€” <strong>Ñ‡Ñ‚Ð¾ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ð¾</strong>, <strong>Ð½Ð°ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¿Ñ€Ð°Ð²Ð´Ð¾Ð¿Ð¾Ð´Ð¾Ð±Ð½Ñ‹ Ð´Ð°Ð½Ð½Ñ‹Ðµ</strong>, Ð¸ <strong>ÐºÐ°Ðº Ð¾Ð±Ð½Ð¾Ð²Ð»ÑÑ‚ÑŒ ÑƒÐ±ÐµÐ¶Ð´ÐµÐ½Ð¸Ñ Ð¿Ð¾ÑÐ»Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ð¹</strong>.
+  </div>
+</div>
+
+<script>
+// ===== HELPERS =====
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function logBernoulliLikelihood(p, n, k){
+  p = clamp(p, 1e-6, 1 - 1e-6);
+  return k*Math.log(p) + (n-k)*Math.log(1-p);
+}
+function bernKL(p, q){
+  p = clamp(p, 1e-9, 1-1e-9);
+  q = clamp(q, 1e-9, 1-1e-9);
+  return p*Math.log(p/q) + (1-p)*Math.log((1-p)/(1-q));
+}
+function drawAxes(ctx, W, H, y0=H-20){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,y0); ctx.lineTo(W-10,y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-20); ctx.stroke();
+}
+
+// ===== BERNOULLI =====
+function drawBernoulli(){
+  const p = +document.getElementById('bernP').value;
+  document.getElementById('bernPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('bernCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const barW = 80;
+  const base = H - 20;
+  const h0 = (1-p) * 150;
+  const h1 = p * 150;
+
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(90, base-h0, barW, h0);
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(210, base-h1, barW, h1);
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('x=0', 118, base+16);
+  ctx.fillText('x=1', 238, base+16);
+
+  document.getElementById('bernInfo').innerHTML = `
+    <div class="step">P(X=1)=<span class="hl-purple">${p.toFixed(4)}</span></div>
+    <div class="step">P(X=0)=<span class="hl-blue">${(1-p).toFixed(4)}</span></div>
+    <div class="step">E[X]=p = ${p.toFixed(4)}</div>
+    <div class="step highlight">Var(X)=p(1-p) = ${(p*(1-p)).toFixed(6)}</div>
+  `;
+}
+
+// ===== GAUSSIAN =====
+function gaussianPdf(x, mu, sigma){
+  const z = (x-mu)/sigma;
+  return (1/(Math.sqrt(2*Math.PI)*sigma))*Math.exp(-0.5*z*z);
+}
+function drawGaussian(){
+  const mu = +document.getElementById('muSlider').value;
+  const sigma = +document.getElementById('sigmaSlider').value;
+  document.getElementById('muVal').textContent = mu.toFixed(2);
+  document.getElementById('sigmaVal').textContent = sigma.toFixed(2);
+
+  const c = document.getElementById('gaussCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H,H-25);
+
+  const xMin=-5, xMax=5, yMax=1.6;
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  for(let px=0; px<=W-40; px++){
+    const x = xMin + (px/(W-40))*(xMax-xMin);
+    const y = gaussianPdf(x,mu,sigma);
+    const cx = 30 + px;
+    const cy = (H-25) - (y/yMax)*(H-40);
+    if(px===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  document.getElementById('gaussInfo').innerHTML = `
+    <div class="step">Î¼ = <span class="hl-blue">${mu.toFixed(4)}</span></div>
+    <div class="step">Ïƒ = <span class="hl-green">${sigma.toFixed(4)}</span></div>
+    <div class="step highlight">Var(X)=ÏƒÂ² = ${(sigma*sigma).toFixed(4)}</div>
+    <div class="step">${sigma < 1 ? 'Ð¼Ð°Ð»Ð¾Ðµ Ïƒ â†’ ÑƒÐ·ÐºÐ¾Ðµ Ð¸ Ð²Ñ‹ÑÐ¾ÐºÐ¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ' : 'Ð±Ð¾Ð»ÑŒÑˆÐµÐµ Ïƒ â†’ ÑˆÐ¸Ñ€Ð¾ÐºÐ¾Ðµ Ð¸ Ð±Ð¾Ð»ÐµÐµ Ð¿Ð»Ð¾ÑÐºÐ¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ'}</div>
+  `;
+}
+
+// ===== MLE =====
+function updateMLEInputs(){
+  const n = +document.getElementById('mleN').value;
+  document.getElementById('mleNVal').textContent = n;
+  const kSlider = document.getElementById('mleK');
+  kSlider.max = n;
+  if(+kSlider.value > n) kSlider.value = n;
+  drawMLE();
+}
+function drawMLE(){
+  const n = +document.getElementById('mleN').value;
+  const k = +document.getElementById('mleK').value;
+  document.getElementById('mleKVal').textContent = k;
+
+  const c = document.getElementById('mleCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H,H-20);
+
+  let minY=Infinity, maxY=-Infinity;
+  const vals = [];
+  for(let i=1;i<=99;i++){
+    const p = i/100;
+    const ll = logBernoulliLikelihood(p,n,k);
+    vals.push([p,ll]);
+    if(ll < minY) minY=ll;
+    if(ll > maxY) maxY=ll;
+  }
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  vals.forEach((v, idx) => {
+    const [p,ll] = v;
+    const x = 30 + p*(W-50);
+    const y = 10 + (maxY-ll)/(maxY-minY+1e-9)*(H-40);
+    if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  const pHat = n===0 ? 0 : k/n;
+  const llHat = logBernoulliLikelihood(clamp(pHat, 0.01, 0.99), n, k);
+  const xHat = 30 + pHat*(W-50);
+  const yHat = 10 + (maxY-llHat)/(maxY-minY+1e-9)*(H-40);
+  ctx.beginPath();
+  ctx.arc(xHat,yHat,4,0,Math.PI*2);
+  ctx.fillStyle = '#10b981';
+  ctx.fill();
+
+  document.getElementById('mleInfo').innerHTML = `
+    <div class="step">Ð´Ð°Ð½Ð½Ñ‹Ðµ: n=${n}, k=${k}</div>
+    <div class="step">likelihood: p^k (1-p)^(n-k)</div>
+    <div class="step highlight">pÌ‚_MLE = k/n = <span class="hl-green">${pHat.toFixed(6)}</span></div>
+    <div class="step">Ð¼Ð°ÐºÑÐ¸Ð¼ÑƒÐ¼ log-likelihood Ð´Ð¾ÑÑ‚Ð¸Ð³Ð°ÐµÑ‚ÑÑ Ð² ÑÑ‚Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐµ</div>
+  `;
+}
+
+// ===== KL =====
+function calcKL(){
+  const p = +document.getElementById('klP').value;
+  const q = +document.getElementById('klQ').value;
+  document.getElementById('klPVal').textContent = p.toFixed(2);
+  document.getElementById('klQVal').textContent = q.toFixed(2);
+
+  const c = document.getElementById('klCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const base = H-20, hScale = 150, barW=55;
+  const p0=1-p, p1=p, q0=1-q, q1=q;
+
+  // P bars
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(60, base-p0*hScale, barW, p0*hScale);
+  ctx.fillRect(130, base-p1*hScale, barW, p1*hScale);
+
+  // Q bars
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(230, base-q0*hScale, barW, q0*hScale);
+  ctx.fillRect(300, base-q1*hScale, barW, q1*hScale);
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('P(0)', 72, base+16);
+  ctx.fillText('P(1)', 142, base+16);
+  ctx.fillText('Q(0)', 242, base+16);
+  ctx.fillText('Q(1)', 312, base+16);
+
+  const klpq = bernKL(p,q);
+  const klqp = bernKL(q,p);
+
+  document.getElementById('klInfo').innerHTML = `
+    <div class="step">P = [${(1-p).toFixed(4)}, ${p.toFixed(4)}]</div>
+    <div class="step">Q = [${(1-q).toFixed(4)}, ${q.toFixed(4)}]</div>
+    <div class="step highlight">KL(P||Q) = <span class="hl-amber">${klpq.toFixed(6)}</span></div>
+    <div class="step">KL(Q||P) = ${klqp.toFixed(6)}</div>
+    <div class="step">${Math.abs(klpq-klqp) > 1e-6 ? 'Ð²Ð¸Ð´Ð½Ð¾, Ñ‡Ñ‚Ð¾ KL Ð½ÐµÑÐ¸Ð¼Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡Ð½Ð°' : 'Ð² ÑÑ‚Ð¾Ð¼ Ñ‡Ð°ÑÑ‚Ð½Ð¾Ð¼ ÑÐ»ÑƒÑ‡Ð°Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ Ð¿Ð¾Ñ‡Ñ‚Ð¸ ÑÐ¾Ð²Ð¿Ð°Ð»Ð¸'}</div>
+  `;
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// INIT
+drawBernoulli();
+drawGaussian();
+updateMLEInputs();
+calcKL();
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+
+

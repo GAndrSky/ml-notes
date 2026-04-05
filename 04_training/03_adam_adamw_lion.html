@@ -1,0 +1,678 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}.hl-pink{color:var(--pink);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number]{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 7px;border-radius:5px;width:72px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}
+table{width:100%;border-collapse:collapse;}
+th{background:#1a1a2e;color:var(--amber);padding:8px 10px;text-align:left;font-size:.85em;}
+td{padding:7px 10px;border-top:1px solid var(--border);font-size:.85em;}
+td.mono{font-family:monospace;font-size:.82em;}
+select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-done">âœ“ 4.1 Backprop</span>
+  <span class="tag tag-done">âœ“ 4.2 SGD/Momentum</span>
+  <span class="tag tag-active">â–¶ 4.3 Adam / AdamW / Lion</span>
+  <span class="tag tag-next">4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+</div>
+
+<h1>4.3 Ð¡Ð¾Ð²Ñ€ÐµÐ¼ÐµÐ½Ð½Ñ‹Ðµ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</h1>
+<p class="muted">Adam â†’ AdamW â†’ Lion â€” Ð¿Ð¾Ð»Ð½Ñ‹Ðµ Ð²Ñ‹Ð²Ð¾Ð´Ñ‹, bias correction, ÑÐ²ÑÐ·ÑŒ Ñ Fisher Information</p>
+
+<!-- 1. ÐœÐ¾Ñ‚Ð¸Ð²Ð°Ñ†Ð¸Ñ -->
+<div class="card">
+  <h2>ðŸ¤” ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ SGD+Momentum Ð½ÐµÐ´Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ñ‡Ð½Ð¾?</h2>
+  <div class="grid-2">
+    <div>
+      <p>Ð’ Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð½Ñ‹Ñ… ÑÐµÑ‚ÑÑ… Ñ€Ð°Ð·Ð½Ñ‹Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¸Ð¼ÐµÑŽÑ‚ <strong>Ð¾Ñ‡ÐµÐ½ÑŒ Ñ€Ð°Ð·Ð½Ñ‹Ðµ Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ñ‹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð²</strong>:</p>
+      <div class="formula" style="font-size:.85em;">embedding weights: grad â‰ˆ 1e-4  (Ñ€ÐµÐ´ÐºÐ¸Ðµ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸Ñ)
+attention Q/K/V:   grad â‰ˆ 0.01
+FF layer:          grad â‰ˆ 0.1
+output layer:      grad â‰ˆ 1.0</div>
+      <p style="font-size:.88em;margin-top:8px;">ÐŸÑ€Ð¸ Ð¾Ð´Ð½Ð¾Ð¼ Ð³Ð»Ð¾Ð±Ð°Ð»ÑŒÐ½Ð¾Ð¼ lr: Ð»Ð¸Ð±Ð¾ embedding Ð¿Ð¾Ñ‡Ñ‚Ð¸ Ð½Ðµ Ð¾Ð±ÑƒÑ‡Ð°ÐµÑ‚ÑÑ, Ð»Ð¸Ð±Ð¾ output layer Ð²Ð·Ñ€Ñ‹Ð²Ð°ÐµÑ‚ÑÑ.</p>
+    </div>
+    <div>
+      <div class="intuition">
+        ðŸ’¡ <strong>Ð˜Ð´ÐµÑ Ð°Ð´Ð°Ð¿Ñ‚Ð¸Ð²Ð½Ñ‹Ñ… Ð¼ÐµÑ‚Ð¾Ð´Ð¾Ð²:</strong><br>
+        Ð”Ð°Ñ‚ÑŒ ÐºÐ°Ð¶Ð´Ð¾Ð¼Ñƒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñƒ Î¸áµ¢ ÑÐ²Ð¾Ð¹ <em>ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹</em> learning rate:<br><br>
+        <span class="hl-amber">Î·_eff(i) = Î· / âˆš(EMA[gÂ²]_i)</span><br><br>
+        ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ Ñ Ð¸ÑÑ‚Ð¾Ñ€Ð¸ÐµÐ¹ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ñ… Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² â†’ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹ ÑˆÐ°Ð³.<br>
+        ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ Ñ Ð¸ÑÑ‚Ð¾Ñ€Ð¸ÐµÐ¹ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ñ… Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² â†’ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ ÑˆÐ°Ð³.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Adam Ð¿Ð¾Ð»Ð½Ð¾ÑÑ‚ÑŒÑŽ -->
+<div class="card">
+  <h2>âš™ï¸ Adam â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ñ€Ð°Ð·Ð±Ð¾Ñ€</h2>
+
+  <div class="tabs" id="adamTabs">
+    <button class="active" onclick="showAdamTab('formula',this)">Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð°</button>
+    <button onclick="showAdamTab('deriv',this)">Ð’Ñ‹Ð²Ð¾Ð´ bias correction</button>
+    <button onclick="showAdamTab('fisher',this)">Ð¡Ð²ÑÐ·ÑŒ Ñ Fisher Info</button>
+    <button onclick="showAdamTab('geom',this)">Ð“ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ</button>
+  </div>
+  <div id="adamContent"></div>
+
+  <br>
+  <!-- Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Adam step -->
+  <h3>ðŸ§® Adam step â€” Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ ÐºÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€</h3>
+  <p class="muted" style="font-size:.82em;">Ð—Ð°Ð´Ð°Ð¹ Ð¸ÑÑ‚Ð¾Ñ€Ð¸ÑŽ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² â€” Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÐ¼ mÌ‚, vÌ‚ Ð¸ ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ lr</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:10px 0;">
+    <div><div class="muted" style="font-size:.82em;">g (Ñ‚ÐµÐºÑƒÑ‰Ð¸Ð¹)</div><input type="number" id="ag" value="0.5" step=".01" oninput="calcAdam()"></div>
+    <div><div class="muted" style="font-size:.82em;">m_prev</div><input type="number" id="am" value="0.3" step=".01" oninput="calcAdam()"></div>
+    <div><div class="muted" style="font-size:.82em;">v_prev</div><input type="number" id="av" value="0.2" step=".01" oninput="calcAdam()"></div>
+    <div><div class="muted" style="font-size:.82em;">t (ÑˆÐ°Ð³)</div><input type="number" id="at" value="5" min="1" oninput="calcAdam()"></div>
+    <div><div class="muted" style="font-size:.82em;">Î·</div><input type="number" id="alr" value="0.001" step=".0001" oninput="calcAdam()"></div>
+  </div>
+  <div id="adamCalc" style="font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:12px 14px;"></div>
+</div>
+
+<!-- 3. AdamW -->
+<div class="card">
+  <h2>ðŸ›¡ï¸ AdamW â€” Ð¸ÑÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Weight Decay</h2>
+
+  <h3>ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°: L2 regularization â‰  Weight Decay Ð² Adam</h3>
+  <div class="formula">Adam + L2 (ÐÐ•ÐŸÐ ÐÐ’Ð˜Ð›Ð¬ÐÐž):
+  g_t â† âˆ‚L/âˆ‚Î¸ + Î»Â·Î¸       â† Î»Î¸ Ð²Ñ…Ð¾Ð´Ð¸Ñ‚ Ð² EMA Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ð°
+  Î¸ â† Î¸ âˆ’ Î· Â· mÌ‚/(âˆšvÌ‚+Îµ)   â† decay Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€ÑƒÐµÑ‚ÑÑ 1/âˆšvÌ‚ !
+
+ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ñ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ð¼ vÌ‚ (Ñ‡Ð°ÑÑ‚Ñ‹Ðµ, ÑˆÑƒÐ¼Ð½Ñ‹Ðµ Ð¿Ñ€Ð¸Ð·Ð½Ð°ÐºÐ¸):
+  1/âˆšvÌ‚ â†’ Ð¼Ð°Ð»Ð¾ â†’ weight decay ÑÐ»Ð°Ð±ÐµÐµ â†’ Ð½ÐµÐ´Ð¾Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ âŒ
+
+AdamW (ÐŸÐ ÐÐ’Ð˜Ð›Ð¬ÐÐž â€” Loshchilov & Hutter, 2019):
+  g_t â† âˆ‚L/âˆ‚Î¸             â† Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹ gradient
+  m_t â† Î²â‚m + (1âˆ’Î²â‚)g
+  v_t â† Î²â‚‚v + (1âˆ’Î²â‚‚)gÂ²
+  Î¸ â† Î¸ âˆ’ Î·Â·mÌ‚/(âˆšvÌ‚+Îµ) âˆ’ <span class="hl-green">Î·Â·Î»Â·Î¸</span>   â† decay Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾</div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <div class="intuition" style="font-size:.85em;">
+        ðŸ’¡ Decoupled weight decay Ð¾Ð±ÐµÑÐ¿ÐµÑ‡Ð¸Ð²Ð°ÐµÑ‚:<br>
+        â€¢ Ð Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½Ñ‹Ð¹ Î» Ð´Ð»Ñ Ð²ÑÐµÑ… Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²<br>
+        â€¢ ÐŸÑ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð°Ñ L2-Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð² Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ðµ Î¸<br>
+        â€¢ Ð”Ð¾ÐºÐ°Ð·Ð°Ð½Ð¾: Adam+L2 â‰  SGD+L2, AdamW+wd â‰ˆ SGD+L2
+      </div>
+      <div class="info" style="font-size:.85em;margin-top:8px;">
+        ðŸ“Œ ÐŸÑ€Ð°ÐºÑ‚Ð¸ÐºÐ°: weight_decay=0.01..0.1 Ð´Ð»Ñ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ð½ÑÑ‚Ð²Ð° Transformer.<br>
+        ÐÐ• Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÑ‚ÑŒ Ðº bias Ð¸ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²Ð¾Ñ‡Ð½Ñ‹Ð¼ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°Ð¼ (Î³, Î² Ð² LayerNorm).
+      </div>
+    </div>
+    <div>
+      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ: Ñ€Ð°Ð·Ð½Ð¸Ñ†Ð° decay Ñ‚Ñ€Ð°ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸</h3>
+      <div style="margin:6px 0;">
+        <span class="muted" style="font-size:.85em;">Î» = <span id="wdlVal" style="color:var(--green);font-weight:600;">0.01</span></span>
+        <input type="range" min="0" max=".5" step=".005" value=".01" id="wdlRange" oninput="drawWDComp()">
+      </div>
+      <canvas id="wdCompCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div style="font-size:.8em;margin-top:4px;color:var(--muted);">
+        <span style="color:var(--amber)">â€” Adam+L2</span> &nbsp;
+        <span style="color:var(--green)">â€” AdamW</span> &nbsp;
+        <span style="color:var(--blue)">â€” Adam (Ð±ÐµÐ· decay)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Lion -->
+<div class="card">
+  <h2>ðŸ¦ Lion â€” EvoLved Sign Momentum (Chen et al., 2023)</h2>
+  <p class="muted">ÐÐ°Ð¹Ð´ÐµÐ½ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ð¼ Ð¿Ð¾Ð¸ÑÐºÐ¾Ð¼ Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼ (symbolic program search). ÐŸÑ€Ð¾Ñ‰Ðµ Adam, Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÐµÑ‚ Ð½Ðµ Ñ…ÑƒÐ¶Ðµ Ð¸Ð»Ð¸ Ð»ÑƒÑ‡ÑˆÐµ.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <div class="formula">Lion (Ð¿Ð¾Ð»Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ð°):
+
+update = sign(Î²â‚Â·m_{t-1} + (1âˆ’Î²â‚)Â·g_t)
+Î¸_{t+1} = Î¸_t âˆ’ Î·Â·update âˆ’ Î·Â·Î»Â·Î¸_t
+
+m_t = Î²â‚‚Â·m_{t-1} + (1âˆ’Î²â‚‚)Â·g_t   â† Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ð¾Ñ‚Ð¾Ð¼!
+
+Ð“Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹:
+  Î²â‚ = 0.9   (Ð´Ð»Ñ update)
+  Î²â‚‚ = 0.99  (Ð´Ð»Ñ EMA Ð¿Ð°Ð¼ÑÑ‚Ð¸)
+  Î·  = 1e-4  (Ð² 3-10Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ Ñ‡ÐµÐ¼ Adam)
+  Î»  = weight decay (Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÐµÐ½!)</div>
+
+      <h3 style="margin-top:12px;">ÐšÐ»ÑŽÑ‡ÐµÐ²Ñ‹Ðµ Ð¾Ñ‚Ð»Ð¸Ñ‡Ð¸Ñ Ð¾Ñ‚ Adam</h3>
+      <div class="formula" style="font-size:.85em;">Adam:  Î¸ â† Î¸ âˆ’ Î· Â· mÌ‚/(âˆšvÌ‚+Îµ)   (Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹)
+Lion:  Î¸ â† Î¸ âˆ’ Î· Â· sign(...)     (ÐµÐ´Ð¸Ð½Ð¸Ñ‡Ð½Ñ‹Ð¹ ÑˆÐ°Ð³!)
+
+Lion Ð´ÐµÐ»Ð°ÐµÑ‚ ÑˆÐ°Ð³Ð¸ Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð¾Ð³Ð¾ Ñ€Ð°Ð·Ð¼ÐµÑ€Ð° Î· Ð² Ð»ÑŽÐ±Ð¾Ð¼ Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ð¸.
+ÐÐµÑ‚ Ð´ÐµÐ»ÐµÐ½Ð¸Ñ Ð½Ð° âˆšvÌ‚ â†’ Ð½ÐµÑ‚ Ð°Ð´Ð°Ð¿Ñ‚Ð°Ñ†Ð¸Ð¸ Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð°.
+Ð¢Ð¾Ð»ÑŒÐºÐ¾ Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ, Ð½Ðµ Ð²ÐµÐ»Ð¸Ñ‡Ð¸Ð½Ð°.</div>
+    </div>
+    <div>
+      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ sign-step</h3>
+      <div style="margin:8px 0;">
+        <span class="muted" style="font-size:.85em;">Î²â‚ = <span id="lionB1" style="color:var(--green);font-weight:600;">0.90</span></span>
+        <input type="range" min="0" max=".99" step=".01" value=".9" id="lionB1Range" oninput="drawLion()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted" style="font-size:.85em;">lr Lion = <span id="lionLR" style="color:var(--green);font-weight:600;">0.0003</span></span>
+        <input type="range" min=".0001" max='.001' step='.0001' value='.0003' id="lionLRRange" oninput="drawLion()">
+      </div>
+      <canvas id="lionCanvas" width="340" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="lionInfo" style="font-size:.82em;font-family:monospace;margin-top:5px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:14px;">
+    <div class="intuition" style="font-size:.85em;">
+      ðŸ’¡ <strong>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ sign?</strong><br>
+      sign(v) = v/|v| â€” ÐµÐ´Ð¸Ð½Ð¸Ñ‡Ð½Ñ‹Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð² Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ð¸ v.<br>
+      Lion â€” ÑÑ‚Ð¾ SGD Ñ Momentum, Ð½Ð¾ ÑˆÐ°Ð³ Ð²ÑÐµÐ³Ð´Ð° Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Î·.<br>
+      Ð‘Ð¾Ð»ÐµÐµ Â«Ð´ÐµÐ¼Ð¾ÐºÑ€Ð°Ñ‚Ð¸Ñ‡ÐµÐ½Â»: Ð²ÑÐµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ð¾Ð±Ð½Ð¾Ð²Ð»ÑÑŽÑ‚ÑÑ Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ð¾ ÑÐ¸Ð»ÑŒÐ½Ð¾.
+    </div>
+    <div class="info" style="font-size:.85em;">
+      ðŸ“Œ <strong>ÐŸÑ€Ð°ÐºÑ‚Ð¸ÐºÐ° Lion (2023â€“2024):</strong><br>
+      â€¢ lr Ð² 3-10Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ Ñ‡ÐµÐ¼ Ñƒ Adam<br>
+      â€¢ Ð¡Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ weight decay Ð¾Ð±ÑÐ·Ð°Ñ‚ÐµÐ»ÐµÐ½ (0.1..1.0)<br>
+      â€¢ ÐœÐµÐ½ÑŒÑˆÐµ Ð¿Ð°Ð¼ÑÑ‚Ð¸: Ð½ÐµÑ‚ v_t (Ñ‚Ð¾Ð»ÑŒÐºÐ¾ m_t)<br>
+      â€¢ Ð¥Ð¾Ñ€Ð¾ÑˆÐ¾ Ð´Ð»Ñ ViT, LLM: <br>&nbsp;&nbsp;Google Brain, Orca 2, Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ production Ð¼Ð¾Ð´ÐµÐ»Ð¸
+    </div>
+  </div>
+</div>
+
+<!-- 5. Ð“Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: Ñ‡Ñ‚Ð¾ Ð½Ð°ÑÑ‚Ñ€Ð°Ð¸Ð²Ð°Ñ‚ÑŒ -->
+<div class="card">
+  <h2>ðŸŽ›ï¸ Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€-Ð¸ÑÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒ</h2>
+  <p class="muted">Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€ â€” ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ Ðº Ð³Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°Ð¼ Ð½Ð° Ð¿Ñ€Ð¾ÑÑ‚Ð¾Ð¹ Ð·Ð°Ð´Ð°Ñ‡Ðµ</p>
+  <br>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="active" id="hpAdam" onclick="setHPOpt('adam',this)">Adam</button>
+    <button id="hpAdamW" onclick="setHPOpt('adamw',this)">AdamW</button>
+    <button id="hpLion" onclick="setHPOpt('lion',this)">Lion</button>
+  </div>
+  <div class="grid-2">
+    <div id="hpSliders"></div>
+    <div>
+      <canvas id="hpCanvas" width="340" height="220" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
+      <div id="hpInfo" style="font-size:.82em;font-family:monospace;margin-top:6px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Ð¡Ñ€Ð°Ð²Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð° -->
+<div class="card">
+  <h2>ðŸ“‹ Adam vs AdamW vs Lion</h2>
+  <table>
+    <tr><th>Ð¡Ð²Ð¾Ð¹ÑÑ‚Ð²Ð¾</th><th>Adam</th><th>AdamW</th><th>Lion</th></tr>
+    <tr><td>Ð“Ð¾Ð´</td><td class="mono">2014</td><td class="mono">2019</td><td class="mono">2023</td></tr>
+    <tr><td>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð° ÑˆÐ°Ð³Ð°</td><td class="mono">Î·Â·mÌ‚/âˆšvÌ‚</td><td class="mono">Î·Â·mÌ‚/âˆšvÌ‚ + Î»Î¸</td><td class="mono">Î·Â·sign(Î²â‚m+g) + Î»Î¸</td></tr>
+    <tr><td>ÐŸÐ°Ð¼ÑÑ‚ÑŒ (Ð´Ð¾Ð¿.)</td><td>m, v â†’ 2P</td><td>m, v â†’ 2P</td><td>Ñ‚Ð¾Ð»ÑŒÐºÐ¾ m â†’ 1P</td></tr>
+    <tr><td>Weight decay</td><td>Ñ‡ÐµÑ€ÐµÐ· L2 (Ð±Ð°Ð³)</td><td>decoupled âœ“</td><td>decoupled âœ“</td></tr>
+    <tr><td>ÐÐ´Ð°Ð¿Ñ‚Ð¸Ð²Ð½Ñ‹Ð¹ lr</td><td>âœ“ (1/âˆšvÌ‚)</td><td>âœ“ (1/âˆšvÌ‚)</td><td>âœ— (Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ð·Ð½Ð°Ðº)</td></tr>
+    <tr><td>Bias correction</td><td>âœ“</td><td>âœ“</td><td>âœ— (Ð½Ðµ Ð½ÑƒÐ¶Ð½Ð°)</td></tr>
+    <tr><td>lr Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ</td><td class="mono">1e-3</td><td class="mono">1e-4..3e-4</td><td class="mono">1e-4..3e-4</td></tr>
+    <tr><td>Ð“Ð´Ðµ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ</td><td>Ð²ÐµÐ·Ð´Ðµ, legacy</td><td>BERT, GPT, LLaMA</td><td>ViT, Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ LLM</td></tr>
+  </table>
+</div>
+
+<!-- 7. ÐšÐ¾Ð´ -->
+<div class="card">
+  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('adam',this)">Adam Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('adamw',this)">AdamW Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('lion',this)">Lion Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('api',this)">PyTorch API</button>
+  </div>
+  <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+// ===================== ADAM TABS =====================
+const ADAM_TABS = {
+formula: `<div class="formula">Ð˜Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ: mâ‚€=0, vâ‚€=0, t=0
+
+ÐšÐ°Ð¶Ð´Ñ‹Ð¹ ÑˆÐ°Ð³ t=1,2,...:
+  g_t  â† âˆ‚L_t/âˆ‚Î¸                     â† Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð½Ð° Ð±Ð°Ñ‚Ñ‡Ðµ
+
+  m_t  â† Î²â‚Â·m_{t-1} + (1âˆ’Î²â‚)Â·g_t    â† 1Ð¹ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚ (EMA g)
+  v_t  â† Î²â‚‚Â·v_{t-1} + (1âˆ’Î²â‚‚)Â·g_tÂ²   â† 2Ð¹ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚ (EMA gÂ²)
+
+  mÌ‚_t â† m_t / (1âˆ’Î²â‚áµ—)              â† bias correction
+  vÌ‚_t â† v_t / (1âˆ’Î²â‚‚áµ—)
+
+  Î¸_{t+1} â† Î¸_t âˆ’ Î· Â· mÌ‚_t / (âˆšvÌ‚_t + Îµ)
+
+Ð¢Ð¸Ð¿Ð¸Ñ‡Ð½Ñ‹Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ: Î²â‚=0.9, Î²â‚‚=0.999, Îµ=1e-8, Î·=1e-3</div>
+<div class="intuition">ðŸ’¡ Adam = RMSProp + Momentum + Bias Correction<br>
+mÌ‚_t â€” Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ (Momentum)<br>
+1/âˆšvÌ‚_t â€” Ð¼Ð°ÑÑˆÑ‚Ð°Ð±, Ð°Ð´Ð°Ð¿Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ð¿Ð¾Ð´ ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ (RMSProp)<br>
+Bias correction â€” ÐºÐ¾Ð¼Ð¿ÐµÐ½ÑÐ°Ñ†Ð¸Ñ Ñ…Ð¾Ð»Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÑ‚Ð°Ñ€Ñ‚Ð° Ð¿Ñ€Ð¸ t Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¾Ð¼</div>`,
+
+deriv: `<div class="step hl">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°: Ð¿Ð¾Ñ‡ÐµÐ¼Ñƒ mâ‚ Ð½ÐµÐ´Ð¾Ð¾Ñ†ÐµÐ½Ð¸Ð²Ð°ÐµÑ‚ gâ‚?</div>
+<div class="step">m_t = Î²â‚Â·m_{t-1} + (1âˆ’Î²â‚)Â·g_t, Ð¿Ñ€Ð¸ mâ‚€=0:</div>
+<div class="step">m_1 = 0.9Â·0 + 0.1Â·g_1 = 0.1Â·g_1   â† Ð² 10Ã— Ð¼ÐµÐ½ÑŒÑˆÐµ g_1!</div>
+<div class="step">m_2 = 0.9Â·0.1Â·g_1 + 0.1Â·g_2 = 0.09g_1 + 0.1g_2</div>
+<div class="step hl">Ð¢Ð¾Ñ‡Ð½Ð¾Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ: E[m_t] = (1âˆ’Î²â‚áµ—)Â·E[g]</div>
+<div class="step">Ð’Ñ‹Ð²Ð¾Ð´ Ñ‡ÐµÑ€ÐµÐ· Ñ‚ÐµÐ»ÐµÑÐºÐ¾Ð¿Ð¸Ñ‡ÐµÑÐºÑƒÑŽ ÑÑƒÐ¼Ð¼Ñƒ:</div>
+<div class="step">m_t = (1âˆ’Î²â‚)Â·Î£_{k=1}^{t} Î²â‚^(t-k) Â· g_k</div>
+<div class="step">E[m_t] â‰ˆ E[g]Â·(1âˆ’Î²â‚)Â·Î£Î²â‚^k = E[g]Â·(1âˆ’Î²â‚áµ—)</div>
+<div class="step hl">ÐšÐ¾Ñ€Ñ€ÐµÐºÑ†Ð¸Ñ: mÌ‚_t = m_t/(1âˆ’Î²â‚áµ—) â†’ E[mÌ‚_t] = E[g] âœ“</div>
+<div class="step">ÐŸÑ€Ð¸ tâ†’âˆž: Î²â‚áµ—â†’0 â†’ ÐºÐ¾Ñ€Ñ€ÐµÐºÑ†Ð¸Ñ Ð¸ÑÑ‡ÐµÐ·Ð°ÐµÑ‚, Ð½ÑƒÐ¶Ð½Ð° Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð²Ð½Ð°Ñ‡Ð°Ð»Ðµ</div>`,
+
+fisher: `<div class="step hl">Ð¡Ð²ÑÐ·ÑŒ Adam Ñ Ð½Ð°Ñ‚ÑƒÑ€Ð°Ð»ÑŒÐ½Ñ‹Ð¼ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð¼ Ð¸ Fisher Information</div>
+<div class="step">Fisher Information Matrix: F = E[gÂ·gáµ€] = E[(âˆ‚log p/âˆ‚Î¸)Â²]</div>
+<div class="step">ÐÐ°Ñ‚ÑƒÑ€Ð°Ð»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚: Î¸ â† Î¸ âˆ’ Î·Â·Fâ»Â¹Â·g</div>
+<div class="step">ÐžÐ¿Ñ‚Ð¸Ð¼Ð°Ð»ÐµÐ½ Ð² Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¾Ð½Ð½Ð¾Ð¹ Ð³ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ð¸: ÑƒÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ ÐºÑ€Ð¸Ð²Ð¸Ð·Ð½Ñƒ</div>
+<div class="step">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°: F â€” Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° PÃ—P, Ð¸Ð½Ð²ÐµÑ€Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ O(PÂ³) â€” Ð½ÐµÐ²Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ð¾</div>
+<div class="step hl">Adam â‰ˆ Ð´Ð¸Ð°Ð³Ð¾Ð½Ð°Ð»ÑŒÐ½Ð°Ñ Ð°Ð¿Ð¿Ñ€Ð¾ÐºÑÐ¸Ð¼Ð°Ñ†Ð¸Ñ Fâ»Â¹:</div>
+<div class="step">vÌ‚_t â‰ˆ Ð´Ð¸Ð°Ð³Ð¾Ð½Ð°Ð»ÑŒ(F) = E[gÂ²] â† EMA ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¾Ð² Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð²</div>
+<div class="step">1/âˆšvÌ‚_t â‰ˆ Ð´Ð¸Ð°Ð³Ð¾Ð½Ð°Ð»ÑŒ(Fâ»Â¹/Â²)</div>
+<div class="step">Î¸ â† Î¸ âˆ’ Î·Â·(F_diag)^(-Â½)Â·g   â‰ˆ Ð½Ð°Ñ‚ÑƒÑ€Ð°Ð»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚</div>
+<div class="step hl">Ð˜Ñ‚Ð¾Ð³: Adam = Ð¿Ñ€Ð¸Ð±Ð»Ð¸Ð¶Ñ‘Ð½Ð½Ñ‹Ð¹ Ð½Ð°Ñ‚ÑƒÑ€Ð°Ð»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ñ O(P) Ð¿Ð°Ð¼ÑÑ‚ÑŒÑŽ</div>`,
+
+geom: `<div class="step hl">Ð“ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡ÐµÑÐºÐ°Ñ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</div>
+<div class="step">SGD:  ÑˆÐ°Ð³ Ð¿Ñ€Ð¾Ð¿Ð¾Ñ€Ñ†Ð¸Ð¾Ð½Ð°Ð»ÐµÐ½ g â€” Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ Ñ‚Ð°Ð¼, Ð³Ð´Ðµ gradient Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹</div>
+<div class="step">Adam: ÑˆÐ°Ð³ â‰ˆ Î·Â·sign(g)Â·(1/âˆšvÌ‚) â€” Ð½Ð¾Ñ€Ð¼Ð¸Ñ€ÑƒÐµÑ‚ÑÑ Ð¿Ð¾ Ð¸ÑÑ‚Ð¾Ñ€Ð¸Ð¸</div>
+<div class="step hl">Â«Ð•Ð´Ð¸Ð½Ð¸Ñ‡Ð½Ñ‹Ð¹Â» ÑˆÐ°Ð³ Ð² whitened Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ðµ:</div>
+<div class="step">Adam Ð´ÐµÐ»Ð°ÐµÑ‚ ÑˆÐ°Ð³Ð¸ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð½Ð¾ Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ð¾Ð¹ Ð½Ð¾Ñ€Ð¼Ñ‹ Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼Ð¾ Ð¾Ñ‚ Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð° g</div>
+<div class="step">Ð­Ñ‚Ð¾ Ð½Ð°Ð·Ñ‹Ð²Ð°ÐµÑ‚ÑÑ scale-invariance: f(Î±g) Ð´Ð°Ñ‘Ñ‚ Ñ‚Ðµ Ð¶Ðµ ÑˆÐ°Ð³Ð¸, Ñ‡Ñ‚Ð¾ f(g)</div>
+<div class="step hl">ÐŸÑ€Ð°ÐºÑ‚Ð¸Ñ‡ÐµÑÐºÐ¾Ðµ ÑÐ»ÐµÐ´ÑÑ‚Ð²Ð¸Ðµ:</div>
+<div class="step">ÐœÐ¾Ð¶Ð½Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ Ð¾Ð´Ð¸Ð½ lr Ð´Ð»Ñ Ð²ÑÐµÑ… ÑÐ»Ð¾Ñ‘Ð² Ñ€Ð°Ð·Ð½Ð¾Ð¹ Ð³Ð»ÑƒÐ±Ð¸Ð½Ñ‹</div>
+<div class="step">SGD Ð¾Ñ‡ÐµÐ½ÑŒ Ñ‡ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÐµÐ½ Ðº Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ñƒ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸, Adam â€” Ð½ÐµÑ‚</div>`,
+};
+
+function showAdamTab(key, btn) {
+  document.querySelectorAll('#adamTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('adamContent').innerHTML = ADAM_TABS[key];
+}
+
+// ===================== ADAM CALCULATOR =====================
+function calcAdam() {
+  const g  = +document.getElementById('ag').value;
+  const mp = +document.getElementById('am').value;
+  const vp = +document.getElementById('av').value;
+  const t  = Math.max(1,+document.getElementById('at').value);
+  const lr = +document.getElementById('alr').value;
+  const b1=0.9, b2=0.999, eps=1e-8;
+
+  const m  = b1*mp + (1-b1)*g;
+  const v  = b2*vp + (1-b2)*g*g;
+  const mh = m/(1-Math.pow(b1,t));
+  const vh = v/(1-Math.pow(b2,t));
+  const step = lr*mh/(Math.sqrt(vh)+eps);
+  const eff_lr = step/g || 0;
+
+  document.getElementById('adamCalc').innerHTML =
+    `m_t  = Î²â‚Â·m_prev + (1âˆ’Î²â‚)Â·g = ${b1}Â·${mp} + ${(1-b1)}Â·${g} = <span style="color:var(--amber);font-weight:600;">${m.toFixed(6)}</span>\n`+
+    `v_t  = Î²â‚‚Â·v_prev + (1âˆ’Î²â‚‚)Â·gÂ² = ${b2}Â·${vp} + ${(1-b2)}Â·${(g*g).toFixed(4)} = <span style="color:var(--amber);font-weight:600;">${v.toFixed(6)}</span>\n\n`+
+    `Bias correction (t=${t}):\n`+
+    `mÌ‚_t = m/(1âˆ’Î²â‚áµ—) = ${m.toFixed(6)}/${(1-Math.pow(b1,t)).toFixed(6)} = <span style="color:var(--green);font-weight:600;">${mh.toFixed(6)}</span>\n`+
+    `vÌ‚_t = v/(1âˆ’Î²â‚‚áµ—) = ${v.toFixed(6)}/${(1-Math.pow(b2,t)).toFixed(6)} = <span style="color:var(--green);font-weight:600;">${vh.toFixed(6)}</span>\n\n`+
+    `Î”Î¸ = Î·Â·mÌ‚/(âˆšvÌ‚+Îµ) = ${lr}Â·${mh.toFixed(4)}/(${Math.sqrt(vh).toFixed(4)}+${eps}) = <span style="color:var(--purple);font-weight:600;">${step.toFixed(8)}</span>\n`+
+    `Ð­Ñ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ lr = Î”Î¸/g â‰ˆ <span style="color:var(--blue);font-weight:600;">${eff_lr.toExponential(3)}</span>`;
+}
+
+// ===================== WD COMPARISON =====================
+function drawWDComp() {
+  const wd = +document.getElementById('wdlRange').value;
+  document.getElementById('wdlVal').textContent = wd.toFixed(3);
+  const c = document.getElementById('wdCompCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  const steps=120, lr=0.001, b1=0.9, b2=0.999, eps=1e-8;
+  // Start at Î¸=2, true optimum=0
+  // gradient = Î¸ (bowl)
+  function runAdam(withL2, withDecoupled) {
+    let th=2, m=0, v=0, pts=[th];
+    for(let t=1;t<=steps;t++){
+      let g = th;
+      if(withL2) g += wd*th;
+      m=b1*m+(1-b1)*g; v=b2*v+(1-b2)*g*g;
+      const mh=m/(1-Math.pow(b1,t)), vh=v/(1-Math.pow(b2,t));
+      th -= lr*mh/(Math.sqrt(vh)+eps);
+      if(withDecoupled) th -= lr*wd*th;
+      pts.push(th);
+    }
+    return pts;
+  }
+  const ptsAdam = runAdam(false,false);
+  const ptsL2   = runAdam(true, false);
+  const ptsAdamW= runAdam(false,true);
+
+  const allV=[...ptsAdam,...ptsL2,...ptsAdamW];
+  const lo=Math.min(...allV), hi=Math.max(...allV);
+  const ty=v=>H-(v-lo)/(hi-lo||1)*(H*0.82)-H*0.08;
+  const tx=i=>i/steps*W;
+
+  // zero line
+  ctx.strokeStyle='#333';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,ty(0));ctx.lineTo(W,ty(0));ctx.stroke();
+
+  [[ptsAdam,'#60a5fa'],[ptsL2,'#f59e0b'],[ptsAdamW,'#10b981']].forEach(([pts,col])=>{
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    ctx.beginPath();
+    pts.forEach((v,i)=>{ i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v)); });
+    ctx.stroke();
+  });
+
+  ctx.fillStyle='#8b949e'; ctx.font='9px system-ui';
+  ctx.fillText(`Î»=${wd.toFixed(3)} | Î¸_start=2, Ð¾Ð¿Ñ‚Ð¸Ð¼ÑƒÐ¼=0`,4,12);
+  ctx.fillText(`AdamW Ñ„Ð¸Ð½Ð°Ð»: ${ptsAdamW[steps].toFixed(4)}  |  Adam+L2: ${ptsL2[steps].toFixed(4)}`,4,H-4);
+}
+
+// ===================== LION =====================
+function drawLion() {
+  const b1 = +document.getElementById('lionB1Range').value;
+  const lr  = +document.getElementById('lionLRRange').value;
+  document.getElementById('lionB1').textContent  = b1.toFixed(2);
+  document.getElementById('lionLR').textContent  = lr.toFixed(4);
+
+  const c = document.getElementById('lionCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  const steps=100, b2=0.99, wd=0.01;
+  // 2D bowl: f = xÂ² + yÂ², grad = 2[x,y]
+  let x=1.5, y=0.8, mx=0, my=0;
+  let ax=1.5, ay=0.8, amx=0, amy=0, avx=0, avy=0;
+  const ptsLion=[[x,y]], ptsAdam=[[ax,ay]];
+
+  for(let t=1;t<=steps;t++){
+    const gx=2*x, gy=2*y;
+    // Lion
+    const ux = b1*mx + (1-b1)*gx;
+    const uy = b1*my + (1-b1)*gy;
+    x -= lr*Math.sign(ux) + lr*wd*x;
+    y -= lr*Math.sign(uy) + lr*wd*y;
+    mx = b2*mx + (1-b2)*gx;
+    my = b2*my + (1-b2)*gy;
+    ptsLion.push([x,y]);
+
+    // Adam (lr*3 for fair comparison)
+    const agx=2*ax, agy=2*ay;
+    amx=0.9*amx+0.1*agx; amy=0.9*amy+0.1*agy;
+    avx=0.999*avx+0.001*agx**2; avy=0.999*avy+0.001*agy**2;
+    const mhx=amx/(1-0.9**t),mhy=amy/(1-0.9**t);
+    const vhx=avx/(1-0.999**t),vhy=avy/(1-0.999**t);
+    ax -= lr*3*mhx/(Math.sqrt(vhx)+1e-8); ay -= lr*3*mhy/(Math.sqrt(vhy)+1e-8);
+    ptsAdam.push([ax,ay]);
+  }
+
+  const R=2;
+  const tx=v=>(v+R)/(2*R)*W, ty=v=>H-(v+R)/(2*R)*H;
+
+  // Contour fill
+  const imgD=ctx.createImageData(W,H);
+  for(let py=0;py<H;py++) for(let px=0;px<W;px++){
+    const cx=px/W*2*R-R, cy=py/H*2*R-R;
+    const t2=Math.min((cx**2+cy**2)/(2*R**2),1);
+    const i=(py*W+px)*4;
+    imgD.data[i]=Math.round(13+t2*40);imgD.data[i+1]=Math.round(17+t2*25);
+    imgD.data[i+2]=Math.round(23+t2*50);imgD.data[i+3]=255;
+  }
+  ctx.putImageData(imgD,0,0);
+
+  [[ptsAdam,'#f59e0b'],[ptsLion,'#10b981']].forEach(([pts,col])=>{
+    ctx.strokeStyle=col;ctx.lineWidth=2;
+    ctx.beginPath();
+    pts.forEach(([x,y],i)=>{ i===0?ctx.moveTo(tx(x),ty(y)):ctx.lineTo(tx(x),ty(y)); });
+    ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(tx(pts[0][0]),ty(pts[0][1]),4,0,Math.PI*2); ctx.fill();
+  });
+
+  const lastL=ptsLion[ptsLion.length-1], lastA=ptsAdam[ptsAdam.length-1];
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
+  ctx.fillText('Adam (amber)  Lion (green)',4,12);
+  document.getElementById('lionInfo').textContent =
+    `Lion Î²â‚=${b1.toFixed(2)} lr=${lr.toFixed(4)}: (${lastL[0].toFixed(3)},${lastL[1].toFixed(3)})\n`+
+    `Adam lr=${(lr*3).toFixed(4)}: (${lastA[0].toFixed(3)},${lastA[1].toFixed(3)})`;
+}
+
+// ===================== HP EXPLORER =====================
+let hpOpt = 'adam';
+const HP_CONFIG = {
+  adam:  [{id:'hp_lr',  label:'lr',  min:.0001,max:.01,step:.0001,val:.001},
+          {id:'hp_b1',  label:'Î²â‚',  min:.5,max:.99,step:.01,val:.9},
+          {id:'hp_b2',  label:'Î²â‚‚',  min:.9,max:.9999,step:.0001,val:.999},
+          {id:'hp_eps', label:'Îµ',   min:1e-9,max:1e-6,step:1e-9,val:1e-8}],
+  adamw: [{id:'hp_lr',  label:'lr',  min:.00001,max:.001,step:.00001,val:.0003},
+          {id:'hp_b1',  label:'Î²â‚',  min:.5,max:.99,step:.01,val:.9},
+          {id:'hp_wd',  label:'Î»',   min:0,max:.5,step:.005,val:.01}],
+  lion:  [{id:'hp_lr',  label:'lr',  min:.00001,max:.001,step:.00001,val:.0003},
+          {id:'hp_b1',  label:'Î²â‚',  min:.5,max:.99,step:.01,val:.9},
+          {id:'hp_b2',  label:'Î²â‚‚',  min:.9,max:.999,step:.001,val:.99},
+          {id:'hp_wd',  label:'Î»',   min:0,max:1,step:.01,val:.1}],
+};
+
+function setHPOpt(opt, btn) {
+  hpOpt=opt;
+  ['hpAdam','hpAdamW','hpLion'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  btn.classList.add('active');
+  buildHPSliders();
+  runHP();
+}
+function buildHPSliders() {
+  const cfg = HP_CONFIG[hpOpt];
+  document.getElementById('hpSliders').innerHTML = cfg.map(s=>`
+    <div style="margin:10px 0;">
+      <span class="muted" style="font-size:.85em;">${s.label}: <span id="${s.id}_val" style="color:var(--green);font-weight:600;">${s.val}</span></span>
+      <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.val}" id="${s.id}"
+        oninput="document.getElementById('${s.id}_val').textContent=parseFloat(this.value).toPrecision(3);runHP()">
+    </div>`).join('');
+}
+function getHP(id, def) { const el=document.getElementById(id); return el?+el.value:def; }
+function runHP() {
+  const c=document.getElementById('hpCanvas');
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);
+
+  const steps=300;
+  const lr=getHP('hp_lr',.001), b1=getHP('hp_b1',.9), b2=getHP('hp_b2',.999);
+  const wd=getHP('hp_wd',0), eps=getHP('hp_eps',1e-8)||1e-8;
+  // f = xÂ² (1D bowl, optimum x=0, start x=2)
+  let th=2, m=0, v=0;
+  const losses=[th**2];
+
+  for(let t=1;t<=steps;t++){
+    const g=2*th;
+    if(hpOpt==='adam'){
+      m=b1*m+(1-b1)*g; v=b2*v+(1-b2)*g*g;
+      const mh=m/(1-Math.pow(b1,t)), vh=v/(1-Math.pow(b2,t));
+      th -= lr*mh/(Math.sqrt(vh)+eps);
+    } else if(hpOpt==='adamw'){
+      m=b1*m+(1-b1)*g; v=b2*v+(1-b2)*g*g;
+      const mh=m/(1-Math.pow(b1,t)), vh=v/(1-Math.pow(b2,t));
+      th -= lr*mh/(Math.sqrt(vh)+eps) + lr*wd*th;
+    } else { // lion
+      const u=b1*m+(1-b1)*g;
+      th -= lr*Math.sign(u) + lr*wd*th;
+      m=b2*m+(1-b2)*g;
+    }
+    losses.push(th**2);
+  }
+
+  const maxL=Math.min(losses[0]*1.1,10);
+  const ty=v=>H-(Math.min(v,maxL)/maxL)*(H*0.85)-H*0.05;
+  const tx=i=>i/steps*W;
+
+  ctx.strokeStyle='#1e2533';ctx.lineWidth=1;
+  [0,.5,1,2].forEach(v=>{ctx.beginPath();ctx.moveTo(0,ty(v));ctx.lineTo(W,ty(v));ctx.stroke();
+    ctx.fillStyle='#444';ctx.font='9px monospace';ctx.fillText(v.toFixed(1),2,ty(v)-2);});
+
+  const col={adam:'#f59e0b',adamw:'#10b981',lion:'#a78bfa'}[hpOpt];
+  ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.beginPath();
+  losses.forEach((v,i)=>{ i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v)); });
+  ctx.stroke();
+
+  const final=losses[steps];
+  ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
+  ctx.fillText(`${hpOpt}  |  steps=${steps}`,4,12);
+  document.getElementById('hpInfo').textContent=
+    `ÐÐ°Ñ‡Ð°Ð»Ð¾: L=4.00 â†’ Ð¤Ð¸Ð½Ð°Ð»: L=${final.toFixed(6)}\nÎ¸_final=${Math.sqrt(final).toFixed(6)}`;
+}
+
+// ===================== CODE =====================
+const CODES={
+adam:`import torch
+
+class Adam:
+    def __init__(self, params, lr=1e-3, betas=(0.9,0.999), eps=1e-8):
+        self.params=[p for p in params if p.requires_grad]
+        self.lr,self.b1,self.b2,self.eps=lr,*betas,eps
+        self.t=0
+        self.m=[torch.zeros_like(p) for p in self.params]
+        self.v=[torch.zeros_like(p) for p in self.params]
+
+    @torch.no_grad()
+    def step(self):
+        self.t+=1
+        bc1=1-self.b1**self.t   # bias correction Ð´enom
+        bc2=1-self.b2**self.t
+        for i,p in enumerate(self.params):
+            if p.grad is None: continue
+            g=p.grad
+            self.m[i]=self.b1*self.m[i]+(1-self.b1)*g     # EMA g
+            self.v[i]=self.b2*self.v[i]+(1-self.b2)*g**2  # EMA gÂ²
+            m_hat=self.m[i]/bc1   # bias corrected
+            v_hat=self.v[i]/bc2
+            p-=self.lr*m_hat/(v_hat.sqrt()+self.eps)
+
+    def zero_grad(self):
+        for p in self.params:
+            if p.grad is not None: p.grad.zero_()`,
+
+adamw:`import torch
+
+class AdamW:
+    """AdamW: decoupled weight decay (Loshchilov & Hutter, 2019)"""
+    def __init__(self, params, lr=3e-4, betas=(0.9,0.999), eps=1e-8, weight_decay=0.01):
+        self.params=[p for p in params if p.requires_grad]
+        self.lr,self.b1,self.b2,self.eps=lr,*betas,eps
+        self.wd=weight_decay; self.t=0
+        self.m=[torch.zeros_like(p) for p in self.params]
+        self.v=[torch.zeros_like(p) for p in self.params]
+
+    @torch.no_grad()
+    def step(self):
+        self.t+=1
+        bc1=1-self.b1**self.t
+        bc2=1-self.b2**self.t
+        for i,p in enumerate(self.params):
+            if p.grad is None: continue
+            g=p.grad  # Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð±ÐµÐ· Î»Î¸!
+            self.m[i]=self.b1*self.m[i]+(1-self.b1)*g
+            self.v[i]=self.b2*self.v[i]+(1-self.b2)*g**2
+            m_hat=self.m[i]/bc1
+            v_hat=self.v[i]/bc2
+            # ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð¾Ñ‚Ð»Ð¸Ñ‡Ð¸Ðµ: decay Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾
+            p-=self.lr*m_hat/(v_hat.sqrt()+self.eps)
+            p-=self.lr*self.wd*p   # decoupled weight decay`,
+
+lion:`import torch
+
+class Lion:
+    """Lion: EvoLved Sign Momentum (Chen et al., 2023)
+    https://arxiv.org/abs/2302.06675
+    """
+    def __init__(self, params, lr=3e-4, betas=(0.9,0.99), weight_decay=0.1):
+        self.params=[p for p in params if p.requires_grad]
+        self.lr=lr; self.b1,self.b2=betas; self.wd=weight_decay
+        self.m=[torch.zeros_like(p) for p in self.params]
+
+    @torch.no_grad()
+    def step(self):
+        for i,p in enumerate(self.params):
+            if p.grad is None: continue
+            g=p.grad
+            # Update: sign EMA Ð¿ÐµÑ€ÐµÐ´ Ð¾Ð±Ð½Ð¾Ð²Ð»ÐµÐ½Ð¸ÐµÐ¼ m
+            update=self.b1*self.m[i]+(1-self.b1)*g
+            p-=self.lr*update.sign()   # Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ñ€Ð°Ð·Ð¼ÐµÑ€ ÑˆÐ°Ð³Ð°!
+            p-=self.lr*self.wd*p       # decoupled weight decay
+            # ÐžÐ±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ memory Ð¿Ð¾ÑÐ»Ðµ ÑˆÐ°Ð³Ð°
+            self.m[i]=self.b2*self.m[i]+(1-self.b2)*g
+
+    def zero_grad(self):
+        for p in self.params:
+            if p.grad is not None: p.grad.zero_()`,
+
+api:`import torch
+import torch.nn as nn
+
+model = nn.Transformer(d_model=512, nhead=8)
+
+# â”€â”€ Adam â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+opt = torch.optim.Adam(model.parameters(),
+    lr=1e-3, betas=(0.9,0.999), eps=1e-8)
+
+# â”€â”€ AdamW (Ð´ÐµÑ„Ð¾Ð»Ñ‚ Ð´Ð»Ñ LLM/Transformer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ÐŸÑ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾: Ð½Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÑ‚ÑŒ wd Ðº bias Ð¸ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐµ
+no_decay=['bias','LayerNorm.weight','layernorm.weight']
+params = [
+    {'params':[p for n,p in model.named_parameters()
+               if not any(nd in n for nd in no_decay)],
+     'weight_decay':0.01},
+    {'params':[p for n,p in model.named_parameters()
+               if any(nd in n for nd in no_decay)],
+     'weight_decay':0.0},
+]
+opt = torch.optim.AdamW(params, lr=3e-4)
+
+# â”€â”€ Lion (ÑÑ‚Ð¾Ñ€Ð¾Ð½Ð½ÑÑ Ð±Ð¸Ð±Ð»Ð¸Ð¾Ñ‚ÐµÐºÐ° Ð¸Ð»Ð¸ Ñ€ÑƒÑ‡Ð½Ð°Ñ Ñ€ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ)
+# pip install lion-pytorch
+from lion_pytorch import Lion
+opt = Lion(model.parameters(), lr=1e-4, weight_decay=0.1)`
+};
+function showCode(key,btn){
+  document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent=CODES[key];
+}
+
+// INIT
+showAdamTab('formula', document.querySelector('#adamTabs button'));
+calcAdam();
+drawWDComp();
+drawLion();
+buildHPSliders();
+runHP();
+showCode('adam', document.querySelector('#codeTabs button'));
+</script>
+<script src="../shared-nav.js"></script>
+</body>
+</html>
+
