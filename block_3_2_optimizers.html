@@ -380,14 +380,22 @@ function drawSurface() {
 
   // Draw contours via image
   const img=ctx.createImageData(W,H);
-  const vals=[];
+  const vals=new Float32Array(W*H);
+  let mn=Infinity, mx=-Infinity;
   for(let py=0;py<H;py++) for(let px=0;px<W;px++){
+    const idx=py*W+px;
     const x=x0+(px/W)*(x1-x0), y=y1-((py/H)*(y1-y0));
-    vals.push(getLoss(surf,x,y));
+    const v=getLoss(surf,x,y);
+    vals[idx]=v;
+    if(Number.isFinite(v)){
+      if(v<mn) mn=v;
+      if(v>mx) mx=v;
+    }
   }
-  const mn=Math.min(...vals.filter(isFinite)), mx=Math.max(...vals.filter(isFinite));
+  const range = mx>mn ? (mx-mn) : 1;
   vals.forEach((v,i)=>{
-    const t=Math.min((v-mn)/(mx-mn),1);
+    const safeV = Number.isFinite(v) ? v : mx;
+    const t=Math.max(0,Math.min((safeV-mn)/range,1));
     const idx=i*4;
     // Dark blue → purple → amber color map
     const r=Math.round(t<0.5?13+t*2*50:63+((t-0.5)*2)*180);
