@@ -1,5 +1,7 @@
 (function () {
   const pages = [
+    { file: "block_1_1_linear_algebra.html", label: "1.1 Линейная алгебра" },
+    { file: "1_2_calculus.html", label: "1.2 Матанализ" },
     { file: "block_2_1_perceptron_neuron.html", label: "2.1 Нейрон" },
     { file: "block_2_2_activation_functions.html", label: "2.2 Активации" },
     { file: "block_2_3_forward_pass.html", label: "2.3 Forward pass" },
