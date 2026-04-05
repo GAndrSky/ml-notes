@@ -378,31 +378,29 @@ function drawSurface() {
   const surf=document.getElementById('surfType').value;
   const [x0,x1]=XRANGE[surf], [y0,y1]=YRANGE[surf];
 
-  // Draw contours via image
+  // Draw contours via image — log scale avoids monochrome on Rosenbrock
   const img=ctx.createImageData(W,H);
   const vals=new Float32Array(W*H);
-  let mn=Infinity, mx=-Infinity;
+  let rawMin=Infinity, rawMax=-Infinity;
   for(let py=0;py<H;py++) for(let px=0;px<W;px++){
-    const idx=py*W+px;
     const x=x0+(px/W)*(x1-x0), y=y1-((py/H)*(y1-y0));
     const v=getLoss(surf,x,y);
-    vals[idx]=v;
-    if(Number.isFinite(v)){
-      if(v<mn) mn=v;
-      if(v>mx) mx=v;
-    }
+    vals[py*W+px]=v;
+    if(Number.isFinite(v)){if(v<rawMin)rawMin=v;if(v>rawMax)rawMax=v;}
   }
-  const range = mx>mn ? (mx-mn) : 1;
-  vals.forEach((v,i)=>{
-    const safeV = Number.isFinite(v) ? v : mx;
-    const t=Math.max(0,Math.min((safeV-mn)/range,1));
+  if(!Number.isFinite(rawMin))rawMin=0;
+  if(!Number.isFinite(rawMax))rawMax=1;
+  // log1p transform for contrast — use loop, NOT spread (stack overflow on 300k elements)
+  const logMax=Math.log1p(rawMax-rawMin)||1;
+  for(let i=0;i<W*H;i++){
+    const v=Number.isFinite(vals[i])?vals[i]:rawMax;
+    const t=Math.max(0,Math.min(Math.log1p(v-rawMin)/logMax,1));
     const idx=i*4;
-    // Dark blue → purple → amber color map
-    const r=Math.round(t<0.5?13+t*2*50:63+((t-0.5)*2)*180);
-    const g=Math.round(t<0.5?17:17+(t-0.5)*2*100);
-    const bg=Math.round(t<0.5?23+t*2*80:103-((t-0.5)*2)*90);
+    const r=Math.round(t<0.5?13+t*100:63+(t-0.5)*360);
+    const g=Math.round(t<0.5?17:17+(t-0.5)*200);
+    const bg=Math.round(t<0.5?23+t*160:103-(t-0.5)*180);
     img.data[idx]=r; img.data[idx+1]=g; img.data[idx+2]=bg; img.data[idx+3]=255;
-  });
+  }
   ctx.putImageData(img,0,0);
 
   // Coordinate transform
@@ -487,7 +485,7 @@ function drawMomentum(){
   ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(tx(pts[0][0]),ty(pts[0][1]),4,0,Math.PI*2); ctx.fill();
 
   const last=pts[pts.length-1];
-  const eff=Math.round(1/(1-beta));
+  const eff=beta>=1?'∞':Math.round(1/(1-beta));
   document.getElementById('momInfo').textContent=`β=${beta.toFixed(2)}, эфф.окно≈${eff} шагов, конец:(${last[0].toFixed(3)},${last[1].toFixed(3)})`;
 }
 
