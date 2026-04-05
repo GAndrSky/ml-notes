@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; text-decoration:none; transition:all 0.2s; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+.tag-block:hover { border-color: var(--amber); color: var(--amber); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Блок 1 — Математические основы</span>
+  <a class="tag tag-block" href="block_1_1_linear_algebra.html">1.1 Линейная алгебра</a>
+  <a class="tag tag-block" href="1_2_calculus.html">1.2 Матанализ</a>
+  <a class="tag tag-block" href="1_3_analisys.html">1.3 Теория вероятностей</a>
+  <span class="tag tag-active">1.4 Теория информации</span>
+</div>
+
+<h1>1.4 Теория информации</h1>
+<p class="muted">Self-information · entropy · cross-entropy · KL-divergence · связь с likelihood, loss и обучением моделей</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>📡 Зачем теория информации в ML?</h2>
+  <p>Теория информации отвечает на вопрос: <strong>сколько неопределённости</strong> в распределении и <strong>сколько информации</strong> несёт наблюдение. В ML она лежит прямо под классификацией, language modeling, compression, variational inference и многими loss-функциями.</p>
+
+  <div class="formula">
+    \text{good model} \; \Longleftrightarrow \; \text{маленькая неожиданность истинных данных}
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Entropy</h3>
+      <p class="small">Сколько неопределённости в распределении.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Cross-Entropy</h3>
+      <p class="small">Насколько дорого кодировать истинные данные модельным распределением.</p>
+    </div>
+    <div class="mini-card">
+      <h3>KL</h3>
+      <p class="small">Насколько одно распределение отличается от другого.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 <strong>Главная идея:</strong> обучение модели можно понимать как процесс уменьшения количества “лишнего удивления” при наблюдении правильных ответов.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>⚡ Self-Information: сколько информации в одном событии</h2>
+
+  <div class="formula">
+    I(x) = - \log p(x)
+  </div>
+
+  <h3>Смысл</h3>
+  <div class="step">редкое событие → большая информация</div>
+  <div class="step">частое событие → маленькая информация</div>
+  <div class="step">если событие гарантировано, информации почти нет</div>
+
+  <div class="info">
+    ℹ️ Логарифм здесь не случайность: он делает информацию аддитивной. Если события независимы, то информация о совместном исходе складывается.
+  </div>
+
+  <div class="formula">
+    I(x,y) = -\log p(x,y) = -\log p(x) - \log p(y)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Интерактив: surprise события</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p(x) = <span class="val-display" id="infoPVal">0.50</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.50" id="infoP" oninput="calcSelfInfo()">
+      </div>
+      <canvas id="infoCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Интерпретация</h3>
+      <div class="result-box" id="infoBox"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 Если модель присваивает истинному классу маленькую вероятность, то событие получается очень “дорогим” по информации. Именно поэтому bad predictions дают большой loss.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>🎯 Entropy: средняя неопределённость распределения</h2>
+
+  <div class="formula">
+    H(P) = - \sum_x p(x)\log p(x)
+  </div>
+
+  <p>Энтропия — это средняя self-information по распределению.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Когда энтропия мала</h3>
+      <div class="step">распределение почти детерминированное</div>
+      <div class="step">один исход почти гарантирован</div>
+      <div class="step">мало неопределённости</div>
+    </div>
+    <div>
+      <h3>Когда энтропия велика</h3>
+      <div class="step">масса распределена равномернее</div>
+      <div class="step">исход труднее угадать</div>
+      <div class="step">много неопределённости</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    H(\text{Bernoulli}(p)) = -p\log p - (1-p)\log(1-p)
+  </div>
+
+  <div class="warn">
+    ⚠️ Энтропия измеряет не “хаос вообще”, а именно неопределённость относительно случайной величины.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>📊 Интерактив: entropy для Bernoulli</h2>
+  <p class="muted">Максимум энтропии при p=0.5 — когда оба исхода максимально неопределённы</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="entPVal">0.50</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.50" id="entP" oninput="drawEntropy()">
+      </div>
+      <canvas id="entropyCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Результат</h3>
+      <div class="result-box" id="entropyInfo"></div>
+      <div class="info" style="font-size:0.88em;">
+        Для бинарной случайной величины энтропия максимальна в точке <strong>p=0.5</strong>. Если p близко к 0 или 1, распределение становится более “уверенным”, и энтропия падает.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>🌍 Entropy для категориального распределения</h2>
+
+  <div class="formula">
+    H(P) = - \sum_{k=1}^{K} p_k \log p_k
+  </div>
+
+  <p>Если у нас K классов, то entropy говорит, насколько распределение по классам “размазано”.</p>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Низкая entropy</h3>
+      <p class="small">Модель почти уверена в одном классе.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Высокая entropy</h3>
+      <p class="small">Модель сомневается и распределяет массу по многим классам.</p>
+    </div>
+    <div class="mini-card">
+      <h3>В active learning</h3>
+      <p class="small">Высокая entropy может указывать на “неуверенные” примеры.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>🎭 Cross-Entropy: истинное распределение против модели</h2>
+
+  <div class="formula">
+    H(P,Q) = - \sum_x P(x)\log Q(x)
+  </div>
+
+  <p>Cross-entropy отвечает на вопрос: сколько в среднем информации нужно, если <strong>истинный мир распределён как P</strong>, а мы кодируем его распределением <strong>Q</strong>.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Если Q ≈ P</h3>
+      <div class="step">модель хорошо совпадает с реальностью</div>
+      <div class="step">истинные события не слишком удивляют</div>
+      <div class="step">cross-entropy мала</div>
+    </div>
+    <div>
+      <h3>Если Q далека от P</h3>
+      <div class="step">модель ошибается в вероятностях</div>
+      <div class="step">истинные события получают маленькие вероятности</div>
+      <div class="step">cross-entropy становится большой</div>
+    </div>
+  </div>
+
+  <div class="formula">
+    H(P,Q) = H(P) + D_{KL}(P||Q)
+  </div>
+
+  <div class="intuition">
+    💡 Эта формула очень важна: cross-entropy = собственная неопределённость истины + штраф за отличие модели от истины.
+  </div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>🧮 Интерактив: cross-entropy для бинарной классификации</h2>
+  <p class="muted">Пусть истинная метка y ∈ {0,1}, а модель предсказывает q = P(y=1)</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">Истинная метка y</span><br>
+        <select id="ceLabel" onchange="calcBinaryCE()">
+          <option value="1">y = 1</option>
+          <option value="0">y = 0</option>
+        </select>
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">q = P(y=1) = <span class="val-display" id="ceQVal">0.80</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.80" id="ceQ" oninput="calcBinaryCE()">
+      </div>
+      <canvas id="ceCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Формула</h3>
+      <div class="formula">
+        CE(y,q) = - \left[y\log q + (1-y)\log(1-q)\right]
+      </div>
+      <div class="result-box" id="ceInfo"></div>
+      <div class="warn" style="font-size:0.88em;">
+        Если истинный класс имеет вероятность почти 0, cross-entropy резко растёт. Поэтому “уверенно неправильные” предсказания наказываются особенно сильно.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>🏷️ Почему cross-entropy для one-hot метки превращается в -log q_true</h2>
+
+  <p>Пусть истинный класс кодируется one-hot вектором:</p>
+  <div class="formula">
+    y = [0,0,1,0,\dots]
+  </div>
+
+  <p>Тогда:</p>
+  <div class="formula">
+    CE(y,q) = -\sum_k y_k \log q_k = -\log q_{\text{true}}
+  </div>
+
+  <div class="step">все компоненты, кроме истинного класса, умножаются на 0</div>
+  <div class="step">остаётся только лог-вероятность правильного класса</div>
+  <div class="step highlight">обучение по сути заставляет увеличивать q_true</div>
+
+  <div class="info">
+    ℹ️ Именно поэтому softmax + cross-entropy — стандартная связка для многоклассовой классификации.
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>🔀 KL-divergence ещё раз: связь с теорией информации</h2>
+
+  <div class="formula">
+    D_{KL}(P||Q)= \sum_x P(x)\log \frac{P(x)}{Q(x)}
+  </div>
+
+  <p>KL показывает, насколько распределение Q неэффективно как описание мира, в котором истинно P.</p>
+
+  <div class="formula">
+    D_{KL}(P||Q) = H(P,Q) - H(P)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Если P=Q</h3>
+      <div class="step">KL = 0</div>
+      <div class="step">модель совпадает с истиной</div>
+    </div>
+    <div>
+      <h3>Если P и Q отличаются</h3>
+      <div class="step">KL &gt; 0</div>
+      <div class="step">есть “дополнительная цена” за плохую модель</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>📉 Negative Log-Likelihood как информационная цена</h2>
+
+  <p>Если модель предсказывает вероятность истинного наблюдения, то loss часто выглядит так:</p>
+
+  <div class="formula">
+    \mathcal{L} = -\log p_\theta(\text{true outcome})
+  </div>
+
+  <p>Это буквально self-information истинного события с точки зрения модели.</p>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Binary CE</h3>
+      <p class="small">Bernoulli NLL</p>
+    </div>
+    <div class="mini-card">
+      <h3>Cross-Entropy</h3>
+      <p class="small">Categorical NLL</p>
+    </div>
+    <div class="mini-card">
+      <h3>MSE</h3>
+      <p class="small">Gaussian NLL с точностью до констант</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 В этом смысле обучение модели — это минимизация средней неожиданности истинных ответов.
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>🧠 Entropy модели и confidence</h2>
+
+  <p>У самой модели тоже есть predictive entropy:</p>
+
+  <div class="formula">
+    H(\hat p) = -\sum_k \hat p_k \log \hat p_k
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Низкая entropy prediction</h3>
+      <div class="step">модель уверена</div>
+      <div class="step">один класс доминирует</div>
+    </div>
+    <div>
+      <h3>Высокая entropy prediction</h3>
+      <div class="step">модель сомневается</div>
+      <div class="step">вероятности более равномерны</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    ⚠️ Низкая entropy не всегда означает, что модель права. Она может быть уверенно неправильной.
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>🪄 Label Smoothing и информационная интерпретация</h2>
+
+  <p>Вместо жёсткой one-hot истины можно использовать чуть сглаженное распределение:</p>
+
+  <div class="formula">
+    y_{smooth} = (1-\varepsilon)\cdot y_{one-hot} + \varepsilon/K
+  </div>
+
+  <div class="step">уменьшается переуверенность модели</div>
+  <div class="step">градиенты становятся мягче</div>
+  <div class="step">модель учится не ставить вероятность 1.0 слишком агрессивно</div>
+
+  <div class="info">
+    ℹ️ С точки зрения теории информации это означает, что истинное распределение не считается абсолютно детерминированным.
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>📚 Сводка формул</h2>
+
+  <table>
+    <tr><th>Объект</th><th>Формула</th><th>Смысл</th></tr>
+    <tr><td>Self-information</td><td>I(x)=-\log p(x)</td><td>информация одного события</td></tr>
+    <tr><td>Entropy</td><td>H(P)=-\sum p\log p</td><td>средняя неопределённость</td></tr>
+    <tr><td>Cross-Entropy</td><td>H(P,Q)=-\sum P\log Q</td><td>цена кодирования истины моделью</td></tr>
+    <tr><td>KL</td><td>\sum P\log(P/Q)</td><td>лишняя цена из-за различия P и Q</td></tr>
+    <tr><td>Связь</td><td>H(P,Q)=H(P)+KL(P||Q)</td><td>главное тождество</td></tr>
+  </table>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>💻 NumPy / PyTorch: entropy и cross-entropy</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Entropy вручную</button>
+    <button onclick="showCode(1,this)">Cross-Entropy</button>
+    <button onclick="showCode(2,this)">PyTorch</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">import numpy as np
+
+p = np.array([0.7, 0.2, 0.1])
+
+entropy = -np.sum(p * np.log(p))
+print("Entropy:", entropy)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+P = np.array([1.0, 0.0, 0.0])      # one-hot truth
+Q = np.array([0.8, 0.15, 0.05])    # model probs
+
+cross_entropy = -np.sum(P * np.log(Q))
+print("Cross-Entropy:", cross_entropy)
+
+# since P is one-hot, this is just:
+print(-np.log(Q[0]))</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import torch
+import torch.nn.functional as F
+
+logits = torch.tensor([[2.5, 0.3, -1.2]])
+target = torch.tensor([0])   # true class index
+
+loss = F.cross_entropy(logits, target)
+print(loss.item())
+
+# internally:
+# 1) logits -> softmax probabilities
+# 2) take -log(probability of true class)</div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>🎯 Что обязательно вынести из темы</h2>
+
+  <div class="step highlight">Self-information = surprise одного события</div>
+  <div class="step highlight">Entropy = средняя неопределённость распределения</div>
+  <div class="step highlight">Cross-Entropy = цена кодирования истинного распределения моделью</div>
+  <div class="step highlight">KL = насколько Q хуже описывает мир, где истинно P</div>
+  <div class="step highlight">Cross-Entropy = Entropy + KL</div>
+  <div class="step highlight">Classification loss = -log(probability of true class)</div>
+
+  <div class="intuition">
+    💡 Если совсем упростить: теория информации в ML объясняет, почему модель должна давать высокую вероятность правильным ответам — иначе истинные события становятся слишком “дорогими” по информации.
+  </div>
+</div>
+
+<script>
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function safeLog(x){ return Math.log(clamp(x, 1e-9, 1)); }
+function bernEntropy(p){
+  p = clamp(p, 1e-9, 1-1e-9);
+  return -p*safeLog(p) - (1-p)*safeLog(1-p);
+}
+function drawAxes(ctx, W, H){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-20); ctx.stroke();
+}
+
+// ===== SELF INFORMATION =====
+function calcSelfInfo(){
+  const p = +document.getElementById('infoP').value;
+  document.getElementById('infoPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('infoCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  // draw curve I(p) = -log p
+  const xMin=0.01, xMax=0.99, yMax=5;
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for(let i=0;i<=300;i++){
+    const px = xMin + (i/300)*(xMax-xMin);
+    const y = -Math.log(px);
+    const xCanvas = 30 + ((px-xMin)/(xMax-xMin))*(W-50);
+    const yCanvas = (H-20) - (y/yMax)*(H-40);
+    if(i===0) ctx.moveTo(xCanvas,yCanvas); else ctx.lineTo(xCanvas,yCanvas);
+  }
+  ctx.stroke();
+
+  const surprise = -Math.log(p);
+  const xC = 30 + ((p-xMin)/(xMax-xMin))*(W-50);
+  const yC = (H-20) - (surprise/yMax)*(H-40);
+  ctx.beginPath();
+  ctx.arc(xC,yC,4,0,Math.PI*2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+
+  document.getElementById('infoBox').innerHTML = `
+    <div class="step">p(x) = ${p.toFixed(6)}</div>
+    <div class="step highlight">I(x) = -log p(x) = <span class="hl-amber">${surprise.toFixed(6)}</span></div>
+    <div class="step">${p < 0.2 ? 'событие редкое → много информации/удивления' : (p > 0.8 ? 'событие ожидаемое → мало информации' : 'умеренная неожиданность')}</div>
+  `;
+}
+
+// ===== ENTROPY =====
+function drawEntropy(){
+  const p = +document.getElementById('entP').value;
+  document.getElementById('entPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('entropyCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const yMax = 0.75;
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.3;
+  ctx.beginPath();
+  for(let i=1;i<=99;i++){
+    const x = i/100;
+    const y = bernEntropy(x);
+    const cx = 30 + (x-0.01)/(0.98)*(W-50);
+    const cy = (H-20) - (y/yMax)*(H-40);
+    if(i===1) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  const h = bernEntropy(p);
+  const cx = 30 + (p-0.01)/(0.98)*(W-50);
+  const cy = (H-20) - (h/yMax)*(H-40);
+  ctx.beginPath();
+  ctx.arc(cx,cy,4,0,Math.PI*2);
+  ctx.fillStyle = '#f59e0b';
+  ctx.fill();
+
+  document.getElementById('entropyInfo').innerHTML = `
+    <div class="step">P = [${(1-p).toFixed(4)}, ${p.toFixed(4)}]</div>
+    <div class="step highlight">H(P) = <span class="hl-green">${h.toFixed(6)}</span></div>
+    <div class="step">${Math.abs(p-0.5) < 0.05 ? 'почти максимум entropy → высокая неопределённость' : (p < 0.15 || p > 0.85 ? 'низкая entropy → распределение почти определено' : 'средний уровень неопределённости')}</div>
+  `;
+}
+
+// ===== BINARY CE =====
+function calcBinaryCE(){
+  const y = +document.getElementById('ceLabel').value;
+  const q = +document.getElementById('ceQ').value;
+  document.getElementById('ceQVal').textContent = q.toFixed(2);
+
+  const loss = -(y*Math.log(q) + (1-y)*Math.log(1-q));
+
+  const c = document.getElementById('ceCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const barW = 70;
+  const base = H-20;
+  const p1 = q;
+  const p0 = 1-q;
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(90, base-p0*150, barW, p0*150);
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(210, base-p1*150, barW, p1*150);
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 3;
+  if(y===0){
+    ctx.strokeRect(90, base-p0*150, barW, p0*150);
+  } else {
+    ctx.strokeRect(210, base-p1*150, barW, p1*150);
+  }
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('P(y=0)', 98, base+16);
+  ctx.fillText('P(y=1)', 218, base+16);
+
+  document.getElementById('ceInfo').innerHTML = `
+    <div class="step">истина: y = ${y}</div>
+    <div class="step">модель: q = P(y=1) = ${q.toFixed(6)}</div>
+    <div class="step">${y===1 ? `истинная вероятность = q = ${q.toFixed(6)}` : `истинная вероятность = 1-q = ${(1-q).toFixed(6)}`}</div>
+    <div class="step highlight">CE = <span class="hl-red">${loss.toFixed(6)}</span></div>
+    <div class="step">${loss < 0.2 ? 'хорошее и уверенное предсказание' : (loss > 2 ? 'очень плохое / уверенно неправильное предсказание' : 'среднее качество предсказания')}</div>
+  `;
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// INIT
+calcSelfInfo();
+drawEntropy();
+calcBinaryCE();
+</script>
+<script src="shared-nav.js"></script>
+</body>
+</html>
