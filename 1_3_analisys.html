@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="shared-nav.css">
+<style>
+:root {
+  --bg: #0d1117; --card: #161b22; --border: #30363d;
+  --amber: #f59e0b; --green: #10b981; --red: #ef4444;
+  --blue: #60a5fa; --purple: #a78bfa; --text: #e6edf3; --muted: #8b949e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif;
+       padding: 20px; max-width: 920px; margin: 0 auto; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 14px 0; }
+.formula { font-family: 'Courier New', monospace; font-size: 1.01em;
+           background: #0d1117; padding: 12px 16px; border-radius: 8px;
+           border-left: 3px solid var(--amber); margin: 10px 0; overflow-x:auto; }
+.hl-amber { color: var(--amber); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-red   { color: var(--red);   font-weight: 600; }
+.hl-blue  { color: var(--blue);  font-weight: 600; }
+.hl-purple{ color: var(--purple);font-weight: 600; }
+h1 { font-size: 1.5em; margin-bottom: 6px; }
+h2 { font-size: 1.2em; color: var(--amber); margin: 18px 0 8px; }
+h3 { font-size: 1em; color: var(--green); margin: 12px 0 5px; }
+.muted { color: var(--muted); font-size: 0.88em; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.8em; font-weight:600; margin-right:6px; text-decoration:none; transition:all 0.2s; }
+.tag-block { background:#1c2333; border:1px solid var(--border); color:var(--muted); }
+.tag-active { background:#1f2d1a; border:1px solid var(--green); color:var(--green); }
+.tag-block:hover { border-color: var(--amber); color: var(--amber); }
+input[type=number] { background: #0d1117; border: 1px solid var(--border);
+  color: var(--text); padding: 6px 8px; border-radius: 6px; width: 86px;
+  text-align: center; font-size: 0.95em; }
+input[type=range] { width: 100%; accent-color: var(--green); cursor: pointer; }
+select { background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.result-box { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-top:10px; }
+.step { padding: 8px 12px; border-left: 2px solid var(--border); margin: 6px 0; font-family: monospace; font-size: 0.95em; }
+.step.highlight { border-left-color: var(--amber); background: #1a1506; }
+.step.green { border-left-color: var(--green); background: #0f1f1a; }
+.step.blue { border-left-color: var(--blue); background: #0d1426; }
+button { background: var(--card); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+button:hover, button.active { border-color: var(--amber); color: var(--amber); }
+.val-display { font-family: monospace; color: var(--green); font-weight: 600; }
+.intuition { background: #0f1f1a; border: 1px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.warn { background: #1a0f0f; border: 1px solid var(--red); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+.info { background: #0d1426; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a2e; color: var(--amber); padding: 8px 10px; text-align: left; font-size: 0.9em; }
+td { padding: 7px 10px; border-top: 1px solid var(--border); font-size: 0.9em; font-family: monospace; vertical-align: top; }
+canvas { border-radius: 8px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.mini-card { background:#0d1117;border-radius:8px;padding:14px; }
+.small { font-size:0.85em; }
+.codeTabs button { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<div style="margin-bottom:14px;">
+  <span class="tag tag-block">Блок 1 — Математические основы</span>
+  <a class="tag tag-block" href="block_1_1_linear_algebra.html">1.1 Линейная алгебра</a>
+  <a class="tag tag-block" href="1_2_calculus.html">1.2 Матанализ</a>
+  <span class="tag tag-active">1.3 Теория вероятностей</span>
+  <span class="tag tag-block">1.4 Теория информации</span>
+</div>
+
+<h1>1.3 Теория вероятностей</h1>
+<p class="muted">Случайные величины · распределения · likelihood · MLE · MAP · posterior · KL-дивергенция</p>
+
+<!-- SECTION 1 -->
+<div class="card">
+  <h2>🎲 Зачем теория вероятностей в ML?</h2>
+  <p>Машинное обучение почти всегда работает с <strong>неопределённостью</strong>: шум в данных, неизвестные параметры, вероятности классов, прогнозы, доверие модели.</p>
+
+  <div class="formula">
+    ML = построение модели для p(y|x), p(x), p(θ|D) или связанных с ними величин
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="mini-card">
+      <h3>Классификация</h3>
+      <p class="small">Модель выдаёт вероятность классов: p(y=k|x).</p>
+    </div>
+    <div class="mini-card">
+      <h3>Регрессия</h3>
+      <p class="small">Можно моделировать не только среднее, но и шум/дисперсию.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Байесовский взгляд</h3>
+      <p class="small">Параметры тоже можно считать случайными величинами.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 <strong>Главная идея:</strong> probability в ML — это язык для описания <strong>неопределённости, шума и правдоподобия данных</strong>.
+  </div>
+</div>
+
+<!-- SECTION 2 -->
+<div class="card">
+  <h2>🧱 База: событие, вероятность, случайная величина</h2>
+
+  <h3>Вероятность события</h3>
+  <div class="formula">
+    P(A) ∈ [0,1], &nbsp; P(Ω)=1, &nbsp; P(A∪B)=P(A)+P(B) \; \text{если} \; A∩B=∅
+  </div>
+
+  <h3>Случайная величина</h3>
+  <p>Случайная величина X — это правило, которое каждому исходу сопоставляет число.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Дискретная</h3>
+      <div class="formula">
+        X ∈ {0,1,2,...}<br>
+        p(x)=P(X=x)
+      </div>
+      <p class="small">Например: число орлов, класс, количество событий.</p>
+    </div>
+    <div>
+      <h3>Непрерывная</h3>
+      <div class="formula">
+        X ∈ ℝ<br>
+        p(x) \text{ заменяется на density } f(x)
+      </div>
+      <p class="small">Например: рост, вес, температура, ошибка регрессии.</p>
+    </div>
+  </div>
+
+  <div class="warn" style="margin-top:12px;">
+    ⚠️ Для непрерывной случайной величины <strong>P(X=x)=0</strong> в точке. Поэтому там работают с density и интегралами, а не с вероятностью отдельного значения.
+  </div>
+</div>
+
+<!-- SECTION 3 -->
+<div class="card">
+  <h2>📊 Распределение = как вероятность размазана по значениям</h2>
+
+  <h3>PMF / PDF / CDF</h3>
+  <table>
+    <tr><th>Тип</th><th>Обозначение</th><th>Смысл</th></tr>
+    <tr><td>PMF</td><td>p(x)=P(X=x)</td><td>для дискретных X</td></tr>
+    <tr><td>PDF</td><td>f(x)</td><td>для непрерывных X</td></tr>
+    <tr><td>CDF</td><td>F(x)=P(X≤x)</td><td>накопленная вероятность</td></tr>
+  </table>
+
+  <div class="formula">
+    P(a ≤ X ≤ b) = \int_a^b f(x)\,dx
+  </div>
+
+  <div class="info">
+    ℹ️ В ML чаще всего встречаются Bernoulli, Categorical, Gaussian, а ещё распределения, появляющиеся через softmax, logistic и noise assumptions.
+  </div>
+</div>
+
+<!-- SECTION 4 -->
+<div class="card">
+  <h2>⚖️ Матожидание и дисперсия</h2>
+
+  <h3>Матожидание</h3>
+  <div class="formula">
+    E[X] = \sum_x x\,p(x) \quad \text{или} \quad E[X] = \int x f(x)\,dx
+  </div>
+
+  <h3>Дисперсия</h3>
+  <div class="formula">
+    Var(X) = E[(X-E[X])^2]
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Смысл E[X]</h3>
+      <p>Средний центр распределения, "где в среднем находится масса".</p>
+    </div>
+    <div>
+      <h3>Смысл Var(X)</h3>
+      <p>Насколько сильно случайная величина колеблется вокруг среднего.</p>
+    </div>
+  </div>
+
+  <div class="intuition">
+    💡 В Gaussian distribution именно <strong>μ</strong> отвечает за центр, а <strong>σ²</strong> — за ширину/разброс.
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<div class="card">
+  <h2>🪙 Bernoulli и Binomial — фундамент бинарной классификации</h2>
+
+  <h3>Bernoulli</h3>
+  <div class="formula">
+    X ∈ {0,1}, \quad P(X=1)=p,\quad P(X=0)=1-p
+  </div>
+
+  <div class="formula">
+    P(X=x)=p^x(1-p)^{1-x}, \quad x∈{0,1}
+  </div>
+
+  <h3>Матожидание и дисперсия</h3>
+  <div class="formula">
+    E[X]=p,\quad Var(X)=p(1-p)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Интерактив: Bernoulli</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="bernPVal">0.70</span></span>
+        <input type="range" min="0.01" max="0.99" step="0.01" value="0.70" id="bernP" oninput="drawBernoulli()">
+      </div>
+      <canvas id="bernCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Смысл для ML</h3>
+      <div class="result-box" id="bernInfo"></div>
+      <div class="info" style="font-size:0.88em;">
+        Bernoulli — это математическая основа для <strong>логистической регрессии</strong>, <strong>binary cross-entropy</strong> и выходного нейрона с sigmoid.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<div class="card">
+  <h2>🌈 Categorical distribution — многоклассовая классификация</h2>
+
+  <div class="formula">
+    P(Y=k)=p_k,\quad \sum_k p_k=1
+  </div>
+
+  <p>Если Bernoulli отвечает за 2 класса, то Categorical — за K классов.</p>
+
+  <div class="formula">
+    p = [p_1, p_2, ..., p_K]
+  </div>
+
+  <div class="step">softmax превращает logits в вероятности категорий</div>
+  <div class="step">cross-entropy оценивает, насколько распределение модели совпадает с истинным классом</div>
+  <div class="step">argmax берёт самый вероятный класс</div>
+</div>
+
+<!-- SECTION 7 -->
+<div class="card">
+  <h2>🔔 Gaussian / Normal distribution</h2>
+
+  <div class="formula">
+    X \sim \mathcal{N}(\mu,\sigma^2)
+  </div>
+
+  <div class="formula">
+    f(x)= \frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Интерактив: Gaussian</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">μ = <span class="val-display" id="muVal">0.00</span></span>
+        <input type="range" min="-3" max="3" step="0.1" value="0" id="muSlider" oninput="drawGaussian()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">σ = <span class="val-display" id="sigmaVal">1.00</span></span>
+        <input type="range" min="0.3" max="3" step="0.1" value="1" id="sigmaSlider" oninput="drawGaussian()">
+      </div>
+      <canvas id="gaussCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Интерпретация</h3>
+      <div class="result-box" id="gaussInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 В регрессии очень часто предполагают Gaussian noise: <strong>y = f(x) + ε, ε~N(0,σ²)</strong>. Из этого естественно вытекает MSE как negative log-likelihood.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8 -->
+<div class="card">
+  <h2>🔗 Совместные, условные вероятности и формула Байеса</h2>
+
+  <h3>Совместная вероятность</h3>
+  <div class="formula">
+    P(X,Y)
+  </div>
+
+  <h3>Условная вероятность</h3>
+  <div class="formula">
+    P(Y|X)=\frac{P(X,Y)}{P(X)}
+  </div>
+
+  <h3>Формула Байеса</h3>
+  <div class="formula">
+    P(\theta|D)=\frac{P(D|\theta)P(\theta)}{P(D)}
+  </div>
+
+  <table>
+    <tr><th>Термин</th><th>Название</th><th>Смысл</th></tr>
+    <tr><td>P(D|θ)</td><td>Likelihood</td><td>насколько хорошо параметры объясняют данные</td></tr>
+    <tr><td>P(θ)</td><td>Prior</td><td>что мы думали о θ до данных</td></tr>
+    <tr><td>P(θ|D)</td><td>Posterior</td><td>что думаем о θ после данных</td></tr>
+    <tr><td>P(D)</td><td>Evidence</td><td>нормирующая константа</td></tr>
+  </table>
+
+  <div class="info" style="margin-top:12px;">
+    ℹ️ Frequentist ML чаще максимизирует likelihood. Bayesian ML обновляет prior в posterior.
+  </div>
+</div>
+
+<!-- SECTION 9 -->
+<div class="card">
+  <h2>🎯 Likelihood vs Probability — ключевое различие</h2>
+
+  <h3>Когда параметры фиксированы, данные случайны</h3>
+  <div class="formula">
+    P(D|\theta)
+  </div>
+
+  <p>Если θ фиксировано, это вероятность/плотность наблюдения данных.</p>
+
+  <h3>Когда данные уже зафиксированы, параметры меняются</h3>
+  <div class="formula">
+    \mathcal{L}(\theta;D)=P(D|\theta)
+  </div>
+
+  <p>Формула та же, но теперь это функция от θ — <strong>likelihood</strong>.</p>
+
+  <div class="warn">
+    ⚠️ Очень частая путаница: likelihood — это <strong>не вероятность параметров</strong>. Это функция, которая говорит, какие параметры лучше объясняют уже наблюдённые данные.
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<div class="card">
+  <h2>📌 Maximum Likelihood Estimation (MLE)</h2>
+
+  <p>MLE выбирает параметры, которые делают наблюдённые данные максимально правдоподобными.</p>
+
+  <div class="formula">
+    \hat{\theta}_{MLE}= \arg\max_\theta P(D|\theta)
+  </div>
+
+  <p>Обычно максимизируют log-likelihood:</p>
+  <div class="formula">
+    \hat{\theta}_{MLE}= \arg\max_\theta \log P(D|\theta)
+  </div>
+
+  <h3>Почему логарифм?</h3>
+  <div class="step">1. произведения превращаются в суммы</div>
+  <div class="step">2. численно стабильнее</div>
+  <div class="step">3. максимум не меняется, потому что log монотонен</div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Пример: Bernoulli MLE</h3>
+      <div class="formula">
+        D = {x₁,...,xₙ}, xᵢ∈{0,1}
+      </div>
+      <div class="formula">
+        P(D|p)=\prod_i p^{x_i}(1-p)^{1-x_i}
+      </div>
+      <div class="formula">
+        \log P(D|p)=\sum_i \left[x_i\log p + (1-x_i)\log(1-p)\right]
+      </div>
+      <div class="formula">
+        \hat p_{MLE}= \frac{1}{n}\sum_i x_i
+      </div>
+    </div>
+    <div>
+      <h3>Интуиция</h3>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 Для Bernoulli MLE просто говорит: лучшая оценка вероятности успеха — это <strong>эмпирическая частота успехов</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 11 -->
+<div class="card">
+  <h2>🧮 Интерактив: MLE для Bernoulli</h2>
+  <p class="muted">Пусть в данных n наблюдений и k единиц. Смотрим likelihood как функцию p.</p>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin:8px 0;">
+        <span class="muted">n = <span class="val-display" id="mleNVal">10</span></span>
+        <input type="range" min="2" max="30" step="1" value="10" id="mleN" oninput="updateMLEInputs()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">k = <span class="val-display" id="mleKVal">7</span></span>
+        <input type="range" min="0" max="10" step="1" value="7" id="mleK" oninput="drawMLE()">
+      </div>
+      <canvas id="mleCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Результат</h3>
+      <div class="result-box" id="mleInfo"></div>
+      <div class="step highlight">Для Bernoulli: p̂ = k/n</div>
+      <div class="info" style="font-size:0.88em;">
+        Левый график показывает <strong>log-likelihood</strong>. Его максимум и есть точка MLE.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 12 -->
+<div class="card">
+  <h2>🧲 Maximum A Posteriori (MAP)</h2>
+
+  <p>MAP похож на MLE, но учитывает prior.</p>
+
+  <div class="formula">
+    \hat{\theta}_{MAP}= \arg\max_\theta P(\theta|D)
+  </div>
+
+  <p>По Байесу:</p>
+  <div class="formula">
+    \hat{\theta}_{MAP}= \arg\max_\theta P(D|\theta)P(\theta)
+  </div>
+
+  <p>В логарифмах:</p>
+  <div class="formula">
+    \hat{\theta}_{MAP}= \arg\max_\theta \left[\log P(D|\theta) + \log P(\theta)\right]
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Интуиция</h3>
+      <p>MLE смотрит только на данные. MAP смотрит на данные <strong>и</strong> на наши априорные предпочтения.</p>
+    </div>
+    <div>
+      <h3>Связь с regularization</h3>
+      <div class="formula">
+        \text{maximize } \log P(D|\theta) - \lambda ||\theta||^2
+      </div>
+      <p class="small">Это соответствует Gaussian prior на параметры. Поэтому L2 regularization можно понимать как MAP.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 13 -->
+<div class="card">
+  <h2>📉 KL-дивергенция</h2>
+
+  <p>KL измеряет, насколько одно распределение отличается от другого.</p>
+
+  <div class="formula">
+    D_{KL}(P||Q)= \sum_x P(x)\log\frac{P(x)}{Q(x)}
+  </div>
+
+  <p>Для непрерывного случая:</p>
+  <div class="formula">
+    D_{KL}(P||Q)= \int P(x)\log\frac{P(x)}{Q(x)}dx
+  </div>
+
+  <div class="warn">
+    ⚠️ KL — не метрика: она несимметрична, то есть обычно <strong>KL(P||Q) ≠ KL(Q||P)</strong>.
+  </div>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3>Интерактив: KL для двух Bernoulli</h3>
+      <div style="margin:8px 0;">
+        <span class="muted">p = <span class="val-display" id="klPVal">0.70</span></span>
+        <input type="range" min="0.05" max="0.95" step="0.01" value="0.70" id="klP" oninput="calcKL()">
+      </div>
+      <div style="margin:8px 0;">
+        <span class="muted">q = <span class="val-display" id="klQVal">0.40</span></span>
+        <input type="range" min="0.05" max="0.95" step="0.01" value="0.40" id="klQ" oninput="calcKL()">
+      </div>
+      <canvas id="klCanvas" width="360" height="220" style="background:#0d1117;border:1px solid var(--border);"></canvas>
+    </div>
+    <div>
+      <h3>Интерпретация</h3>
+      <div class="result-box" id="klInfo"></div>
+      <div class="intuition" style="font-size:0.88em;">
+        💡 KL(P||Q) можно читать так: сколько "лишней информации" или "лишней неэффективности" мы получаем, если кодируем мир, где истинно P, с помощью модели Q.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 14 -->
+<div class="card">
+  <h2>🧠 Как probability связывается с loss-функциями</h2>
+
+  <table>
+    <tr><th>Предположение о данных</th><th>Negative log-likelihood</th><th>Получаем loss</th></tr>
+    <tr><td>Bernoulli</td><td>-log P(y|x)</td><td>BCE / log loss</td></tr>
+    <tr><td>Categorical</td><td>-log P(y|x)</td><td>Cross-Entropy</td></tr>
+    <tr><td>Gaussian</td><td>-log P(y|x)</td><td>MSE (с точностью до констант)</td></tr>
+  </table>
+
+  <div class="formula">
+    \text{training} = \min_\theta - \log P(D|\theta)
+  </div>
+
+  <div class="info">
+    ℹ️ Очень важная мысль: многие loss-функции в DL — это не "магические формулы", а просто negative log-likelihood при конкретном вероятностном предположении о данных.
+  </div>
+</div>
+
+<!-- SECTION 15 -->
+<div class="card">
+  <h2>💻 NumPy / PyTorch: likelihood, MLE, MAP</h2>
+
+  <div class="tabs codeTabs">
+    <button class="active" onclick="showCode(0,this)">Bernoulli likelihood</button>
+    <button onclick="showCode(1,this)">MLE в NumPy</button>
+    <button onclick="showCode(2,this)">MAP + prior</button>
+  </div>
+
+  <div id="code0" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;">import numpy as np
+
+# Bernoulli data
+x = np.array([1, 0, 1, 1, 0, 1, 1])
+
+p = 0.7
+
+# likelihood
+L = np.prod(p**x * (1-p)**(1-x))
+
+# log-likelihood
+logL = np.sum(x*np.log(p) + (1-x)*np.log(1-p))
+
+print("Likelihood:", L)
+print("Log-likelihood:", logL)</div>
+
+  <div id="code1" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+x = np.array([1, 0, 1, 1, 0, 1, 1])
+
+# MLE for Bernoulli
+p_hat = x.mean()
+
+print("MLE estimate:", p_hat)</div>
+
+  <div id="code2" class="formula" style="font-size:0.84em;white-space:pre;overflow-x:auto;display:none;">import numpy as np
+
+# MAP intuition:
+# maximize log P(D|theta) + log P(theta)
+
+# Example: Gaussian prior on theta ~ N(0, sigma^2)
+# then log P(theta) gives a penalty proportional to -||theta||^2
+
+# This is why:
+# MAP ≈ MLE + regularization
+
+theta = np.array([0.8, -1.2, 0.3])
+lambda_ = 0.1
+
+mle_objective = -2.4
+prior_term = -lambda_ * np.sum(theta**2)
+
+map_objective = mle_objective + prior_term
+
+print("MLE objective:", mle_objective)
+print("Prior term:", prior_term)
+print("MAP objective:", map_objective)</div>
+</div>
+
+<!-- SECTION 16 -->
+<div class="card">
+  <h2>🎯 Что обязательно вынести из темы</h2>
+
+  <div class="step highlight">Распределение говорит, как вероятность распределена по значениям</div>
+  <div class="step highlight">Bernoulli и Categorical лежат под классификацией</div>
+  <div class="step highlight">Gaussian часто лежит под регрессией и MSE</div>
+  <div class="step highlight">Likelihood — функция от параметров при фиксированных данных</div>
+  <div class="step highlight">MLE максимизирует likelihood</div>
+  <div class="step highlight">MAP = likelihood + prior</div>
+  <div class="step highlight">KL измеряет различие распределений</div>
+  <div class="step highlight">Многие loss-функции = negative log-likelihood</div>
+
+  <div class="intuition">
+    💡 Если совсем упростить: теория вероятностей в ML отвечает на три вопроса — <strong>что случайно</strong>, <strong>насколько правдоподобны данные</strong>, и <strong>как обновлять убеждения после наблюдений</strong>.
+  </div>
+</div>
+
+<script>
+// ===== HELPERS =====
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function logBernoulliLikelihood(p, n, k){
+  p = clamp(p, 1e-6, 1 - 1e-6);
+  return k*Math.log(p) + (n-k)*Math.log(1-p);
+}
+function bernKL(p, q){
+  p = clamp(p, 1e-9, 1-1e-9);
+  q = clamp(q, 1e-9, 1-1e-9);
+  return p*Math.log(p/q) + (1-p)*Math.log((1-p)/(1-q));
+}
+function drawAxes(ctx, W, H, y0=H-20){
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(30,y0); ctx.lineTo(W-10,y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-20); ctx.stroke();
+}
+
+// ===== BERNOULLI =====
+function drawBernoulli(){
+  const p = +document.getElementById('bernP').value;
+  document.getElementById('bernPVal').textContent = p.toFixed(2);
+
+  const c = document.getElementById('bernCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const barW = 80;
+  const base = H - 20;
+  const h0 = (1-p) * 150;
+  const h1 = p * 150;
+
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(90, base-h0, barW, h0);
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(210, base-h1, barW, h1);
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('x=0', 118, base+16);
+  ctx.fillText('x=1', 238, base+16);
+
+  document.getElementById('bernInfo').innerHTML = `
+    <div class="step">P(X=1)=<span class="hl-purple">${p.toFixed(4)}</span></div>
+    <div class="step">P(X=0)=<span class="hl-blue">${(1-p).toFixed(4)}</span></div>
+    <div class="step">E[X]=p = ${p.toFixed(4)}</div>
+    <div class="step highlight">Var(X)=p(1-p) = ${(p*(1-p)).toFixed(6)}</div>
+  `;
+}
+
+// ===== GAUSSIAN =====
+function gaussianPdf(x, mu, sigma){
+  const z = (x-mu)/sigma;
+  return (1/(Math.sqrt(2*Math.PI)*sigma))*Math.exp(-0.5*z*z);
+}
+function drawGaussian(){
+  const mu = +document.getElementById('muSlider').value;
+  const sigma = +document.getElementById('sigmaSlider').value;
+  document.getElementById('muVal').textContent = mu.toFixed(2);
+  document.getElementById('sigmaVal').textContent = sigma.toFixed(2);
+
+  const c = document.getElementById('gaussCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H,H-25);
+
+  const xMin=-5, xMax=5, yMax=1.6;
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  for(let px=0; px<=W-40; px++){
+    const x = xMin + (px/(W-40))*(xMax-xMin);
+    const y = gaussianPdf(x,mu,sigma);
+    const cx = 30 + px;
+    const cy = (H-25) - (y/yMax)*(H-40);
+    if(px===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+
+  document.getElementById('gaussInfo').innerHTML = `
+    <div class="step">μ = <span class="hl-blue">${mu.toFixed(4)}</span></div>
+    <div class="step">σ = <span class="hl-green">${sigma.toFixed(4)}</span></div>
+    <div class="step highlight">Var(X)=σ² = ${(sigma*sigma).toFixed(4)}</div>
+    <div class="step">${sigma < 1 ? 'малое σ → узкое и высокое распределение' : 'большее σ → широкое и более плоское распределение'}</div>
+  `;
+}
+
+// ===== MLE =====
+function updateMLEInputs(){
+  const n = +document.getElementById('mleN').value;
+  document.getElementById('mleNVal').textContent = n;
+  const kSlider = document.getElementById('mleK');
+  kSlider.max = n;
+  if(+kSlider.value > n) kSlider.value = n;
+  drawMLE();
+}
+function drawMLE(){
+  const n = +document.getElementById('mleN').value;
+  const k = +document.getElementById('mleK').value;
+  document.getElementById('mleKVal').textContent = k;
+
+  const c = document.getElementById('mleCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H,H-20);
+
+  let minY=Infinity, maxY=-Infinity;
+  const vals = [];
+  for(let i=1;i<=99;i++){
+    const p = i/100;
+    const ll = logBernoulliLikelihood(p,n,k);
+    vals.push([p,ll]);
+    if(ll < minY) minY=ll;
+    if(ll > maxY) maxY=ll;
+  }
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  vals.forEach((v, idx) => {
+    const [p,ll] = v;
+    const x = 30 + p*(W-50);
+    const y = 10 + (maxY-ll)/(maxY-minY+1e-9)*(H-40);
+    if(idx===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  const pHat = n===0 ? 0 : k/n;
+  const llHat = logBernoulliLikelihood(clamp(pHat, 0.01, 0.99), n, k);
+  const xHat = 30 + pHat*(W-50);
+  const yHat = 10 + (maxY-llHat)/(maxY-minY+1e-9)*(H-40);
+  ctx.beginPath();
+  ctx.arc(xHat,yHat,4,0,Math.PI*2);
+  ctx.fillStyle = '#10b981';
+  ctx.fill();
+
+  document.getElementById('mleInfo').innerHTML = `
+    <div class="step">данные: n=${n}, k=${k}</div>
+    <div class="step">likelihood: p^k (1-p)^(n-k)</div>
+    <div class="step highlight">p̂_MLE = k/n = <span class="hl-green">${pHat.toFixed(6)}</span></div>
+    <div class="step">максимум log-likelihood достигается в этой точке</div>
+  `;
+}
+
+// ===== KL =====
+function calcKL(){
+  const p = +document.getElementById('klP').value;
+  const q = +document.getElementById('klQ').value;
+  document.getElementById('klPVal').textContent = p.toFixed(2);
+  document.getElementById('klQVal').textContent = q.toFixed(2);
+
+  const c = document.getElementById('klCanvas');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  drawAxes(ctx,W,H);
+
+  const base = H-20, hScale = 150, barW=55;
+  const p0=1-p, p1=p, q0=1-q, q1=q;
+
+  // P bars
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillRect(60, base-p0*hScale, barW, p0*hScale);
+  ctx.fillRect(130, base-p1*hScale, barW, p1*hScale);
+
+  // Q bars
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillRect(230, base-q0*hScale, barW, q0*hScale);
+  ctx.fillRect(300, base-q1*hScale, barW, q1*hScale);
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('P(0)', 72, base+16);
+  ctx.fillText('P(1)', 142, base+16);
+  ctx.fillText('Q(0)', 242, base+16);
+  ctx.fillText('Q(1)', 312, base+16);
+
+  const klpq = bernKL(p,q);
+  const klqp = bernKL(q,p);
+
+  document.getElementById('klInfo').innerHTML = `
+    <div class="step">P = [${(1-p).toFixed(4)}, ${p.toFixed(4)}]</div>
+    <div class="step">Q = [${(1-q).toFixed(4)}, ${q.toFixed(4)}]</div>
+    <div class="step highlight">KL(P||Q) = <span class="hl-amber">${klpq.toFixed(6)}</span></div>
+    <div class="step">KL(Q||P) = ${klqp.toFixed(6)}</div>
+    <div class="step">${Math.abs(klpq-klqp) > 1e-6 ? 'видно, что KL несимметрична' : 'в этом частном случае значения почти совпали'}</div>
+  `;
+}
+
+// ===== CODE TABS =====
+function showCode(idx, btn) {
+  [0,1,2].forEach(i=>document.getElementById('code'+i).style.display='none');
+  document.getElementById('code'+idx).style.display='block';
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// INIT
+drawBernoulli();
+drawGaussian();
+updateMLEInputs();
+calcKL();
+</script>
+<script src="shared-nav.js"></script>
+</body>
+</html>
