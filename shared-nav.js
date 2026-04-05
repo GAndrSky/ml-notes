@@ -5,6 +5,9 @@
     { path: "01_math/03_probability_theory.html", label: "1.3 Теория вероятностей" },
     { path: "01_math/04_information_theory.html", label: "1.4 Теория информации" },
     { path: "02_classic_ml/01_intro_to_classical_ml.html", label: "2.1 Классическое ML" },
+    { path: "02_classic_ml/02_data_preprocessing.html", label: "2.2 Предобработка" },
+    { path: "02_classic_ml/03_linear_regression.html", label: "2.3 Линейная регрессия" },
+    { path: "02_classic_ml/04_linear_model_regularization.html", label: "2.4 Регуляризация" },
     { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 Нейрон" },
     { path: "03_neural_basics/02_activation_functions.html", label: "3.2 Активации" },
     { path: "03_neural_basics/03_forward_pass.html", label: "3.3 Forward pass" },
@@ -16,8 +19,8 @@
     { path: "05_architectures/01_cnn_convolutional_networks.html", label: "5.1 CNN" },
     { path: "05_architectures/02_rnn_lstm.html", label: "5.2 RNN / LSTM" },
     { path: "05_architectures/03_transformer_attention.html", label: "5.3 Attention" },
-    { path: "05_architectures/04_transformer_architecture.html", label: "5.3 Архитектура" },
-    { path: "05_architectures/05_resnet_normalization.html", label: "5.4 ResNet / Norm" }
+    { path: "05_architectures/04_transformer_architecture.html", label: "5.4 Архитектура" },
+    { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm" }
   ];
 
   const rootUrl = new URL(
