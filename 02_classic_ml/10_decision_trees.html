@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.10 Decision Trees</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    .tiny{
+      font-size:.86rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .tree-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      margin-top:10px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.9rem;
+      line-height:1.55;
+      overflow:auto;
+    }
+
+    .legend{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      font-size:.86rem;
+      color:var(--muted);
+    }
+    .legend span::before{
+      content:"";
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+      vertical-align:middle;
+    }
+    .legend .blue::before{background:var(--blue)}
+    .legend .red::before{background:var(--red)}
+    .legend .green::before{background:var(--green)}
+    .legend .purple::before{background:var(--purple)}
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="09_naive_bayes.html">2.9 Naive Bayes</a>
+    <span class="tag tag-active">2.10 Decision Trees</span>
+    <a class="tag tag-block" href="11_bagging_random_forest.html">2.11 Bagging и Random Forest</a>
+  </div>
+
+  <header class="hero">
+    <h1>2.10 Decision Trees</h1>
+    <p class="muted">Tree intuition, Gini, Entropy, Information Gain, regression trees, depth, pruning, overfitting</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">decision tree</span>
+      <span class="mini-tag">gini</span>
+      <span class="mini-tag">entropy</span>
+      <span class="mini-tag">information gain</span>
+      <span class="mini-tag">regression tree</span>
+      <span class="mini-tag">pruning</span>
+    </div>
+
+    <h2>Что такое дерево решений</h2>
+    <p>
+      Decision Tree — это модель, которая принимает решение
+      через последовательность простых правил вида:
+      <span class="hl-amber">“если признак меньше порога — идём влево, иначе вправо”</span>.
+    </p>
+
+    <div class="formula">
+      \text{if } x_j \le t \Rightarrow \text{left branch}, \qquad
+      \text{else } \Rightarrow \text{right branch}
+    </div>
+
+    <p>
+      Повторяя такие split'ы, дерево делит пространство признаков на области,
+      внутри которых выдаёт класс или числовой прогноз.
+    </p>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Дерево — это как цепочка вопросов.
+      Например:
+      <br><br>
+      “Доход &gt; 2000?” → “Да”
+      <br>
+      “Возраст &lt; 25?” → “Нет”
+      <br>
+      “Есть просрочки?” → “Да”
+      <br><br>
+      На выходе приходит решение.
+      Поэтому дерево очень похоже на человеческую логику типа
+      “если..., то...”.
+    </div>
+
+    <div class="success">
+      Одно из главных преимуществ деревьев —
+      они naturally интерпретируемы:
+      можно буквально прочитать путь от корня к листу как набор правил.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Основные части дерева</h2>
+
+    <div class="grid-3">
+      <div class="metric">
+        <div class="name">Root</div>
+        <div class="value">первый split</div>
+      </div>
+      <div class="metric">
+        <div class="name">Internal nodes</div>
+        <div class="value">промежуточные вопросы</div>
+      </div>
+      <div class="metric">
+        <div class="name">Leaves</div>
+        <div class="value">финальные ответы</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <div>
+        <h3>Root node</h3>
+        <p>
+          Самый верхний узел дерева.
+          Здесь выбирается самый первый и часто самый важный split.
+        </p>
+      </div>
+      <div>
+        <h3>Leaf node</h3>
+        <p>
+          Конечный узел без дальнейших split'ов.
+          В классификации лист выдаёт класс,
+          в регрессии — числовое значение.
+        </p>
+      </div>
+    </div>
+
+    <div class="tree-box">
+[Root] income &gt; 2000?
+├── No  → [Leaf] class = deny
+└── Yes → age &lt; 30?
+    ├── Yes → [Leaf] class = approve
+    └── No  → debt_ratio &gt; 0.5?
+        ├── Yes → [Leaf] class = deny
+        └── No  → [Leaf] class = approve
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.1 Интуиция дерева решений</h2>
+
+    <p>
+      Дерево не ищет глобальную формулу вроде
+      <code>wᵀx + b</code>.
+      Вместо этого оно локально выбирает лучший вопрос в каждой точке.
+    </p>
+
+    <div class="step"><strong>Шаг 1.</strong> Смотрим на все данные в текущем узле.</div>
+    <div class="step"><strong>Шаг 2.</strong> Перебираем кандидаты: по какому признаку и порогу разделить.</div>
+    <div class="step"><strong>Шаг 3.</strong> Выбираем split, который сильнее всего “очищает” узел.</div>
+    <div class="step"><strong>Шаг 4.</strong> Рекурсивно повторяем то же самое для дочерних узлов.</div>
+
+    <div class="info">
+      Ключевая идея:
+      дерево не моделирует всё пространство сразу.
+      Оно строит решение
+      <span class="hl-blue">жадно, шаг за шагом</span>.
+    </div>
+
+    <div class="warn">
+      Это greedy algorithm.
+      Дерево выбирает локально лучший split сейчас,
+      но это не гарантирует глобально оптимальное дерево целиком.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Как дерево “очищает” узлы</h2>
+
+    <p>
+      Если в узле смешаны разные классы, узел “грязный”.
+      Если почти все объекты в узле одного класса, узел “чистый”.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Грязный узел</h3>
+        <p>
+          Внутри много классов вперемешку.
+          Такой узел плохо подходит для финального предсказания.
+        </p>
+      </div>
+      <div>
+        <h3>Чистый узел</h3>
+        <p>
+          Большинство объектов одного класса.
+          Такой узел уже даёт понятное решение.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Хороший split — это такой split,
+      после которого дочерние узлы становятся
+      <span class="hl-green">чище</span>, чем родительский.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.2 Gini impurity</h2>
+
+    <p>
+      Один из самых популярных критериев impurity для classification trees — Gini impurity.
+    </p>
+
+    <div class="formula">
+      Gini = 1 - \sum_{k=1}^{K} p_k^2
+    </div>
+
+    <p>
+      Где <code>p_k</code> — доля класса <code>k</code> в узле.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если узел полностью чистый</h3>
+        <div class="formula">
+          p_1 = 1,\; p_{others}=0 \Rightarrow Gini = 0
+        </div>
+      </div>
+      <div>
+        <h3>Если классы смешаны 50/50</h3>
+        <div class="formula">
+          Gini = 1 - (0.5^2 + 0.5^2) = 0.5
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Gini можно понимать как меру неоднородности узла.
+      Чем ближе Gini к 0, тем “чище” узел.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: Gini impurity</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="classProbSlider">Доля класса 1 в узле p <span class="badge-inline" id="classProbVal">0.50</span></label>
+          <input type="range" id="classProbSlider" min="0" max="1" value="0.5" step="0.01">
+        </div>
+
+        <div class="info">
+          Для бинарного случая:
+          <code>p(class 1)=p</code>, <code>p(class 0)=1-p</code>.
+          Максимальная impurity будет в центре.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="giniCanvas" width="380" height="240"></canvas>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">p(class 1)</div>
+            <div class="value" id="giniPMetric">0.50</div>
+          </div>
+          <div class="metric">
+            <div class="name">Gini</div>
+            <div class="value" id="giniMetric">0.500</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.3 Entropy / Information Gain</h2>
+
+    <p>
+      Второй классический критерий impurity — entropy.
+    </p>
+
+    <div class="formula">
+      H = -\sum_{k=1}^{K} p_k \log_2 p_k
+    </div>
+
+    <p>
+      Для бинарного случая:
+    </p>
+
+    <div class="formula">
+      H(p) = -p\log_2 p - (1-p)\log_2(1-p)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если узел чистый</h3>
+        <div class="formula">
+          H = 0
+        </div>
+      </div>
+      <div>
+        <h3>Если узел 50/50</h3>
+        <div class="formula">
+          H = 1
+        </div>
+      </div>
+    </div>
+
+    <p>
+      Хороший split уменьшает entropy.
+      Это уменьшение называется Information Gain:
+    </p>
+
+    <div class="formula">
+      IG = H(parent) - \sum_{children} w_j H(child_j)
+    </div>
+
+    <p>
+      Где <code>w_j</code> — доля объектов, попавших в соответствующий дочерний узел.
+    </p>
+
+    <div class="success">
+      Information Gain показывает,
+      сколько неопределённости мы убрали данным split'ом.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Gini vs Entropy</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Критерий</th>
+          <th>Формула</th>
+          <th>Интуиция</th>
+          <th>Практика</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gini</td>
+          <td>1 - Σp²</td>
+          <td>неоднородность узла</td>
+          <td>часто чуть быстрее</td>
+        </tr>
+        <tr>
+          <td>Entropy</td>
+          <td>-Σp log p</td>
+          <td>количество неопределённости / информации</td>
+          <td>часто даёт похожие split'ы</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      На практике Gini и Entropy часто приводят к похожим результатам.
+      Разница обычно не драматическая.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: сравнение Gini и Entropy</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="entropyProbSlider">Доля класса 1: p <span class="badge-inline" id="entropyProbVal">0.50</span></label>
+          <input type="range" id="entropyProbSlider" min="0.001" max="0.999" value="0.5" step="0.001">
+        </div>
+
+        <div class="info">
+          Посмотри, как обе функции реагируют на изменение class balance.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="entropyCanvas" width="380" height="240"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">p</div>
+            <div class="value" id="entropyPMetric">0.50</div>
+          </div>
+          <div class="metric">
+            <div class="name">Gini</div>
+            <div class="value" id="entropyGiniMetric">0.500</div>
+          </div>
+          <div class="metric">
+            <div class="name">Entropy</div>
+            <div class="value" id="entropyMetric">1.000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Как выглядит split числового признака</h2>
+
+    <p>
+      Для числового признака дерево ищет порог:
+    </p>
+
+    <div class="formula">
+      x_j \le t \quad \text{vs} \quad x_j > t
+    </div>
+
+    <p>
+      Алгоритм перебирает кандидаты и выбирает тот порог,
+      который максимально уменьшает impurity.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что важно</h3>
+        <ul>
+          <li>дерево умеет автоматически выбирать пороги,</li>
+          <li>не требует scaling как k-NN или SVM,</li>
+          <li>может работать и с нелинейными зависимостями через последовательность split'ов.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Но</h3>
+        <ul>
+          <li>дерево строит piecewise-constant модель,</li>
+          <li>границы получаются осе-параллельные,</li>
+          <li>одиночное дерево может быть нестабильным.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: один split по порогу</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="splitThreshold">Threshold t <span class="badge-inline" id="splitThresholdVal">5.0</span></label>
+          <input type="range" id="splitThreshold" min="1" max="9" value="5" step="0.1">
+        </div>
+
+        <div class="control-group">
+          <label for="splitCriterion">Критерий</label>
+          <select id="splitCriterion">
+            <option value="gini">Gini</option>
+            <option value="entropy">Entropy</option>
+          </select>
+        </div>
+
+        <div class="info">
+          Здесь есть одномерные объекты с бинарными классами.
+          Мы двигаем порог и смотрим, насколько хорошо split “очищает” левый и правый узлы.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="splitCanvas" width="380" height="240"></canvas>
+        <div class="result-box" id="splitResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.4 Regression trees и MSE split</h2>
+
+    <p>
+      Для регрессии дерево тоже работает через split'ы,
+      но вместо impurity по классам обычно минимизирует ошибку прогноза в узлах.
+    </p>
+
+    <div class="formula">
+      \hat{y}_{leaf} = \text{mean target in leaf}
+    </div>
+
+    <p>
+      А качество split'а оценивают через суммарную квадратичную ошибку:
+    </p>
+
+    <div class="formula">
+      \text{MSE split objective} =
+      \sum_{left}(y_i - \bar{y}_{left})^2 +
+      \sum_{right}(y_i - \bar{y}_{right})^2
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что делает regression tree</h3>
+        <p>
+          Делит пространство так,
+          чтобы внутри каждого листа target был как можно более однородным.
+        </p>
+      </div>
+      <div>
+        <h3>Предсказание листа</h3>
+        <p>
+          Обычно это просто среднее значение target объектов в этом листе.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Классификационное дерево ищет более чистые классы,
+      регрессионное дерево — более однородные значения target.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: regression tree split</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="regSplitThreshold">Threshold t <span class="badge-inline" id="regSplitThresholdVal">5.0</span></label>
+          <input type="range" id="regSplitThreshold" min="1" max="9" value="5" step="0.1">
+        </div>
+
+        <div class="info">
+          Здесь split делит одномерные числовые данные.
+          Слева и справа дерево предсказывает среднее target.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="regTreeCanvas" width="380" height="240"></canvas>
+        <div class="result-box" id="regTreeResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.5 Depth, leaves, pruning</h2>
+
+    <p>
+      Чтобы дерево не росло бесконечно, его обычно ограничивают.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Параметр</th>
+          <th>Смысл</th>
+          <th>Эффект</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>max_depth</td>
+          <td>максимальная глубина дерева</td>
+          <td>контроль сложности</td>
+        </tr>
+        <tr>
+          <td>min_samples_split</td>
+          <td>минимум объектов для split</td>
+          <td>не даёт дробить слишком маленькие узлы</td>
+        </tr>
+        <tr>
+          <td>min_samples_leaf</td>
+          <td>минимум объектов в листе</td>
+          <td>предотвращает слишком узкие листья</td>
+        </tr>
+        <tr>
+          <td>max_leaf_nodes</td>
+          <td>максимум листьев</td>
+          <td>контроль размера дерева</td>
+        </tr>
+        <tr>
+          <td>ccp_alpha</td>
+          <td>cost-complexity pruning</td>
+          <td>обрезает лишние ветви</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="intuition">
+      Глубокое дерево может почти запомнить train set.
+      Ограничения и pruning нужны, чтобы оставить только те split'ы,
+      которые действительно помогают generalization.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pre-pruning vs Post-pruning</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Pre-pruning</h3>
+        <p>
+          Мы заранее ограничиваем рост дерева:
+          например, ставим <code>max_depth</code> или <code>min_samples_leaf</code>.
+        </p>
+      </div>
+      <div>
+        <h3>Post-pruning</h3>
+        <p>
+          Сначала выращиваем дерево побольше,
+          потом обрезаем ветви, которые дают мало пользы.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula">
+      \text{cost-complexity objective} =
+      \text{tree loss} + \alpha \cdot \text{number of leaves}
+    </div>
+
+    <div class="info">
+      Pruning — это способ явно контролировать trade-off
+      между quality of fit и complexity of the tree.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.10.6 Overfitting в деревьях</h2>
+
+    <p>
+      Одиночные деревья очень склонны к overfitting.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему</h3>
+        <ul>
+          <li>дерево может продолжать split'ить почти до полного запоминания train,</li>
+          <li>оно легко подстраивается под шум и выбросы,</li>
+          <li>локальные решения могут быть слишком специфичны для конкретной выборки.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Как это выглядит</h3>
+        <ul>
+          <li>train accuracy почти 100%,</li>
+          <li>validation accuracy заметно хуже,</li>
+          <li>мелкие ветви соответствуют случайным флуктуациям, а не закономерностям.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Деревья low-bias, high-variance.
+      Это одна из причин, почему позже появятся Random Forest и Boosting:
+      они делают деревья гораздо устойчивее.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: глубина дерева и переобучение</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="depthSlider">Глубина дерева <span class="badge-inline" id="depthVal">1</span></label>
+          <input type="range" id="depthSlider" min="1" max="8" value="1" step="1">
+        </div>
+
+        <div class="info">
+          Здесь показана не реальная обученная модель, а интуитивная схема:
+          чем глубже дерево, тем лучше оно фитит train, но после некоторого момента начинает терять на validation.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="depthCanvas" width="380" height="240"></canvas>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">Train score</div>
+            <div class="value" id="trainDepthMetric">0.68</div>
+          </div>
+          <div class="metric">
+            <div class="name">Validation score</div>
+            <div class="value" id="valDepthMetric">0.66</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="success">
+      Это ещё один важный bias-variance сюжет:
+      маленькое дерево underfit'ит, слишком большое — overfit'ит.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Сильные стороны деревьев</h2>
+
+    <ul>
+      <li>очень интерпретируемы,</li>
+      <li>умеют ловить нелинейности,</li>
+      <li>не требуют обязательного scaling,</li>
+      <li>работают и для classification, и для regression,</li>
+      <li>естественно умеют работать с feature interactions через последовательность split'ов,</li>
+      <li>часто хорошо работают на табличных данных.</li>
+    </ul>
+
+    <div class="success">
+      Дерево — один из самых human-readable алгоритмов classical ML.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Слабые стороны деревьев</h2>
+
+    <ul>
+      <li>склонность к overfitting,</li>
+      <li>нестабильность: небольшой шум в данных может сильно поменять структуру дерева,</li>
+      <li>axis-aligned split'ы могут быть не лучшей геометрией,</li>
+      <li>одиночное дерево часто слабее ансамблей из деревьев.</li>
+    </ul>
+
+    <div class="warn">
+      Именно нестабильность одиночного дерева делает bagging и Random Forest такими сильными:
+      ансамбль усредняет хаотичность отдельных деревьев.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Короткая геометрическая интуиция</h2>
+
+    <p>
+      Дерево режет пространство признаков прямоугольными областями
+      через split'ы вида <code>x_j ≤ t</code>.
+    </p>
+
+    <div class="formula">
+      \text{Decision regions} = \text{axis-aligned rectangles / boxes}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюс</h3>
+        <p>
+          Можно аппроксимировать довольно сложные формы последовательностью простых условий.
+        </p>
+      </div>
+      <div>
+        <h3>Минус</h3>
+        <p>
+          Если реальная граница диагональная или гладкая,
+          дерево будет приближать её лесенкой.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">Classification tree</button>
+      <button class="tab-btn" data-tab="tab2">Regression tree</button>
+      <button class="tab-btn" data-tab="tab3">Feature importance</button>
+      <button class="tab-btn" data-tab="tab4">Pruning / tuning</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+model = DecisionTreeClassifier(
+    criterion="gini",      # or "entropy", "log_loss"
+    max_depth=4,
+    min_samples_leaf=5,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+print("accuracy:", accuracy_score(y_val, pred))</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error
+
+model = DecisionTreeRegressor(
+    max_depth=5,
+    min_samples_leaf=4,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+
+print("RMSE:", mean_squared_error(y_val, pred, squared=False))</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">from sklearn.tree import DecisionTreeClassifier
+
+model = DecisionTreeClassifier(max_depth=4, random_state=42)
+model.fit(X_train, y_train)
+
+print("feature importances:")
+for name, imp in zip(feature_names, model.feature_importances_):
+    print(name, imp)</div>
+    </div>
+
+    <div class="tab-panel" id="tab4">
+      <div class="code-block">from sklearn.model_selection import GridSearchCV
+from sklearn.tree import DecisionTreeClassifier
+
+param_grid = {
+    "max_depth": [2, 3, 4, 5, 8, None],
+    "min_samples_leaf": [1, 2, 5, 10],
+    "criterion": ["gini", "entropy"]
+}
+
+search = GridSearchCV(
+    DecisionTreeClassifier(random_state=42),
+    param_grid=param_grid,
+    cv=5,
+    scoring="f1"
+)
+
+search.fit(X_train, y_train)
+
+print("best params:", search.best_params_)
+print("best score :", search.best_score_)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Практические замечания</h2>
+
+    <div class="step"><strong>1.</strong> Не полагайся на неограниченное дерево как на production-ready baseline — оно почти наверняка overfit'ит.</div>
+    <div class="step"><strong>2.</strong> Ограничивай глубину и minimum leaf size, особенно на маленьких данных.</div>
+    <div class="step"><strong>3.</strong> Для tabular data дерево — отличный “bridge model” между простыми линейными моделями и будущими ансамблями.</div>
+    <div class="step"><strong>4.</strong> Feature importance у дерева полезна, но может быть biased — позже появятся более надёжные способы интерпретации.</div>
+    <div class="step"><strong>5.</strong> Если хочется высокой точности, очень часто next step after one tree — это Random Forest или Gradient Boosting.</div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>выращивать дерево без ограничений и радоваться train score,</li>
+        <li>считать дерево inherently robust к шуму,</li>
+        <li>путать интерпретируемость дерева с гарантией хорошего generalization,</li>
+        <li>не сравнивать train и validation quality,</li>
+        <li>думать, что одиночное дерево — предел tree-based методов.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий блок</h3>
+        <ul>
+          <li><strong>2.11 Bagging и Random Forest</strong></li>
+          <li>там мы увидим, как ансамбль исправляет слабости одиночного дерева</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Позже ещё вернёмся</h3>
+        <ul>
+          <li><strong>Boosting</strong> — ещё более мощное развитие tree-based подхода</li>
+          <li><strong>Интерпретация моделей</strong> — feature importance, permutation importance, PDP, SHAP</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Decision Tree — это rule-based модель, которая рекурсивно делит данные на всё более однородные области.
+    </p>
+    <ul>
+      <li><strong>Для классификации</strong> дерево использует impurity-критерии вроде Gini или Entropy.</li>
+      <li><strong>Для регрессии</strong> дерево уменьшает разброс target внутри узлов, обычно через MSE-like objective.</li>
+      <li>Деревья легко интерпретируются и умеют ловить нелинейности.</li>
+      <li>Но одиночные деревья очень склонны к <strong>overfitting</strong> и нестабильности.</li>
+      <li>Поэтому ограничение глубины, размер листьев и pruning — критически важны.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      <span class="hl-green">дерево решений — это не просто набор правил, а базовый строительный блок почти всех сильнейших tree-based ансамблей, которые мы будем разбирать дальше</span>.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Gini demo ----------
+    const classProbSlider = document.getElementById('classProbSlider');
+    const giniCanvas = document.getElementById('giniCanvas');
+    const gctx = giniCanvas.getContext('2d');
+
+    function giniBinary(p){
+      return 1 - (p*p + (1-p)*(1-p));
+    }
+
+    function drawGini(){
+      const p = Number(classProbSlider.value);
+      const g = giniBinary(p);
+
+      document.getElementById('classProbVal').textContent = p.toFixed(2);
+      document.getElementById('giniPMetric').textContent = p.toFixed(2);
+      document.getElementById('giniMetric').textContent = g.toFixed(3);
+
+      const W = giniCanvas.width;
+      const H = giniCanvas.height;
+      gctx.clearRect(0,0,W,H);
+      gctx.fillStyle = '#0d1117';
+      gctx.fillRect(0,0,W,H);
+
+      gctx.strokeStyle = '#30363d';
+      gctx.beginPath();
+      gctx.moveTo(30,H-30);
+      gctx.lineTo(W-20,H-30);
+      gctx.stroke();
+      gctx.beginPath();
+      gctx.moveTo(30,H-30);
+      gctx.lineTo(30,20);
+      gctx.stroke();
+
+      function px(x){ return 30 + x*(W-50); }
+      function py(y){ return H-30 - y/0.5*(H-50); }
+
+      gctx.strokeStyle = '#60a5fa';
+      gctx.lineWidth = 2.5;
+      gctx.beginPath();
+      for(let i=0;i<=300;i++){
+        const x = i/300;
+        const y = giniBinary(x);
+        const X = px(x), Y = py(y);
+        if(i===0) gctx.moveTo(X,Y);
+        else gctx.lineTo(X,Y);
+      }
+      gctx.stroke();
+
+      gctx.fillStyle = '#a78bfa';
+      gctx.beginPath();
+      gctx.arc(px(p), py(g), 6, 0, Math.PI*2);
+      gctx.fill();
+    }
+
+    classProbSlider.addEventListener('input', drawGini);
+
+    // ---------- Entropy demo ----------
+    const entropyProbSlider = document.getElementById('entropyProbSlider');
+    const entropyCanvas = document.getElementById('entropyCanvas');
+    const ectx = entropyCanvas.getContext('2d');
+
+    function entropyBinary(p){
+      const eps = 1e-12;
+      const pp = Math.min(1-eps, Math.max(eps, p));
+      return -(pp*Math.log2(pp) + (1-pp)*Math.log2(1-pp));
+    }
+
+    function drawEntropy(){
+      const p = Number(entropyProbSlider.value);
+      const g = giniBinary(p);
+      const h = entropyBinary(p);
+
+      document.getElementById('entropyProbVal').textContent = p.toFixed(3);
+      document.getElementById('entropyPMetric').textContent = p.toFixed(3);
+      document.getElementById('entropyGiniMetric').textContent = g.toFixed(3);
+      document.getElementById('entropyMetric').textContent = h.toFixed(3);
+
+      const W = entropyCanvas.width;
+      const H = entropyCanvas.height;
+      ectx.clearRect(0,0,W,H);
+      ectx.fillStyle = '#0d1117';
+      ectx.fillRect(0,0,W,H);
+
+      ectx.strokeStyle = '#30363d';
+      ectx.beginPath();
+      ectx.moveTo(30,H-30);
+      ectx.lineTo(W-20,H-30);
+      ectx.stroke();
+      ectx.beginPath();
+      ectx.moveTo(30,H-30);
+      ectx.lineTo(30,20);
+      ectx.stroke();
+
+      function px(x){ return 30 + x*(W-50); }
+      function py(y){ return H-30 - y*(H-50); }
+
+      ectx.strokeStyle = '#60a5fa';
+      ectx.lineWidth = 2.2;
+      ectx.beginPath();
+      for(let i=1;i<300;i++){
+        const x = i/300;
+        const y = giniBinary(x);
+        const X = px(x), Y = py(y);
+        if(i===1) ectx.moveTo(X,Y);
+        else ectx.lineTo(X,Y);
+      }
+      ectx.stroke();
+
+      ectx.strokeStyle = '#10b981';
+      ectx.lineWidth = 2.2;
+      ectx.beginPath();
+      for(let i=1;i<300;i++){
+        const x = i/300;
+        const y = entropyBinary(x);
+        const X = px(x), Y = py(y);
+        if(i===1) ectx.moveTo(X,Y);
+        else ectx.lineTo(X,Y);
+      }
+      ectx.stroke();
+
+      ectx.fillStyle = '#a78bfa';
+      ectx.beginPath();
+      ectx.arc(px(p), py(h), 5, 0, Math.PI*2);
+      ectx.fill();
+    }
+
+    entropyProbSlider.addEventListener('input', drawEntropy);
+
+    // ---------- Classification split demo ----------
+    const splitThreshold = document.getElementById('splitThreshold');
+    const splitCriterion = document.getElementById('splitCriterion');
+    const splitCanvas = document.getElementById('splitCanvas');
+    const sctx = splitCanvas.getContext('2d');
+
+    const clsData = [
+      {x:1.2, y:0}, {x:1.8, y:0}, {x:2.3, y:0}, {x:2.8, y:0},
+      {x:3.4, y:1}, {x:4.2, y:1}, {x:4.8, y:0}, {x:5.5, y:1},
+      {x:6.2, y:1}, {x:6.8, y:1}, {x:7.5, y:1}, {x:8.2, y:1}
+    ];
+
+    function impurityBinary(labels, crit){
+      if(labels.length === 0) return 0;
+      const p = labels.reduce((s,v)=>s+v,0)/labels.length;
+      if(crit === 'gini') return giniBinary(p);
+      return entropyBinary(p);
+    }
+
+    function drawClsSplit(){
+      const t = Number(splitThreshold.value);
+      const crit = splitCriterion.value;
+      document.getElementById('splitThresholdVal').textContent = t.toFixed(1);
+
+      const left = clsData.filter(d => d.x <= t);
+      const right = clsData.filter(d => d.x > t);
+      const allLabels = clsData.map(d=>d.y);
+
+      const parentImp = impurityBinary(allLabels, crit);
+      const leftImp = impurityBinary(left.map(d=>d.y), crit);
+      const rightImp = impurityBinary(right.map(d=>d.y), crit);
+      const weighted = (left.length/clsData.length)*leftImp + (right.length/clsData.length)*rightImp;
+      const gain = parentImp - weighted;
+
+      document.getElementById('splitResult').innerHTML = `
+        <div><strong>Parent impurity:</strong> <span class="hl-blue">${parentImp.toFixed(4)}</span></div>
+        <div><strong>Left impurity:</strong> <span class="hl-green">${leftImp.toFixed(4)}</span> (n=${left.length})</div>
+        <div><strong>Right impurity:</strong> <span class="hl-purple">${rightImp.toFixed(4)}</span> (n=${right.length})</div>
+        <div><strong>Weighted after split:</strong> <span class="hl-amber">${weighted.toFixed(4)}</span></div>
+        <div><strong>${crit === 'gini' ? 'Gini reduction' : 'Information Gain'}:</strong> <span class="hl-red">${gain.toFixed(4)}</span></div>
+      `;
+
+      const W = splitCanvas.width;
+      const H = splitCanvas.height;
+      sctx.clearRect(0,0,W,H);
+      sctx.fillStyle = '#0d1117';
+      sctx.fillRect(0,0,W,H);
+
+      function px(x){ return 25 + (x-1)/(8.5-1)*(W-50); }
+      function py(y){ return y===1 ? 70 : 170; }
+
+      sctx.strokeStyle = '#30363d';
+      sctx.beginPath(); sctx.moveTo(20,120); sctx.lineTo(W-20,120); sctx.stroke();
+
+      sctx.strokeStyle = '#f59e0b';
+      sctx.lineWidth = 2;
+      sctx.beginPath();
+      sctx.moveTo(px(t), 20);
+      sctx.lineTo(px(t), H-20);
+      sctx.stroke();
+
+      clsData.forEach(d => {
+        sctx.beginPath();
+        sctx.arc(px(d.x), py(d.y), 7, 0, Math.PI*2);
+        sctx.fillStyle = d.y === 1 ? '#ef4444' : '#60a5fa';
+        sctx.fill();
+        sctx.strokeStyle = '#fff';
+        sctx.lineWidth = 1.2;
+        sctx.stroke();
+      });
+    }
+
+    [splitThreshold, splitCriterion].forEach(el => el.addEventListener('input', drawClsSplit));
+    splitCriterion.addEventListener('change', drawClsSplit);
+
+    // ---------- Regression split demo ----------
+    const regSplitThreshold = document.getElementById('regSplitThreshold');
+    const regTreeCanvas = document.getElementById('regTreeCanvas');
+    const rctx = regTreeCanvas.getContext('2d');
+
+    const regData = [
+      {x:1.2, y:2.0}, {x:2.0, y:2.6}, {x:2.8, y:3.4}, {x:3.5, y:4.1},
+      {x:4.4, y:4.8}, {x:5.1, y:6.0}, {x:6.0, y:6.6}, {x:6.8, y:7.4},
+      {x:7.4, y:8.2}, {x:8.1, y:8.9}
+    ];
+
+    function mseOfGroup(vals){
+      if(vals.length === 0) return 0;
+      const m = vals.reduce((s,v)=>s+v,0)/vals.length;
+      return vals.reduce((s,v)=>s+(v-m)*(v-m),0);
+    }
+
+    function drawRegSplit(){
+      const t = Number(regSplitThreshold.value);
+      document.getElementById('regSplitThresholdVal').textContent = t.toFixed(1);
+
+      const left = regData.filter(d => d.x <= t);
+      const right = regData.filter(d => d.x > t);
+
+      const leftMean = left.length ? left.reduce((s,d)=>s+d.y,0)/left.length : 0;
+      const rightMean = right.length ? right.reduce((s,d)=>s+d.y,0)/right.length : 0;
+      const score = mseOfGroup(left.map(d=>d.y)) + mseOfGroup(right.map(d=>d.y));
+
+      document.getElementById('regTreeResult').innerHTML = `
+        <div><strong>Left leaf mean:</strong> <span class="hl-green">${left.length ? leftMean.toFixed(3) : '—'}</span> (n=${left.length})</div>
+        <div><strong>Right leaf mean:</strong> <span class="hl-purple">${right.length ? rightMean.toFixed(3) : '—'}</span> (n=${right.length})</div>
+        <div><strong>Split score (sum of squared errors):</strong> <span class="hl-amber">${score.toFixed(4)}</span></div>
+      `;
+
+      const W = regTreeCanvas.width;
+      const H = regTreeCanvas.height;
+      rctx.clearRect(0,0,W,H);
+      rctx.fillStyle = '#0d1117';
+      rctx.fillRect(0,0,W,H);
+
+      function px(x){ return 25 + (x-1)/(8.5-1)*(W-50); }
+      function py(y){ return H - 25 - (y-1)/(10-1)*(H-50); }
+
+      rctx.strokeStyle = '#30363d';
+      rctx.beginPath(); rctx.moveTo(20,H-25); rctx.lineTo(W-20,H-25); rctx.stroke();
+      rctx.beginPath(); rctx.moveTo(25,20); rctx.lineTo(25,H-20); rctx.stroke();
+
+      rctx.strokeStyle = '#f59e0b';
+      rctx.lineWidth = 2;
+      rctx.beginPath(); rctx.moveTo(px(t),20); rctx.lineTo(px(t),H-20); rctx.stroke();
+
+      // piecewise means
+      if(left.length){
+        rctx.strokeStyle = '#10b981';
+        rctx.lineWidth = 3;
+        rctx.beginPath();
+        rctx.moveTo(px(1), py(leftMean));
+        rctx.lineTo(px(t), py(leftMean));
+        rctx.stroke();
+      }
+      if(right.length){
+        rctx.strokeStyle = '#a78bfa';
+        rctx.lineWidth = 3;
+        rctx.beginPath();
+        rctx.moveTo(px(t), py(rightMean));
+        rctx.lineTo(px(8.5), py(rightMean));
+        rctx.stroke();
+      }
+
+      regData.forEach(d => {
+        rctx.beginPath();
+        rctx.arc(px(d.x), py(d.y), 6, 0, Math.PI*2);
+        rctx.fillStyle = '#60a5fa';
+        rctx.fill();
+        rctx.strokeStyle = '#fff';
+        rctx.lineWidth = 1.1;
+        rctx.stroke();
+      });
+    }
+
+    regSplitThreshold.addEventListener('input', drawRegSplit);
+
+    // ---------- Depth overfitting demo ----------
+    const depthSlider = document.getElementById('depthSlider');
+    const depthCanvas = document.getElementById('depthCanvas');
+    const dctx = depthCanvas.getContext('2d');
+
+    function trainCurve(d){
+      return Math.min(0.55 + 0.07*d + 0.015*d*d, 0.99);
+    }
+    function valCurve(d){
+      return Math.max(0.62 + 0.07*d - 0.012*d*d, 0.45);
+    }
+
+    function drawDepthDemo(){
+      const depth = Number(depthSlider.value);
+      document.getElementById('depthVal').textContent = depth;
+
+      const train = trainCurve(depth);
+      const val = valCurve(depth);
+
+      document.getElementById('trainDepthMetric').textContent = train.toFixed(2);
+      document.getElementById('valDepthMetric').textContent = val.toFixed(2);
+
+      const W = depthCanvas.width;
+      const H = depthCanvas.height;
+      dctx.clearRect(0,0,W,H);
+      dctx.fillStyle = '#0d1117';
+      dctx.fillRect(0,0,W,H);
+
+      dctx.strokeStyle = '#30363d';
+      dctx.beginPath(); dctx.moveTo(30,H-25); dctx.lineTo(W-20,H-25); dctx.stroke();
+      dctx.beginPath(); dctx.moveTo(30,H-25); dctx.lineTo(30,20); dctx.stroke();
+
+      function px(x){ return 30 + (x-1)/7*(W-50); }
+      function py(y){ return H-25 - (y-0.4)/0.6*(H-45); }
+
+      // train curve
+      dctx.strokeStyle = '#10b981';
+      dctx.lineWidth = 2.5;
+      dctx.beginPath();
+      for(let d=1; d<=8; d++){
+        const X = px(d), Y = py(trainCurve(d));
+        if(d===1) dctx.moveTo(X,Y); else dctx.lineTo(X,Y);
+      }
+      dctx.stroke();
+
+      // val curve
+      dctx.strokeStyle = '#ef4444';
+      dctx.lineWidth = 2.5;
+      dctx.beginPath();
+      for(let d=1; d<=8; d++){
+        const X = px(d), Y = py(valCurve(d));
+        if(d===1) dctx.moveTo(X,Y); else dctx.lineTo(X,Y);
+      }
+      dctx.stroke();
+
+      // current depth line
+      dctx.strokeStyle = '#f59e0b';
+      dctx.lineWidth = 1.5;
+      dctx.beginPath(); dctx.moveTo(px(depth),20); dctx.lineTo(px(depth),H-25); dctx.stroke();
+
+      dctx.fillStyle = '#8b949e';
+      dctx.font = '12px system-ui';
+      dctx.fillText('train', W-80, 26);
+      dctx.fillText('validation', W-80, 44);
+      dctx.fillStyle = '#10b981'; dctx.fillRect(W-96,18,10,3);
+      dctx.fillStyle = '#ef4444'; dctx.fillRect(W-96,36,10,3);
+    }
+
+    depthSlider.addEventListener('input', drawDepthDemo);
+
+    // init
+    drawGini();
+    drawEntropy();
+    drawClsSplit();
+    drawRegSplit();
+    drawDepthDemo();
+  </script>
+</body>
+</html>

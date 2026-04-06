@@ -13,6 +13,8 @@
     { path: "02_classic_ml/07_classification_metrics.html", label: "2.7 Метрики классификации" },
     { path: "02_classic_ml/08_distance_based_models.html", label: "2.8 k-NN / Distance" },
     { path: "02_classic_ml/09_naive_bayes.html", label: "2.9 Naive Bayes" },
+    { path: "02_classic_ml/10_decision_trees.html", label: "2.10 Decision Trees" },
+    { path: "02_classic_ml/11_bagging_random_forest.html", label: "2.11 Random Forest" },
     { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 Нейрон" },
     { path: "03_neural_basics/02_activation_functions.html", label: "3.2 Активации" },
     { path: "03_neural_basics/03_forward_pass.html", label: "3.3 Forward pass" },

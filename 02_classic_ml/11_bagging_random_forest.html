@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.11 Bagging и Random Forest</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="10_decision_trees.html">2.10 Decision Trees</a>
+        <span class="tag active">2.11 Bagging / Random Forest</span>
+        <span class="tag tag-block">2.12 Boosting</span>
+      </div>
+
+      <h1>2.11 Bagging и Random Forest</h1>
+      <p class="muted">
+        Bootstrap sampling, bagging, feature subsampling, OOB score, feature importance и
+        почему лес обычно устойчивее одного дерева.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Зачем вообще переходить от одного дерева к лесу?</h2>
+      <p>
+        Одно дерево решений — очень понятная модель, но оно имеет важную слабость:
+        <span class="hl-red">высокую дисперсию</span>. Маленькое изменение в данных может заметно изменить структуру дерева:
+        другие split'ы, другие листья, другие предсказания.
+      </p>
+      <div class="intuition">
+        <strong>Интуиция.</strong> Представь, что ты спрашиваешь мнение не у одного человека, а у целой группы.
+        Один эксперт может ошибиться или быть слишком “шумным”, но усреднение по многим независимым экспертам
+        обычно даёт более стабильный результат. Bagging делает примерно это же с моделями.
+      </div>
+      <div class="formula">Одиночное дерево → низкий bias, но высокая variance
+Bagging множества деревьев → похожий bias, но ниже variance
+Random Forest → bagging + дополнительная декорреляция деревьев</div>
+      <div class="info">
+        Деревья особенно хорошо подходят для bagging, потому что они нестабильны:
+        именно на нестабильных base learner'ах bagging даёт большой выигрыш.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.1 Bagging: основная идея</h2>
+      <div class="grid-2">
+        <div>
+          <p>
+            <strong>Bagging</strong> = <strong>Bootstrap Aggregating</strong>.
+            Мы много раз строим новую обучающую выборку из исходной с помощью случайной выборки
+            <em>с возвращением</em>, обучаем отдельную модель на каждом bootstrap-сэмпле,
+            а затем агрегируем их предсказания.
+          </p>
+          <div class="step"><strong>Шаг 1.</strong> Из исходного train-набора размера <code>N</code> генерируем bootstrap sample размера <code>N</code>.</div>
+          <div class="step"><strong>Шаг 2.</strong> Обучаем на нём дерево.</div>
+          <div class="step"><strong>Шаг 3.</strong> Повторяем это много раз: <code>B</code> деревьев.</div>
+          <div class="step"><strong>Шаг 4.</strong> Для классификации берём majority vote, для регрессии — среднее.</div>
+        </div>
+        <div>
+          <div class="formula">Классификация:
+ŷ(x) = mode{ T₁(x), T₂(x), ..., T_B(x) }
+
+Регрессия:
+ŷ(x) = (1/B) Σ_b T_b(x)</div>
+          <div class="warn">
+            Bagging помогает не потому, что каждое дерево становится умнее.
+            Оно помогает потому, что среднее по многим шумным деревьям становится стабильнее.
+          </div>
+          <div class="success">
+            Если ошибки отдельных моделей не идеально коррелированы, усреднение снижает variance.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.2 Bootstrap sampling</h2>
+      <p>
+        В bootstrap sampling мы берём выборку того же размера <code>N</code>, но каждый объект
+        выбирается случайно <strong>с возвращением</strong>. Это значит, что один объект может попасть
+        в sample несколько раз, а другой — ни разу.
+      </p>
+
+      <div class="formula">Вероятность, что конкретный объект НЕ попадёт в один bootstrap sample:
+
+P(not selected) = (1 - 1/N)^N ≈ e^(-1) ≈ 0.368
+
+Значит, вероятность попасть хотя бы один раз:
+
+P(selected) ≈ 1 - e^(-1) ≈ 0.632</div>
+
+      <div class="info">
+        Это и есть классическое правило:
+        <strong>в среднем около 63.2% уникальных объектов попадают в bootstrap sample</strong>,
+        а около <strong>36.8%</strong> остаются вне него.
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label for="bootstrapN">Размер исходной выборки N: <span id="bootstrapNVal" class="hl-amber">30</span></label>
+              <input id="bootstrapN" type="range" min="5" max="120" value="30" />
+            </div>
+            <div class="control">
+              <label for="bootstrapTrees">Число bootstrap sample'ов: <span id="bootstrapTreesVal" class="hl-amber">1</span></label>
+              <input id="bootstrapTrees" type="range" min="1" max="20" value="1" />
+            </div>
+          </div>
+          <button class="action" id="resampleBtn">Сгенерировать заново</button>
+
+          <div class="grid-3" style="margin-top:12px;">
+            <div class="kpi">
+              <div class="label">Уникальных объектов</div>
+              <div class="value" id="uniqueCount">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Повторных попаданий</div>
+              <div class="value" id="duplicateCount">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">OOB объектов</div>
+              <div class="value" id="oobCount">0</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="bootstrapCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>попал 1 раз</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>попал несколько раз</span>
+            <span><i class="swatch" style="background:#ef4444"></i>не попал (OOB)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Почему усреднение снижает variance</h2>
+      <p>
+        Пусть у нас есть <code>B</code> моделей с одинаковой дисперсией <code>σ²</code> и средней попарной корреляцией <code>ρ</code>.
+        Тогда дисперсия среднего предсказания уменьшается так:
+      </p>
+      <div class="formula">Var(average) = ρσ² + (1 - ρ)σ² / B</div>
+      <p>
+        Тут важны сразу две вещи:
+      </p>
+      <ul>
+        <li><strong>больше деревьев</strong> → член <code>(1-ρ)σ²/B</code> уменьшается;</li>
+        <li><strong>меньше корреляция между деревьями</strong> → первый член <code>ρσ²</code> тоже уменьшается.</li>
+      </ul>
+      <div class="intuition">
+        <strong>Ключевая мысль Random Forest:</strong> мало просто построить много деревьев.
+        Нужно сделать так, чтобы они были не слишком похожи друг на друга.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: variance ансамбля</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже можно менять число деревьев <code>B</code>, дисперсию одного дерева <code>σ²</code>
+            и среднюю корреляцию <code>ρ</code>. График показывает, как меняется дисперсия среднего ансамбля.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Количество деревьев B: <span id="varBVal" class="hl-amber">20</span></label>
+              <input id="varB" type="range" min="1" max="200" value="20" />
+            </div>
+            <div class="control">
+              <label>Дисперсия одного дерева σ²: <span id="varSigmaVal" class="hl-blue">1.00</span></label>
+              <input id="varSigma" type="range" min="0.2" max="3" step="0.05" value="1" />
+            </div>
+            <div class="control">
+              <label>Корреляция деревьев ρ: <span id="varRhoVal" class="hl-red">0.40</span></label>
+              <input id="varRho" type="range" min="0" max="0.95" step="0.01" value="0.40" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Var одного дерева</div>
+              <div class="value" id="singleVarOut">1.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Var ансамбля</div>
+              <div class="value" id="ensembleVarOut">0.43</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="varianceCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>variance ансамбля</span>
+            <span><i class="swatch" style="background:#ef4444"></i>нижняя граница ρσ²</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.3 Random subspace / feature subsampling</h2>
+      <p>
+        Если bagging строить на деревьях без дополнительных ограничений, то деревья часто всё равно будут похожими.
+        Почему? Потому что в данных обычно есть несколько очень сильных признаков, и каждое дерево на верхних split'ах
+        снова и снова выбирает их.
+      </p>
+
+      <div class="warn">
+        Проблема: bootstrap меняет объекты, но не меняет тот факт, какие признаки “слишком сильные”.
+        Поэтому деревья могут остаться сильно коррелированными.
+      </div>
+
+      <div class="formula">Random Forest:
+на каждом split'е рассматриваем не все p признаков,
+а случайное подмножество m_try признаков
+
+Классификация:
+часто m_try ≈ √p
+
+Регрессия:
+часто m_try ≈ p / 3</div>
+
+      <div class="grid-2">
+        <div>
+          <p>
+            Это называется <strong>feature subsampling</strong> или <strong>random subspace</strong>.
+            За счёт этого часть деревьев на верхних уровнях вынуждена искать альтернативные split'ы.
+            Деревья становятся более разнообразными.
+          </p>
+          <div class="intuition">
+            Random Forest выигрывает не потому, что каждое дерево сильнее,
+            а потому что совокупность деревьев становится <strong>менее коррелированной</strong>.
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Модель</th>
+                  <th>Bootstrap по объектам</th>
+                  <th>Случайные признаки</th>
+                  <th>Итог</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Одно дерево</td>
+                  <td>Нет</td>
+                  <td>Нет</td>
+                  <td>Высокая variance</td>
+                </tr>
+                <tr>
+                  <td>Bagging trees</td>
+                  <td>Да</td>
+                  <td>Нет</td>
+                  <td>Ниже variance</td>
+                </tr>
+                <tr>
+                  <td>Random Forest</td>
+                  <td>Да</td>
+                  <td>Да</td>
+                  <td>Ниже variance + ниже корреляция</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: почему случайные признаки декоррелируют деревья</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Допустим, у нас есть 10 признаков. Несколько из них очень сильные.
+            Если на каждом split'е разрешить смотреть на все признаки,
+            почти все деревья будут выбирать одни и те же top-features.
+            Если ограничить выбор случайным подмножеством, разнообразие увеличится.
+          </p>
+          <div class="controls">
+            <div class="control">
+              <label>Всего признаков p: <span id="featPVal" class="hl-blue">10</span></label>
+              <input id="featP" type="range" min="4" max="20" value="10" />
+            </div>
+            <div class="control">
+              <label>Доступно на split m_try: <span id="featMVal" class="hl-amber">3</span></label>
+              <input id="featM" type="range" min="1" max="10" value="3" />
+            </div>
+            <div class="control">
+              <label>Число деревьев: <span id="featTreesVal" class="hl-green">12</span></label>
+              <input id="featTrees" type="range" min="4" max="40" value="12" />
+            </div>
+          </div>
+          <button class="action" id="featSimBtn">Смоделировать</button>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="featureCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#f59e0b"></i>выбран сильный признак</span>
+            <span><i class="swatch" style="background:#10b981"></i>выбран альтернативный признак</span>
+            <span><i class="swatch" style="background:#30363d"></i>не выбран</span>
+          </div>
+        </div>
+      </div>
+      <div class="info" id="featureSummary">
+        Меньший <code>m_try</code> обычно делает деревья менее похожими, но иногда ослабляет каждое дерево по отдельности.
+        Это компромисс между <strong>силой одного дерева</strong> и <strong>разнообразием ансамбля</strong>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.4 OOB score</h2>
+      <p>
+        Так как каждый bootstrap sample не содержит часть объектов, эти объекты можно использовать как
+        “почти валидацию” для соответствующего дерева. Они называются
+        <strong>out-of-bag</strong> объектами.
+      </p>
+
+      <div class="formula">Для объекта x_i:
+берём только те деревья, в bootstrap sample которых x_i НЕ входил
+
+OOB prediction(x_i) =
+  mode / average только по этим деревьям
+
+OOB score =
+  качество по всем объектам на их OOB-предсказаниях</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            OOB score — это очень удобная внутренняя оценка качества,
+            потому что она часто позволяет не выделять отдельный validation set
+            на этапе грубой настройки.
+          </div>
+          <div class="warn">
+            Но OOB — не магия. Для финальной честной оценки всё равно нужен нормальный test set.
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Подход</th>
+                  <th>Плюсы</th>
+                  <th>Минусы</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Validation split</td>
+                  <td>Просто, прозрачно</td>
+                  <td>Тратим часть данных</td>
+                </tr>
+                <tr>
+                  <td>Cross-validation</td>
+                  <td>Надёжнее</td>
+                  <td>Дороже по времени</td>
+                </tr>
+                <tr>
+                  <td>OOB score</td>
+                  <td>“Бесплатен” для bagging/forest</td>
+                  <td>Не заменяет итоговый test</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label>Объектов N: <span id="oobNVal" class="hl-amber">80</span></label>
+              <input id="oobN" type="range" min="20" max="300" value="80" />
+            </div>
+            <div class="control">
+              <label>Деревьев B: <span id="oobBVal" class="hl-green">100</span></label>
+              <input id="oobB" type="range" min="10" max="300" value="100" />
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Ожидаемая доля OOB</div>
+              <div class="value" id="oobShareOut">36.8%</div>
+            </div>
+            <div class="kpi">
+              <div class="label">OOB-деревьев на объект</div>
+              <div class="value" id="oobTreesOut">36.8</div>
+            </div>
+            <div class="kpi">
+              <div class="label">In-bag деревьев</div>
+              <div class="value" id="inbagTreesOut">63.2</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="formula">Для одного дерева:
+P(x_i is OOB) ≈ 0.368
+
+Для B деревьев:
+Expected OOB trees per object ≈ 0.368 · B
+
+То есть при B=100
+каждый объект в среднем оценят примерно 37 деревьев.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.5 Feature importance</h2>
+      <p>
+        У Random Forest есть популярная встроенная оценка важности признаков —
+        <strong>mean decrease in impurity</strong>:
+        насколько по деревьям суммарно снижалась impurity за счёт split'ов по данному признаку.
+      </p>
+
+      <div class="formula">FeatureImportance(j) =
+Σ по всем деревьям и всем split'ам по признаку j
+  [weighted impurity decrease]</div>
+
+      <div class="warn">
+        Встроенная feature importance удобна, но она может быть смещённой:
+        например, в сторону признаков с большим числом уникальных значений
+        или в сторону сильнее “ветвящихся” признаков.
+      </div>
+
+      <div class="info">
+        Поэтому на практике часто дополнительно используют
+        <strong>permutation importance</strong>:
+        перемешивают один признак и смотрят, насколько портится качество модели.
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Встроенная importance</h3>
+          <ul>
+            <li>быстрая;</li>
+            <li>доступна сразу после обучения;</li>
+            <li>удобна для первого анализа.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Permutation importance</h3>
+          <ul>
+            <li>обычно надёжнее для интерпретации;</li>
+            <li>оценивает реальный вклад признака в качество;</li>
+            <li>но считается дороже.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.11.6 Почему forest устойчив</h2>
+      <div class="grid-2">
+        <div>
+          <p>
+            Random Forest сочетает два механизма устойчивости:
+          </p>
+          <ul>
+            <li><strong>bootstrap по объектам</strong> снижает variance;</li>
+            <li><strong>случайные признаки</strong> уменьшают корреляцию деревьев.</li>
+          </ul>
+          <div class="success">
+            В результате лес часто хорошо работает “из коробки”:
+            мало чувствителен к масштабу признаков, умеет ловить нелинейности,
+            взаимодействия признаков и не требует сложного feature engineering на старте.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но лес — не универсальный победитель:
+          </div>
+          <ul>
+            <li>хуже интерпретируется, чем одно дерево;</li>
+            <li>может проиграть boosting на табличных данных;</li>
+            <li>не любит очень разреженные высокоразмерные текстовые признаки так, как линейные модели;</li>
+            <li>может быть тяжёлым по памяти и времени при большом числе деревьев.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bagging vs Random Forest vs Boosting</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Свойство</th>
+              <th>Bagging</th>
+              <th>Random Forest</th>
+              <th>Boosting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Обучение базовых моделей</td>
+              <td>Независимо, параллельно</td>
+              <td>Независимо, параллельно</td>
+              <td>Последовательно</td>
+            </tr>
+            <tr>
+              <td>Основная цель</td>
+              <td>Снизить variance</td>
+              <td>Снизить variance + корреляцию</td>
+              <td>Снизить bias, исправлять ошибки</td>
+            </tr>
+            <tr>
+              <td>Base learner</td>
+              <td>Часто дерево</td>
+              <td>Дерево</td>
+              <td>Обычно слабые деревья</td>
+            </tr>
+            <tr>
+              <td>Устойчивость к overfitting</td>
+              <td>Хорошая</td>
+              <td>Очень хорошая</td>
+              <td>Нужно аккуратнее с tuning</td>
+            </tr>
+            <tr>
+              <td>Интерпретируемость</td>
+              <td>Средняя</td>
+              <td>Средняя/низкая</td>
+              <td>Ниже</td>
+            </tr>
+            <tr>
+              <td>Типичный use case</td>
+              <td>Стабилизация нестабильной модели</td>
+              <td>Сильный baseline на табличных данных</td>
+              <td>Максимум качества на табличке</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки и важные замечания</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Думать, что forest уменьшает bias так же сильно, как boosting.
+            Основной выигрыш forest — это снижение variance.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Считать, что чем больше деревьев, тем всегда лучше.
+            Обычно качество быстро насыщается, а дальше растут время и память.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Игнорировать <code>max_depth</code>, <code>min_samples_leaf</code>,
+            <code>max_features</code>. Даже у леса гиперпараметры важны.
+          </div>
+        </div>
+        <div>
+          <div class="info">
+            <strong>Важно.</strong> Random Forest не требует standardization так, как k-NN, SVM или logistic regression,
+            потому что split'ы деревьев основаны на порогах, а не на расстояниях.
+          </div>
+          <div class="info">
+            <strong>Важно.</strong> Если классы несбалансированы, нужно смотреть не только на accuracy,
+            но и на class_weight, ROC-AUC, PR-AUC, recall и другие метрики.
+          </div>
+          <div class="info">
+            <strong>Важно.</strong> OOB score полезен, но не отменяет честного test set.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: голосование леса</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже можно задать число деревьев и вероятность того, что отдельное дерево правильно классифицирует объект.
+            Симулятор показывает, как majority vote усиливает ансамбль.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Деревьев B: <span id="voteBVal" class="hl-amber">25</span></label>
+              <input id="voteB" type="range" min="1" max="101" step="2" value="25" />
+            </div>
+            <div class="control">
+              <label>Вероятность, что одно дерево право: <span id="votePVal" class="hl-green">0.62</span></label>
+              <input id="voteP" type="range" min="0.50" max="0.90" step="0.01" value="0.62" />
+            </div>
+            <div class="control">
+              <label>Число симуляций: <span id="voteRunsVal" class="hl-blue">500</span></label>
+              <input id="voteRuns" type="range" min="100" max="3000" step="100" value="500" />
+            </div>
+          </div>
+
+          <button class="action" id="voteSimBtn">Запустить симуляцию</button>
+
+          <div class="grid-2" style="margin-top:12px;">
+            <div class="kpi">
+              <div class="label">Точность одного дерева</div>
+              <div class="value" id="singleTreeAcc">62.0%</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Точность majority vote</div>
+              <div class="value" id="forestVoteAcc">0.0%</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="voteCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>majority correct</span>
+            <span><i class="swatch" style="background:#ef4444"></i>majority wrong</span>
+          </div>
+        </div>
+      </div>
+      <div class="intuition">
+        Если отдельные деревья хотя бы немного лучше случайного угадывания и ошибки недостаточно коррелированы,
+        majority vote может заметно повысить качество.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практические гиперпараметры Random Forest</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Параметр</th>
+              <th>Что делает</th>
+              <th>Типичный эффект</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>n_estimators</code></td>
+              <td>Число деревьев</td>
+              <td>Больше деревьев → стабильнее, но дольше</td>
+            </tr>
+            <tr>
+              <td><code>max_depth</code></td>
+              <td>Максимальная глубина дерева</td>
+              <td>Ограничивает сложность, снижает overfitting</td>
+            </tr>
+            <tr>
+              <td><code>min_samples_split</code></td>
+              <td>Минимум объектов для split</td>
+              <td>Предотвращает слишком мелкие ветвления</td>
+            </tr>
+            <tr>
+              <td><code>min_samples_leaf</code></td>
+              <td>Минимум объектов в листе</td>
+              <td>Делает листья менее шумными</td>
+            </tr>
+            <tr>
+              <td><code>max_features</code></td>
+              <td>Сколько признаков смотреть на split</td>
+              <td>Управляет силой/разнообразием деревьев</td>
+            </tr>
+            <tr>
+              <td><code>bootstrap</code></td>
+              <td>Использовать ли bootstrap</td>
+              <td>Обычно да для классического forest</td>
+            </tr>
+            <tr>
+              <td><code>oob_score</code></td>
+              <td>Считать ли OOB score</td>
+              <td>Удобная внутренняя оценка</td>
+            </tr>
+            <tr>
+              <td><code>class_weight</code></td>
+              <td>Вес классов</td>
+              <td>Полезно при дисбалансе</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn</h2>
+
+      <div class="tabs" data-tabs="code-tabs">
+        <button class="tab-btn active" data-tab="code-basic">BaggingClassifier</button>
+        <button class="tab-btn" data-tab="code-rf">RandomForestClassifier</button>
+        <button class="tab-btn" data-tab="code-reg">RandomForestRegressor</button>
+        <button class="tab-btn" data-tab="code-importance">Permutation importance</button>
+      </div>
+
+      <div id="code-basic" class="tab-panel active">
+        <div class="code">from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+base_tree = DecisionTreeClassifier(max_depth=None, random_state=42)
+
+bagging = BaggingClassifier(
+    estimator=base_tree,
+    n_estimators=200,
+    max_samples=1.0,
+    max_features=1.0,
+    bootstrap=True,
+    bootstrap_features=False,
+    random_state=42,
+    n_jobs=-1
+)
+
+bagging.fit(X_train, y_train)
+pred = bagging.predict(X_valid)
+
+print("Bagging accuracy:", accuracy_score(y_valid, pred))</div>
+      </div>
+
+      <div id="code-rf" class="tab-panel">
+        <div class="code">from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, roc_auc_score
+
+rf = RandomForestClassifier(
+    n_estimators=300,
+    max_depth=None,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    max_features="sqrt",   # важный параметр для декорреляции
+    bootstrap=True,
+    oob_score=True,
+    class_weight="balanced",
+    random_state=42,
+    n_jobs=-1
+)
+
+rf.fit(X_train, y_train)
+
+pred = rf.predict(X_valid)
+proba = rf.predict_proba(X_valid)[:, 1]
+
+print("OOB score:", rf.oob_score_)
+print(classification_report(y_valid, pred))
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+
+      <div id="code-reg" class="tab-panel">
+        <div class="code">from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+rf_reg = RandomForestRegressor(
+    n_estimators=400,
+    max_depth=None,
+    min_samples_leaf=3,
+    max_features=0.33,
+    bootstrap=True,
+    oob_score=True,
+    random_state=42,
+    n_jobs=-1
+)
+
+rf_reg.fit(X_train, y_train)
+
+pred = rf_reg.predict(X_valid)
+
+print("MAE :", mean_absolute_error(y_valid, pred))
+print("RMSE:", mean_squared_error(y_valid, pred, squared=False))
+print("OOB R^2:", rf_reg.oob_score_)</div>
+      </div>
+
+      <div id="code-importance" class="tab-panel">
+        <div class="code">from sklearn.inspection import permutation_importance
+import pandas as pd
+
+# встроенная importance
+mdi = pd.Series(rf.feature_importances_, index=feature_names) \
+        .sort_values(ascending=False)
+
+print("MDI importance:")
+print(mdi.head(10))
+
+# permutation importance
+perm = permutation_importance(
+    rf,
+    X_valid,
+    y_valid,
+    n_repeats=10,
+    random_state=42,
+    n_jobs=-1
+)
+
+perm_imp = pd.Series(perm.importances_mean, index=feature_names) \
+             .sort_values(ascending=False)
+
+print("\nPermutation importance:")
+print(perm_imp.head(10))</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: NumPy-псевдореализация bagging</h2>
+      <div class="code">import numpy as np
+
+def bootstrap_indices(n_samples, rng):
+    return rng.integers(0, n_samples, size=n_samples)
+
+def bagging_predict_classification(models, X):
+    # models = список уже обученных моделей
+    preds = np.column_stack([m.predict(X) for m in models])   # shape (N, B)
+    out = []
+    for row in preds:
+        values, counts = np.unique(row, return_counts=True)
+        out.append(values[np.argmax(counts)])
+    return np.array(out)
+
+rng = np.random.default_rng(42)
+models = []
+
+for _ in range(B):
+    idx = bootstrap_indices(len(X_train), rng)
+    X_boot = X_train[idx]
+    y_boot = y_train[idx]
+
+    model = train_tree(X_boot, y_boot)   # условная функция обучения дерева
+    models.append(model)
+
+pred = bagging_predict_classification(models, X_valid)</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Bagging</strong> уменьшает variance за счёт усреднения множества моделей, обученных на bootstrap sample'ах.</div>
+          <div class="step"><strong>Bootstrap</strong> даёт около 63.2% уникальных объектов в sample и около 36.8% OOB объектов.</div>
+          <div class="step"><strong>OOB score</strong> — удобная внутренняя оценка качества без явного validation split.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Random Forest</strong> = bagging деревьев + случайные подмножества признаков на split'ах.</div>
+          <div class="step">Случайные признаки уменьшают корреляцию деревьев, а значит ещё сильнее снижают variance ансамбля.</div>
+          <div class="step">Random Forest — очень сильный baseline для табличных данных, но boosting часто выигрывает по качеству после tuning.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная модель:
+        <strong>одно дерево = мощное, но шумное;</strong>
+        <strong>bagging = усреднили шум;</strong>
+        <strong>random forest = усреднили шум и сделали деревья менее похожими.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="10_decision_trees.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.10 Decision Trees
+      </a>
+      <div class="footer-link" aria-disabled="true">
+        <span class="muted">Следующая тема →</span>
+        2.12 Boosting
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- generic tabs ----------
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    // ---------- helpers ----------
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+    function randInt(n){ return Math.floor(Math.random() * n); }
+
+    // ---------- bootstrap sampling demo ----------
+    const bootstrapN = document.getElementById('bootstrapN');
+    const bootstrapTrees = document.getElementById('bootstrapTrees');
+    const bootstrapNVal = document.getElementById('bootstrapNVal');
+    const bootstrapTreesVal = document.getElementById('bootstrapTreesVal');
+    const resampleBtn = document.getElementById('resampleBtn');
+    const uniqueCountEl = document.getElementById('uniqueCount');
+    const duplicateCountEl = document.getElementById('duplicateCount');
+    const oobCountEl = document.getElementById('oobCount');
+    const bootstrapCanvas = document.getElementById('bootstrapCanvas');
+    const bctx = bootstrapCanvas.getContext('2d');
+
+    let bootstrapState = null;
+
+    function generateBootstrapState(){
+      const N = +bootstrapN.value;
+      const samples = +bootstrapTrees.value;
+
+      const counts = new Array(N).fill(0);
+      for(let s = 0; s < samples; s++){
+        for(let i = 0; i < N; i++){
+          counts[randInt(N)]++;
+        }
+      }
+
+      const unique = counts.filter(v => v > 0).length;
+      const dup = counts.filter(v => v > 1).length;
+      const oob = counts.filter(v => v === 0).length;
+
+      bootstrapState = {N, samples, counts, unique, dup, oob};
+      uniqueCountEl.textContent = unique;
+      duplicateCountEl.textContent = dup;
+      oobCountEl.textContent = oob;
+    }
+
+    function drawBootstrap(){
+      if(!bootstrapState) return;
+      const {N, counts} = bootstrapState;
+      const W = bootstrapCanvas.width;
+      const H = bootstrapCanvas.height;
+      bctx.clearRect(0,0,W,H);
+
+      bctx.fillStyle = '#0b1016';
+      bctx.fillRect(0,0,W,H);
+
+      const cols = Math.ceil(Math.sqrt(N));
+      const rows = Math.ceil(N / cols);
+      const pad = 14;
+      const gap = 8;
+      const cellW = (W - pad * 2 - gap * (cols - 1)) / cols;
+      const cellH = (H - pad * 2 - gap * (rows - 1)) / rows;
+      const size = Math.min(cellW, cellH);
+
+      for(let i = 0; i < N; i++){
+        const c = counts[i];
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = pad + col * (size + gap);
+        const y = pad + row * (size + gap);
+
+        if(c === 0) bctx.fillStyle = '#ef4444';
+        else if(c === 1) bctx.fillStyle = '#60a5fa';
+        else bctx.fillStyle = '#f59e0b';
+
+        bctx.globalAlpha = c === 0 ? 0.9 : 0.95;
+        bctx.fillRect(x, y, size, size);
+
+        bctx.globalAlpha = 1;
+        bctx.strokeStyle = '#0d1117';
+        bctx.lineWidth = 1;
+        bctx.strokeRect(x, y, size, size);
+
+        bctx.fillStyle = '#0d1117';
+        bctx.font = '11px system-ui';
+        bctx.textAlign = 'center';
+        bctx.textBaseline = 'middle';
+        bctx.fillText(String(i), x + size/2, y + size/2 - 5);
+
+        bctx.fillStyle = '#ffffff';
+        bctx.font = '10px ui-monospace, monospace';
+        bctx.fillText('×' + c, x + size/2, y + size/2 + 8);
+      }
+    }
+
+    function refreshBootstrap(){
+      bootstrapNVal.textContent = bootstrapN.value;
+      bootstrapTreesVal.textContent = bootstrapTrees.value;
+      generateBootstrapState();
+      drawBootstrap();
+    }
+
+    bootstrapN.addEventListener('input', refreshBootstrap);
+    bootstrapTrees.addEventListener('input', refreshBootstrap);
+    resampleBtn.addEventListener('click', refreshBootstrap);
+
+    // ---------- variance demo ----------
+    const varB = document.getElementById('varB');
+    const varSigma = document.getElementById('varSigma');
+    const varRho = document.getElementById('varRho');
+    const varBVal = document.getElementById('varBVal');
+    const varSigmaVal = document.getElementById('varSigmaVal');
+    const varRhoVal = document.getElementById('varRhoVal');
+    const singleVarOut = document.getElementById('singleVarOut');
+    const ensembleVarOut = document.getElementById('ensembleVarOut');
+    const varianceCanvas = document.getElementById('varianceCanvas');
+    const vctx = varianceCanvas.getContext('2d');
+
+    function ensembleVariance(B, sigma2, rho){
+      return rho * sigma2 + (1 - rho) * sigma2 / B;
+    }
+
+    function drawVarianceDemo(){
+      const B = +varB.value;
+      const sigma2 = +varSigma.value;
+      const rho = +varRho.value;
+
+      varBVal.textContent = B;
+      varSigmaVal.textContent = sigma2.toFixed(2);
+      varRhoVal.textContent = rho.toFixed(2);
+
+      singleVarOut.textContent = sigma2.toFixed(2);
+      ensembleVarOut.textContent = ensembleVariance(B, sigma2, rho).toFixed(2);
+
+      const W = varianceCanvas.width;
+      const H = varianceCanvas.height;
+      vctx.clearRect(0,0,W,H);
+      vctx.fillStyle = '#0b1016';
+      vctx.fillRect(0,0,W,H);
+
+      const padL = 44, padR = 12, padT = 16, padB = 30;
+      const xMax = 200;
+      const yMax = Math.max(sigma2 * 1.05, ensembleVariance(1, sigma2, rho) * 1.15);
+
+      function X(x){ return padL + (x - 1) / (xMax - 1) * (W - padL - padR); }
+      function Y(y){ return H - padB - y / yMax * (H - padT - padB); }
+
+      vctx.strokeStyle = '#25303b';
+      vctx.lineWidth = 1;
+      for(let i = 0; i <= 4; i++){
+        const yy = yMax * i / 4;
+        vctx.beginPath();
+        vctx.moveTo(padL, Y(yy));
+        vctx.lineTo(W - padR, Y(yy));
+        vctx.stroke();
+
+        vctx.fillStyle = '#8b949e';
+        vctx.font = '11px system-ui';
+        vctx.textAlign = 'right';
+        vctx.fillText(yy.toFixed(2), padL - 6, Y(yy) + 4);
+      }
+
+      vctx.strokeStyle = '#60a5fa';
+      vctx.lineWidth = 2.5;
+      vctx.beginPath();
+      for(let x = 1; x <= xMax; x++){
+        const y = ensembleVariance(x, sigma2, rho);
+        if(x === 1) vctx.moveTo(X(x), Y(y));
+        else vctx.lineTo(X(x), Y(y));
+      }
+      vctx.stroke();
+
+      const floor = rho * sigma2;
+      vctx.strokeStyle = '#ef4444';
+      vctx.lineWidth = 1.8;
+      vctx.setLineDash([6,6]);
+      vctx.beginPath();
+      vctx.moveTo(padL, Y(floor));
+      vctx.lineTo(W - padR, Y(floor));
+      vctx.stroke();
+      vctx.setLineDash([]);
+
+      vctx.fillStyle = '#8b949e';
+      vctx.textAlign = 'center';
+      vctx.fillText('число деревьев B', W/2, H - 8);
+
+      vctx.save();
+      vctx.translate(12, H/2);
+      vctx.rotate(-Math.PI/2);
+      vctx.fillText('variance', 0, 0);
+      vctx.restore();
+
+      vctx.fillStyle = '#e6edf3';
+      vctx.beginPath();
+      vctx.arc(X(B), Y(ensembleVariance(B, sigma2, rho)), 4, 0, Math.PI * 2);
+      vctx.fill();
+    }
+
+    [varB, varSigma, varRho].forEach(el => el.addEventListener('input', drawVarianceDemo));
+
+    // ---------- feature subsampling demo ----------
+    const featP = document.getElementById('featP');
+    const featM = document.getElementById('featM');
+    const featTrees = document.getElementById('featTrees');
+    const featPVal = document.getElementById('featPVal');
+    const featMVal = document.getElementById('featMVal');
+    const featTreesVal = document.getElementById('featTreesVal');
+    const featSimBtn = document.getElementById('featSimBtn');
+    const featureCanvas = document.getElementById('featureCanvas');
+    const fctx = featureCanvas.getContext('2d');
+    const featureSummary = document.getElementById('featureSummary');
+
+    function simulateFeatureSubsampling(){
+      const p = +featP.value;
+      let m = +featM.value;
+      const trees = +featTrees.value;
+      m = Math.min(m, p);
+      featM.value = m;
+
+      featPVal.textContent = p;
+      featMVal.textContent = m;
+      featTreesVal.textContent = trees;
+
+      const strengths = [];
+      for(let i = 0; i < p; i++){
+        if(i === 0) strengths.push(1.00);
+        else if(i === 1) strengths.push(0.80);
+        else if(i === 2) strengths.push(0.65);
+        else strengths.push(Math.max(0.15, 0.55 - i * 0.02));
+      }
+
+      const chosen = [];
+      let topChosen = 0;
+
+      for(let t = 0; t < trees; t++){
+        const available = [];
+        const idx = [...Array(p).keys()];
+        while(available.length < m){
+          const j = idx.splice(randInt(idx.length), 1)[0];
+          available.push(j);
+        }
+        let best = available[0];
+        for(const j of available){
+          if(strengths[j] > strengths[best]) best = j;
+        }
+        chosen.push({available, best});
+        if(best === 0) topChosen++;
+      }
+
+      drawFeatureSubsampling(p, trees, chosen);
+
+      const topRate = (topChosen / trees * 100).toFixed(1);
+      featureSummary.innerHTML =
+        `Сильнейший признак <code>f0</code> был выбран как лучший split в <strong>${topRate}%</strong> деревьев.
+        Когда <code>m_try</code> уменьшается, монополия top-feature обычно ослабевает, и деревья становятся разнообразнее.`;
+    }
+
+    function drawFeatureSubsampling(p, trees, chosen){
+      const W = featureCanvas.width;
+      const H = featureCanvas.height;
+      fctx.clearRect(0,0,W,H);
+      fctx.fillStyle = '#0b1016';
+      fctx.fillRect(0,0,W,H);
+
+      const padL = 52, padT = 16;
+      const cellW = (W - padL - 16) / p;
+      const cellH = (H - padT - 18) / trees;
+
+      fctx.font = '11px system-ui';
+      fctx.textAlign = 'center';
+      fctx.textBaseline = 'middle';
+
+      for(let j = 0; j < p; j++){
+        fctx.fillStyle = j < 3 ? '#f59e0b' : '#8b949e';
+        fctx.fillText('f' + j, padL + j * cellW + cellW/2, 8);
+      }
+
+      for(let t = 0; t < trees; t++){
+        fctx.fillStyle = '#8b949e';
+        fctx.textAlign = 'right';
+        fctx.fillText('T' + (t+1), padL - 8, padT + t * cellH + cellH/2);
+        fctx.textAlign = 'center';
+
+        for(let j = 0; j < p; j++){
+          const x = padL + j * cellW + 2;
+          const y = padT + t * cellH + 2;
+          const w = cellW - 4;
+          const h = cellH - 4;
+
+          const isAvailable = chosen[t].available.includes(j);
+          const isBest = chosen[t].best === j;
+
+          if(!isAvailable) fctx.fillStyle = '#30363d';
+          else if(isBest && j < 3) fctx.fillStyle = '#f59e0b';
+          else if(isBest) fctx.fillStyle = '#10b981';
+          else fctx.fillStyle = '#4b5563';
+
+          fctx.fillRect(x, y, w, h);
+        }
+      }
+    }
+
+    [featP, featM, featTrees].forEach(el => el.addEventListener('input', simulateFeatureSubsampling));
+    featSimBtn.addEventListener('click', simulateFeatureSubsampling);
+
+    // ---------- OOB demo ----------
+    const oobN = document.getElementById('oobN');
+    const oobB = document.getElementById('oobB');
+    const oobNVal = document.getElementById('oobNVal');
+    const oobBVal = document.getElementById('oobBVal');
+    const oobShareOut = document.getElementById('oobShareOut');
+    const oobTreesOut = document.getElementById('oobTreesOut');
+    const inbagTreesOut = document.getElementById('inbagTreesOut');
+
+    function updateOOB(){
+      const N = +oobN.value;
+      const B = +oobB.value;
+      oobNVal.textContent = N;
+      oobBVal.textContent = B;
+
+      const oobShare = Math.pow(1 - 1/N, N);
+      const oobTrees = oobShare * B;
+      const inbagTrees = (1 - oobShare) * B;
+
+      oobShareOut.textContent = (oobShare * 100).toFixed(1) + '%';
+      oobTreesOut.textContent = oobTrees.toFixed(1);
+      inbagTreesOut.textContent = inbagTrees.toFixed(1);
+    }
+
+    [oobN, oobB].forEach(el => el.addEventListener('input', updateOOB));
+
+    // ---------- vote simulator ----------
+    const voteB = document.getElementById('voteB');
+    const voteP = document.getElementById('voteP');
+    const voteRuns = document.getElementById('voteRuns');
+    const voteBVal = document.getElementById('voteBVal');
+    const votePVal = document.getElementById('votePVal');
+    const voteRunsVal = document.getElementById('voteRunsVal');
+    const voteSimBtn = document.getElementById('voteSimBtn');
+    const singleTreeAcc = document.getElementById('singleTreeAcc');
+    const forestVoteAcc = document.getElementById('forestVoteAcc');
+    const voteCanvas = document.getElementById('voteCanvas');
+    const voteCtx = voteCanvas.getContext('2d');
+
+    function runVoteSimulation(){
+      const B = +voteB.value;
+      const p = +voteP.value;
+      const runs = +voteRuns.value;
+
+      voteBVal.textContent = B;
+      votePVal.textContent = p.toFixed(2);
+      voteRunsVal.textContent = runs;
+      singleTreeAcc.textContent = (p * 100).toFixed(1) + '%';
+
+      let correctMajority = 0;
+      const outcomes = [];
+
+      for(let r = 0; r < runs; r++){
+        let correctVotes = 0;
+        for(let b = 0; b < B; b++){
+          if(Math.random() < p) correctVotes++;
+        }
+        const majCorrect = correctVotes > B / 2;
+        if(majCorrect) correctMajority++;
+        outcomes.push(correctVotes);
+      }
+
+      const ensembleAcc = correctMajority / runs;
+      forestVoteAcc.textContent = (ensembleAcc * 100).toFixed(1) + '%';
+
+      drawVoteHistogram(B, outcomes);
+    }
+
+    function drawVoteHistogram(B, outcomes){
+      const W = voteCanvas.width;
+      const H = voteCanvas.height;
+      voteCtx.clearRect(0,0,W,H);
+      voteCtx.fillStyle = '#0b1016';
+      voteCtx.fillRect(0,0,W,H);
+
+      const bins = new Array(B + 1).fill(0);
+      for(const c of outcomes) bins[c]++;
+
+      const maxBin = Math.max(...bins);
+      const padL = 28, padR = 10, padT = 12, padB = 26;
+      const barW = (W - padL - padR) / bins.length;
+
+      for(let i = 0; i < bins.length; i++){
+        const x = padL + i * barW + 1;
+        const h = (bins[i] / maxBin) * (H - padT - padB);
+        const y = H - padB - h;
+        const majCorrect = i > B / 2;
+        voteCtx.fillStyle = majCorrect ? '#10b981' : '#ef4444';
+        voteCtx.fillRect(x, y, Math.max(1, barW - 2), h);
+      }
+
+      voteCtx.strokeStyle = '#f59e0b';
+      voteCtx.setLineDash([6,6]);
+      const splitX = padL + (B/2 + 0.5) * barW;
+      voteCtx.beginPath();
+      voteCtx.moveTo(splitX, padT);
+      voteCtx.lineTo(splitX, H - padB);
+      voteCtx.stroke();
+      voteCtx.setLineDash([]);
+
+      voteCtx.fillStyle = '#8b949e';
+      voteCtx.font = '11px system-ui';
+      voteCtx.textAlign = 'center';
+      voteCtx.fillText('число правильных голосов', W/2, H - 6);
+    }
+
+    [voteB, voteP, voteRuns].forEach(el => el.addEventListener('input', runVoteSimulation));
+    voteSimBtn.addEventListener('click', runVoteSimulation);
+
+    // ---------- init ----------
+    refreshBootstrap();
+    drawVarianceDemo();
+    simulateFeatureSubsampling();
+    updateOOB();
+    runVoteSimulation();
+  </script>
+</body>
+</html>
