@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.5 Логистическая регрессия</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="04_linear_model_regularization.html">2.4 Регуляризация линейных моделей</a>
+    <span class="tag tag-active">2.5 Логистическая регрессия</span>
+    <a class="tag tag-block" href="06_regression_metrics.html">2.6 Метрики регрессии</a>
+  </div>
+
+  <header class="hero">
+    <h1>2.5 Логистическая регрессия</h1>
+    <p class="muted">Sigmoid, probability of class, logit, cross-entropy, decision boundary, multiclass, regularization</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">classification</span>
+      <span class="mini-tag">sigmoid</span>
+      <span class="mini-tag">log-odds</span>
+      <span class="mini-tag">cross-entropy</span>
+      <span class="mini-tag">decision boundary</span>
+    </div>
+
+    <h2>Что такое логистическая регрессия</h2>
+    <p>
+      Несмотря на слово <span class="hl-amber">regression</span> в названии,
+      логистическая регрессия — это прежде всего модель для
+      <span class="hl-green">классификации</span>.
+    </p>
+
+    <div class="formula">
+      \hat{p}(y=1 \mid \mathbf{x}) = \sigma(\mathbf{w}^T\mathbf{x} + b)
+    </div>
+
+    <p>
+      Она берёт линейную комбинацию признаков, а затем прогоняет её через сигмоиду,
+      чтобы получить число в диапазоне <code>[0,1]</code>, которое можно интерпретировать
+      как вероятность положительного класса.
+    </p>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Линейная регрессия предсказывает любое число на всей числовой прямой.
+      Для классификации это неудобно: вероятность не может быть 1.7 или −0.4.
+      Поэтому логистическая регрессия берёт линейный score и
+      <span class="hl-blue">сжимает его в диапазон вероятностей</span>.
+    </div>
+
+    <div class="info">
+      Логистическая регрессия — один из главных baseline-алгоритмов для classification:
+      простая, быстрая, интерпретируемая и очень важная для собеседований и практики.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.1 Sigmoid и вероятность класса</h2>
+
+    <p>
+      Сигмоида — это нелинейная функция:
+    </p>
+
+    <div class="formula">
+      \sigma(z)=\frac{1}{1+e^{-z}}
+    </div>
+
+    <p>
+      Где
+    </p>
+
+    <div class="formula">
+      z = \mathbf{w}^T\mathbf{x} + b
+    </div>
+
+    <p>
+      Если <code>z</code> очень большой, сигмоида близка к 1.
+      Если <code>z</code> сильно отрицательный, сигмоида близка к 0.
+      Если <code>z = 0</code>, то <code>σ(0)=0.5</code>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если z ≫ 0</h3>
+        <ul>
+          <li>score сильно за класс 1,</li>
+          <li>вероятность близка к 1.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Если z ≪ 0</h3>
+        <ul>
+          <li>score сильно против класса 1,</li>
+          <li>вероятность близка к 0.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      \hat{p} = \sigma(z), \quad \hat{p}\in(0,1)
+    </div>
+
+    <div class="success">
+      Ключевая мысль:
+      логистическая регрессия сначала строит
+      <span class="hl-purple">линейный score</span>,
+      а потом превращает его в
+      <span class="hl-green">вероятность класса</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: сигмоида и вероятность</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="sigmoidZ">Значение z = wᵀx + b <span class="badge-inline" id="sigmoidZVal">0.00</span></label>
+          <input type="range" id="sigmoidZ" min="-10" max="10" value="0" step="0.1">
+        </div>
+
+        <div class="control-group">
+          <label for="thresholdSlider">Threshold для классификации <span class="badge-inline" id="thresholdVal">0.50</span></label>
+          <input type="range" id="thresholdSlider" min="0.05" max="0.95" value="0.5" step="0.01">
+        </div>
+
+        <div class="info">
+          Подвигай <code>z</code> и смотри, как score превращается в вероятность.
+          Затем поменяй threshold и посмотри, когда модель отдаёт класс 1.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="sigmoidCanvas" width="380" height="260"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">z</div>
+            <div class="value" id="zMetric">0.000</div>
+          </div>
+          <div class="metric">
+            <div class="name">σ(z)</div>
+            <div class="value" id="sigmoidMetric">0.500</div>
+          </div>
+          <div class="metric">
+            <div class="name">Предсказанный класс</div>
+            <div class="value" id="classMetric">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Заметь: логистическая регрессия не “переключается” резко на уровне самой вероятности.
+      Резкость появляется только тогда, когда мы применяем порог.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.2 Logit / log-odds</h2>
+
+    <p>
+      Очень важный взгляд: логистическая регрессия линейна не по самой вероятности,
+      а по <span class="hl-amber">log-odds</span>.
+    </p>
+
+    <div class="formula">
+      \text{odds} = \frac{p}{1-p}
+    </div>
+
+    <div class="formula">
+      \text{logit}(p)=\log\frac{p}{1-p}
+    </div>
+
+    <p>
+      Логистическая регрессия утверждает:
+    </p>
+
+    <div class="formula">
+      \log \frac{p(y=1\mid \mathbf{x})}{1-p(y=1\mid \mathbf{x})}
+      = \mathbf{w}^T\mathbf{x} + b
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что это значит</h3>
+        <p>
+          Линейная часть модели описывает не вероятность напрямую,
+          а логарифм отношения шансов.
+        </p>
+      </div>
+      <div>
+        <h3>Почему это удобно</h3>
+        <p>
+          Odds живут на <code>(0,\infty)</code>, а log-odds — уже на всей числовой прямой,
+          где линейной модели комфортно работать.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      Это один из самых load-bearing фактов темы:
+      <strong>логистическая регрессия = линейная модель для log-odds</strong>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: probability → odds → log-odds</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="probSlider">Вероятность p <span class="badge-inline" id="probVal">0.50</span></label>
+          <input type="range" id="probSlider" min="0.01" max="0.99" value="0.5" step="0.01">
+        </div>
+
+        <div class="info">
+          При <code>p = 0.5</code> log-odds равны 0.<br>
+          При <code>p &gt; 0.5</code> log-odds положительны.<br>
+          При <code>p &lt; 0.5</code> log-odds отрицательны.
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="logitResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Как из вероятности получается класс</h2>
+
+    <p>
+      После того как модель выдала вероятность, обычно применяют threshold:
+    </p>
+
+    <div class="formula">
+      \hat{y} =
+      \begin{cases}
+      1,& \hat{p}\ge t \\
+      0,& \hat{p}<t
+      \end{cases}
+    </div>
+
+    <p>
+      Чаще всего берут <code>t = 0.5</code>, но это не обязано быть так.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если threshold высокий</h3>
+        <ul>
+          <li>модель реже предсказывает класс 1,</li>
+          <li>обычно растёт precision,</li>
+          <li>может падать recall.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Если threshold низкий</h3>
+        <ul>
+          <li>модель чаще предсказывает класс 1,</li>
+          <li>обычно растёт recall,</li>
+          <li>может падать precision.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Очень частая ошибка — думать, что логистическая регрессия “по природе” выдаёт только 0 или 1.
+      На самом деле она выдаёт вероятность, а бинарный класс появляется уже после thresholding.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему нельзя обучать её через MSE как линейную регрессию</h2>
+
+    <p>
+      Исторически можно попробовать взять сигмоиду и MSE,
+      но стандартный и правильный путь — использовать
+      <span class="hl-green">log loss / binary cross-entropy</span>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Проблемы MSE здесь</h3>
+        <ul>
+          <li>неестественный probabilistic loss для Bernoulli target,</li>
+          <li>менее удобная оптимизация,</li>
+          <li>не та likelihood-интерпретация, которую мы хотим.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему BCE естественен</h3>
+        <ul>
+          <li>напрямую связан с likelihood Bernoulli-модели,</li>
+          <li>сильно штрафует уверенные неправильные ответы,</li>
+          <li>даёт красивую статистическую интерпретацию.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.3 Binary cross-entropy</h2>
+
+    <p>
+      Для одного объекта binary cross-entropy выглядит так:
+    </p>
+
+    <div class="formula">
+      \ell(y,\hat{p}) = -\Big(y\log \hat{p} + (1-y)\log(1-\hat{p})\Big)
+    </div>
+
+    <p>
+      Для всего dataset:
+    </p>
+
+    <div class="formula">
+      L = -\frac{1}{n}\sum_{i=1}^{n}
+      \Big(
+        y^{(i)}\log \hat{p}^{(i)} + (1-y^{(i)})\log(1-\hat{p}^{(i)})
+      \Big)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если y = 1</h3>
+        <div class="formula">
+          \ell = -\log \hat{p}
+        </div>
+        <p>
+      Чем ближе <code>p̂</code> к 1, тем меньше loss.
+        </p>
+      </div>
+      <div>
+        <h3>Если y = 0</h3>
+        <div class="formula">
+          \ell = -\log(1-\hat{p})
+        </div>
+        <p>
+      Чем ближе <code>p̂</code> к 0, тем меньше loss.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Cross-entropy сильно наказывает модель,
+      если она уверена и при этом неправа.
+      Это именно то, что нам нужно от вероятностной классификации.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: binary cross-entropy</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="trueLabelSelect">Истинный класс y</label>
+          <select id="trueLabelSelect">
+            <option value="1">1</option>
+            <option value="0">0</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="predProbSlider">Предсказанная вероятность p̂ <span class="badge-inline" id="predProbVal">0.80</span></label>
+          <input type="range" id="predProbSlider" min="0.01" max="0.99" value="0.8" step="0.01">
+        </div>
+
+        <div class="info">
+          Посмотри, как loss резко растёт, когда модель уверена, но ошибается.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="bceCanvas" width="380" height="260"></canvas>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">y</div>
+            <div class="value" id="bceYMetric">1</div>
+          </div>
+          <div class="metric">
+            <div class="name">BCE</div>
+            <div class="value" id="bceMetric">0.223</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Maximum likelihood взгляд</h2>
+
+    <p>
+      Логистическую регрессию можно вывести как maximum likelihood estimation
+      для Bernoulli-распределения.
+    </p>
+
+    <div class="formula">
+      y^{(i)} \sim \text{Bernoulli}(p^{(i)})
+    </div>
+
+    <div class="formula">
+      p^{(i)} = \sigma(\mathbf{w}^T\mathbf{x}^{(i)}+b)
+    </div>
+
+    <div class="formula">
+      P(y^{(i)} \mid \mathbf{x}^{(i)}) =
+      (p^{(i)})^{y^{(i)}}(1-p^{(i)})^{1-y^{(i)}}
+    </div>
+
+    <p>
+      Логарифм правдоподобия даёт:
+    </p>
+
+    <div class="formula">
+      \log \mathcal{L} =
+      \sum_i \Big(
+        y^{(i)}\log p^{(i)} + (1-y^{(i)})\log(1-p^{(i)})
+      \Big)
+    </div>
+
+    <p>
+      Максимизировать log-likelihood — это то же самое,
+      что минимизировать negative log-likelihood,
+      то есть binary cross-entropy.
+    </p>
+
+    <div class="info">
+      Это важный мост между ML и статистикой:
+      логистическая регрессия — это не просто эвристика,
+      а хорошо обоснованная вероятностная модель.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.4 Decision boundary</h2>
+
+    <p>
+      Хотя логистическая регрессия выдаёт нелинейную функцию вероятности по score,
+      decision boundary у неё остаётся линейной.
+    </p>
+
+    <p>
+      Для threshold <code>0.5</code> имеем:
+    </p>
+
+    <div class="formula">
+      \hat{p} = 0.5 \iff \sigma(z)=0.5 \iff z=0
+    </div>
+
+    <div class="formula">
+      \mathbf{w}^T\mathbf{x} + b = 0
+    </div>
+
+    <p>
+      Это и есть граница решений.
+      В 2D — прямая, в 3D — плоскость, дальше — гиперплоскость.
+    </p>
+
+    <div class="warn">
+      Очень важное различие:
+      вероятности меняются нелинейно, но
+      <span class="hl-red">граница решений линейна в пространстве признаков</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: 2D decision boundary</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="dbW1">w₁ <span class="badge-inline" id="dbW1Val">1.00</span></label>
+          <input type="range" id="dbW1" min="-3" max="3" value="1" step="0.05">
+        </div>
+
+        <div class="control-group">
+          <label for="dbW2">w₂ <span class="badge-inline" id="dbW2Val">1.00</span></label>
+          <input type="range" id="dbW2" min="-3" max="3" value="1" step="0.05">
+        </div>
+
+        <div class="control-group">
+          <label for="dbB">b <span class="badge-inline" id="dbBVal">0.00</span></label>
+          <input type="range" id="dbB" min="-5" max="5" value="0" step="0.05">
+        </div>
+
+        <div class="control-group">
+          <label for="dbThreshold">Threshold <span class="badge-inline" id="dbThresholdVal">0.50</span></label>
+          <input type="range" id="dbThreshold" min="0.1" max="0.9" value="0.5" step="0.01">
+        </div>
+
+        <div class="info">
+          При пороге 0.5 граница соответствует <code>wᵀx + b = 0</code>.
+          Для другого порога граница смещается.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="boundaryCanvas" width="380" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.5 Multiclass logistic regression</h2>
+
+    <p>
+      Для нескольких классов логистическую регрессию обычно расширяют до
+      <span class="hl-amber">softmax regression</span>.
+    </p>
+
+    <div class="formula">
+      z_k = \mathbf{w}_k^T\mathbf{x} + b_k
+    </div>
+
+    <div class="formula">
+      P(y=k \mid \mathbf{x}) =
+      \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}
+    </div>
+
+    <p>
+      Это softmax: превращает набор score'ов в распределение вероятностей по классам.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Binary case</h3>
+        <ul>
+          <li>одна вероятность класса 1,</li>
+          <li>класс 0 восстанавливается как <code>1-p</code>.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Multiclass case</h3>
+        <ul>
+          <li>считаем score для каждого класса,</li>
+          <li>softmax нормирует их в вероятности,</li>
+          <li>берём класс с максимальной вероятностью.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      \hat{y} = \arg\max_k P(y=k \mid \mathbf{x})
+    </div>
+
+    <div class="info">
+      В sklearn multiclass logistic regression обычно реализуется либо через
+      <code>multinomial</code>, либо через схему
+      <code>one-vs-rest</code>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Softmax и multiclass cross-entropy</h2>
+
+    <p>
+      Для multiclass-классификации loss становится таким:
+    </p>
+
+    <div class="formula">
+      L = -\sum_{k=1}^{K} y_k \log \hat{p}_k
+    </div>
+
+    <p>
+      Здесь <code>y_k</code> — one-hot представление истинного класса,
+      а <code>p̂_k</code> — вероятность класса <code>k</code>.
+    </p>
+
+    <p>
+      Если истинный класс только один, формула упрощается:
+    </p>
+
+    <div class="formula">
+      L = -\log \hat{p}_{\text{true class}}
+    </div>
+
+    <div class="success">
+      Это та же логика, что и в binary case:
+      модель получает маленький loss, когда даёт высокую вероятность правильному классу.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.5.6 Regularization в logistic regression</h2>
+
+    <p>
+      Как и в линейной регрессии, логистическая регрессия тоже может переобучаться,
+      особенно если:
+    </p>
+
+    <ul>
+      <li>много признаков,</li>
+      <li>мало данных,</li>
+      <li>признаки шумные или коррелируют,</li>
+      <li>есть high-dimensional sparse representation.</li>
+    </ul>
+
+    <p>
+      Поэтому к loss часто добавляют regularization term:
+    </p>
+
+    <div class="formula">
+      J(\mathbf{w},b)=\text{BCE} + \lambda \Omega(\mathbf{w})
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>L2 regularization</h3>
+        <div class="formula">
+          \Omega(\mathbf{w})=\|\mathbf{w}\|_2^2
+        </div>
+        <p>
+          Мягко сжимает веса, улучшает устойчивость и generalization.
+        </p>
+      </div>
+      <div>
+        <h3>L1 regularization</h3>
+        <div class="formula">
+          \Omega(\mathbf{w})=\|\mathbf{w}\|_1
+        </div>
+        <p>
+          Может занулять часть коэффициентов и давать sparsity.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      Для regularized logistic regression масштабирование признаков тоже очень важно.
+      Иначе penalty действует на коэффициенты неравномерно.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Градиентная интуиция</h2>
+
+    <p>
+      Для одного объекта с вероятностью
+      <code>p̂ = σ(w^T x + b)</code>
+      производная loss по score имеет красивый вид:
+    </p>
+
+    <div class="formula">
+      \frac{\partial \ell}{\partial z} = \hat{p} - y
+    </div>
+
+    <p>
+      Это очень важный результат.
+    </p>
+
+    <div class="step"><strong>Если модель переоценила класс 1</strong> и истинный y=0, то <code>p̂ - y &gt; 0</code>, и градиент толкает score вниз.</div>
+    <div class="step"><strong>Если модель недооценила класс 1</strong> и истинный y=1, то <code>p̂ - y &lt; 0</code>, и градиент толкает score вверх.</div>
+
+    <div class="formula">
+      \nabla_{\mathbf{w}}\ell = (\hat{p}-y)\mathbf{x}
+    </div>
+
+    <div class="info">
+      Это делает логистическую регрессию очень естественной для gradient-based optimization.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интуиция коэффициентов</h2>
+
+    <p>
+      Коэффициенты логистической регрессии интерпретируются не так, как в линейной регрессии.
+      Они влияют не напрямую на <code>p</code>, а на
+      <span class="hl-blue">log-odds</span>.
+    </p>
+
+    <div class="formula">
+      \log\frac{p}{1-p} = w_1x_1 + \dots + w_dx_d + b
+    </div>
+
+    <p>
+      Если увеличить признак <code>x_j</code> на 1, то log-odds изменятся на <code>w_j</code>.
+    </p>
+
+    <div class="formula">
+      \Delta x_j = 1 \Rightarrow \Delta \log\frac{p}{1-p} = w_j
+    </div>
+
+    <p>
+      А odds изменятся в <code>e^{w_j}</code> раз:
+    </p>
+
+    <div class="formula">
+      \text{odds multiplier}=e^{w_j}
+    </div>
+
+    <div class="warn">
+      Типичная ошибка:
+      говорить “если x вырос на 1, то вероятность вырастет на w”.
+      Это неверно. Коэффициенты логистической регрессии линейны по log-odds, а не по probability.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Когда логистическая регрессия работает хорошо</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ситуация</th>
+          <th>Что происходит</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Классы примерно линейно разделимы</td>
+          <td>модель может работать очень хорошо</td>
+          <td>один из лучших baseline</td>
+        </tr>
+        <tr>
+          <td>Много sparse признаков</td>
+          <td>часто очень сильна</td>
+          <td>текст, one-hot, CTR-like задачи</td>
+        </tr>
+        <tr>
+          <td>Нужна интерпретируемость</td>
+          <td>удобна</td>
+          <td>коэффициенты можно анализировать</td>
+        </tr>
+        <tr>
+          <td>Граница решений сложная и нелинейная</td>
+          <td>может недообучаться</td>
+          <td>нужны новые признаки или другие модели</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="success">
+      Логистическая регрессия особенно полезна как baseline:
+      если даже она показывает хороший результат, значит в данных уже есть сильный сигнал.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>думать, что это regression-задача из-за названия,</li>
+        <li>использовать MSE вместо log loss как основной loss,</li>
+        <li>забывать, что модель выдаёт probability, а не только label,</li>
+        <li>не масштабировать признаки при regularization,</li>
+        <li>не понимать разницу между probability, odds и log-odds,</li>
+        <li>думать, что threshold 0.5 всегда оптимален,</li>
+        <li>интерпретировать коэффициенты как прямое изменение вероятности.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn / NumPy / PyTorch</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">sklearn</button>
+      <button class="tab-btn" data-tab="tab2">NumPy idea</button>
+      <button class="tab-btn" data-tab="tab3">PyTorch</button>
+      <button class="tab-btn" data-tab="tab4">Multiclass</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(
+        penalty="l2",
+        C=1.0,
+        max_iter=2000
+    ))
+])
+
+model.fit(X_train, y_train)
+
+proba = model.predict_proba(X_val)[:, 1]
+pred = model.predict(X_val)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+X = np.array([
+    [1.0, 2.0],
+    [2.0, 1.0],
+    [3.0, 2.5]
+])
+
+w = np.array([0.7, -0.4])
+b = 0.2
+
+z = X @ w + b
+p = sigmoid(z)
+
+print("scores z:", z)
+print("probabilities:", p)
+
+# threshold at 0.5
+pred = (p >= 0.5).astype(int)
+print("predicted class:", pred)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">import torch
+import torch.nn as nn
+
+X = torch.tensor([[1.0, 2.0],
+                  [2.0, 1.0],
+                  [3.0, 2.5],
+                  [0.5, 0.2]])
+y = torch.tensor([[1.0],
+                  [0.0],
+                  [1.0],
+                  [0.0]])
+
+model = nn.Linear(2, 1)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.05)
+loss_fn = nn.BCEWithLogitsLoss()
+
+for epoch in range(1000):
+    logits = model(X)
+    loss = loss_fn(logits, y)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+print("weight:", model.weight.data)
+print("bias:", model.bias.data)</div>
+    </div>
+
+    <div class="tab-panel" id="tab4">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+multi_model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(
+        multi_class="multinomial",
+        solver="lbfgs",
+        max_iter=3000
+    ))
+])
+
+multi_model.fit(X_train, y_train)
+pred = multi_model.predict(X_val)
+proba = multi_model.predict_proba(X_val)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Практические замечания про sklearn</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Параметр C</h3>
+        <p>
+      В sklearn часто используют не <code>λ</code>, а <code>C</code>,
+          где
+        </p>
+        <div class="formula">
+          C \propto \frac{1}{\lambda}
+        </div>
+        <p>
+          То есть:
+        </p>
+        <ul>
+          <li>большой <code>C</code> → слабая регуляризация,</li>
+          <li>маленький <code>C</code> → сильная регуляризация.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>predict vs predict_proba</h3>
+        <ul>
+          <li><code>predict_proba</code> даёт вероятности,</li>
+          <li><code>predict</code> уже применяет decision rule.</li>
+        </ul>
+        <p>
+          Для настройки threshold и анализа precision/recall чаще нужен именно
+          <code>predict_proba</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий логичный блок</h3>
+        <ul>
+          <li><strong>2.6 Метрики регрессии</strong> — после этого пойдём к метрикам,</li>
+          <li>но для логистической регрессии особенно важен ещё следующий классификационный блок.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Очень тесно связано с 2.7</h3>
+        <ul>
+          <li>confusion matrix,</li>
+          <li>accuracy, precision, recall, F1,</li>
+          <li>ROC-AUC, PR-AUC, log loss,</li>
+          <li>threshold tuning.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Логистическая регрессия — это базовая вероятностная модель для классификации.
+    </p>
+    <ul>
+      <li>Она считает линейный score <code>z = wᵀx + b</code>.</li>
+      <li>Через sigmoid превращает его в вероятность <code>p(y=1|x)</code>.</li>
+      <li>Линейна по <strong>log-odds</strong>, а не по самой вероятности.</li>
+      <li>Обучается через <strong>binary cross-entropy / log loss</strong>.</li>
+      <li>Decision boundary у неё линейная.</li>
+      <li>Для multiclass используется softmax-расширение.</li>
+      <li>Регуляризация так же важна, как и в линейных моделях регрессии.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      логистическая регрессия — это не просто “сигмоида поверх прямой”,
+      а один из центральных мостов между
+      <span class="hl-blue">линейными моделями</span>,
+      <span class="hl-purple">вероятностями</span>
+      и
+      <span class="hl-green">классификацией</span>.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Sigmoid demo ----------
+    const sigmoidZ = document.getElementById('sigmoidZ');
+    const thresholdSlider = document.getElementById('thresholdSlider');
+    const sigmoidZVal = document.getElementById('sigmoidZVal');
+    const thresholdVal = document.getElementById('thresholdVal');
+    const zMetric = document.getElementById('zMetric');
+    const sigmoidMetric = document.getElementById('sigmoidMetric');
+    const classMetric = document.getElementById('classMetric');
+    const sigmoidCanvas = document.getElementById('sigmoidCanvas');
+    const sctx = sigmoidCanvas.getContext('2d');
+
+    function sigmoid(z){
+      return 1 / (1 + Math.exp(-z));
+    }
+
+    function drawSigmoidDemo(){
+      const z = Number(sigmoidZ.value);
+      const t = Number(thresholdSlider.value);
+      const p = sigmoid(z);
+      const pred = p >= t ? 1 : 0;
+
+      sigmoidZVal.textContent = z.toFixed(2);
+      thresholdVal.textContent = t.toFixed(2);
+      zMetric.textContent = z.toFixed(3);
+      sigmoidMetric.textContent = p.toFixed(3);
+      classMetric.textContent = pred;
+
+      const W = sigmoidCanvas.width;
+      const H = sigmoidCanvas.height;
+      sctx.clearRect(0,0,W,H);
+      sctx.fillStyle = '#0d1117';
+      sctx.fillRect(0,0,W,H);
+
+      // axes
+      sctx.strokeStyle = '#30363d';
+      sctx.lineWidth = 1;
+      sctx.beginPath();
+      sctx.moveTo(30, H-30);
+      sctx.lineTo(W-20, H-30);
+      sctx.stroke();
+
+      sctx.beginPath();
+      sctx.moveTo(W/2, 20);
+      sctx.lineTo(W/2, H-20);
+      sctx.stroke();
+
+      sctx.fillStyle = '#8b949e';
+      sctx.font = '12px system-ui';
+      sctx.fillText('z', W-12, H-10);
+      sctx.fillText('p', 12, 20);
+
+      function px(x){ return 30 + ((x + 10) / 20) * (W - 50); }
+      function py(y){ return H - 30 - y * (H - 50); }
+
+      // threshold line
+      sctx.strokeStyle = '#ef4444';
+      sctx.setLineDash([5,4]);
+      sctx.beginPath();
+      sctx.moveTo(30, py(t));
+      sctx.lineTo(W-20, py(t));
+      sctx.stroke();
+      sctx.setLineDash([]);
+
+      // sigmoid
+      sctx.strokeStyle = '#10b981';
+      sctx.lineWidth = 2.5;
+      sctx.beginPath();
+      for(let i=0;i<=400;i++){
+        const x = -10 + 20 * i / 400;
+        const y = sigmoid(x);
+        const X = px(x), Y = py(y);
+        if(i===0) sctx.moveTo(X,Y);
+        else sctx.lineTo(X,Y);
+      }
+      sctx.stroke();
+
+      // point
+      sctx.fillStyle = '#a78bfa';
+      sctx.beginPath();
+      sctx.arc(px(z), py(p), 6, 0, Math.PI*2);
+      sctx.fill();
+
+      // z=0 line
+      sctx.strokeStyle = '#f59e0b';
+      sctx.beginPath();
+      sctx.moveTo(px(0), 20);
+      sctx.lineTo(px(0), H-30);
+      sctx.stroke();
+    }
+
+    sigmoidZ.addEventListener('input', drawSigmoidDemo);
+    thresholdSlider.addEventListener('input', drawSigmoidDemo);
+
+    // ---------- Logit demo ----------
+    const probSlider = document.getElementById('probSlider');
+    const probVal = document.getElementById('probVal');
+    const logitResult = document.getElementById('logitResult');
+
+    function drawLogit(){
+      const p = Number(probSlider.value);
+      const odds = p / (1 - p);
+      const logOdds = Math.log(odds);
+      probVal.textContent = p.toFixed(2);
+
+      logitResult.innerHTML = `
+        <div><strong>Вероятность:</strong> <span class="hl-green">${p.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Odds:</strong> p / (1-p) = ${p.toFixed(4)} / ${(1-p).toFixed(4)} = <span class="hl-blue">${odds.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Log-odds:</strong> log(odds) = <span class="hl-amber">${logOdds.toFixed(4)}</span></div>
+        <div style="margin-top:8px" class="muted">
+          p = 0.5 → log-odds = 0.
+          Чем ближе p к 1, тем больше положительный logit.
+          Чем ближе p к 0, тем сильнее отрицательный.
+        </div>
+      `;
+    }
+
+    probSlider.addEventListener('input', drawLogit);
+
+    // ---------- BCE demo ----------
+    const trueLabelSelect = document.getElementById('trueLabelSelect');
+    const predProbSlider = document.getElementById('predProbSlider');
+    const predProbVal = document.getElementById('predProbVal');
+    const bceYMetric = document.getElementById('bceYMetric');
+    const bceMetric = document.getElementById('bceMetric');
+    const bceCanvas = document.getElementById('bceCanvas');
+    const bctx = bceCanvas.getContext('2d');
+
+    function bceLoss(y,p){
+      const eps = 1e-12;
+      const pp = Math.min(1-eps, Math.max(eps, p));
+      return -(y*Math.log(pp) + (1-y)*Math.log(1-pp));
+    }
+
+    function drawBCEDemo(){
+      const y = Number(trueLabelSelect.value);
+      const p = Number(predProbSlider.value);
+      const loss = bceLoss(y,p);
+
+      predProbVal.textContent = p.toFixed(2);
+      bceYMetric.textContent = y;
+      bceMetric.textContent = loss.toFixed(3);
+
+      const W = bceCanvas.width;
+      const H = bceCanvas.height;
+      bctx.clearRect(0,0,W,H);
+      bctx.fillStyle = '#0d1117';
+      bctx.fillRect(0,0,W,H);
+
+      // axes
+      bctx.strokeStyle = '#30363d';
+      bctx.lineWidth = 1;
+      bctx.beginPath();
+      bctx.moveTo(30, H-30);
+      bctx.lineTo(W-20, H-30);
+      bctx.stroke();
+
+      bctx.beginPath();
+      bctx.moveTo(30, H-30);
+      bctx.lineTo(30, 20);
+      bctx.stroke();
+
+      bctx.fillStyle = '#8b949e';
+      bctx.font = '12px system-ui';
+      bctx.fillText('p̂', W-16, H-10);
+      bctx.fillText('loss', 6, 18);
+
+      function px(x){ return 30 + x*(W-50); }
+      function py(v){
+        const maxLoss = 5;
+        return H-30 - Math.min(v,maxLoss)/maxLoss*(H-50);
+      }
+
+      // curve
+      bctx.strokeStyle = y === 1 ? '#10b981' : '#ef4444';
+      bctx.lineWidth = 2.5;
+      bctx.beginPath();
+      for(let i=1;i<=400;i++){
+        const pp = i/400;
+        const ll = bceLoss(y, pp);
+        const X = px(pp), Y = py(ll);
+        if(i===1) bctx.moveTo(X,Y);
+        else bctx.lineTo(X,Y);
+      }
+      bctx.stroke();
+
+      // point
+      bctx.fillStyle = '#a78bfa';
+      bctx.beginPath();
+      bctx.arc(px(p), py(loss), 6, 0, Math.PI*2);
+      bctx.fill();
+    }
+
+    trueLabelSelect.addEventListener('change', drawBCEDemo);
+    predProbSlider.addEventListener('input', drawBCEDemo);
+
+    // ---------- Decision boundary demo ----------
+    const dbW1 = document.getElementById('dbW1');
+    const dbW2 = document.getElementById('dbW2');
+    const dbB = document.getElementById('dbB');
+    const dbThreshold = document.getElementById('dbThreshold');
+
+    const dbW1Val = document.getElementById('dbW1Val');
+    const dbW2Val = document.getElementById('dbW2Val');
+    const dbBVal = document.getElementById('dbBVal');
+    const dbThresholdVal = document.getElementById('dbThresholdVal');
+
+    const boundaryCanvas = document.getElementById('boundaryCanvas');
+    const dctx = boundaryCanvas.getContext('2d');
+
+    function drawBoundary(){
+      const w1 = Number(dbW1.value);
+      const w2 = Number(dbW2.value);
+      const b = Number(dbB.value);
+      const t = Number(dbThreshold.value);
+
+      dbW1Val.textContent = w1.toFixed(2);
+      dbW2Val.textContent = w2.toFixed(2);
+      dbBVal.textContent = b.toFixed(2);
+      dbThresholdVal.textContent = t.toFixed(2);
+
+      const W = boundaryCanvas.width;
+      const H = boundaryCanvas.height;
+      dctx.clearRect(0,0,W,H);
+      dctx.fillStyle = '#0d1117';
+      dctx.fillRect(0,0,W,H);
+
+      function px(x){ return ((x+3)/6)*W; }
+      function py(y){ return H - ((y+3)/6)*H; }
+
+      // color background by probability
+      const img = dctx.createImageData(W,H);
+      const zThreshold = Math.log(t/(1-t));
+      for(let X=0;X<W;X++){
+        for(let Y=0;Y<H;Y++){
+          const x = X/W*6 - 3;
+          const y = -(Y/H*6 - 3);
+          const z = w1*x + w2*y + b;
+          const score = z - zThreshold;
+          const idx = (Y*W+X)*4;
+          if(score >= 0){
+            img.data[idx] = 15;
+            img.data[idx+1] = 55;
+            img.data[idx+2] = 28;
+            img.data[idx+3] = 150;
+          }else{
+            img.data[idx] = 45;
+            img.data[idx+1] = 18;
+            img.data[idx+2] = 18;
+            img.data[idx+3] = 150;
+          }
+        }
+      }
+      dctx.putImageData(img,0,0);
+
+      // grid
+      dctx.strokeStyle = '#30363d';
+      dctx.lineWidth = 0.7;
+      for(let v=-2; v<=2; v++){
+        dctx.beginPath();
+        dctx.moveTo(px(v),0);
+        dctx.lineTo(px(v),H);
+        dctx.stroke();
+
+        dctx.beginPath();
+        dctx.moveTo(0,py(v));
+        dctx.lineTo(W,py(v));
+        dctx.stroke();
+      }
+
+      // boundary: w1*x + w2*y + b = logit(t)
+      dctx.strokeStyle = '#f59e0b';
+      dctx.lineWidth = 2.5;
+      dctx.beginPath();
+      if(Math.abs(w2) > 0.05){
+        const xA = -3, xB = 3;
+        const yA = (zThreshold - b - w1*xA)/w2;
+        const yB = (zThreshold - b - w1*xB)/w2;
+        dctx.moveTo(px(xA), py(yA));
+        dctx.lineTo(px(xB), py(yB));
+      } else {
+        const x = (zThreshold - b)/w1;
+        dctx.moveTo(px(x),0);
+        dctx.lineTo(px(x),H);
+      }
+      dctx.stroke();
+
+      // sample points
+      const pts = [
+        {x:-1.8,y:1.6,c:'#60a5fa'},
+        {x:-1.2,y:1.1,c:'#60a5fa'},
+        {x:-0.8,y:0.7,c:'#60a5fa'},
+        {x:1.3,y:-1.2,c:'#ef4444'},
+        {x:1.8,y:-0.9,c:'#ef4444'},
+        {x:0.9,y:-1.7,c:'#ef4444'}
+      ];
+      pts.forEach(p=>{
+        dctx.fillStyle = p.c;
+        dctx.beginPath();
+        dctx.arc(px(p.x), py(p.y), 6, 0, Math.PI*2);
+        dctx.fill();
+        dctx.strokeStyle = '#ffffff';
+        dctx.lineWidth = 1.2;
+        dctx.stroke();
+      });
+    }
+
+    [dbW1, dbW2, dbB, dbThreshold].forEach(el => el.addEventListener('input', drawBoundary));
+
+    drawSigmoidDemo();
+    drawLogit();
+    drawBCEDemo();
+    drawBoundary();
+  </script>
+</body>
+</html>

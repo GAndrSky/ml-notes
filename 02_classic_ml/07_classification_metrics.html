@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.7 Метрики классификации</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    textarea{
+      width:100%;
+      min-height:120px;
+      padding:10px;
+      resize:vertical;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      line-height:1.45;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    .tiny{
+      font-size:.86rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .conf-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    .conf-cell{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:14px;
+      min-height:96px;
+    }
+    .conf-title{
+      font-size:.85rem;
+      color:var(--muted);
+      margin-bottom:8px;
+    }
+    .conf-num{
+      font-size:1.35rem;
+      font-weight:700;
+    }
+    .tp{border-color:#14532d}
+    .tn{border-color:#1d4ed8}
+    .fp{border-color:#7f1d1d}
+    .fn{border-color:#92400e}
+
+    .kpi-good{color:var(--green);font-weight:700}
+    .kpi-bad{color:var(--red);font-weight:700}
+    .kpi-neutral{color:var(--blue);font-weight:700}
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3,.conf-grid{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="06_regression_metrics.html">2.6 Метрики регрессии</a>
+    <span class="tag tag-active">2.7 Метрики классификации</span>
+    <a class="tag tag-block" href="08_distance_based_models.html">2.8 Distance-based модели</a>
+  </div>
+
+  <header class="hero">
+    <h1>2.7 Метрики классификации</h1>
+    <p class="muted">Confusion matrix, accuracy, precision, recall, F1, ROC-AUC, PR-AUC, log loss, threshold tuning</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">confusion matrix</span>
+      <span class="mini-tag">accuracy</span>
+      <span class="mini-tag">precision</span>
+      <span class="mini-tag">recall</span>
+      <span class="mini-tag">F1</span>
+      <span class="mini-tag">ROC-AUC</span>
+      <span class="mini-tag">PR-AUC</span>
+      <span class="mini-tag">threshold</span>
+    </div>
+
+    <h2>Зачем вообще нужны метрики классификации</h2>
+    <p>
+      В задачах классификации модель предсказывает класс:
+      спам / не спам, fraud / not fraud, disease / no disease, click / no click.
+    </p>
+
+    <p>
+      Но просто сказать “модель угадала” или “не угадала” почти всегда недостаточно.
+      В разных задачах цена ошибок разная:
+    </p>
+
+    <ul>
+      <li>ложно пометить хорошее письмо как спам — неприятно,</li>
+      <li>пропустить мошенничество — может быть очень дорого,</li>
+      <li>не заметить болезнь — потенциально критично.</li>
+    </ul>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      В классификации важно не только
+      <span class="hl-green">сколько ошибок</span>,
+      но и
+      <span class="hl-green">какие именно это ошибки</span>.
+      Именно поэтому одной accuracy почти никогда не хватает.
+    </div>
+
+    <div class="warn">
+      Самая частая ошибка новичков:
+      смотреть только на accuracy и игнорировать imbalance, threshold и структуру ошибок.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.1 Confusion matrix</h2>
+
+    <p>
+      Почти все базовые метрики классификации строятся из confusion matrix.
+    </p>
+
+    <div class="formula">
+      \text{Confusion Matrix} =
+      \begin{bmatrix}
+      TN & FP \\
+      FN & TP
+      \end{bmatrix}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Positive class</h3>
+        <p>
+          Класс, который мы считаем “интересным”:
+          болезнь, fraud, positive response, click, default и т.д.
+        </p>
+      </div>
+      <div>
+        <h3>Negative class</h3>
+        <p>
+          Обратный класс: отсутствует болезнь, нет fraude, нет клика, нет дефолта.
+        </p>
+      </div>
+    </div>
+
+    <div class="conf-grid">
+      <div class="conf-cell tn">
+        <div class="conf-title">TN — True Negative</div>
+        <div>Модель сказала <span class="hl-blue">0</span>, и на самом деле был <span class="hl-blue">0</span>.</div>
+      </div>
+      <div class="conf-cell fp">
+        <div class="conf-title">FP — False Positive</div>
+        <div>Модель сказала <span class="hl-red">1</span>, но на самом деле был <span class="hl-blue">0</span>.</div>
+      </div>
+      <div class="conf-cell fn">
+        <div class="conf-title">FN — False Negative</div>
+        <div>Модель сказала <span class="hl-blue">0</span>, но на самом деле был <span class="hl-red">1</span>.</div>
+      </div>
+      <div class="conf-cell tp">
+        <div class="conf-title">TP — True Positive</div>
+        <div>Модель сказала <span class="hl-green">1</span>, и на самом деле был <span class="hl-green">1</span>.</div>
+      </div>
+    </div>
+
+    <div class="success">
+      Confusion matrix — это фундамент.
+      Accuracy, precision, recall, F1 и многие другие метрики — просто разные функции от TN, FP, FN, TP.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: confusion matrix и базовые метрики</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="tpSlider">TP <span class="badge-inline" id="tpVal">40</span></label>
+          <input type="range" id="tpSlider" min="0" max="100" value="40" step="1">
+        </div>
+        <div class="control-group">
+          <label for="fpSlider">FP <span class="badge-inline" id="fpVal">10</span></label>
+          <input type="range" id="fpSlider" min="0" max="100" value="10" step="1">
+        </div>
+        <div class="control-group">
+          <label for="fnSlider">FN <span class="badge-inline" id="fnVal">15</span></label>
+          <input type="range" id="fnSlider" min="0" max="100" value="15" step="1">
+        </div>
+        <div class="control-group">
+          <label for="tnSlider">TN <span class="badge-inline" id="tnVal">85</span></label>
+          <input type="range" id="tnSlider" min="0" max="200" value="85" step="1">
+        </div>
+
+        <div class="info">
+          Двигай значения confusion matrix и смотри,
+          как меняются accuracy, precision, recall и F1.
+        </div>
+      </div>
+
+      <div>
+        <div class="conf-grid">
+          <div class="conf-cell tn">
+            <div class="conf-title">TN</div>
+            <div class="conf-num" id="tnCell">85</div>
+          </div>
+          <div class="conf-cell fp">
+            <div class="conf-title">FP</div>
+            <div class="conf-num" id="fpCell">10</div>
+          </div>
+          <div class="conf-cell fn">
+            <div class="conf-title">FN</div>
+            <div class="conf-num" id="fnCell">15</div>
+          </div>
+          <div class="conf-cell tp">
+            <div class="conf-title">TP</div>
+            <div class="conf-num" id="tpCell">40</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">Accuracy</div>
+            <div class="value" id="accMetric">0.833</div>
+          </div>
+          <div class="metric">
+            <div class="name">Precision</div>
+            <div class="value" id="precMetric">0.800</div>
+          </div>
+          <div class="metric">
+            <div class="name">Recall</div>
+            <div class="value" id="recMetric">0.727</div>
+          </div>
+          <div class="metric">
+            <div class="name">F1</div>
+            <div class="value" id="f1Metric">0.762</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.2 Accuracy</h2>
+
+    <div class="formula">
+      \text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
+    </div>
+
+    <p>
+      Accuracy показывает долю всех объектов, которые модель классифицировала правильно.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Когда accuracy удобна</h3>
+        <ul>
+          <li>классы примерно сбалансированы,</li>
+          <li>цена всех ошибок примерно одинаковая,</li>
+          <li>нужна простая первичная метрика.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда она обманывает</h3>
+        <ul>
+          <li>сильный class imbalance,</li>
+          <li>positive class редкий,</li>
+          <li>FN и FP имеют очень разную стоимость.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Если 99% объектов — класс 0,
+      то модель, которая всегда предсказывает 0,
+      даст accuracy = 99%,
+      но практически будет бесполезной.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему accuracy ломается при imbalance</h2>
+
+    <p>
+      Представь dataset из 1000 объектов:
+    </p>
+
+    <ul>
+      <li>990 — negative,</li>
+      <li>10 — positive.</li>
+    </ul>
+
+    <p>
+      Модель, которая всегда говорит “negative”, получит:
+    </p>
+
+    <div class="formula">
+      \text{Accuracy} = \frac{990}{1000} = 99\%
+    </div>
+
+    <p>
+      Но recall по positive class у неё будет:
+    </p>
+
+    <div class="formula">
+      \text{Recall} = 0
+    </div>
+
+    <div class="success">
+      Это одна из самых важных интуиций в classification:
+      высокая accuracy может скрывать полную слепоту к редкому, но важному классу.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.3 Precision / Recall</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Precision</h3>
+        <div class="formula">
+          \text{Precision} = \frac{TP}{TP + FP}
+        </div>
+        <p>
+          Из всех объектов, которые модель назвала positive,
+          какая доля действительно positive?
+        </p>
+      </div>
+      <div>
+        <h3>Recall</h3>
+        <div class="formula">
+          \text{Recall} = \frac{TP}{TP + FN}
+        </div>
+        <p>
+          Из всех реально positive объектов,
+          какую долю модель сумела найти?
+        </p>
+      </div>
+    </div>
+
+    <div class="intuition">
+      <strong>Precision</strong> отвечает на вопрос:
+      “Если модель тревожится, насколько ей можно верить?”
+      <br><br>
+      <strong>Recall</strong> отвечает на вопрос:
+      “Сколько настоящих positive случаев мы вообще не пропустили?”
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Когда важнее precision, а когда recall</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Сценарий</th>
+          <th>Часто важнее</th>
+          <th>Почему</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Спам-фильтр</td>
+          <td>Precision</td>
+          <td>не хочется помечать хорошие письма как спам</td>
+        </tr>
+        <tr>
+          <td>Медицинский скрининг</td>
+          <td>Recall</td>
+          <td>опасно пропустить больного пациента</td>
+        </tr>
+        <tr>
+          <td>Fraud detection</td>
+          <td>Recall или баланс</td>
+          <td>пропущенный fraud может быть очень дорогим</td>
+        </tr>
+        <tr>
+          <td>Автоматическая модерация</td>
+          <td>Баланс зависит от продукта</td>
+          <td>FP и FN по-разному вредят UX</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warn">
+      Нельзя сказать “precision лучше recall” или наоборот.
+      Всё определяется ценой FP и FN в конкретной задаче.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.4 F1-score</h2>
+
+    <p>
+      F1 — это гармоническое среднее precision и recall.
+    </p>
+
+    <div class="formula">
+      F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}
+      {\text{Precision} + \text{Recall}}
+    </div>
+
+    <p>
+      Можно также записать через TP, FP, FN:
+    </p>
+
+    <div class="formula">
+      F1 = \frac{2TP}{2TP + FP + FN}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему не обычное среднее</h3>
+        <p>
+          Гармоническое среднее сильно падает,
+          если одна из величин маленькая.
+          Это полезно, когда нужен именно баланс precision и recall.
+        </p>
+      </div>
+      <div>
+        <h3>Смысл F1</h3>
+        <p>
+          Высокий F1 означает, что модель и неплохо находит positives,
+          и не слишком часто ошибается ложными тревогами.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      F1 особенно популярен при imbalance,
+      когда accuracy уже не даёт честной картины.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему F1 не всесилен</h2>
+
+    <ul>
+      <li>F1 вообще не учитывает TN,</li>
+      <li>может скрыть, что precision и recall очень разной природы,</li>
+      <li>не отражает quality of probability estimates,</li>
+      <li>не говорит, какой именно тип ошибки дороже.</li>
+    </ul>
+
+    <div class="warn">
+      Иногда две модели имеют похожий F1,
+      но у одной высокий recall и низкий precision,
+      а у другой наоборот.
+      Для бизнеса это могут быть совершенно разные системы.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Откуда берутся ROC и PR curves</h2>
+
+    <p>
+      Многие модели классификации выдают не просто класс,
+      а score или probability:
+    </p>
+
+    <div class="formula">
+      \hat{p}(y=1 \mid x)
+    </div>
+
+    <p>
+      Чтобы превратить probability в класс,
+      мы выбираем threshold:
+    </p>
+
+    <div class="formula">
+      \hat{y} =
+      \begin{cases}
+      1, & \hat{p}\ge t \\
+      0, & \hat{p}< t
+      \end{cases}
+    </div>
+
+    <p>
+      Если threshold менять, будут меняться TP, FP, FN, TN,
+      а значит и precision, recall, TPR, FPR.
+    </p>
+
+    <div class="success">
+      ROC curve и PR curve — это не “магические новые метрики”,
+      а просто графики поведения модели при разных threshold.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.5 ROC / ROC-AUC</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>TPR / Recall</h3>
+        <div class="formula">
+          TPR = \frac{TP}{TP + FN}
+        </div>
+      </div>
+      <div>
+        <h3>FPR</h3>
+        <div class="formula">
+          FPR = \frac{FP}{FP + TN}
+        </div>
+      </div>
+    </div>
+
+    <p>
+      ROC curve строится как график:
+    </p>
+
+    <div class="formula">
+      x = FPR,\qquad y = TPR
+    </div>
+
+    <p>
+      При разных threshold мы получаем разные пары <code>(FPR, TPR)</code>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>ROC-AUC</h3>
+        <p>
+          Площадь под ROC-кривой.
+          Чем ближе к 1, тем лучше модель ранжирует positives выше negatives.
+        </p>
+      </div>
+      <div>
+        <h3>Интерпретация</h3>
+        <p>
+          ROC-AUC ≈ вероятность того,
+          что случайный positive объект получит score выше,
+          чем случайный negative.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      ROC-AUC может выглядеть слишком оптимистично при сильном class imbalance.
+      Поэтому для редкого positive class часто важнее смотреть ещё и PR-AUC.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.6 PR curve / PR-AUC</h2>
+
+    <p>
+      PR curve строится в координатах:
+    </p>
+
+    <div class="formula">
+      x = Recall,\qquad y = Precision
+    </div>
+
+    <p>
+      То есть это график trade-off между precision и recall при разных threshold.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему это важно</h3>
+        <p>
+          При сильном imbalance нас часто особенно интересует,
+          насколько хорошо модель находит редкий positive class
+          без лавины ложных тревог.
+        </p>
+      </div>
+      <div>
+        <h3>PR-AUC</h3>
+        <p>
+          Площадь под precision-recall curve.
+          Часто более информативна, чем ROC-AUC,
+          когда positive class редкий.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Практическое правило:
+      <span class="hl-green">при сильном imbalance не ограничивайся ROC-AUC — смотри PR-AUC тоже</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: threshold tuning</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="thrSlider">Threshold <span class="badge-inline" id="thrVal">0.50</span></label>
+          <input type="range" id="thrSlider" min="0.05" max="0.95" value="0.5" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="modeDataset">Сценарий данных</label>
+          <select id="modeDataset">
+            <option value="balanced">Balanced</option>
+            <option value="imbalanced">Imbalanced</option>
+          </select>
+        </div>
+
+        <div class="info">
+          Здесь у нас маленький искусственный набор вероятностей и истинных меток.
+          Меняй threshold и смотри, как движутся precision, recall и accuracy.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="thresholdCanvas" width="380" height="250"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">Accuracy</div>
+            <div class="value" id="thrAcc">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">Precision</div>
+            <div class="value" id="thrPrec">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">Recall</div>
+            <div class="value" id="thrRec">0.00</div>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">F1</div>
+            <div class="value" id="thrF1">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">Predicted positives</div>
+            <div class="value" id="thrPos">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Чем ниже threshold, тем охотнее модель говорит “positive”.
+      Обычно recall растёт, а precision падает.
+      Чем выше threshold — тем наоборот.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.7 Log loss</h2>
+
+    <p>
+      Accuracy, precision, recall и F1 оценивают итоговые классы.
+      Но если модель выдаёт вероятности,
+      важно оценивать ещё и
+      <span class="hl-amber">качество самих вероятностей</span>.
+    </p>
+
+    <div class="formula">
+      \text{LogLoss} =
+      -\frac{1}{n}\sum_{i=1}^{n}
+      \Big(
+        y^{(i)}\log \hat{p}^{(i)}
+        +
+        (1-y^{(i)})\log (1-\hat{p}^{(i)})
+      \Big)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что делает log loss</h3>
+        <ul>
+          <li>смотрит на probability, а не только на label,</li>
+          <li>наказывает уверенные неправильные ответы очень сильно,</li>
+          <li>вознаграждает confident correct predictions.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему это важно</h3>
+        <p>
+          Две модели могут иметь одинаковую accuracy,
+          но одна даёт адекватные вероятности, а другая — плохие.
+          Log loss это различит.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      Accuracy не видит разницы между probability 0.51 и 0.99,
+      если обе дали правильный класс.
+      Log loss — видит.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: log loss и уверенность модели</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="llTrueLabel">Истинный класс y</label>
+          <select id="llTrueLabel">
+            <option value="1">1</option>
+            <option value="0">0</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="llProb">Предсказанная вероятность positive <span class="badge-inline" id="llProbVal">0.80</span></label>
+          <input type="range" id="llProb" min="0.01" max="0.99" value="0.8" step="0.01">
+        </div>
+
+        <div class="info">
+          Посмотри, как log loss особенно резко растёт,
+          когда модель уверена и при этом ошибается.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="logLossCanvas" width="380" height="250"></canvas>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">Probability</div>
+            <div class="value" id="llProbMetric">0.80</div>
+          </div>
+          <div class="metric">
+            <div class="name">Log loss</div>
+            <div class="value" id="llMetric">0.223</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.7.8 Threshold tuning</h2>
+
+    <p>
+      Очень часто лучший threshold — не 0.5.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Когда threshold можно опустить</h3>
+        <ul>
+          <li>важнее не пропустить positive class,</li>
+          <li>цена FN высокая,</li>
+          <li>готовы терпеть больше ложных тревог.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда threshold можно поднять</h3>
+        <ul>
+          <li>ложные тревоги очень дорогие,</li>
+          <li>важнее точность alarms,</li>
+          <li>система должна быть консервативной.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      t \downarrow \Rightarrow recall \uparrow,\; precision \downarrow \text{ (обычно)}
+    </div>
+
+    <div class="formula">
+      t \uparrow \Rightarrow recall \downarrow,\; precision \uparrow \text{ (обычно)}
+    </div>
+
+    <div class="success">
+      Threshold tuning — это bridge между ML-моделью и product/business decision.
+      Модель даёт score, а threshold превращает его в operational policy.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Сводная таблица метрик классификации</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Метрика</th>
+          <th>Формула / идея</th>
+          <th>Когда полезна</th>
+          <th>Ограничение</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Accuracy</td>
+          <td>(TP+TN)/All</td>
+          <td>баланс классов, одинаковая цена ошибок</td>
+          <td>ломается при imbalance</td>
+        </tr>
+        <tr>
+          <td>Precision</td>
+          <td>TP/(TP+FP)</td>
+          <td>важно качество positive alarms</td>
+          <td>не показывает, сколько positives пропущено</td>
+        </tr>
+        <tr>
+          <td>Recall</td>
+          <td>TP/(TP+FN)</td>
+          <td>важно не пропускать positives</td>
+          <td>не показывает цену ложных тревог</td>
+        </tr>
+        <tr>
+          <td>F1</td>
+          <td>harmonic mean of P and R</td>
+          <td>нужен баланс precision/recall</td>
+          <td>не учитывает TN</td>
+        </tr>
+        <tr>
+          <td>ROC-AUC</td>
+          <td>ранжирование positives vs negatives</td>
+          <td>сравнение скоринговых моделей</td>
+          <td>может быть слишком оптимистичен при imbalance</td>
+        </tr>
+        <tr>
+          <td>PR-AUC</td>
+          <td>precision-recall tradeoff</td>
+          <td>редкий positive class</td>
+          <td>сильнее зависит от prevalence</td>
+        </tr>
+        <tr>
+          <td>Log loss</td>
+          <td>NLL for probabilities</td>
+          <td>важно качество вероятностей</td>
+          <td>менее интуитивен, чем accuracy</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Как выбирать метрику</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Шаг 1: кто positive class?</h3>
+        <p>
+          Определи, какой класс реально важен в задаче.
+        </p>
+
+        <h3>Шаг 2: что хуже — FP или FN?</h3>
+        <p>
+          Это главный вопрос для выбора между precision и recall.
+        </p>
+      </div>
+      <div>
+        <h3>Шаг 3: нужны ли calibrated probabilities?</h3>
+        <p>
+          Если downstream-система использует probabilities,
+          смотри log loss и calibration.
+        </p>
+
+        <h3>Шаг 4: есть ли imbalance?</h3>
+        <p>
+          Если да — accuracy почти всегда недостаточна.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      Очень практичное правило:
+      <ul>
+        <li><strong>Accuracy</strong> — только как очень грубый first look,</li>
+        <li><strong>Precision / Recall / F1</strong> — для error trade-offs,</li>
+        <li><strong>ROC-AUC / PR-AUC</strong> — для score-based comparison,</li>
+        <li><strong>Log loss</strong> — для вероятностных моделей.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактивный калькулятор метрик классификации</h2>
+
+    <p class="tiny muted">
+      Вводи истины и предсказания как 0/1 через запятую. Для probabilities — отдельное поле.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="yTrueClsInput">Истинные классы y</label>
+          <textarea id="yTrueClsInput">1,0,1,1,0,0,1,0,1,0</textarea>
+        </div>
+
+        <div class="control-group">
+          <label for="yPredClsInput">Предсказанные классы ŷ</label>
+          <textarea id="yPredClsInput">1,0,1,0,0,1,1,0,0,0</textarea>
+        </div>
+
+        <div class="control-group">
+          <label for="yProbClsInput">Предсказанные probabilities p̂ (опционально, для log loss)</label>
+          <textarea id="yProbClsInput">0.91,0.12,0.82,0.43,0.25,0.61,0.77,0.08,0.48,0.19</textarea>
+        </div>
+
+        <button id="calcClsBtn">Посчитать метрики</button>
+      </div>
+
+      <div>
+        <div class="result-box" id="clsCalcResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">Basic metrics</button>
+      <button class="tab-btn" data-tab="tab2">ROC / PR</button>
+      <button class="tab-btn" data-tab="tab3">Threshold tuning</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    log_loss
+)
+
+y_true = [1,0,1,1,0,0,1,0]
+y_pred = [1,0,1,0,0,1,1,0]
+y_prob = [0.91,0.11,0.82,0.43,0.20,0.62,0.78,0.07]
+
+cm = confusion_matrix(y_true, y_pred)
+acc = accuracy_score(y_true, y_pred)
+prec = precision_score(y_true, y_pred)
+rec = recall_score(y_true, y_pred)
+f1 = f1_score(y_true, y_pred)
+ll = log_loss(y_true, y_prob)
+
+print("Confusion matrix:\\n", cm)
+print("Accuracy :", acc)
+print("Precision:", prec)
+print("Recall   :", rec)
+print("F1       :", f1)
+print("LogLoss  :", ll)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.metrics import (
+    roc_auc_score,
+    average_precision_score,
+    roc_curve,
+    precision_recall_curve
+)
+
+roc_auc = roc_auc_score(y_true, y_prob)
+pr_auc = average_precision_score(y_true, y_prob)
+
+fpr, tpr, roc_thresholds = roc_curve(y_true, y_prob)
+precision, recall, pr_thresholds = precision_recall_curve(y_true, y_prob)
+
+print("ROC-AUC:", roc_auc)
+print("PR-AUC :", pr_auc)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">import numpy as np
+from sklearn.metrics import precision_score, recall_score, f1_score
+
+thresholds = np.linspace(0.1, 0.9, 9)
+
+for t in thresholds:
+    y_pred_t = (np.array(y_prob) >= t).astype(int)
+    p = precision_score(y_true, y_pred_t, zero_division=0)
+    r = recall_score(y_true, y_pred_t, zero_division=0)
+    f1 = f1_score(y_true, y_pred_t, zero_division=0)
+
+    print(f"t={t:.1f} | precision={p:.3f} | recall={r:.3f} | f1={f1:.3f}")</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>оценивать модель только по accuracy,</li>
+        <li>игнорировать class imbalance,</li>
+        <li>не понимать, какой класс chosen as positive,</li>
+        <li>сравнивать модели по labels, когда важны probabilities,</li>
+        <li>не настраивать threshold под задачу,</li>
+        <li>смотреть на F1 и не смотреть отдельно на precision и recall,</li>
+        <li>использовать ROC-AUC как единственную метрику при редком positive class.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий блок</h3>
+        <ul>
+          <li><strong>2.8 Distance-based модели</strong></li>
+          <li>k-NN, метрики расстояния, выбор k, curse of dimensionality</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Позже особенно важно</h3>
+        <ul>
+          <li><strong>Валидация</strong> — честное сравнение по метрикам,</li>
+          <li><strong>Imbalanced classes</strong> — там precision/recall/PR-AUC снова станут центральными.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Метрики классификации отражают разные стороны качества модели.
+    </p>
+    <ul>
+      <li><strong>Confusion matrix</strong> — фундамент всех базовых метрик.</li>
+      <li><strong>Accuracy</strong> — простая, но часто обманчивая при imbalance.</li>
+      <li><strong>Precision</strong> — насколько можно доверять positive predictions.</li>
+      <li><strong>Recall</strong> — сколько настоящих positives мы нашли.</li>
+      <li><strong>F1</strong> — компромисс между precision и recall.</li>
+      <li><strong>ROC-AUC / PR-AUC</strong> — оценка ранжирования при разных threshold.</li>
+      <li><strong>Log loss</strong> — качество самих вероятностей, а не только labels.</li>
+      <li><strong>Threshold tuning</strong> — мост между моделью и реальной ценой ошибок.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      <span class="hl-green">правильная метрика зависит не от привычки, а от структуры данных и цены FP/FN</span>.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    function safeDiv(a,b){ return b === 0 ? 0 : a / b; }
+    function sigmoidLike(v){ return 1 / (1 + Math.exp(-v)); }
+
+    // ---------- Confusion matrix demo ----------
+    const tpSlider = document.getElementById('tpSlider');
+    const fpSlider = document.getElementById('fpSlider');
+    const fnSlider = document.getElementById('fnSlider');
+    const tnSlider = document.getElementById('tnSlider');
+
+    function updateConfDemo(){
+      const TP = Number(tpSlider.value);
+      const FP = Number(fpSlider.value);
+      const FN = Number(fnSlider.value);
+      const TN = Number(tnSlider.value);
+
+      document.getElementById('tpVal').textContent = TP;
+      document.getElementById('fpVal').textContent = FP;
+      document.getElementById('fnVal').textContent = FN;
+      document.getElementById('tnVal').textContent = TN;
+
+      document.getElementById('tpCell').textContent = TP;
+      document.getElementById('fpCell').textContent = FP;
+      document.getElementById('fnCell').textContent = FN;
+      document.getElementById('tnCell').textContent = TN;
+
+      const acc = safeDiv(TP + TN, TP + TN + FP + FN);
+      const prec = safeDiv(TP, TP + FP);
+      const rec = safeDiv(TP, TP + FN);
+      const f1 = (prec + rec === 0) ? 0 : 2 * prec * rec / (prec + rec);
+
+      document.getElementById('accMetric').textContent = acc.toFixed(3);
+      document.getElementById('precMetric').textContent = prec.toFixed(3);
+      document.getElementById('recMetric').textContent = rec.toFixed(3);
+      document.getElementById('f1Metric').textContent = f1.toFixed(3);
+    }
+
+    [tpSlider, fpSlider, fnSlider, tnSlider].forEach(el => el.addEventListener('input', updateConfDemo));
+
+    // ---------- Threshold demo ----------
+    const thrSlider = document.getElementById('thrSlider');
+    const modeDataset = document.getElementById('modeDataset');
+    const thrCanvas = document.getElementById('thresholdCanvas');
+    const tctx = thrCanvas.getContext('2d');
+
+    const balancedData = [
+      {p:0.94,y:1},{p:0.88,y:1},{p:0.83,y:1},{p:0.76,y:1},{p:0.69,y:1},
+      {p:0.61,y:1},{p:0.58,y:0},{p:0.52,y:1},{p:0.49,y:0},{p:0.43,y:0},
+      {p:0.39,y:0},{p:0.31,y:0},{p:0.24,y:0},{p:0.18,y:0},{p:0.12,y:0}
+    ];
+
+    const imbalancedData = [
+      {p:0.97,y:1},{p:0.85,y:1},{p:0.63,y:1},
+      {p:0.59,y:0},{p:0.54,y:0},{p:0.47,y:0},{p:0.41,y:0},{p:0.35,y:0},
+      {p:0.28,y:0},{p:0.22,y:0},{p:0.18,y:0},{p:0.15,y:0},{p:0.11,y:0},
+      {p:0.08,y:0},{p:0.05,y:0}
+    ];
+
+    function drawThresholdDemo(){
+      const t = Number(thrSlider.value);
+      document.getElementById('thrVal').textContent = t.toFixed(2);
+
+      const data = modeDataset.value === 'balanced' ? balancedData : imbalancedData;
+
+      let TP=0, FP=0, TN=0, FN=0;
+      data.forEach(d => {
+        const pred = d.p >= t ? 1 : 0;
+        if (pred === 1 && d.y === 1) TP++;
+        else if (pred === 1 && d.y === 0) FP++;
+        else if (pred === 0 && d.y === 0) TN++;
+        else FN++;
+      });
+
+      const acc = safeDiv(TP + TN, data.length);
+      const prec = safeDiv(TP, TP + FP);
+      const rec = safeDiv(TP, TP + FN);
+      const f1 = (prec + rec === 0) ? 0 : 2 * prec * rec / (prec + rec);
+      const predPos = TP + FP;
+
+      document.getElementById('thrAcc').textContent = acc.toFixed(3);
+      document.getElementById('thrPrec').textContent = prec.toFixed(3);
+      document.getElementById('thrRec').textContent = rec.toFixed(3);
+      document.getElementById('thrF1').textContent = f1.toFixed(3);
+      document.getElementById('thrPos').textContent = predPos;
+
+      const W = thrCanvas.width;
+      const H = thrCanvas.height;
+      tctx.clearRect(0,0,W,H);
+      tctx.fillStyle = '#0d1117';
+      tctx.fillRect(0,0,W,H);
+
+      tctx.strokeStyle = '#30363d';
+      tctx.beginPath();
+      tctx.moveTo(20, H - 30);
+      tctx.lineTo(W - 20, H - 30);
+      tctx.stroke();
+
+      const gap = (W - 40) / data.length;
+      data.forEach((d, i) => {
+        const x = 20 + i * gap + gap * 0.5;
+        const h = d.p * (H - 60);
+        tctx.fillStyle = d.y === 1 ? '#10b981' : '#60a5fa';
+        tctx.fillRect(x - 8, H - 30 - h, 16, h);
+
+        if (d.p >= t) {
+          tctx.strokeStyle = '#f59e0b';
+          tctx.lineWidth = 2;
+          tctx.strokeRect(x - 10, H - 32 - h, 20, h + 4);
+        }
+      });
+
+      const yThr = H - 30 - t * (H - 60);
+      tctx.strokeStyle = '#ef4444';
+      tctx.setLineDash([5,4]);
+      tctx.beginPath();
+      tctx.moveTo(20, yThr);
+      tctx.lineTo(W - 20, yThr);
+      tctx.stroke();
+      tctx.setLineDash([]);
+
+      tctx.fillStyle = '#8b949e';
+      tctx.font = '12px system-ui';
+      tctx.fillText('probabilities with current threshold', 18, 18);
+    }
+
+    thrSlider.addEventListener('input', drawThresholdDemo);
+    modeDataset.addEventListener('change', drawThresholdDemo);
+
+    // ---------- Log loss demo ----------
+    const llTrueLabel = document.getElementById('llTrueLabel');
+    const llProb = document.getElementById('llProb');
+    const llProbVal = document.getElementById('llProbVal');
+    const llProbMetric = document.getElementById('llProbMetric');
+    const llMetric = document.getElementById('llMetric');
+    const logLossCanvas = document.getElementById('logLossCanvas');
+    const lctx = logLossCanvas.getContext('2d');
+
+    function logLoss(y,p){
+      const eps = 1e-12;
+      const pp = Math.min(1-eps, Math.max(eps, p));
+      return -(y*Math.log(pp) + (1-y)*Math.log(1-pp));
+    }
+
+    function drawLogLossDemo(){
+      const y = Number(llTrueLabel.value);
+      const p = Number(llProb.value);
+      const loss = logLoss(y,p);
+
+      llProbVal.textContent = p.toFixed(2);
+      llProbMetric.textContent = p.toFixed(2);
+      llMetric.textContent = loss.toFixed(3);
+
+      const W = logLossCanvas.width;
+      const H = logLossCanvas.height;
+      lctx.clearRect(0,0,W,H);
+      lctx.fillStyle = '#0d1117';
+      lctx.fillRect(0,0,W,H);
+
+      lctx.strokeStyle = '#30363d';
+      lctx.beginPath();
+      lctx.moveTo(30, H - 30);
+      lctx.lineTo(W - 20, H - 30);
+      lctx.stroke();
+
+      lctx.beginPath();
+      lctx.moveTo(30, H - 30);
+      lctx.lineTo(30, 20);
+      lctx.stroke();
+
+      lctx.fillStyle = '#8b949e';
+      lctx.font = '12px system-ui';
+      lctx.fillText('p̂', W - 14, H - 10);
+      lctx.fillText('loss', 6, 18);
+
+      function px(x){ return 30 + x * (W - 50); }
+      function py(v){
+        const maxL = 5;
+        return H - 30 - Math.min(v, maxL) / maxL * (H - 50);
+      }
+
+      lctx.strokeStyle = y === 1 ? '#10b981' : '#ef4444';
+      lctx.lineWidth = 2.5;
+      lctx.beginPath();
+
+      for(let i=1; i<=400; i++){
+        const pp = i / 400;
+        const ll = logLoss(y, pp);
+        const X = px(pp), Y = py(ll);
+        if (i === 1) lctx.moveTo(X,Y);
+        else lctx.lineTo(X,Y);
+      }
+      lctx.stroke();
+
+      lctx.fillStyle = '#a78bfa';
+      lctx.beginPath();
+      lctx.arc(px(p), py(loss), 6, 0, Math.PI * 2);
+      lctx.fill();
+    }
+
+    llTrueLabel.addEventListener('change', drawLogLossDemo);
+    llProb.addEventListener('input', drawLogLossDemo);
+
+    // ---------- Calculator ----------
+    const calcClsBtn = document.getElementById('calcClsBtn');
+    const yTrueClsInput = document.getElementById('yTrueClsInput');
+    const yPredClsInput = document.getElementById('yPredClsInput');
+    const yProbClsInput = document.getElementById('yProbClsInput');
+    const clsCalcResult = document.getElementById('clsCalcResult');
+
+    function parseNumArray(str){
+      return str
+        .split(',')
+        .map(x => x.trim())
+        .filter(x => x.length > 0)
+        .map(Number)
+        .filter(x => !Number.isNaN(x));
+    }
+
+    function calcClsMetrics(){
+      const yTrue = parseNumArray(yTrueClsInput.value);
+      const yPred = parseNumArray(yPredClsInput.value);
+      const yProb = parseNumArray(yProbClsInput.value);
+
+      if (yTrue.length === 0 || yPred.length === 0) {
+        clsCalcResult.innerHTML = '<span class="kpi-bad">Введи непустые массивы y и ŷ.</span>';
+        return;
+      }
+      if (yTrue.length !== yPred.length) {
+        clsCalcResult.innerHTML = '<span class="kpi-bad">Длины y и ŷ должны совпадать.</span>';
+        return;
+      }
+      if (!yTrue.every(v => v === 0 || v === 1) || !yPred.every(v => v === 0 || v === 1)) {
+        clsCalcResult.innerHTML = '<span class="kpi-bad">Для y и ŷ используй только 0 и 1.</span>';
+        return;
+      }
+
+      let TP=0, FP=0, TN=0, FN=0;
+      for(let i=0;i<yTrue.length;i++){
+        if (yPred[i] === 1 && yTrue[i] === 1) TP++;
+        else if (yPred[i] === 1 && yTrue[i] === 0) FP++;
+        else if (yPred[i] === 0 && yTrue[i] === 0) TN++;
+        else FN++;
+      }
+
+      const acc = safeDiv(TP + TN, yTrue.length);
+      const prec = safeDiv(TP, TP + FP);
+      const rec = safeDiv(TP, TP + FN);
+      const f1 = (prec + rec === 0) ? 0 : 2 * prec * rec / (prec + rec);
+
+      let llText = 'не считаем: probabilities отсутствуют или длина не совпадает';
+      if (yProb.length === yTrue.length) {
+        if (yProb.every(v => v >= 0 && v <= 1)) {
+          let ll = 0;
+          for(let i=0;i<yTrue.length;i++) ll += logLoss(yTrue[i], yProb[i]);
+          ll /= yTrue.length;
+          llText = ll.toFixed(6);
+        } else {
+          llText = 'ошибка: probabilities должны быть в [0,1]';
+        }
+      }
+
+      clsCalcResult.innerHTML = `
+        <div><strong>Confusion Matrix:</strong></div>
+        <div style="margin-top:8px">TN = <span class="hl-blue">${TN}</span>, FP = <span class="hl-red">${FP}</span>, FN = <span class="hl-amber">${FN}</span>, TP = <span class="hl-green">${TP}</span></div>
+        <div style="margin-top:10px"><strong>Accuracy:</strong> <span class="hl-blue">${acc.toFixed(6)}</span></div>
+        <div><strong>Precision:</strong> <span class="hl-green">${prec.toFixed(6)}</span></div>
+        <div><strong>Recall:</strong> <span class="hl-purple">${rec.toFixed(6)}</span></div>
+        <div><strong>F1:</strong> <span class="hl-amber">${f1.toFixed(6)}</span></div>
+        <div><strong>Log loss:</strong> <span class="hl-red">${llText}</span></div>
+        <div style="margin-top:10px" class="muted">Помни: одна и та же accuracy может скрывать очень разную структуру FP и FN.</div>
+      `;
+    }
+
+    calcClsBtn.addEventListener('click', calcClsMetrics);
+
+    // init
+    updateConfDemo();
+    drawThresholdDemo();
+    drawLogLossDemo();
+    calcClsMetrics();
+  </script>
+</body>
+</html>

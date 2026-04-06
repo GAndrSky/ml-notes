@@ -11,15 +11,19 @@
     Sigma: "\u03a3",
     lambda: "\u03bb",
     rho: "\u03c1",
+    theta: "\u03b8",
     eta: "\u03b7",
     varepsilon: "\u03b5",
     epsilon: "\u03b5",
+    pi: "\u03c0",
     Omega: "\u03a9",
     omega: "\u03c9",
+    ell: "\u2113",
     partial: "\u2202",
     nabla: "\u2207",
     in: "\u2208",
     mid: "|",
+    perp: "\u22a5",
     propto: "\u221d",
     approx: "\u2248",
     sim: "\u223c",
@@ -29,8 +33,12 @@
     leftarrow: "\u2190",
     rightarrow: "\u2192",
     to: "\u2192",
+    iff: "\u21d4",
+    leftrightarrow: "\u2194",
+    longleftrightarrow: "\u27f7",
     uparrow: "\u2191",
     downarrow: "\u2193",
+    infty: "\u221e",
     ge: "\u2265",
     geq: "\u2265",
     le: "\u2264",
@@ -75,7 +83,11 @@
       ".tex-matrix{display:inline-flex;align-items:stretch;gap:.4em;vertical-align:middle;}" +
       ".tex-matrix__bracket{font-size:1.55em;line-height:1;display:flex;align-items:center;}" +
       ".tex-matrix__rows{display:flex;flex-direction:column;gap:.2em;}" +
-      ".tex-matrix__row{white-space:nowrap;}" +
+      ".tex-matrix__row{white-space:nowrap;display:flex;gap:.75em;}" +
+      ".tex-cases{display:inline-flex;align-items:stretch;gap:.4em;vertical-align:middle;}" +
+      ".tex-cases__brace{font-size:1.8em;line-height:1;display:flex;align-items:center;}" +
+      ".tex-cases__rows{display:flex;flex-direction:column;gap:.2em;}" +
+      ".tex-cases__row{white-space:nowrap;display:flex;gap:.75em;}" +
       ".tag{text-decoration:none;}";
     document.head.appendChild(style);
   }
@@ -111,15 +123,42 @@
     );
   }
 
+  function buildRowCells(row, rowClass) {
+    return (
+      '<span class="' +
+      rowClass +
+      '">' +
+      row
+        .split("&")
+        .map(function (cell) {
+          return '<span class="tex-matrix__cell">' + renderMath(cell.trim()) + "</span>";
+        })
+        .join("") +
+      "</span>"
+    );
+  }
+
   function buildMatrix(rows) {
     return (
       '<span class="tex-matrix"><span class="tex-matrix__bracket">[</span><span class="tex-matrix__rows">' +
       rows
         .map(function (row) {
-          return '<span class="tex-matrix__row">' + row + "</span>";
+          return buildRowCells(row, "tex-matrix__row");
         })
         .join("") +
       '</span><span class="tex-matrix__bracket">]</span></span>'
+    );
+  }
+
+  function buildCases(rows) {
+    return (
+      '<span class="tex-cases"><span class="tex-cases__brace">{</span><span class="tex-cases__rows">' +
+      rows
+        .map(function (row) {
+          return buildRowCells(row, "tex-cases__row");
+        })
+        .join("") +
+      "</span></span>"
     );
   }
 
@@ -240,30 +279,44 @@
         return accentText(htmlToText(renderMath(extractGroupSource())), "\u0302");
       }
 
+      if (name === "bar") {
+        return accentText(htmlToText(renderMath(extractGroupSource())), "\u0304");
+      }
+
       if (name === "tilde") {
         return accentText(htmlToText(renderMath(extractGroupSource())), "\u0303");
       }
 
+      if (name === "sqrt") {
+        return "\u221a(" + renderMath(extractGroupSource()) + ")";
+      }
+
       if (name === "begin") {
         var environment = htmlToText(renderMath(extractGroupSource())).trim();
+        var endToken = "\\end{" + environment + "}";
+        var endIndex = input.indexOf(endToken, index);
+
+        if (endIndex === -1) {
+          return "";
+        }
+
+        var matrixSource = input.slice(index, endIndex);
+        index = endIndex + endToken.length;
 
         if (environment === "bmatrix") {
-          var endToken = "\\end{" + environment + "}";
-          var endIndex = input.indexOf(endToken, index);
-
-          if (endIndex === -1) {
-            return "";
-          }
-
-          var matrixSource = input.slice(index, endIndex);
-          index = endIndex + endToken.length;
-
           return buildMatrix(
             matrixSource
               .split(/\\\\/)
-              .map(function (row) {
-                return renderMath(row.trim());
-              })
+              .map(function (row) { return row.trim(); })
+              .filter(Boolean)
+          );
+        }
+
+        if (environment === "cases") {
+          return buildCases(
+            matrixSource
+              .split(/\\\\/)
+              .map(function (row) { return row.trim(); })
               .filter(Boolean)
           );
         }
@@ -271,7 +324,7 @@
         return "";
       }
 
-      if (name === "end" || name === "left" || name === "right" || name === "Bigl" || name === "Bigr" || name === "bigl" || name === "bigr") {
+      if (name === "end" || name === "left" || name === "right" || name === "Big" || name === "big" || name === "Bigl" || name === "Bigr" || name === "bigl" || name === "bigr") {
         if (name === "end") {
           extractGroupSource();
         }

@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.8 Distance-based модели</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    .tiny{
+      font-size:.86rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .legend{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      font-size:.86rem;
+      color:var(--muted);
+    }
+    .legend span::before{
+      content:"";
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+      vertical-align:middle;
+    }
+    .legend .blue::before{background:var(--blue)}
+    .legend .red::before{background:var(--red)}
+    .legend .green::before{background:var(--green)}
+    .legend .purple::before{background:var(--purple)}
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="07_classification_metrics.html">2.7 Метрики классификации</a>
+    <span class="tag tag-active">2.8 Distance-based модели</span>
+    <a class="tag tag-block" href="09_naive_bayes.html">2.9 Naive Bayes</a>
+  </div>
+
+  <header class="hero">
+    <h1>2.8 Distance-based модели</h1>
+    <p class="muted">k-NN intuition, distance metrics, choosing k, scaling, curse of dimensionality</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">k-NN</span>
+      <span class="mini-tag">Euclidean</span>
+      <span class="mini-tag">Manhattan</span>
+      <span class="mini-tag">Minkowski</span>
+      <span class="mini-tag">scaling</span>
+      <span class="mini-tag">curse of dimensionality</span>
+    </div>
+
+    <h2>Что такое distance-based модели</h2>
+    <p>
+      Distance-based модели принимают решение, опираясь на
+      <span class="hl-amber">близость объектов друг к другу</span>.
+      Их основной вопрос звучит так:
+      <span class="hl-green">“Какие обучающие объекты больше всего похожи на новый объект?”</span>
+    </p>
+
+    <div class="formula">
+      \text{similarity} \longleftrightarrow \text{distance}
+    </div>
+
+    <p>
+      Если два объекта близки по признакам, модель предполагает,
+      что они, вероятно, похожи и по target.
+    </p>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Представь новый дом, для которого надо предсказать цену.
+      Один из самых естественных подходов:
+      найти несколько самых похожих домов из истории продаж
+      и посмотреть, сколько они стоили.
+      Это и есть базовая философия distance-based подхода.
+    </div>
+
+    <div class="info">
+      Самая важная особенность:
+      в таких моделях качество решения критически зависит от того,
+      <span class="hl-blue">как именно определена дистанция</span>
+      и
+      <span class="hl-blue">насколько осмысленно представлены признаки</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.8.1 k-NN intuition</h2>
+
+    <p>
+      Самая классическая distance-based модель — это
+      <span class="hl-amber">k-nearest neighbors</span>, или просто <code>k-NN</code>.
+    </p>
+
+    <div class="step"><strong>Шаг 1.</strong> Для нового объекта считаем расстояние до всех обучающих объектов.</div>
+    <div class="step"><strong>Шаг 2.</strong> Берём <code>k</code> ближайших соседей.</div>
+    <div class="step"><strong>Шаг 3.</strong> Для classification — голосуем по классам.</div>
+    <div class="step"><strong>Шаг 4.</strong> Для regression — усредняем target соседей.</div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Для классификации</h3>
+        <div class="formula">
+          \hat{y} = \text{majority vote among k nearest neighbors}
+        </div>
+      </div>
+      <div>
+        <h3>Для регрессии</h3>
+        <div class="formula">
+          \hat{y} = \frac{1}{k}\sum_{i \in \mathcal{N}_k(x)} y^{(i)}
+        </div>
+      </div>
+    </div>
+
+    <div class="success">
+      k-NN — это один из самых интуитивных алгоритмов во всём ML:
+      “скажи мне, кто рядом с объектом, и я пойму, кем он, скорее всего, является”.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему k-NN называют lazy learner</h2>
+
+    <p>
+      В отличие от линейной регрессии, логистической регрессии или деревьев,
+      k-NN почти ничего не “учит” заранее в привычном смысле.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>На этапе train</h3>
+        <ul>
+          <li>модель в основном просто запоминает данные,</li>
+          <li>нет явного вычисления весов или сплитов,</li>
+          <li>основная работа откладывается.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>На этапе inference</h3>
+        <ul>
+          <li>считаются расстояния до train points,</li>
+          <li>ищутся ближайшие соседи,</li>
+          <li>решение принимается “на месте”.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Из-за этого у k-NN обычно дешёвое “обучение”,
+      но более дорогой prediction time,
+      особенно если dataset большой.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: k-NN classification intuition</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="kSlider">Число соседей k <span class="badge-inline" id="kVal">3</span></label>
+          <input type="range" id="kSlider" min="1" max="15" value="3" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="metricSelect">Метрика расстояния</label>
+          <select id="metricSelect">
+            <option value="euclidean">Euclidean (L2)</option>
+            <option value="manhattan">Manhattan (L1)</option>
+            <option value="minkowski3">Minkowski (p=3)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="weightMode">Голосование</label>
+          <select id="weightMode">
+            <option value="uniform">Uniform vote</option>
+            <option value="distance">Distance-weighted vote</option>
+          </select>
+        </div>
+
+        <div class="info">
+          Кликни по полю справа, чтобы двигать новый объект.
+          Алгоритм найдёт ближайших соседей и покажет предсказание.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="knnCanvas" width="380" height="280"></canvas>
+        <div class="legend">
+          <span class="blue">класс 0</span>
+          <span class="red">класс 1</span>
+          <span class="green">query point</span>
+          <span class="purple">выбранные соседи</span>
+        </div>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">Предсказанный класс</div>
+            <div class="value" id="knnPredClass">0</div>
+          </div>
+          <div class="metric">
+            <div class="name">Счёт голосов</div>
+            <div class="value" id="knnVoteInfo">0.00 / 0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      С маленьким <code>k</code> решение становится очень локальным и чувствительным к шуму.
+      С большим <code>k</code> решение сглаживается, но может терять тонкую структуру данных.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.8.2 Метрики расстояния</h2>
+
+    <p>
+      k-NN и другие distance-based методы живут на понятии расстояния.
+      Поэтому выбор метрики — не мелочь, а часть самой модели.
+    </p>
+
+    <h3>Euclidean distance (L2)</h3>
+    <div class="formula">
+      d(\mathbf{x}, \mathbf{z}) =
+      \sqrt{\sum_{j=1}^{d}(x_j - z_j)^2}
+    </div>
+
+    <h3>Manhattan distance (L1)</h3>
+    <div class="formula">
+      d(\mathbf{x}, \mathbf{z}) =
+      \sum_{j=1}^{d}|x_j - z_j|
+    </div>
+
+    <h3>Minkowski distance</h3>
+    <div class="formula">
+      d_p(\mathbf{x}, \mathbf{z}) =
+      \left(
+      \sum_{j=1}^{d}|x_j - z_j|^p
+      \right)^{1/p}
+    </div>
+
+    <p>
+      Euclidean — это частный случай Minkowski при <code>p = 2</code>,
+      Manhattan — при <code>p = 1</code>.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Метрика</th>
+          <th>Интуитивный образ</th>
+          <th>Особенность</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Euclidean</td>
+          <td>“по прямой”</td>
+          <td>сильнее подчёркивает большие координатные отклонения</td>
+        </tr>
+        <tr>
+          <td>Manhattan</td>
+          <td>“по кварталам”</td>
+          <td>иногда устойчивее в sparse / grid-like пространствах</td>
+        </tr>
+        <tr>
+          <td>Minkowski</td>
+          <td>общее семейство</td>
+          <td>позволяет варьировать форму шаров расстояния</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: сравнение расстояний</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="axSlider">Точка A: x₁ <span class="badge-inline" id="axVal">1.0</span></label>
+          <input type="range" id="axSlider" min="-5" max="5" value="1" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="aySlider">Точка A: x₂ <span class="badge-inline" id="ayVal">1.0</span></label>
+          <input type="range" id="aySlider" min="-5" max="5" value="1" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="bxSlider">Точка B: z₁ <span class="badge-inline" id="bxVal">4.0</span></label>
+          <input type="range" id="bxSlider" min="-5" max="5" value="4" step="0.1">
+        </div>
+        <div class="control-group">
+          <label for="bySlider">Точка B: z₂ <span class="badge-inline" id="byVal">3.0</span></label>
+          <input type="range" id="bySlider" min="-5" max="5" value="3" step="0.1">
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="distanceResult"></div>
+        <canvas id="distanceCanvas" width="380" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.8.3 Выбор k</h2>
+
+    <p>
+      Параметр <code>k</code> — один из самых важных гиперпараметров в k-NN.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Маленькое k</h3>
+        <ul>
+          <li>очень локальное решение,</li>
+          <li>низкий bias,</li>
+          <li>высокая variance,</li>
+          <li>сильная чувствительность к шуму и выбросам.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Большое k</h3>
+        <ul>
+          <li>более сглаженное решение,</li>
+          <li>выше bias,</li>
+          <li>ниже variance,</li>
+          <li>может “размывать” локальную структуру классов.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      k \downarrow \Rightarrow \text{variance} \uparrow,\quad
+      k \uparrow \Rightarrow \text{bias} \uparrow
+    </div>
+
+    <div class="success">
+      Выбор <code>k</code> — это ещё один пример bias-variance tradeoff.
+    </div>
+
+    <div class="warn">
+      Нет универсального “правильного” k.
+      Его обычно подбирают по validation / cross-validation.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Odd vs even k</h2>
+
+    <p>
+      Для бинарной классификации часто любят нечётные значения <code>k</code>,
+      чтобы реже возникали ничьи.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему odd k удобно</h3>
+        <ul>
+          <li>меньше ties,</li>
+          <li>решение проще интерпретировать,</li>
+          <li>меньше need for tie-breaking rule.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Но это не догма</h3>
+        <ul>
+          <li>в multiclass ничьи всё равно могут быть,</li>
+          <li>distance weighting может снижать проблему,</li>
+          <li>главный критерий всё равно качество на validation.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Uniform vote vs distance-weighted vote</h2>
+
+    <p>
+      Не все соседи обязаны влиять одинаково.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Uniform vote</h3>
+        <div class="formula">
+          \text{all neighbors have equal weight}
+        </div>
+        <p>
+          Самый простой вариант: каждый из k соседей даёт один голос.
+        </p>
+      </div>
+      <div>
+        <h3>Distance-weighted vote</h3>
+        <div class="formula">
+          w_i \propto \frac{1}{d_i + \varepsilon}
+        </div>
+        <p>
+          Более близкие соседи влияют сильнее, чем дальние.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      Distance weighting часто помогает,
+      когда ближайшие 1–2 точки действительно намного информативнее,
+      чем остальные из top-k.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.8.4 Влияние масштабирования</h2>
+
+    <p>
+      Для distance-based моделей масштаб признаков
+      <span class="hl-red">критически важен</span>.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Проблема</h3>
+        <p>
+          Если один признак измеряется в диапазоне 0–1,
+          а другой — в диапазоне 0–100000,
+          то второй почти полностью захватит расстояние.
+        </p>
+      </div>
+      <div>
+        <h3>Следствие</h3>
+        <p>
+          Модель будет считать объекты “близкими” или “далёкими”
+          в основном из-за крупномасштабных признаков,
+          даже если по смыслу это неправильно.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula">
+      d(\mathbf{x}, \mathbf{z}) =
+      \sqrt{
+        (x_1-z_1)^2 + (x_2-z_2)^2 + \dots
+      }
+    </div>
+
+    <p>
+      Если один признак огромен по scale, он доминирует в сумме.
+    </p>
+
+    <div class="success">
+      Для k-NN, SVM, k-means, PCA и других геометрических методов
+      scaling почти всегда не optional, а essential.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: как scale ломает соседство</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="scaleInfluence">Масштаб второго признака <span class="badge-inline" id="scaleInfluenceVal">1</span></label>
+          <input type="range" id="scaleInfluence" min="1" max="100" value="1" step="1">
+        </div>
+
+        <div class="info">
+          Ниже сравниваются расстояния от query point до нескольких кандидатов.
+          Когда scale второго признака растёт, порядок соседей может резко измениться.
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="scaleNeighborResult"></div>
+        <canvas id="scaleNeighborCanvas" width="380" height="240"></canvas>
+      </div>
+    </div>
+
+    <div class="warn">
+      Это одна из самых важных practically relevant ideas темы:
+      без нормального scaling distance-based модель может принимать решения не по смыслу, а по единицам измерения.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Какие виды scaling особенно часто используют</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Метод</th>
+          <th>Формула / идея</th>
+          <th>Когда полезен</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Standardization</td>
+          <td>(x - μ) / σ</td>
+          <td>наиболее универсальный вариант</td>
+        </tr>
+        <tr>
+          <td>Min-Max scaling</td>
+          <td>в [0,1]</td>
+          <td>когда важен контролируемый диапазон</td>
+        </tr>
+        <tr>
+          <td>Robust scaling</td>
+          <td>через median и IQR</td>
+          <td>если много выбросов</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      Для distance-based методов standardization часто становится default baseline.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.8.5 Curse of dimensionality</h2>
+
+    <p>
+      Одна из самых фундаментальных проблем distance-based методов —
+      <span class="hl-amber">проклятие размерности</span>.
+    </p>
+
+    <div class="intuition">
+      В низкой размерности идея “соседства” выглядит естественно.
+      На плоскости или в 3D можно легко представить, кто рядом.
+      Но когда признаков становится очень много,
+      пространство становится настолько разреженным,
+      что понятие “близко” начинает терять смысл.
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что происходит</h3>
+        <ul>
+          <li>все точки становятся далеко друг от друга,</li>
+          <li>разница между nearest и farthest соседом уменьшается относительно масштаба,</li>
+          <li>нужен всё более плотный sampling пространства,</li>
+          <li>distance metrics становятся менее информативны.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Следствие для k-NN</h3>
+        <ul>
+          <li>соседи уже не так “локальны”,</li>
+          <li>decision boundary становится хуже,</li>
+          <li>модель начинает страдать даже при хорошем выборе k.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="formula">
+      d \uparrow \Rightarrow \text{space volume} \uparrow \uparrow \uparrow
+    </div>
+
+    <div class="warn">
+      В high-dimensional данных “ближайший сосед” может быть
+      не настолько близким, как хотелось бы.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: curse of dimensionality intuition</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="dimSlider">Размерность d <span class="badge-inline" id="dimVal">2</span></label>
+          <input type="range" id="dimSlider" min="2" max="100" value="2" step="1">
+        </div>
+
+        <div class="info">
+          Ниже показывается интуитивное отношение между дистанцией до ближайшей и дальней точки
+          в случайном облаке. При росте размерности разница становится менее выразительной.
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="dimResult"></div>
+        <canvas id="dimCanvas" width="380" height="230"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Сильные стороны k-NN</h2>
+
+    <ul>
+      <li>очень интуитивен,</li>
+      <li>не требует сложной подгонки модели,</li>
+      <li>может ловить довольно сложные локальные границы,</li>
+      <li>подходит и для classification, и для regression,</li>
+      <li>часто хорош как baseline на небольших tabular задачах.</li>
+    </ul>
+
+    <div class="success">
+      k-NN особенно полезен как educational model:
+      он отлично показывает, как геометрия пространства признаков напрямую влияет на предсказание.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Слабые стороны k-NN</h2>
+
+    <ul>
+      <li>дорогой inference на больших train datasets,</li>
+      <li>чувствительность к scale признаков,</li>
+      <li>страдает от irrelevant features,</li>
+      <li>страдает в high dimensions,</li>
+      <li>чувствителен к шуму при маленьком k,</li>
+      <li>может требовать много памяти, потому что фактически хранит train data.</li>
+    </ul>
+
+    <div class="warn">
+      Если в данных много мусорных признаков,
+      то расстояние начинает учитывать этот шум, и соседство быстро деградирует.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Distance-based модели шире, чем просто k-NN</h2>
+
+    <p>
+      Хотя k-NN — самый очевидный пример,
+      сама идея distance-based подхода встречается шире:
+    </p>
+
+    <ul>
+      <li><strong>k-NN classification/regression</strong>,</li>
+      <li><strong>k-means</strong> — расстояние до центроидов,</li>
+      <li><strong>hierarchical clustering</strong> — расстояния между объектами/кластерами,</li>
+      <li><strong>DBSCAN</strong> — density и neighborhood radius,</li>
+      <li><strong>retrieval / nearest neighbor search</strong> — поиск похожих объектов.</li>
+    </ul>
+
+    <div class="info">
+      Поэтому идеи scaling, metric choice и curse of dimensionality
+      будут всплывать дальше ещё много раз.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Практические советы</h2>
+
+    <div class="step"><strong>1.</strong> Всегда начинай с нормального preprocessing: missing values, encoding, scaling.</div>
+    <div class="step"><strong>2.</strong> Подбирай <code>k</code> через validation / CV, а не “по вкусу”.</div>
+    <div class="step"><strong>3.</strong> Проверяй разные distance metrics, если задача чувствительна к геометрии.</div>
+    <div class="step"><strong>4.</strong> Подумай о feature selection или dimensionality reduction, если признаков много.</div>
+    <div class="step"><strong>5.</strong> Для больших datasets учитывай цену inference и возможную необходимость approximate nearest neighbors.</div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn / NumPy</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">k-NN classification</button>
+      <button class="tab-btn" data-tab="tab2">k-NN regression</button>
+      <button class="tab-btn" data-tab="tab3">Pipeline with scaling</button>
+      <button class="tab-btn" data-tab="tab4">Distance by hand</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("knn", KNeighborsClassifier(
+        n_neighbors=5,
+        metric="minkowski",
+        p=2,              # Euclidean
+        weights="uniform" # or "distance"
+    ))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)
+proba = model.predict_proba(X_val)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsRegressor
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("knn", KNeighborsRegressor(
+        n_neighbors=7,
+        metric="minkowski",
+        p=2,
+        weights="distance"
+    ))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_val)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("knn", KNeighborsClassifier())
+])
+
+param_grid = {
+    "knn__n_neighbors": [1, 3, 5, 7, 11, 15],
+    "knn__weights": ["uniform", "distance"],
+    "knn__metric": ["minkowski"],
+    "knn__p": [1, 2]
+}
+
+search = GridSearchCV(
+    pipe,
+    param_grid=param_grid,
+    cv=5,
+    scoring="f1"
+)
+
+search.fit(X_train, y_train)
+
+print("best params:", search.best_params_)
+print("best score :", search.best_score_)</div>
+    </div>
+
+    <div class="tab-panel" id="tab4">
+      <div class="code-block">import numpy as np
+
+x = np.array([1.0, 2.0, 3.0])
+z = np.array([4.0, 1.0, 7.0])
+
+# Euclidean (L2)
+euclidean = np.sqrt(np.sum((x - z) ** 2))
+
+# Manhattan (L1)
+manhattan = np.sum(np.abs(x - z))
+
+# Minkowski p=3
+p = 3
+minkowski = np.sum(np.abs(x - z) ** p) ** (1 / p)
+
+print("Euclidean:", euclidean)
+print("Manhattan:", manhattan)
+print("Minkowski p=3:", minkowski)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>забывать масштабирование перед k-NN,</li>
+        <li>использовать k-NN на high-dimensional данных без критики,</li>
+        <li>думать, что “ближайший” сосед всегда semantic nearest,</li>
+        <li>не подбирать k и metric по validation,</li>
+        <li>не замечать, что irrelevant features ломают расстояния,</li>
+        <li>оценивать только train performance и забывать про inference cost.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий блок</h3>
+        <ul>
+          <li><strong>2.9 Naive Bayes</strong></li>
+          <li>там логика уже будет не геометрическая, а вероятностная</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Позже ещё вернёмся к этим идеям</h3>
+        <ul>
+          <li><strong>Кластеризация</strong> — расстояния снова в центре,</li>
+          <li><strong>Снижение размерности</strong> — curse of dimensionality снова станет важным.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Distance-based модели принимают решения, опираясь на близость объектов в пространстве признаков.
+    </p>
+    <ul>
+      <li><strong>k-NN</strong> ищет ближайших соседей и голосует / усредняет.</li>
+      <li>Ключевой design choice — это <strong>distance metric</strong>.</li>
+      <li>Параметр <strong>k</strong> управляет bias-variance tradeoff.</li>
+      <li><strong>Scaling</strong> здесь критичен, а не просто желателен.</li>
+      <li>В high dimensions distance начинает терять информативность — это <strong>curse of dimensionality</strong>.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      <span class="hl-green">в distance-based моделях геометрия данных и есть сама модель</span>.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    function dist(a, b, mode){
+      let p = 2;
+      if (mode === 'manhattan') {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+      }
+      if (mode === 'minkowski3') p = 3;
+      return (Math.abs(a.x - b.x) ** p + Math.abs(a.y - b.y) ** p) ** (1 / p);
+    }
+
+    // ---------- kNN demo ----------
+    const kSlider = document.getElementById('kSlider');
+    const metricSelect = document.getElementById('metricSelect');
+    const weightMode = document.getElementById('weightMode');
+    const knnCanvas = document.getElementById('knnCanvas');
+    const kctx = knnCanvas.getContext('2d');
+
+    const knnPoints = [
+      {x:-2.2,y:1.5,c:0},{x:-1.7,y:1.0,c:0},{x:-1.2,y:1.7,c:0},{x:-0.6,y:1.1,c:0},
+      {x:1.3,y:-1.4,c:1},{x:1.8,y:-1.0,c:1},{x:2.3,y:-1.7,c:1},{x:0.9,y:-0.8,c:1},
+      {x:-0.3,y:0.2,c:0},{x:0.4,y:-0.1,c:1},{x:-1.0,y:0.3,c:0},{x:1.1,y:-0.2,c:1}
+    ];
+    let query = {x:0.1, y:0.4};
+
+    function canvasToWorld(x, y, W, H){
+      return {x: x / W * 6 - 3, y: -(y / H * 6 - 3)};
+    }
+    function worldToCanvas(p, W, H){
+      return {x: (p.x + 3) / 6 * W, y: (3 - p.y) / 6 * H};
+    }
+
+    function drawKnn(){
+      const k = Number(kSlider.value);
+      const metric = metricSelect.value;
+      const mode = weightMode.value;
+      document.getElementById('kVal').textContent = k;
+
+      const W = knnCanvas.width;
+      const H = knnCanvas.height;
+      kctx.clearRect(0,0,W,H);
+      kctx.fillStyle = '#0d1117';
+      kctx.fillRect(0,0,W,H);
+
+      // background grid
+      kctx.strokeStyle = '#30363d';
+      kctx.lineWidth = 0.7;
+      for(let v=-2; v<=2; v++){
+        let cx = worldToCanvas({x:v,y:0},W,H).x;
+        let cy = worldToCanvas({x:0,y:v},W,H).y;
+        kctx.beginPath(); kctx.moveTo(cx,0); kctx.lineTo(cx,H); kctx.stroke();
+        kctx.beginPath(); kctx.moveTo(0,cy); kctx.lineTo(W,cy); kctx.stroke();
+      }
+
+      const ranked = knnPoints
+        .map((p, idx) => ({...p, idx, d: dist(p, query, metric)}))
+        .sort((a,b) => a.d - b.d);
+
+      const neighbors = ranked.slice(0, k);
+      let vote0 = 0, vote1 = 0;
+
+      neighbors.forEach(n => {
+        let w = 1;
+        if (mode === 'distance') w = 1 / (n.d + 1e-4);
+        if (n.c === 0) vote0 += w;
+        else vote1 += w;
+      });
+
+      const pred = vote1 > vote0 ? 1 : 0;
+
+      // draw lines to neighbors
+      neighbors.forEach(n => {
+        const a = worldToCanvas(query, W, H);
+        const b = worldToCanvas(n, W, H);
+        kctx.strokeStyle = '#a78bfa';
+        kctx.lineWidth = 1.4;
+        kctx.beginPath();
+        kctx.moveTo(a.x, a.y);
+        kctx.lineTo(b.x, b.y);
+        kctx.stroke();
+      });
+
+      // draw points
+      knnPoints.forEach((p, idx) => {
+        const cp = worldToCanvas(p, W, H);
+        const isNeighbor = neighbors.some(n => n.idx === idx);
+
+        kctx.beginPath();
+        kctx.arc(cp.x, cp.y, 6, 0, Math.PI * 2);
+        kctx.fillStyle = p.c === 0 ? '#60a5fa' : '#ef4444';
+        kctx.fill();
+
+        kctx.strokeStyle = isNeighbor ? '#a78bfa' : '#ffffff';
+        kctx.lineWidth = isNeighbor ? 2 : 1;
+        kctx.stroke();
+      });
+
+      // query point
+      const cq = worldToCanvas(query, W, H);
+      kctx.beginPath();
+      kctx.arc(cq.x, cq.y, 7, 0, Math.PI * 2);
+      kctx.fillStyle = '#10b981';
+      kctx.fill();
+      kctx.strokeStyle = '#ffffff';
+      kctx.lineWidth = 1.5;
+      kctx.stroke();
+
+      document.getElementById('knnPredClass').textContent = pred;
+      document.getElementById('knnVoteInfo').textContent = `${vote0.toFixed(2)} / ${vote1.toFixed(2)}`;
+    }
+
+    knnCanvas.addEventListener('click', (e) => {
+      const rect = knnCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width * knnCanvas.width;
+      const y = (e.clientY - rect.top) / rect.height * knnCanvas.height;
+      query = canvasToWorld(x, y, knnCanvas.width, knnCanvas.height);
+      drawKnn();
+    });
+
+    [kSlider, metricSelect, weightMode].forEach(el => el.addEventListener('input', drawKnn));
+    metricSelect.addEventListener('change', drawKnn);
+    weightMode.addEventListener('change', drawKnn);
+
+    // ---------- Distance comparison ----------
+    const axSlider = document.getElementById('axSlider');
+    const aySlider = document.getElementById('aySlider');
+    const bxSlider = document.getElementById('bxSlider');
+    const bySlider = document.getElementById('bySlider');
+    const distanceCanvas = document.getElementById('distanceCanvas');
+    const dctx = distanceCanvas.getContext('2d');
+
+    function drawDistanceComp(){
+      const A = {x:Number(axSlider.value), y:Number(aySlider.value)};
+      const B = {x:Number(bxSlider.value), y:Number(bySlider.value)};
+
+      document.getElementById('axVal').textContent = A.x.toFixed(1);
+      document.getElementById('ayVal').textContent = A.y.toFixed(1);
+      document.getElementById('bxVal').textContent = B.x.toFixed(1);
+      document.getElementById('byVal').textContent = B.y.toFixed(1);
+
+      const eu = Math.sqrt((A.x-B.x)**2 + (A.y-B.y)**2);
+      const man = Math.abs(A.x-B.x) + Math.abs(A.y-B.y);
+      const mink = (Math.abs(A.x-B.x)**3 + Math.abs(A.y-B.y)**3) ** (1/3);
+
+      document.getElementById('distanceResult').innerHTML = `
+        <div><strong>Euclidean (L2):</strong> <span class="hl-blue">${eu.toFixed(4)}</span></div>
+        <div><strong>Manhattan (L1):</strong> <span class="hl-green">${man.toFixed(4)}</span></div>
+        <div><strong>Minkowski p=3:</strong> <span class="hl-purple">${mink.toFixed(4)}</span></div>
+        <div style="margin-top:8px" class="muted">Одинаковые точки в разных метриках могут иметь разные расстояния.</div>
+      `;
+
+      const W = distanceCanvas.width;
+      const H = distanceCanvas.height;
+      dctx.clearRect(0,0,W,H);
+      dctx.fillStyle = '#0d1117';
+      dctx.fillRect(0,0,W,H);
+
+      function px(x){ return (x + 5) / 10 * W; }
+      function py(y){ return (5 - y) / 10 * H; }
+
+      dctx.strokeStyle = '#30363d';
+      dctx.lineWidth = 0.7;
+      for(let v=-4; v<=4; v+=2){
+        dctx.beginPath(); dctx.moveTo(px(v),0); dctx.lineTo(px(v),H); dctx.stroke();
+        dctx.beginPath(); dctx.moveTo(0,py(v)); dctx.lineTo(W,py(v)); dctx.stroke();
+      }
+
+      // Euclidean line
+      dctx.strokeStyle = '#60a5fa';
+      dctx.lineWidth = 2;
+      dctx.beginPath();
+      dctx.moveTo(px(A.x), py(A.y));
+      dctx.lineTo(px(B.x), py(B.y));
+      dctx.stroke();
+
+      // Manhattan path
+      dctx.strokeStyle = '#10b981';
+      dctx.setLineDash([5,4]);
+      dctx.beginPath();
+      dctx.moveTo(px(A.x), py(A.y));
+      dctx.lineTo(px(B.x), py(A.y));
+      dctx.lineTo(px(B.x), py(B.y));
+      dctx.stroke();
+      dctx.setLineDash([]);
+
+      // points
+      [[A,'#f59e0b','A'], [B,'#a78bfa','B']].forEach(([p,c,label]) => {
+        dctx.beginPath();
+        dctx.arc(px(p.x), py(p.y), 7, 0, Math.PI*2);
+        dctx.fillStyle = c;
+        dctx.fill();
+        dctx.strokeStyle = '#fff';
+        dctx.lineWidth = 1.3;
+        dctx.stroke();
+        dctx.fillStyle = c;
+        dctx.font = '12px system-ui';
+        dctx.fillText(label, px(p.x)+8, py(p.y)-8);
+      });
+    }
+
+    [axSlider, aySlider, bxSlider, bySlider].forEach(el => el.addEventListener('input', drawDistanceComp));
+
+    // ---------- Scaling influence ----------
+    const scaleInfluence = document.getElementById('scaleInfluence');
+    const scaleNeighborCanvas = document.getElementById('scaleNeighborCanvas');
+    const snctx = scaleNeighborCanvas.getContext('2d');
+
+    function drawScaleInfluence(){
+      const s = Number(scaleInfluence.value);
+      document.getElementById('scaleInfluenceVal').textContent = s.toFixed(0);
+
+      const query = {x:2, y:2};
+      const points = [
+        {name:'A', x:1.2, y:3.0},
+        {name:'B', x:2.8, y:2.2},
+        {name:'C', x:1.9, y:6.2}
+      ];
+
+      const scored = points.map(p => {
+        const dx = p.x - query.x;
+        const dy = (p.y - query.y) * s;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        return {...p, d};
+      }).sort((a,b)=>a.d-b.d);
+
+      document.getElementById('scaleNeighborResult').innerHTML = `
+        <div><strong>После масштабирования второго признака в ${s} раз:</strong></div>
+        <div style="margin-top:8px">1) ${scored[0].name}: <span class="hl-green">${scored[0].d.toFixed(4)}</span></div>
+        <div>2) ${scored[1].name}: <span class="hl-blue">${scored[1].d.toFixed(4)}</span></div>
+        <div>3) ${scored[2].name}: <span class="hl-purple">${scored[2].d.toFixed(4)}</span></div>
+        <div style="margin-top:8px" class="muted">Порядок ближайших соседей может измениться только из-за scale.</div>
+      `;
+
+      const W = scaleNeighborCanvas.width;
+      const H = scaleNeighborCanvas.height;
+      snctx.clearRect(0,0,W,H);
+      snctx.fillStyle = '#0d1117';
+      snctx.fillRect(0,0,W,H);
+
+      function px(x){ return x / 8 * (W-40) + 20; }
+      function py(y){ return H - (y / 8 * (H-40) + 20); }
+
+      snctx.strokeStyle = '#30363d';
+      for(let v=0; v<=8; v+=2){
+        snctx.beginPath(); snctx.moveTo(px(v),20); snctx.lineTo(px(v),H-20); snctx.stroke();
+        snctx.beginPath(); snctx.moveTo(20,py(v)); snctx.lineTo(W-20,py(v)); snctx.stroke();
+      }
+
+      // query
+      snctx.beginPath();
+      snctx.arc(px(query.x), py(query.y), 7, 0, Math.PI*2);
+      snctx.fillStyle = '#10b981';
+      snctx.fill();
+      snctx.strokeStyle = '#fff';
+      snctx.stroke();
+
+      points.forEach(p => {
+        snctx.beginPath();
+        snctx.arc(px(p.x), py(p.y), 6, 0, Math.PI*2);
+        snctx.fillStyle = '#60a5fa';
+        snctx.fill();
+        snctx.strokeStyle = '#fff';
+        snctx.stroke();
+        snctx.fillStyle = '#8b949e';
+        snctx.font = '12px system-ui';
+        snctx.fillText(p.name, px(p.x)+8, py(p.y)-8);
+      });
+    }
+
+    scaleInfluence.addEventListener('input', drawScaleInfluence);
+
+    // ---------- Curse of dimensionality ----------
+    const dimSlider = document.getElementById('dimSlider');
+    const dimCanvas = document.getElementById('dimCanvas');
+    const cctx = dimCanvas.getContext('2d');
+
+    function randUniformArray(d){
+      const arr = [];
+      for(let i=0;i<d;i++) arr.push(Math.random());
+      return arr;
+    }
+    function euDist(a,b){
+      let s=0;
+      for(let i=0;i<a.length;i++) s += (a[i]-b[i])**2;
+      return Math.sqrt(s);
+    }
+
+    function drawDimDemo(){
+      const d = Number(dimSlider.value);
+      document.getElementById('dimVal').textContent = d;
+
+      const query = randUniformArray(d);
+      const distances = [];
+      for(let i=0;i<250;i++){
+        const p = randUniformArray(d);
+        distances.push(euDist(query, p));
+      }
+      distances.sort((a,b)=>a-b);
+      const nearest = distances[0];
+      const farthest = distances[distances.length-1];
+      const ratio = nearest / farthest;
+
+      document.getElementById('dimResult').innerHTML = `
+        <div><strong>Nearest distance:</strong> <span class="hl-green">${nearest.toFixed(4)}</span></div>
+        <div><strong>Farthest distance:</strong> <span class="hl-red">${farthest.toFixed(4)}</span></div>
+        <div><strong>Nearest / farthest:</strong> <span class="hl-amber">${ratio.toFixed(4)}</span></div>
+        <div style="margin-top:8px" class="muted">Чем ближе это отношение к 1, тем менее выразительно различие между “ближним” и “дальним”.</div>
+      `;
+
+      const W = dimCanvas.width;
+      const H = dimCanvas.height;
+      cctx.clearRect(0,0,W,H);
+      cctx.fillStyle = '#0d1117';
+      cctx.fillRect(0,0,W,H);
+
+      cctx.strokeStyle = '#30363d';
+      cctx.beginPath();
+      cctx.moveTo(20,H-25);
+      cctx.lineTo(W-20,H-25);
+      cctx.stroke();
+
+      const maxD = Math.max(...distances);
+      const bw = (W - 40) / distances.length;
+      distances.forEach((val, i) => {
+        const h = val / maxD * (H - 50);
+        cctx.fillStyle = i === 0 ? '#10b981' : (i === distances.length-1 ? '#ef4444' : '#60a5fa');
+        cctx.fillRect(20 + i*bw, H-25-h, Math.max(1,bw-0.3), h);
+      });
+
+      cctx.fillStyle = '#8b949e';
+      cctx.font = '12px system-ui';
+      cctx.fillText('sorted distances from random query point', 18, 16);
+    }
+
+    dimSlider.addEventListener('input', drawDimDemo);
+
+    // init
+    drawKnn();
+    drawDistanceComp();
+    drawScaleInfluence();
+    drawDimDemo();
+  </script>
+</body>
+</html>

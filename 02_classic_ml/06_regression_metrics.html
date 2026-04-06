@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.6 Метрики регрессии</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    textarea{
+      width:100%;
+      min-height:120px;
+      padding:10px;
+      resize:vertical;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      line-height:1.45;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    .tiny{
+      font-size:.86rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .kpi-good{color:var(--green);font-weight:700}
+    .kpi-bad{color:var(--red);font-weight:700}
+    .kpi-neutral{color:var(--blue);font-weight:700}
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="05_logistic_regression.html">2.5 Логистическая регрессия</a>
+    <span class="tag tag-active">2.6 Метрики регрессии</span>
+    <a class="tag tag-block" href="07_classification_metrics.html">2.7 Метрики классификации</a>
+  </div>
+
+  <header class="hero">
+    <h1>2.6 Метрики регрессии</h1>
+    <p class="muted">MSE, RMSE, MAE, R², MAPE, residuals, scale sensitivity, choosing the right metric</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">MSE</span>
+      <span class="mini-tag">RMSE</span>
+      <span class="mini-tag">MAE</span>
+      <span class="mini-tag">R²</span>
+      <span class="mini-tag">MAPE</span>
+    </div>
+
+    <h2>Зачем вообще нужны метрики регрессии</h2>
+    <p>
+      Когда модель решает задачу регрессии, она предсказывает
+      <span class="hl-amber">числовую величину</span>:
+      цену, спрос, время, температуру, рейтинг, доход, длительность и так далее.
+    </p>
+
+    <p>
+      Чтобы понять, хороша модель или нет, нужен способ измерить,
+      насколько её предсказания близки к истинным значениям.
+    </p>
+
+    <div class="formula">
+      \text{metric} = \text{число, которое summarises prediction error}
+    </div>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Метрика — это линза, через которую мы смотрим на качество модели.
+      Разные линзы подчёркивают разные вещи:
+      одна сильнее штрафует большие ошибки,
+      другая считает среднюю абсолютную неточность,
+      третья показывает, насколько лучше модели “предсказывать среднее”.
+    </div>
+
+    <div class="warn">
+      Нет “лучшей метрики вообще”.
+      Есть метрика, которая лучше соответствует
+      <span class="hl-red">смыслу задачи</span>,
+      <span class="hl-red">цене ошибки</span>
+      и
+      <span class="hl-red">распределению target</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Базовые обозначения</h2>
+
+    <p>
+      Пусть для объекта <code>i</code>:
+    </p>
+
+    <div class="formula">
+      y^{(i)} = \text{истинное значение}, \qquad
+      \hat{y}^{(i)} = \text{предсказание модели}
+    </div>
+
+    <p>
+      Тогда ошибка / residual:
+    </p>
+
+    <div class="formula">
+      e^{(i)} = \hat{y}^{(i)} - y^{(i)}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Если e > 0</h3>
+        <p>Модель <span class="hl-red">переоценила</span> target.</p>
+      </div>
+      <div>
+        <h3>Если e < 0</h3>
+        <p>Модель <span class="hl-blue">недооценила</span> target.</p>
+      </div>
+    </div>
+
+    <div class="info">
+      Почти все регрессионные метрики строятся из ошибки
+      <code>ŷ - y</code>,
+      но дальше по-разному обращаются с её знаком, масштабом и выбросами.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.1 MSE — Mean Squared Error</h2>
+
+    <p>
+      Одна из самых классических метрик регрессии.
+    </p>
+
+    <div class="formula">
+      \text{MSE} = \frac{1}{n}\sum_{i=1}^{n}\left(\hat{y}^{(i)} - y^{(i)}\right)^2
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что делает MSE</h3>
+        <ul>
+          <li>берёт ошибку,</li>
+          <li>возводит в квадрат,</li>
+          <li>усредняет по всем объектам.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему квадрат</h3>
+        <ul>
+          <li>ошибки разных знаков не взаимоуничтожаются,</li>
+          <li>большие промахи штрафуются намного сильнее,</li>
+          <li>метрика гладкая и удобна для оптимизации.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="success">
+      MSE особенно полезен, когда большие ошибки реально
+      <span class="hl-green">гораздо хуже маленьких</span>.
+    </div>
+
+    <div class="warn">
+      MSE сильно чувствителен к выбросам.
+      Ошибка 10 даёт вклад 100, а ошибка 100 — уже 10000.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.2 RMSE — Root Mean Squared Error</h2>
+
+    <div class="formula">
+      \text{RMSE} = \sqrt{\text{MSE}} =
+      \sqrt{
+        \frac{1}{n}\sum_{i=1}^{n}\left(\hat{y}^{(i)} - y^{(i)}\right)^2
+      }
+    </div>
+
+    <p>
+      RMSE — это просто корень из MSE.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему это удобно</h3>
+        <p>
+          RMSE возвращает ошибку примерно в тех же единицах,
+          что и target.
+        </p>
+      </div>
+      <div>
+        <h3>Пример</h3>
+        <p>
+          Если target измеряется в евро,
+          то RMSE тоже будет в евро.
+        </p>
+      </div>
+    </div>
+
+    <div class="intuition">
+      RMSE унаследовал характер MSE:
+      он тоже сильно чувствителен к большим ошибкам,
+      но воспринимается человеком проще,
+      потому что его scale совпадает с scale таргета.
+    </div>
+
+    <div class="info">
+      Упрощённо:
+      <span class="hl-blue">MSE</span> удобнее в формулах и оптимизации,
+      <span class="hl-purple">RMSE</span> удобнее для человеческой интерпретации.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.3 MAE — Mean Absolute Error</h2>
+
+    <div class="formula">
+      \text{MAE} = \frac{1}{n}\sum_{i=1}^{n}\left|\hat{y}^{(i)} - y^{(i)}\right|
+    </div>
+
+    <p>
+      Здесь мы берём не квадрат ошибки, а модуль.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что это значит</h3>
+        <p>
+          MAE показывает среднюю абсолютную ошибку:
+          насколько модель в среднем промахивается по величине.
+        </p>
+      </div>
+      <div>
+        <h3>Ключевое свойство</h3>
+        <p>
+          MAE значительно
+          <span class="hl-green">устойчивее к выбросам</span>,
+          чем MSE/RMSE.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      В отличие от MSE, MAE не делает огромную ошибку катастрофически доминирующей.
+      Это плюс, если в данных есть редкие экстремальные значения.
+    </div>
+
+    <div class="success">
+      Если тебе важна “типичная средняя ошибка”,
+      а не сильный штраф за редкие большие промахи,
+      MAE часто выглядит естественнее.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Сравнение MSE / RMSE / MAE на одной интуиции</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Метрика</th>
+          <th>Формула</th>
+          <th>Чувствительность к выбросам</th>
+          <th>Единицы</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MSE</td>
+          <td>mean of squared errors</td>
+          <td>Очень высокая</td>
+          <td>квадрат единиц target</td>
+        </tr>
+        <tr>
+          <td>RMSE</td>
+          <td>sqrt(MSE)</td>
+          <td>Высокая</td>
+          <td>те же, что у target</td>
+        </tr>
+        <tr>
+          <td>MAE</td>
+          <td>mean of absolute errors</td>
+          <td>Ниже</td>
+          <td>те же, что у target</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="intuition">
+      Если один объект промахнулся очень сильно:
+      <ul>
+        <li>MSE “закричит”,</li>
+        <li>RMSE тоже сильно вырастет,</li>
+        <li>MAE отреагирует мягче.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: как выброс меняет MSE, RMSE и MAE</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="outlierSlider">Ошибка одного выброса <span class="badge-inline" id="outlierVal">0</span></label>
+          <input type="range" id="outlierSlider" min="0" max="100" value="0" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="sampleSizeSlider">Размер выборки <span class="badge-inline" id="sampleSizeVal">10</span></label>
+          <input type="range" id="sampleSizeSlider" min="5" max="50" value="10" step="1">
+        </div>
+
+        <div class="info">
+          Предполагаем, что у всех остальных объектов ошибка равна 2,
+          а у одного объекта — выбранная тобой величина.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="outlierCanvas" width="380" height="250"></canvas>
+        <div class="grid-3" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">MSE</div>
+            <div class="value" id="mseOut">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">RMSE</div>
+            <div class="value" id="rmseOut">0.00</div>
+          </div>
+          <div class="metric">
+            <div class="name">MAE</div>
+            <div class="value" id="maeOut">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.4 R² — coefficient of determination</h2>
+
+    <p>
+      R² измеряет не абсолютную ошибку напрямую,
+      а то, насколько модель лучше простой baseline-идеи
+      “всегда предсказывать среднее”.
+    </p>
+
+    <div class="formula">
+      R^2 = 1 - \frac{\sum_{i=1}^{n}(y^{(i)}-\hat{y}^{(i)})^2}
+      {\sum_{i=1}^{n}(y^{(i)}-\bar{y})^2}
+    </div>
+
+    <p>
+      Где:
+    </p>
+
+    <div class="formula">
+      \bar{y} = \frac{1}{n}\sum_{i=1}^{n} y^{(i)}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что в числителе</h3>
+        <p>
+          Сумма квадратов ошибок модели:
+          <code>RSS / residual sum of squares</code>.
+        </p>
+      </div>
+      <div>
+        <h3>Что в знаменателе</h3>
+        <p>
+          Общая дисперсия target относительно среднего:
+          <code>TSS / total sum of squares</code>.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula">
+      R^2 = 1 - \frac{RSS}{TSS}
+    </div>
+
+    <div class="success">
+      Если модель сильно уменьшает ошибку по сравнению с baseline “предсказывай среднее”,
+      то R² близок к 1.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Как интерпретировать R²</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Значение R²</th>
+          <th>Интерпретация</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>идеальное предсказание</td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td>не лучше, чем предсказывать среднее target</td>
+        </tr>
+        <tr>
+          <td>&lt; 0</td>
+          <td>хуже, чем baseline по среднему</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warn">
+      Очень частая ошибка — думать, что R² обязан быть между 0 и 1.
+      На train для некоторых настроек это часто так,
+      но на validation/test он вполне может быть <span class="hl-red">отрицательным</span>.
+    </div>
+
+    <div class="info">
+      R² — относительная метрика.
+      Она говорит не “на сколько единиц ошиблись”,
+      а “насколько хорошо модель объясняет variation в target по сравнению с baseline”.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Когда R² удобен, а когда опасен</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Когда удобен</h3>
+        <ul>
+          <li>нужно быстро сравнить модели относительно baseline,</li>
+          <li>интересует explained variance,</li>
+          <li>хочется безразмерная интерпретация.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда опасен</h3>
+        <ul>
+          <li>важна ошибка в реальных единицах,</li>
+          <li>target сильно асимметричен,</li>
+          <li>сравниваются задачи с разным масштабом target,</li>
+          <li>нужно понимать business impact ошибки.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Высокий R² не гарантирует, что ошибки маленькие в practically meaningful units.
+      Например, R² может выглядеть прилично,
+      а средняя ошибка в евро или днях всё равно быть слишком большой.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.5 MAPE — Mean Absolute Percentage Error</h2>
+
+    <div class="formula">
+      \text{MAPE} = \frac{100\%}{n}\sum_{i=1}^{n}
+      \left|
+      \frac{y^{(i)}-\hat{y}^{(i)}}{y^{(i)}}
+      \right|
+    </div>
+
+    <p>
+      MAPE показывает среднюю ошибку в процентах.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему это нравится людям</h3>
+        <p>
+          Проценты очень интуитивны:
+          “модель в среднем ошибается на 8%”.
+        </p>
+      </div>
+      <div>
+        <h3>Главная проблема</h3>
+        <p>
+          Если истинные значения близки к нулю или равны нулю,
+          MAPE становится нестабильным или вообще не определён.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      MAPE плохо подходит, когда:
+      <ul>
+        <li>в target есть нули,</li>
+        <li>есть очень маленькие значения,</li>
+        <li>симметрия штрафа по относительным ошибкам важна.</li>
+      </ul>
+    </div>
+
+    <div class="info">
+      MAPE часто любят в business-отчётах,
+      но технически она довольно коварная.
+      Её нельзя выбирать автоматически “потому что проценты понятнее”.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: нули ломают MAPE</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="trueValueSlider">Истинное значение y <span class="badge-inline" id="trueValueVal">10.0</span></label>
+          <input type="range" id="trueValueSlider" min="0.1" max="20" value="10" step="0.1">
+        </div>
+
+        <div class="control-group">
+          <label for="predValueSlider">Предсказание ŷ <span class="badge-inline" id="predValueVal">12.0</span></label>
+          <input type="range" id="predValueSlider" min="0" max="30" value="12" step="0.1">
+        </div>
+
+        <div class="info">
+          Когда истинное значение становится очень маленьким,
+          даже небольшая абсолютная ошибка даёт огромный процент.
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="mapeResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Residual analysis — то, что часто забывают</h2>
+
+    <p>
+      Одной метрики почти никогда недостаточно.
+      Нужно смотреть и на поведение residuals.
+    </p>
+
+    <div class="formula">
+      e^{(i)} = \hat{y}^{(i)} - y^{(i)}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что полезно проверять</h3>
+        <ul>
+          <li>нет ли систематического смещения,</li>
+          <li>не растёт ли ошибка с увеличением target,</li>
+          <li>нет ли сильной асимметрии,</li>
+          <li>не доминируют ли несколько выбросов.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему это важно</h3>
+        <ul>
+          <li>одинаковая RMSE может скрывать разную структуру ошибок,</li>
+          <li>метрика усредняет, а residuals показывают форму проблемы,</li>
+          <li>это помогает понять, нужен ли log-transform, robust loss или feature engineering.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="success">
+      Хороший workflow:
+      <span class="hl-green">смотри не только на число метрики, но и на рисунок ошибок</span>.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактивный калькулятор метрик на своих данных</h2>
+
+    <p class="tiny muted">
+      Вводи числа через запятую. Длины списков должны совпадать.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="yTrueInput">Истинные значения y</label>
+          <textarea id="yTrueInput">3, 5, 7, 9, 11</textarea>
+        </div>
+
+        <div class="control-group">
+          <label for="yPredInput">Предсказания ŷ</label>
+          <textarea id="yPredInput">2.5, 5.5, 6.8, 8.7, 12.1</textarea>
+        </div>
+
+        <button id="calcMetricsBtn">Посчитать метрики</button>
+      </div>
+
+      <div>
+        <div class="result-box" id="metricsCalcResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.6.6 Как выбирать метрику</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Ситуация</th>
+          <th>Часто подходит</th>
+          <th>Почему</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Большие ошибки особенно дорогие</td>
+          <td>MSE / RMSE</td>
+          <td>сильно штрафуют крупные промахи</td>
+        </tr>
+        <tr>
+          <td>Нужна типичная средняя ошибка</td>
+          <td>MAE</td>
+          <td>простая и устойчивая интерпретация</td>
+        </tr>
+        <tr>
+          <td>Нужна ошибка в понятных единицах</td>
+          <td>RMSE / MAE</td>
+          <td>те же units, что и у target</td>
+        </tr>
+        <tr>
+          <td>Хочется relative / explained performance</td>
+          <td>R²</td>
+          <td>сравнение с baseline по среднему</td>
+        </tr>
+        <tr>
+          <td>Бизнес мыслит в процентах</td>
+          <td>MAPE (с осторожностью)</td>
+          <td>интуитивна, но ломается около нуля</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      На практике часто держат не одну, а несколько метрик одновременно.
+      Например:
+      <ul>
+        <li><strong>RMSE</strong> — как primary metric,</li>
+        <li><strong>MAE</strong> — как robust companion,</li>
+        <li><strong>R²</strong> — как дополнительную относительную интерпретацию.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Scale dependence: почему нельзя сравнивать всё бездумно</h2>
+
+    <p>
+      MSE, RMSE и MAE зависят от масштаба target.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Пример</h3>
+        <p>
+          Ошибка 100 евро может быть катастрофой для прогноза чаевых,
+          но почти ничем для прогноза стоимости недвижимости.
+        </p>
+      </div>
+      <div>
+        <h3>Следствие</h3>
+        <p>
+          Абсолютные метрики нельзя интерпретировать в отрыве от домена и масштаба задачи.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      Нельзя честно сравнить RMSE между двумя задачами,
+      если таргеты имеют совершенно разный scale.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Baseline first</h2>
+
+    <p>
+      Метрика модели сама по себе мало что значит,
+      если нет baseline для сравнения.
+    </p>
+
+    <div class="formula">
+      \hat{y}_{baseline} = \bar{y}
+    </div>
+
+    <p>
+      Очень часто разумно сначала проверить,
+      насколько модель лучше, чем “всегда предсказывать среднее”.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему это важно</h3>
+        <ul>
+          <li>даёт референсную точку,</li>
+          <li>помогает не переоценить модель,</li>
+          <li>связывает оценку с R².</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Практика</h3>
+        <ul>
+          <li>сначала baseline,</li>
+          <li>потом простая линейная модель,</li>
+          <li>потом уже более сложные методы.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="success">
+      Если модель barely beats the mean baseline,
+      проблема обычно не в “плохой метрике”, а в данных, признаках или постановке задачи.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn / NumPy</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">sklearn metrics</button>
+      <button class="tab-btn" data-tab="tab2">NumPy вручную</button>
+      <button class="tab-btn" data-tab="tab3">Сравнение моделей</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    r2_score,
+    mean_absolute_percentage_error
+)
+
+y_true = [3, 5, 7, 9]
+y_pred = [2.5, 5.2, 6.8, 10.0]
+
+mse = mean_squared_error(y_true, y_pred)
+rmse = mean_squared_error(y_true, y_pred, squared=False)
+mae = mean_absolute_error(y_true, y_pred)
+r2 = r2_score(y_true, y_pred)
+mape = mean_absolute_percentage_error(y_true, y_pred)
+
+print("MSE :", mse)
+print("RMSE:", rmse)
+print("MAE :", mae)
+print("R²  :", r2)
+print("MAPE:", mape)</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">import numpy as np
+
+y_true = np.array([3, 5, 7, 9], dtype=float)
+y_pred = np.array([2.5, 5.2, 6.8, 10.0], dtype=float)
+
+errors = y_pred - y_true
+
+mse = np.mean(errors ** 2)
+rmse = np.sqrt(mse)
+mae = np.mean(np.abs(errors))
+
+tss = np.sum((y_true - np.mean(y_true)) ** 2)
+rss = np.sum((y_true - y_pred) ** 2)
+r2 = 1 - rss / tss
+
+mape = np.mean(np.abs((y_true - y_pred) / y_true))
+
+print("MSE :", mse)
+print("RMSE:", rmse)
+print("MAE :", mae)
+print("R²  :", r2)
+print("MAPE:", mape)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block"># пример: сравниваем 2 модели
+from sklearn.metrics import mean_absolute_error, r2_score
+
+pred_model_a = model_a.predict(X_val)
+pred_model_b = model_b.predict(X_val)
+
+print("A MAE:", mean_absolute_error(y_val, pred_model_a))
+print("B MAE:", mean_absolute_error(y_val, pred_model_b))
+
+print("A R² :", r2_score(y_val, pred_model_a))
+print("B R² :", r2_score(y_val, pred_model_b))
+
+# Иногда одна модель лучше по RMSE,
+# а другая — по MAE.
+# Это уже не баг, а отражение разной чувствительности метрик.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>смотреть только на одну метрику и игнорировать структуру residuals,</li>
+        <li>использовать MAPE при нулях в target,</li>
+        <li>сравнивать абсолютные ошибки между задачами разного масштаба,</li>
+        <li>думать, что высокий R² автоматически означает маленькую business error,</li>
+        <li>не иметь baseline для сравнения,</li>
+        <li>забывать, что MSE и RMSE сильно чувствительны к выбросам.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий блок</h3>
+        <ul>
+          <li><strong>2.7 Метрики классификации</strong></li>
+          <li>confusion matrix, accuracy, precision, recall, F1</li>
+          <li>ROC-AUC, PR-AUC, log loss, threshold tuning</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Что будет потом</h3>
+        <ul>
+          <li><strong>Валидация</strong> — как честно сравнивать модели,</li>
+          <li><strong>Практический pipeline</strong> — как метрики встроены в реальный workflow.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Метрики регрессии измеряют одно и то же качество под разными углами.
+    </p>
+    <ul>
+      <li><strong>MSE</strong> — сильно штрафует большие ошибки.</li>
+      <li><strong>RMSE</strong> — то же, но в units target.</li>
+      <li><strong>MAE</strong> — средняя абсолютная ошибка, более robust к выбросам.</li>
+      <li><strong>R²</strong> — относительное качество против baseline “предсказывать среднее”.</li>
+      <li><strong>MAPE</strong> — ошибка в процентах, но опасна возле нуля.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      <span class="hl-green">метрика должна соответствовать задаче, цене ошибки и структуре данных</span>,
+      а не выбираться по привычке.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Outlier demo ----------
+    const outlierSlider = document.getElementById('outlierSlider');
+    const sampleSizeSlider = document.getElementById('sampleSizeSlider');
+    const outlierVal = document.getElementById('outlierVal');
+    const sampleSizeVal = document.getElementById('sampleSizeVal');
+    const mseOut = document.getElementById('mseOut');
+    const rmseOut = document.getElementById('rmseOut');
+    const maeOut = document.getElementById('maeOut');
+    const outlierCanvas = document.getElementById('outlierCanvas');
+    const octx = outlierCanvas.getContext('2d');
+
+    function drawOutlierDemo(){
+      const outlier = Number(outlierSlider.value);
+      const n = Number(sampleSizeSlider.value);
+
+      outlierVal.textContent = outlier.toFixed(0);
+      sampleSizeVal.textContent = n.toFixed(0);
+
+      const errors = Array(n).fill(2);
+      errors[0] = outlier;
+
+      const mse = errors.reduce((s,e)=>s+e*e,0)/n;
+      const rmse = Math.sqrt(mse);
+      const mae = errors.reduce((s,e)=>s+Math.abs(e),0)/n;
+
+      mseOut.textContent = mse.toFixed(2);
+      rmseOut.textContent = rmse.toFixed(2);
+      maeOut.textContent = mae.toFixed(2);
+
+      const W = outlierCanvas.width;
+      const H = outlierCanvas.height;
+      octx.clearRect(0,0,W,H);
+      octx.fillStyle = '#0d1117';
+      octx.fillRect(0,0,W,H);
+
+      const metrics = [
+        {name:'MSE', value:mse, color:'#ef4444'},
+        {name:'RMSE', value:rmse, color:'#a78bfa'},
+        {name:'MAE', value:mae, color:'#10b981'}
+      ];
+
+      const maxV = Math.max(...metrics.map(m=>m.value), 1);
+      const barW = 70;
+      const baseY = H - 35;
+      const startX = 60;
+
+      // axis
+      octx.strokeStyle = '#30363d';
+      octx.beginPath();
+      octx.moveTo(30, baseY);
+      octx.lineTo(W-20, baseY);
+      octx.stroke();
+
+      metrics.forEach((m, i) => {
+        const h = (m.value / maxV) * 150;
+        const x = startX + i * 100;
+
+        octx.fillStyle = m.color;
+        octx.fillRect(x, baseY - h, barW, h);
+
+        octx.fillStyle = '#8b949e';
+        octx.font = '12px system-ui';
+        octx.fillText(m.name, x + 15, baseY + 18);
+        octx.fillText(m.value.toFixed(1), x + 12, baseY - h - 8);
+      });
+
+      octx.fillStyle = '#8b949e';
+      octx.fillText('Остальные ошибки = 2, один выброс = ' + outlier, 20, 18);
+    }
+
+    outlierSlider.addEventListener('input', drawOutlierDemo);
+    sampleSizeSlider.addEventListener('input', drawOutlierDemo);
+
+    // ---------- MAPE demo ----------
+    const trueValueSlider = document.getElementById('trueValueSlider');
+    const predValueSlider = document.getElementById('predValueSlider');
+    const trueValueVal = document.getElementById('trueValueVal');
+    const predValueVal = document.getElementById('predValueVal');
+    const mapeResult = document.getElementById('mapeResult');
+
+    function drawMapeDemo(){
+      const y = Number(trueValueSlider.value);
+      const yhat = Number(predValueSlider.value);
+
+      trueValueVal.textContent = y.toFixed(1);
+      predValueVal.textContent = yhat.toFixed(1);
+
+      const absErr = Math.abs(yhat - y);
+      const mape = Math.abs((y - yhat) / y) * 100;
+
+      let comment = '';
+      if (y < 1) {
+        comment = '<span class="kpi-bad">Истинное значение очень мало → процентная ошибка взрывается.</span>';
+      } else if (mape < 10) {
+        comment = '<span class="kpi-good">Процентная ошибка умеренная.</span>';
+      } else {
+        comment = '<span class="kpi-neutral">Процентная ошибка заметная.</span>';
+      }
+
+      mapeResult.innerHTML = `
+        <div><strong>Абсолютная ошибка:</strong> |ŷ - y| = |${yhat.toFixed(2)} - ${y.toFixed(2)}| = <span class="hl-blue">${absErr.toFixed(3)}</span></div>
+        <div style="margin-top:8px"><strong>MAPE:</strong> 100% × |(y - ŷ)/y| = <span class="hl-amber">${mape.toFixed(2)}%</span></div>
+        <div style="margin-top:8px">${comment}</div>
+        <div style="margin-top:8px" class="muted">Если y → 0, даже маленькая абсолютная ошибка даёт огромный процент.</div>
+      `;
+    }
+
+    trueValueSlider.addEventListener('input', drawMapeDemo);
+    predValueSlider.addEventListener('input', drawMapeDemo);
+
+    // ---------- Calculator ----------
+    const calcMetricsBtn = document.getElementById('calcMetricsBtn');
+    const yTrueInput = document.getElementById('yTrueInput');
+    const yPredInput = document.getElementById('yPredInput');
+    const metricsCalcResult = document.getElementById('metricsCalcResult');
+
+    function parseArray(str){
+      return str
+        .split(',')
+        .map(x => x.trim())
+        .filter(x => x.length > 0)
+        .map(Number)
+        .filter(x => !Number.isNaN(x));
+    }
+
+    function calcMetrics(){
+      const yTrue = parseArray(yTrueInput.value);
+      const yPred = parseArray(yPredInput.value);
+
+      if (yTrue.length === 0 || yPred.length === 0) {
+        metricsCalcResult.innerHTML = '<span class="kpi-bad">Введи непустые списки значений.</span>';
+        return;
+      }
+
+      if (yTrue.length !== yPred.length) {
+        metricsCalcResult.innerHTML = '<span class="kpi-bad">Длины y и ŷ должны совпадать.</span>';
+        return;
+      }
+
+      const n = yTrue.length;
+      const errors = yPred.map((p, i) => p - yTrue[i]);
+
+      const mse = errors.reduce((s, e) => s + e*e, 0) / n;
+      const rmse = Math.sqrt(mse);
+      const mae = errors.reduce((s, e) => s + Math.abs(e), 0) / n;
+
+      const meanY = yTrue.reduce((s, v) => s + v, 0) / n;
+      const rss = yTrue.reduce((s, y, i) => s + (y - yPred[i])**2, 0);
+      const tss = yTrue.reduce((s, y) => s + (y - meanY)**2, 0);
+      const r2 = tss === 0 ? NaN : 1 - rss / tss;
+
+      const mapePossible = yTrue.every(v => Math.abs(v) > 1e-12);
+      const mape = mapePossible
+        ? yTrue.reduce((s, y, i) => s + Math.abs((y - yPred[i]) / y), 0) / n * 100
+        : null;
+
+      metricsCalcResult.innerHTML = `
+        <div><strong>n:</strong> ${n}</div>
+        <div style="margin-top:8px"><strong>MSE:</strong> <span class="hl-red">${mse.toFixed(6)}</span></div>
+        <div><strong>RMSE:</strong> <span class="hl-purple">${rmse.toFixed(6)}</span></div>
+        <div><strong>MAE:</strong> <span class="hl-green">${mae.toFixed(6)}</span></div>
+        <div><strong>R²:</strong> <span class="hl-blue">${Number.isNaN(r2) ? 'не определён (TSS=0)' : r2.toFixed(6)}</span></div>
+        <div><strong>MAPE:</strong> <span class="hl-amber">${mape === null ? 'не считаем: в y есть 0' : mape.toFixed(4) + '%'}</span></div>
+        <div style="margin-top:10px" class="muted">Полезно считать несколько метрик сразу, а не выбирать одну вслепую.</div>
+      `;
+    }
+
+    calcMetricsBtn.addEventListener('click', calcMetrics);
+
+    // init
+    drawOutlierDemo();
+    drawMapeDemo();
+    calcMetrics();
+  </script>
+</body>
+</html>

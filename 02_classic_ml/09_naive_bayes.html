@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.9 Naive Bayes</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+      padding:20px;
+      max-width:920px;
+      margin:0 auto;
+    }
+
+    h1{
+      font-size:1.8rem;
+      line-height:1.2;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.18rem;
+      color:var(--amber);
+      margin-bottom:12px;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--green);
+      margin-bottom:8px;
+    }
+
+    p{margin:8px 0}
+    ul,ol{padding-left:20px;margin:8px 0}
+    li{margin:6px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:.95em;
+    }
+
+    .muted{color:var(--muted)}
+    .hl-amber{color:var(--amber);font-weight:600}
+    .hl-green{color:var(--green);font-weight:600}
+    .hl-red{color:var(--red);font-weight:600}
+    .hl-blue{color:var(--blue);font-weight:600}
+    .hl-purple{color:var(--purple);font-weight:600}
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:.78rem;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .tag-block{
+      background:#111827;
+      color:var(--muted);
+    }
+    .tag-active{
+      background:#13261f;
+      color:var(--green);
+      border-color:var(--green);
+    }
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:14px;
+    }
+
+    .formula{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      overflow-x:auto;
+      font-size:.98rem;
+    }
+
+    .intuition,
+    .warn,
+    .info,
+    .success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:10px 0;
+      border:1px solid var(--border);
+    }
+    .intuition{
+      background:#0f1f1a;
+      border-color:#1f6f55;
+    }
+    .warn{
+      background:#241313;
+      border-color:#7f1d1d;
+    }
+    .info{
+      background:#101a2a;
+      border-color:#1d4ed8;
+    }
+    .success{
+      background:#0f1f1a;
+      border-color:#10b981;
+    }
+
+    .step{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-left:3px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      margin:8px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:.93rem;
+    }
+    th,td{
+      border:1px solid var(--border);
+      padding:10px 12px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{
+      background:#111827;
+      color:var(--amber);
+      font-weight:700;
+    }
+
+    .mini-tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .mini-tag{
+      font-size:.75rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      background:#0d1117;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .tab-btn.active{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .code-block{
+      background:#0b1220;
+      border:1px solid #1f2937;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-size:.88rem;
+      line-height:1.55;
+    }
+
+    .control-group{
+      margin:12px 0;
+    }
+    label{
+      display:block;
+      margin-bottom:6px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--green);
+      cursor:pointer;
+    }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:8px;
+    }
+    button{
+      background:#0d1117;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .result-box{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px 14px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-height:100%;
+    }
+    .metric .name{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-bottom:6px;
+    }
+    .metric .value{
+      font-size:1.08rem;
+      font-weight:700;
+      color:var(--green);
+    }
+
+    .takeaway{
+      border:1px solid var(--green);
+      background:linear-gradient(180deg, rgba(16,185,129,.10), rgba(16,185,129,.04));
+      border-radius:12px;
+      padding:16px;
+    }
+
+    .badge-inline{
+      display:inline-block;
+      margin-left:8px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:#0d1117;
+      border:1px solid var(--border);
+      color:var(--amber);
+      font-size:.82rem;
+      font-weight:700;
+    }
+
+    .tiny{
+      font-size:.86rem;
+    }
+
+    canvas{
+      width:100%;
+      background:#0d1117;
+      border:1px solid var(--border);
+      border-radius:10px;
+      display:block;
+    }
+
+    .legend{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      font-size:.86rem;
+      color:var(--muted);
+    }
+    .legend span::before{
+      content:"";
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+      vertical-align:middle;
+    }
+    .legend .blue::before{background:var(--blue)}
+    .legend .red::before{background:var(--red)}
+    .legend .green::before{background:var(--green)}
+    .legend .purple::before{background:var(--purple)}
+
+    @media (max-width: 760px){
+      .grid-2,.grid-3{
+        grid-template-columns:1fr;
+      }
+      body{
+        padding:14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-tags">
+    <span class="tag tag-block">Блок 2 — Classical ML</span>
+    <a class="tag tag-block" href="08_distance_based_models.html">2.8 Distance-based модели</a>
+    <span class="tag tag-active">2.9 Naive Bayes</span>
+    <span class="tag tag-block">2.10 Decision Trees</span>
+  </div>
+
+  <header class="hero">
+    <h1>2.9 Naive Bayes</h1>
+    <p class="muted">Bayes formula for classification, conditional independence, Gaussian / Multinomial / Bernoulli NB</p>
+  </header>
+
+  <div class="card">
+    <div class="mini-tag-row">
+      <span class="mini-tag">Bayes theorem</span>
+      <span class="mini-tag">generative model</span>
+      <span class="mini-tag">independence assumption</span>
+      <span class="mini-tag">Gaussian NB</span>
+      <span class="mini-tag">Multinomial NB</span>
+      <span class="mini-tag">Bernoulli NB</span>
+    </div>
+
+    <h2>Что такое Naive Bayes</h2>
+    <p>
+      Naive Bayes — это семейство простых, но очень полезных вероятностных моделей для классификации.
+      В основе лежит идея:
+      <span class="hl-amber">мы оцениваем вероятность класса по наблюдаемым признакам</span>.
+    </p>
+
+    <div class="formula">
+      \hat{y} = \arg\max_c P(y=c \mid \mathbf{x})
+    </div>
+
+    <p>
+      То есть модель отвечает на вопрос:
+      <span class="hl-green">“Какой класс наиболее вероятен, если мы уже увидели этот объект?”</span>
+    </p>
+
+    <div class="intuition">
+      <strong>Интуиция.</strong>
+      Представь письмо. Мы видим слова вроде
+      <code>free</code>, <code>discount</code>, <code>win</code>.
+      Модель спрашивает:
+      “В каком классе — spam или not spam — такие признаки встречаются вероятнее?”
+      И на основе этого выбирает класс.
+    </div>
+
+    <div class="info">
+      В отличие от k-NN, где модель думает геометрически,
+      Naive Bayes думает
+      <span class="hl-blue">вероятностно</span>:
+      не “кто ближе”, а “в каком классе такие признаки более типичны”.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.1 Формула Байеса для классификации</h2>
+
+    <p>
+      Всё начинается с формулы Байеса:
+    </p>
+
+    <div class="formula">
+      P(y=c \mid \mathbf{x}) =
+      \frac{P(\mathbf{x} \mid y=c)\,P(y=c)}{P(\mathbf{x})}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что означает каждая часть</h3>
+        <ul>
+          <li><strong>Posterior</strong>: <code>P(y=c | x)</code> — вероятность класса после наблюдения признаков</li>
+          <li><strong>Likelihood</strong>: <code>P(x | y=c)</code> — насколько вероятны признаки в этом классе</li>
+          <li><strong>Prior</strong>: <code>P(y=c)</code> — насколько класс вообще частый</li>
+          <li><strong>Evidence</strong>: <code>P(x)</code> — нормирующий знаменатель</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Для классификации удобно</h3>
+        <p>
+          При сравнении классов знаменатель <code>P(x)</code> одинаковый.
+          Поэтому для выбора лучшего класса можно писать:
+        </p>
+        <div class="formula">
+          \hat{y} = \arg\max_c P(\mathbf{x}\mid y=c)P(y=c)
+        </div>
+      </div>
+    </div>
+
+    <div class="success">
+      Это очень важный трюк:
+      для argmax нам не нужно вычислять полный нормированный posterior,
+      достаточно сравнивать числители.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Posterior, prior, likelihood — человеческим языком</h2>
+
+    <div class="grid-3">
+      <div class="metric">
+        <div class="name">Prior</div>
+        <div class="value">до данных</div>
+      </div>
+      <div class="metric">
+        <div class="name">Likelihood</div>
+        <div class="value">насколько типичны признаки</div>
+      </div>
+      <div class="metric">
+        <div class="name">Posterior</div>
+        <div class="value">после учёта признаков</div>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Например, если 90% писем нормальные, а 10% — спам,
+      это already влияет на вероятность класса.
+      Но если письмо содержит очень “спамовые” слова,
+      likelihood может перевесить prior и сделать spam posterior больше.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему модель называется naive</h2>
+
+    <p>
+      Проблема в том, что вероятность
+      <code>P(x_1, x_2, ..., x_d \mid y)</code>
+      в общем случае очень сложно оценивать напрямую.
+    </p>
+
+    <p>
+      Naive Bayes делает сильное упрощение:
+    </p>
+
+    <div class="formula">
+      P(x_1, x_2, \dots, x_d \mid y)
+      =
+      \prod_{j=1}^{d} P(x_j \mid y)
+    </div>
+
+    <div class="warn">
+      Это и есть “naive” допущение:
+      признаки считаются условно независимыми внутри класса.
+    </div>
+
+    <p>
+      Тогда формула классификации становится:
+    </p>
+
+    <div class="formula">
+      P(y=c \mid \mathbf{x}) \propto P(y=c)\prod_{j=1}^{d}P(x_j \mid y=c)
+    </div>
+
+    <div class="success">
+      Именно это упрощение превращает потенциально очень сложную вероятностную модель
+      в быструю и практически применимую.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.2 Conditional independence assumption</h2>
+
+    <p>
+      Условная независимость означает:
+      если класс уже известен,
+      то признаки не дают дополнительной информации друг о друге.
+    </p>
+
+    <div class="formula">
+      x_i \perp x_j \mid y
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Почему это нереалистично</h3>
+        <ul>
+          <li>в реальных данных признаки часто коррелируют,</li>
+          <li>в тексте слова могут зависеть друг от друга,</li>
+          <li>в табличных данных признаки часто связаны по смыслу.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему это всё равно работает</h3>
+        <ul>
+          <li>модель часто хорошо ранжирует классы даже с неверным допущением,</li>
+          <li>оценивать отдельные вероятности намного проще,</li>
+          <li>ошибка от этого упрощения не всегда критична для classification quality.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info">
+      Один из самых полезных practical facts:
+      Naive Bayes может работать surprisingly well,
+      даже когда independence assumption явно нарушено.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: как independence assumption раскладывает вероятность</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="priorSpam">Prior класса spam <span class="badge-inline" id="priorSpamVal">0.40</span></label>
+          <input type="range" id="priorSpam" min="0.05" max="0.95" value="0.40" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="word1Spam">P(word₁=1 | spam) <span class="badge-inline" id="word1SpamVal">0.80</span></label>
+          <input type="range" id="word1Spam" min="0.01" max="0.99" value="0.80" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="word2Spam">P(word₂=1 | spam) <span class="badge-inline" id="word2SpamVal">0.70</span></label>
+          <input type="range" id="word2Spam" min="0.01" max="0.99" value="0.70" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="word1Ham">P(word₁=1 | ham) <span class="badge-inline" id="word1HamVal">0.20</span></label>
+          <input type="range" id="word1Ham" min="0.01" max="0.99" value="0.20" step="0.01">
+        </div>
+
+        <div class="control-group">
+          <label for="word2Ham">P(word₂=1 | ham) <span class="badge-inline" id="word2HamVal">0.15</span></label>
+          <input type="range" id="word2Ham" min="0.01" max="0.99" value="0.15" step="0.01">
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="bayesCalcResult"></div>
+        <canvas id="bayesCanvas" width="380" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="intuition">
+      Здесь для простоты считаем, что у объекта присутствуют два бинарных признака:
+      <code>word₁ = 1</code> и <code>word₂ = 1</code>.
+      Наивное допущение говорит, что likelihood можно разложить в произведение двух отдельных вероятностей.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему на практике переходят к логарифмам</h2>
+
+    <p>
+      Если признаков много, произведение большого количества вероятностей быстро становится очень маленьким:
+    </p>
+
+    <div class="formula">
+      \prod_{j=1}^{d} P(x_j \mid y=c)
+    </div>
+
+    <p>
+      Это ведёт к численной нестабильности.
+      Поэтому обычно считают логарифмы:
+    </p>
+
+    <div class="formula">
+      \log P(y=c \mid \mathbf{x}) \propto
+      \log P(y=c) + \sum_{j=1}^{d}\log P(x_j \mid y=c)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюс логарифмов</h3>
+        <ul>
+          <li>произведение превращается в сумму,</li>
+          <li>лучше численная устойчивость,</li>
+          <li>удобнее считать и сравнивать классы.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Важно</h3>
+        <p>
+          Логарифм не меняет argmax,
+          так что лучший класс остаётся тем же.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Это стандартный numerical trick,
+      который почти всегда стоит помнить для вероятностных моделей.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.3 Gaussian Naive Bayes</h2>
+
+    <p>
+      Gaussian NB используют, когда признаки числовые
+      и в каждом классе примерно описываются нормальным распределением.
+    </p>
+
+    <div class="formula">
+      x_j \mid y=c \sim \mathcal{N}(\mu_{cj}, \sigma_{cj}^2)
+    </div>
+
+    <p>
+      Тогда likelihood для одного признака:
+    </p>
+
+    <div class="formula">
+      P(x_j \mid y=c) =
+      \frac{1}{\sqrt{2\pi\sigma_{cj}^2}}
+      \exp\left(
+        -\frac{(x_j-\mu_{cj})^2}{2\sigma_{cj}^2}
+      \right)
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Что модель учит</h3>
+        <ul>
+          <li>prior каждого класса,</li>
+          <li>mean каждого признака в каждом классе,</li>
+          <li>variance каждого признака в каждом классе.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Когда удобно</h3>
+        <ul>
+          <li>числовые признаки,</li>
+          <li>простая baseline-модель,</li>
+          <li>нужна быстрая probabilistic classifier.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warn">
+      Если распределения очень далеки от Gaussian,
+      качество Gaussian NB может заметно падать.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: Gaussian likelihood</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="gaussMu">Mean μ <span class="badge-inline" id="gaussMuVal">0.0</span></label>
+          <input type="range" id="gaussMu" min="-5" max="5" value="0" step="0.1">
+        </div>
+
+        <div class="control-group">
+          <label for="gaussSigma">Std σ <span class="badge-inline" id="gaussSigmaVal">1.0</span></label>
+          <input type="range" id="gaussSigma" min="0.3" max="3" value="1" step="0.1">
+        </div>
+
+        <div class="control-group">
+          <label for="gaussX">Наблюдаемое x <span class="badge-inline" id="gaussXVal">1.2</span></label>
+          <input type="range" id="gaussX" min="-6" max="6" value="1.2" step="0.1">
+        </div>
+
+        <div class="info">
+          Вероятность density выше, когда наблюдаемое значение ближе к mean и лежит в области высокой плотности.
+        </div>
+      </div>
+
+      <div>
+        <canvas id="gaussCanvas" width="380" height="240"></canvas>
+        <div class="grid-2" style="margin-top:10px;">
+          <div class="metric">
+            <div class="name">x</div>
+            <div class="value" id="gaussXMetric">1.20</div>
+          </div>
+          <div class="metric">
+            <div class="name">Likelihood density</div>
+            <div class="value" id="gaussDensityMetric">0.194</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.4 Multinomial Naive Bayes</h2>
+
+    <p>
+      Multinomial NB особенно знаменит в задачах текста:
+      bag-of-words, counts of tokens, document classification.
+    </p>
+
+    <div class="formula">
+      P(\mathbf{x}\mid y=c) \propto \prod_{j=1}^{d}\theta_{cj}^{x_j}
+    </div>
+
+    <p>
+      Здесь:
+    </p>
+    <ul>
+      <li><code>x_j</code> — сколько раз встретился признак/токен j,</li>
+      <li><code>θ_cj</code> — вероятность этого токена в классе c.</li>
+    </ul>
+
+    <div class="grid-2">
+      <div>
+        <h3>Где работает хорошо</h3>
+        <ul>
+          <li>spam filtering,</li>
+          <li>topic classification,</li>
+          <li>bag-of-words text features,</li>
+          <li>count-like sparse данные.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему это логично</h3>
+        <p>
+          Документ можно рассматривать как набор счётчиков слов.
+          Multinomial NB как раз моделирует вероятности таких счётчиков внутри каждого класса.
+        </p>
+      </div>
+    </div>
+
+    <div class="success">
+      Это один из самых классических и surprisingly strong baseline-алгоритмов для текстовой классификации.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Почему в Multinomial NB нужен smoothing</h2>
+
+    <p>
+      Если какое-то слово ни разу не встретилось в train-документах определённого класса,
+      его вероятность без smoothing станет нулевой:
+    </p>
+
+    <div class="formula">
+      \theta_{cj} = 0
+    </div>
+
+    <p>
+      Тогда если это слово встретится в новом объекте,
+      всё произведение likelihood рухнет в ноль.
+    </p>
+
+    <div class="formula">
+      P(\mathbf{x}\mid y=c)=0
+    </div>
+
+    <p>
+      Поэтому почти всегда используют Laplace smoothing:
+    </p>
+
+    <div class="formula">
+      \theta_{cj} =
+      \frac{N_{cj} + \alpha}
+      {\sum_{k}N_{ck} + \alpha V}
+    </div>
+
+    <p>
+      Где:
+    </p>
+    <ul>
+      <li><code>N_{cj}</code> — число появлений токена j в классе c,</li>
+      <li><code>V</code> — размер словаря,</li>
+      <li><code>α</code> — smoothing parameter.</li>
+    </ul>
+
+    <div class="warn">
+      Smoothing — это не косметика, а критически важная защита от нулевых вероятностей.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интерактив: smoothing против нулевых вероятностей</h2>
+
+    <div class="grid-2">
+      <div>
+        <div class="control-group">
+          <label for="tokenCount">Сколько раз токен встретился в классе: N <span class="badge-inline" id="tokenCountVal">0</span></label>
+          <input type="range" id="tokenCount" min="0" max="20" value="0" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="totalCount">Всего токенов в классе: T <span class="badge-inline" id="totalCountVal">100</span></label>
+          <input type="range" id="totalCount" min="20" max="500" value="100" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="vocabSize">Размер словаря V <span class="badge-inline" id="vocabSizeVal">50</span></label>
+          <input type="range" id="vocabSize" min="5" max="500" value="50" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="alphaSmooth">Smoothing α <span class="badge-inline" id="alphaSmoothVal">1.0</span></label>
+          <input type="range" id="alphaSmooth" min="0" max="5" value="1" step="0.1">
+        </div>
+      </div>
+
+      <div>
+        <div class="result-box" id="smoothResult"></div>
+        <canvas id="smoothCanvas" width="380" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.5 Bernoulli Naive Bayes</h2>
+
+    <p>
+      Bernoulli NB используют, когда признаки бинарные:
+      есть слово / нет слова, кликнул / не кликнул, присутствует фича / отсутствует.
+    </p>
+
+    <div class="formula">
+      x_j \in \{0,1\}
+    </div>
+
+    <p>
+      Тогда likelihood учитывает и наличие, и отсутствие признака:
+    </p>
+
+    <div class="formula">
+      P(\mathbf{x}\mid y=c)=
+      \prod_{j=1}^{d}
+      P(x_j=1\mid y=c)^{x_j}
+      (1-P(x_j=1\mid y=c))^{1-x_j}
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <h3>Когда логичен Bernoulli NB</h3>
+        <ul>
+          <li>бинарные индикаторы признаков,</li>
+          <li>важен сам факт присутствия, а не количество,</li>
+          <li>мешок слов в режиме “слово есть / нет”.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Отличие от Multinomial</h3>
+        <p>
+          Multinomial NB различает counts,
+          а Bernoulli NB — только факт присутствия/отсутствия.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Gaussian vs Multinomial vs Bernoulli</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Вариант NB</th>
+          <th>Тип признаков</th>
+          <th>Типичная область</th>
+          <th>Основная идея likelihood</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gaussian NB</td>
+          <td>непрерывные числовые</td>
+          <td>tabular numeric data</td>
+          <td>каждый признак Gaussian внутри класса</td>
+        </tr>
+        <tr>
+          <td>Multinomial NB</td>
+          <td>counts / frequencies</td>
+          <td>текст, token counts</td>
+          <td>модель вероятностей токенов</td>
+        </tr>
+        <tr>
+          <td>Bernoulli NB</td>
+          <td>бинарные 0/1</td>
+          <td>presence/absence features</td>
+          <td>учитывает наличие и отсутствие признаков</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info">
+      Выбор варианта NB определяется не “что моднее”,
+      а тем, как устроены признаки.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2.9.6 Где NB работает хорошо</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Сильные сценарии</h3>
+        <ul>
+          <li>текстовая классификация,</li>
+          <li>спам-фильтрация,</li>
+          <li>быстрый baseline,</li>
+          <li>малый объём данных,</li>
+          <li>high-dimensional sparse features.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Почему он там силён</h3>
+        <ul>
+          <li>очень мало параметров,</li>
+          <li>быстро обучается,</li>
+          <li>хорошо работает со sparse representations,</li>
+          <li>не требует тяжёлой оптимизации.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="success">
+      Naive Bayes — это один из лучших “cheap but strong” baselines,
+      особенно для текстовых задач.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Где NB работает хуже</h2>
+
+    <ul>
+      <li>когда independence assumption сильно и вредно нарушается,</li>
+      <li>когда нужно моделировать сложные взаимодействия между признаками,</li>
+      <li>когда важно тонкое decision boundary,</li>
+      <li>когда вероятности должны быть хорошо откалиброваны.</li>
+    </ul>
+
+    <div class="warn">
+      Naive Bayes часто хорошо классифицирует,
+      но его probabilities могут быть слишком уверенными и плохо calibrated.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Generative vs discriminative взгляд</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Naive Bayes — generative</h3>
+        <div class="formula">
+          P(x \mid y),\; P(y)
+        </div>
+        <p>
+          Модель пытается описать,
+          как признаки возникают внутри каждого класса.
+        </p>
+      </div>
+      <div>
+        <h3>Logistic Regression — discriminative</h3>
+        <div class="formula">
+          P(y \mid x)
+        </div>
+        <p>
+          Модель напрямую учит границу между классами,
+          не моделируя генерацию признаков.
+        </p>
+      </div>
+    </div>
+
+    <div class="info">
+      Это очень важная концептуальная связка:
+      NB и Logistic Regression могут решать схожие задачи,
+      но исходят из разной философии.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Интуитивное сравнение Naive Bayes и Logistic Regression</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Свойство</th>
+          <th>Naive Bayes</th>
+          <th>Logistic Regression</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Тип модели</td>
+          <td>generative</td>
+          <td>discriminative</td>
+        </tr>
+        <tr>
+          <td>Что моделирует</td>
+          <td>P(x|y), P(y)</td>
+          <td>P(y|x)</td>
+        </tr>
+        <tr>
+          <td>Обучение</td>
+          <td>быстрые статистики</td>
+          <td>оптимизация loss</td>
+        </tr>
+        <tr>
+          <td>Индуктивный bias</td>
+          <td>сильный</td>
+          <td>слабее</td>
+        </tr>
+        <tr>
+          <td>Текст / sparse data</td>
+          <td>часто очень силён</td>
+          <td>тоже силён, но может требовать больше данных</td>
+        </tr>
+        <tr>
+          <td>Вероятностная калибровка</td>
+          <td>часто хуже</td>
+          <td>обычно лучше</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Классовые priors и imbalance</h2>
+
+    <p>
+      В Naive Bayes priors встроены в модель естественно:
+    </p>
+
+    <div class="formula">
+      P(y=c)
+    </div>
+
+    <p>
+      Если какой-то класс встречается реже,
+      это уже влияет на posterior.
+    </p>
+
+    <div class="grid-2">
+      <div>
+        <h3>Плюс</h3>
+        <p>
+          Модель автоматически учитывает частоты классов.
+        </p>
+      </div>
+      <div>
+        <h3>Но</h3>
+        <p>
+          Если imbalance сильный,
+          priors могут слишком сильно смещать prediction,
+          особенно если likelihood не очень выразителен.
+        </p>
+      </div>
+    </div>
+
+    <div class="warn">
+      При сильном imbalance всё равно нужно внимательно смотреть на precision, recall и другие метрики классификации, а не только на raw accuracy.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab1">GaussianNB</button>
+      <button class="tab-btn" data-tab="tab2">MultinomialNB</button>
+      <button class="tab-btn" data-tab="tab3">BernoulliNB</button>
+      <button class="tab-btn" data-tab="tab4">Text pipeline</button>
+    </div>
+
+    <div class="tab-panel active" id="tab1">
+      <div class="code-block">from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+
+model = GaussianNB()
+model.fit(X_train, y_train)
+
+pred = model.predict(X_val)
+proba = model.predict_proba(X_val)
+
+print("accuracy:", accuracy_score(y_val, pred))</div>
+    </div>
+
+    <div class="tab-panel" id="tab2">
+      <div class="code-block">from sklearn.naive_bayes import MultinomialNB
+
+model = MultinomialNB(alpha=1.0)  # Laplace smoothing
+model.fit(X_train_counts, y_train)
+
+pred = model.predict(X_val_counts)
+proba = model.predict_proba(X_val_counts)</div>
+    </div>
+
+    <div class="tab-panel" id="tab3">
+      <div class="code-block">from sklearn.naive_bayes import BernoulliNB
+
+model = BernoulliNB(alpha=1.0)
+model.fit(X_train_binary, y_train)
+
+pred = model.predict(X_val_binary)
+proba = model.predict_proba(X_val_binary)</div>
+    </div>
+
+    <div class="tab-panel" id="tab4">
+      <div class="code-block">from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+pipe = Pipeline([
+    ("vect", CountVectorizer()),
+    ("nb", MultinomialNB(alpha=1.0))
+])
+
+pipe.fit(train_texts, y_train)
+pred = pipe.predict(val_texts)
+proba = pipe.predict_proba(val_texts)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>NumPy-интуиция для Bernoulli NB</h2>
+
+    <div class="code-block">import numpy as np
+
+# два бинарных признака: x1, x2
+x = np.array([1, 1])
+
+# priors
+p_spam = 0.4
+p_ham = 0.6
+
+# feature likelihoods
+# P(x_j=1 | spam)
+spam_probs = np.array([0.8, 0.7])
+
+# P(x_j=1 | ham)
+ham_probs = np.array([0.2, 0.15])
+
+def bernoulli_likelihood(x, probs):
+    return np.prod((probs ** x) * ((1 - probs) ** (1 - x)))
+
+score_spam = p_spam * bernoulli_likelihood(x, spam_probs)
+score_ham  = p_ham  * bernoulli_likelihood(x, ham_probs)
+
+print("unnormalized spam score:", score_spam)
+print("unnormalized ham score :", score_ham)
+
+pred = "spam" if score_spam > score_ham else "ham"
+print("predicted class:", pred)</div>
+
+    <div class="info">
+      В реальной реализации обычно переходят к log-probabilities,
+      но эта версия хорошо показывает саму механику.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Практические замечания</h2>
+
+    <div class="step"><strong>1.</strong> Для текста сначала определись, нужны ли counts или просто presence/absence.</div>
+    <div class="step"><strong>2.</strong> Не забывай про smoothing — особенно в Multinomial и Bernoulli NB.</div>
+    <div class="step"><strong>3.</strong> Для Gaussian NB проверь, похожи ли numeric features хотя бы примерно на Gaussian per class.</div>
+    <div class="step"><strong>4.</strong> Если probabilities важны для продукта, проверяй calibration отдельно.</div>
+    <div class="step"><strong>5.</strong> Используй NB как baseline: он дешёвый и часто surprisingly competitive.</div>
+  </div>
+
+  <div class="card">
+    <h2>Частые ошибки</h2>
+
+    <div class="warn">
+      <ul>
+        <li>путать prior и posterior,</li>
+        <li>думать, что independence assumption обязано быть строго верным,</li>
+        <li>забывать про smoothing и получать нулевые вероятности,</li>
+        <li>использовать неправильный вариант NB для типа признаков,</li>
+        <li>интерпретировать NB-probabilities как хорошо calibrated без проверки,</li>
+        <li>считать, что простая модель автоматически слабая.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Связь с темами дальше</h2>
+
+    <div class="grid-2">
+      <div>
+        <h3>Следующий блок</h3>
+        <ul>
+          <li><strong>2.10 Decision Trees</strong></li>
+          <li>там логика уже будет не вероятностной и не геометрической, а rule-based через split'ы</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Что важно помнить дальше</h3>
+        <ul>
+          <li>формула Байеса и log-loss ещё не раз всплывут,</li>
+          <li>сравнение generative vs discriminative — тоже очень собеседовательная тема.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card takeaway">
+    <h2 style="color:var(--green)">Takeaway</h2>
+    <p>
+      Naive Bayes — это простая, быстрая и очень практичная вероятностная модель классификации.
+    </p>
+    <ul>
+      <li>Она основана на <strong>формуле Байеса</strong>.</li>
+      <li>Главное упрощение — <strong>conditional independence assumption</strong>.</li>
+      <li><strong>Gaussian NB</strong> подходит для числовых признаков.</li>
+      <li><strong>Multinomial NB</strong> особенно хорош для counts и текста.</li>
+      <li><strong>Bernoulli NB</strong> подходит для бинарных признаков.</li>
+      <li><strong>Smoothing</strong> нужен, чтобы избежать нулевых вероятностей.</li>
+      <li>Naive Bayes часто работает surprisingly well, особенно как быстрый baseline на sparse data.</li>
+    </ul>
+    <p>
+      Самая важная мысль:
+      <span class="hl-green">Naive Bayes силён не потому, что реалистично моделирует мир, а потому, что делает полезное приближение очень дёшево и часто достаточно хорошо</span>.
+    </p>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    // ---------- Tabs ----------
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.card');
+        const buttons = parent.querySelectorAll('.tab-btn');
+        const panels = parent.querySelectorAll('.tab-panel');
+        const target = btn.dataset.tab;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        parent.querySelector('#' + target).classList.add('active');
+      });
+    });
+
+    // ---------- Bayes demo ----------
+    const priorSpam = document.getElementById('priorSpam');
+    const word1Spam = document.getElementById('word1Spam');
+    const word2Spam = document.getElementById('word2Spam');
+    const word1Ham = document.getElementById('word1Ham');
+    const word2Ham = document.getElementById('word2Ham');
+    const bayesCanvas = document.getElementById('bayesCanvas');
+    const bctx = bayesCanvas.getContext('2d');
+
+    function drawBayesCalc(){
+      const ps = Number(priorSpam.value);
+      const ph = 1 - ps;
+
+      const w1s = Number(word1Spam.value);
+      const w2s = Number(word2Spam.value);
+      const w1h = Number(word1Ham.value);
+      const w2h = Number(word2Ham.value);
+
+      document.getElementById('priorSpamVal').textContent = ps.toFixed(2);
+      document.getElementById('word1SpamVal').textContent = w1s.toFixed(2);
+      document.getElementById('word2SpamVal').textContent = w2s.toFixed(2);
+      document.getElementById('word1HamVal').textContent = w1h.toFixed(2);
+      document.getElementById('word2HamVal').textContent = w2h.toFixed(2);
+
+      const spamScore = ps * w1s * w2s;
+      const hamScore = ph * w1h * w2h;
+      const norm = spamScore + hamScore;
+      const pSpamPost = norm === 0 ? 0.5 : spamScore / norm;
+      const pHamPost = 1 - pSpamPost;
+      const pred = pSpamPost >= pHamPost ? 'spam' : 'ham';
+
+      document.getElementById('bayesCalcResult').innerHTML = `
+        <div><strong>Unnormalized spam score:</strong> P(spam)·P(w₁|spam)·P(w₂|spam) = <span class="hl-red">${spamScore.toFixed(6)}</span></div>
+        <div><strong>Unnormalized ham score:</strong> P(ham)·P(w₁|ham)·P(w₂|ham) = <span class="hl-blue">${hamScore.toFixed(6)}</span></div>
+        <div style="margin-top:8px"><strong>Posterior spam:</strong> <span class="hl-amber">${pSpamPost.toFixed(4)}</span></div>
+        <div><strong>Posterior ham:</strong> <span class="hl-green">${pHamPost.toFixed(4)}</span></div>
+        <div style="margin-top:8px"><strong>Predicted class:</strong> <span class="hl-purple">${pred}</span></div>
+      `;
+
+      const W = bayesCanvas.width;
+      const H = bayesCanvas.height;
+      bctx.clearRect(0,0,W,H);
+      bctx.fillStyle = '#0d1117';
+      bctx.fillRect(0,0,W,H);
+
+      const vals = [
+        {name:'spam', value:pSpamPost, color:'#ef4444'},
+        {name:'ham', value:pHamPost, color:'#60a5fa'}
+      ];
+
+      const maxV = 1;
+      vals.forEach((v,i)=>{
+        const x = 70 + i*140;
+        const h = v.value/maxV * 130;
+        bctx.fillStyle = v.color;
+        bctx.fillRect(x, H-35-h, 70, h);
+        bctx.fillStyle = '#8b949e';
+        bctx.font = '12px system-ui';
+        bctx.fillText(v.name, x+16, H-12);
+        bctx.fillText(v.value.toFixed(3), x+14, H-45-h);
+      });
+    }
+
+    [priorSpam, word1Spam, word2Spam, word1Ham, word2Ham].forEach(el => el.addEventListener('input', drawBayesCalc));
+
+    // ---------- Gaussian demo ----------
+    const gaussMu = document.getElementById('gaussMu');
+    const gaussSigma = document.getElementById('gaussSigma');
+    const gaussX = document.getElementById('gaussX');
+    const gaussCanvas = document.getElementById('gaussCanvas');
+    const gctx = gaussCanvas.getContext('2d');
+
+    function gaussianDensity(x, mu, sigma){
+      return 1 / (Math.sqrt(2 * Math.PI) * sigma) * Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma));
+    }
+
+    function drawGaussian(){
+      const mu = Number(gaussMu.value);
+      const sigma = Number(gaussSigma.value);
+      const x = Number(gaussX.value);
+      const density = gaussianDensity(x, mu, sigma);
+
+      document.getElementById('gaussMuVal').textContent = mu.toFixed(1);
+      document.getElementById('gaussSigmaVal').textContent = sigma.toFixed(1);
+      document.getElementById('gaussXVal').textContent = x.toFixed(1);
+      document.getElementById('gaussXMetric').textContent = x.toFixed(2);
+      document.getElementById('gaussDensityMetric').textContent = density.toFixed(3);
+
+      const W = gaussCanvas.width;
+      const H = gaussCanvas.height;
+      gctx.clearRect(0,0,W,H);
+      gctx.fillStyle = '#0d1117';
+      gctx.fillRect(0,0,W,H);
+
+      gctx.strokeStyle = '#30363d';
+      gctx.beginPath();
+      gctx.moveTo(20, H - 25);
+      gctx.lineTo(W - 20, H - 25);
+      gctx.stroke();
+
+      function px(v){ return 20 + ((v + 6) / 12) * (W - 40); }
+      function py(v){ return H - 25 - v / 0.8 * (H - 45); }
+
+      gctx.strokeStyle = '#60a5fa';
+      gctx.lineWidth = 2.4;
+      gctx.beginPath();
+      for(let i=0;i<=400;i++){
+        const xx = -6 + i/400 * 12;
+        const yy = gaussianDensity(xx, mu, sigma);
+        const X = px(xx), Y = py(yy);
+        if(i===0) gctx.moveTo(X,Y);
+        else gctx.lineTo(X,Y);
+      }
+      gctx.stroke();
+
+      gctx.strokeStyle = '#f59e0b';
+      gctx.lineWidth = 1.5;
+      gctx.beginPath();
+      gctx.moveTo(px(x), H-25);
+      gctx.lineTo(px(x), py(density));
+      gctx.stroke();
+
+      gctx.fillStyle = '#a78bfa';
+      gctx.beginPath();
+      gctx.arc(px(x), py(density), 6, 0, Math.PI*2);
+      gctx.fill();
+    }
+
+    [gaussMu, gaussSigma, gaussX].forEach(el => el.addEventListener('input', drawGaussian));
+
+    // ---------- Smoothing demo ----------
+    const tokenCount = document.getElementById('tokenCount');
+    const totalCount = document.getElementById('totalCount');
+    const vocabSize = document.getElementById('vocabSize');
+    const alphaSmooth = document.getElementById('alphaSmooth');
+    const smoothCanvas = document.getElementById('smoothCanvas');
+    const sctx = smoothCanvas.getContext('2d');
+
+    function drawSmoothing(){
+      const N = Number(tokenCount.value);
+      const T = Number(totalCount.value);
+      const V = Number(vocabSize.value);
+      const a = Number(alphaSmooth.value);
+
+      document.getElementById('tokenCountVal').textContent = N;
+      document.getElementById('totalCountVal').textContent = T;
+      document.getElementById('vocabSizeVal').textContent = V;
+      document.getElementById('alphaSmoothVal').textContent = a.toFixed(1);
+
+      const noSmooth = T === 0 ? 0 : N / T;
+      const smooth = (N + a) / (T + a * V);
+
+      document.getElementById('smoothResult').innerHTML = `
+        <div><strong>Без smoothing:</strong> N / T = <span class="hl-red">${noSmooth.toFixed(6)}</span></div>
+        <div><strong>Со smoothing:</strong> (N + α)/(T + αV) = <span class="hl-green">${smooth.toFixed(6)}</span></div>
+        <div style="margin-top:8px" class="muted">Если N = 0, smoothing не даёт вероятности схлопнуться в 0.</div>
+      `;
+
+      const W = smoothCanvas.width;
+      const H = smoothCanvas.height;
+      sctx.clearRect(0,0,W,H);
+      sctx.fillStyle = '#0d1117';
+      sctx.fillRect(0,0,W,H);
+
+      const vals = [
+        {name:'raw', value:noSmooth, color:'#ef4444'},
+        {name:'smoothed', value:smooth, color:'#10b981'}
+      ];
+
+      vals.forEach((v,i)=>{
+        const x = 90 + i*120;
+        const h = Math.min(v.value / Math.max(noSmooth, smooth, 1e-6), 1) * 100;
+        sctx.fillStyle = v.color;
+        sctx.fillRect(x, H-30-h, 70, h);
+        sctx.fillStyle = '#8b949e';
+        sctx.font = '12px system-ui';
+        sctx.fillText(v.name, x+10, H-10);
+        sctx.fillText(v.value.toExponential(2), x-2, H-40-h);
+      });
+    }
+
+    [tokenCount, totalCount, vocabSize, alphaSmooth].forEach(el => el.addEventListener('input', drawSmoothing));
+
+    drawBayesCalc();
+    drawGaussian();
+    drawSmoothing();
+  </script>
+</body>
+</html>
