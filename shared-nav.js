@@ -112,6 +112,8 @@
 
   const currentPage = pages[currentIndex];
   const currentSection = sections[currentPage.sectionIndex];
+  const previousPage = pages[currentIndex - 1] || null;
+  const nextPage = pages[currentIndex + 1] || null;
   const pageHref = function (page) {
     return new URL(page.path, rootUrl).href;
   };
@@ -197,6 +199,38 @@
     );
   };
 
+  const buildFooterCard = function (page, direction) {
+    const isPrevious = direction === "prev";
+    const fallbackLabel = isPrevious ? "← Предыдущая тема" : "Следующая тема →";
+
+    if (!page) {
+      return (
+        '<span class="footer-link is-disabled">' +
+        '<span class="muted">' +
+        fallbackLabel +
+        "</span>" +
+        "—" +
+        "</span>"
+      );
+    }
+
+    const isBoundary = page.sectionId !== currentPage.sectionId;
+    const kicker = isPrevious
+      ? (isBoundary ? "← Предыдущий блок" : "← Предыдущая тема")
+      : (isBoundary ? "Следующий блок →" : "Следующая тема →");
+
+    return (
+      '<a class="footer-link" href="' +
+      pageHref(page) +
+      '">' +
+      '<span class="muted">' +
+      kicker +
+      "</span>" +
+      page.label +
+      "</a>"
+    );
+  };
+
   const topNav = document.createElement("nav");
   topNav.className = "ml-page-nav";
   if (isOpen) {
@@ -252,6 +286,16 @@
     "</div>";
 
   document.body.insertBefore(topNav, document.body.firstChild);
+
+  const pageShell = document.querySelector(".page");
+  if (pageShell && !pageShell.querySelector(".footer-nav")) {
+    const footerNav = document.createElement("div");
+    footerNav.className = "footer-nav";
+    footerNav.innerHTML =
+      buildFooterCard(previousPage, "prev") +
+      buildFooterCard(nextPage, "next");
+    pageShell.appendChild(footerNav);
+  }
 
   const bottomNav = document.createElement("nav");
   bottomNav.className = "ml-page-nav ml-page-nav--bottom";
