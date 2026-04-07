@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.19 Интерпретация моделей</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="18_imbalanced_classes.html">2.18 Несбалансированные классы</a>
+        <span class="tag active">2.19 Интерпретация моделей</span>
+        <a class="tag tag-block" href="20_practical_pipeline.html">2.20 Практический pipeline</a>
+      </div>
+
+      <h1>2.19 Интерпретация моделей</h1>
+      <p class="muted">
+        Коэффициенты линейных моделей, feature importance, permutation importance, partial dependence, SHAP и локальная vs глобальная интерпретация.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Зачем вообще нужна интерпретация</h2>
+      <p>
+        Хорошая модель — это не всегда только высокая метрика. Во многих задачах важно понимать:
+        <strong>почему</strong> модель принимает решение, какие признаки влияют сильнее,
+        где она может ошибаться и можно ли ей доверять.
+      </p>
+
+      <div class="formula">Интерпретация помогает ответить на вопросы:
+- Какие признаки важны?
+- Как именно они влияют на прогноз?
+- Почему конкретный объект получил такой score?
+- Можно ли доверять этому решению?</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Интерпретация важна в медицине, финансах, HR, страховании,
+            скоринге, юридических и high-stakes задачах.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но интерпретация — это не магическая “правда о мире”.
+            Часто это лишь описание того, как ведёт себя конкретная модель на конкретных данных.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Метрика отвечает на вопрос “насколько хорошо модель работает”.
+        Интерпретация отвечает на вопрос “на чём именно модель строит свои решения”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Два уровня интерпретации</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Глобальная интерпретация</h3>
+          <p>
+            Помогает понять модель в целом:
+            какие признаки в среднем важны,
+            какие эффекты она ловит,
+            какие паттерны для неё значимы.
+          </p>
+        </div>
+        <div>
+          <h3>Локальная интерпретация</h3>
+          <p>
+            Объясняет конкретное предсказание:
+            почему именно для этого объекта модель выдала такой результат.
+          </p>
+        </div>
+      </div>
+
+      <div class="formula">Global:
+"Что модель делает в среднем?"
+
+Local:
+"Почему именно этот объект получил такой прогноз?"</div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.1 Коэффициенты линейных моделей</h2>
+      <p>
+        В линейных моделях интерпретация начинается с коэффициентов.
+      </p>
+
+      <div class="formula">Линейная регрессия:
+ŷ = β₀ + β₁x₁ + β₂x₂ + ... + β_p x_p
+
+Логистическая регрессия:
+logit(p) = β₀ + β₁x₁ + β₂x₂ + ... + β_p x_p</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Знак коэффициента показывает направление влияния:
+            положительный — признак увеличивает score,
+            отрицательный — уменьшает.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но сравнивать величины коэффициентов напрямую можно
+            только если признаки находятся в сопоставимом масштабе
+            или были стандартизованы.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        Для линейной регрессии коэффициент — это примерно “на сколько меняется прогноз
+        при изменении признака на 1 единицу, если остальные фиксированы”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: коэффициенты линейной модели</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно менять значения двух признаков и коэффициенты модели,
+            чтобы видеть вклад каждого признака в итоговый score.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>x₁: <span id="x1Val" class="hl-blue">2.0</span></label>
+              <input id="x1Range" type="range" min="-5" max="5" step="0.1" value="2.0" />
+            </div>
+            <div class="control">
+              <label>x₂: <span id="x2Val" class="hl-green">-1.0</span></label>
+              <input id="x2Range" type="range" min="-5" max="5" step="0.1" value="-1.0" />
+            </div>
+            <div class="control">
+              <label>β₁: <span id="b1Val" class="hl-amber">1.5</span></label>
+              <input id="b1Range" type="range" min="-3" max="3" step="0.1" value="1.5" />
+            </div>
+            <div class="control">
+              <label>β₂: <span id="b2Val" class="hl-red">-0.8</span></label>
+              <input id="b2Range" type="range" min="-3" max="3" step="0.1" value="-0.8" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">β₁x₁</div>
+              <div class="value" id="contr1Out">0.0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">β₂x₂</div>
+              <div class="value" id="contr2Out">0.0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Total score</div>
+              <div class="value" id="scoreOut">0.0</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="linearInterpCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>x₁ contribution</span>
+            <span><i class="swatch" style="background:#10b981"></i>x₂ contribution</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>total</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Коэффициенты в логистической регрессии</h2>
+      <p>
+        В логистической регрессии коэффициенты влияют не напрямую на вероятность,
+        а на <strong>log-odds</strong>.
+      </p>
+
+      <div class="formula">logit(p) = log(p / (1-p)) = β₀ + Σ_j β_j x_j
+
+Если увеличить x_j на 1,
+log-odds изменится на β_j</div>
+
+      <div class="info">
+        Если взять <code>exp(β_j)</code>, получим multiplicative effect на odds.
+      </div>
+
+      <div class="warn">
+        Но это всё равно не равно “вероятность вырастет ровно на столько-то” —
+        связь с probability нелинейная.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.2 Feature importance</h2>
+      <p>
+        Для tree-based моделей часто используют встроенную feature importance.
+        Она обычно основана на том, насколько признак уменьшал impurity в деревьях.
+      </p>
+
+      <div class="formula">Feature importance (tree-based):
+суммарный weighted impurity decrease
+по всем split'ам, где использовался признак</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="success">
+            Это удобно: importance есть сразу после обучения модели.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но встроенная importance может быть biased,
+            например в сторону признаков с большим числом уникальных значений.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        Встроенная importance отвечает на вопрос:
+        “Какие признаки модель часто использовала и насколько сильно они помогали ей делать split'ы?”
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: impurity-based feature importance</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь схематически показано, как суммарные уменьшения impurity формируют importance.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Feature A split gain: <span id="gainAVal" class="hl-blue">0.45</span></label>
+              <input id="gainA" type="range" min="0.01" max="1.00" step="0.01" value="0.45" />
+            </div>
+            <div class="control">
+              <label>Feature B split gain: <span id="gainBVal" class="hl-green">0.25</span></label>
+              <input id="gainB" type="range" min="0.01" max="1.00" step="0.01" value="0.25" />
+            </div>
+            <div class="control">
+              <label>Feature C split gain: <span id="gainCVal" class="hl-red">0.15</span></label>
+              <input id="gainC" type="range" min="0.01" max="1.00" step="0.01" value="0.15" />
+            </div>
+          </div>
+
+          <div class="formula" id="importanceText">Normalized importances are computed from total gain shares.</div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="importanceCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>Feature A</span>
+            <span><i class="swatch" style="background:#10b981"></i>Feature B</span>
+            <span><i class="swatch" style="background:#ef4444"></i>Feature C</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.3 Permutation importance</h2>
+      <p>
+        <strong>Permutation importance</strong> измеряет важность признака через ухудшение качества,
+        если случайно перемешать значения этого признака.
+      </p>
+
+      <div class="formula">Идея:
+1. Считаем baseline metric
+2. Перемешиваем один признак
+3. Считаем metric снова
+4. Importance = baseline - degraded metric</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Если после перемешивания качество сильно упало —
+            признак действительно был полезен модели.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Permutation importance часто надёжнее встроенной feature importance,
+            потому что оценивает реальное влияние признака на качество.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Но если признаки сильно коррелированы,
+        permutation importance может занижать вклад одного из них:
+        модель сможет частично опираться на его “двойника”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: permutation importance</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно менять baseline quality и силу деградации после permutation для разных признаков.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Baseline metric: <span id="baseMetricVal" class="hl-amber">0.86</span></label>
+              <input id="baseMetric" type="range" min="0.50" max="0.99" step="0.01" value="0.86" />
+            </div>
+            <div class="control">
+              <label>Drop after permuting feature A: <span id="dropAVal" class="hl-blue">0.10</span></label>
+              <input id="dropA" type="range" min="0.00" max="0.30" step="0.01" value="0.10" />
+            </div>
+            <div class="control">
+              <label>Drop after permuting feature B: <span id="dropBVal" class="hl-green">0.05</span></label>
+              <input id="dropB" type="range" min="0.00" max="0.30" step="0.01" value="0.05" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Imp(A)</div>
+              <div class="value" id="permAOut">0.10</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Imp(B)</div>
+              <div class="value" id="permBOut">0.05</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="permCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#f59e0b"></i>baseline</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>after permuting A</span>
+            <span><i class="swatch" style="background:#10b981"></i>after permuting B</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.4 Partial dependence</h2>
+      <p>
+        <strong>Partial dependence</strong> показывает,
+        как в среднем меняется предсказание модели при изменении одного признака,
+        если остальные признаки “маргинализовать” по датасету.
+      </p>
+
+      <div class="formula">PDP for feature x_j:
+
+PDP(x_j = t) = average over dataset of
+f(t, x_{-j})</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            PDP помогает увидеть форму зависимости:
+            линейная она, насыщается, имеет пороги, U-shape, plateau и т.д.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но PDP предполагает, что мы можем свободно менять один признак,
+            оставляя остальные реалистичными. При сильной корреляции признаков это может быть проблемой.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        PDP — это ответ на вопрос:
+        “Если смотреть в среднем по данным, как модель реагирует на изменение этого признака?”
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: partial dependence</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь можно переключать тип зависимости и смотреть,
+            как выглядит partial dependence curve.
+          </p>
+
+          <div class="tabs" id="pdpTabs">
+            <button class="tab-btn active" data-pdp="linear">Linear</button>
+            <button class="tab-btn" data-pdp="threshold">Threshold</button>
+            <button class="tab-btn" data-pdp="u">U-shape</button>
+            <button class="tab-btn" data-pdp="saturating">Saturating</button>
+          </div>
+
+          <div class="controls">
+            <div class="control">
+              <label>Strength: <span id="pdpStrengthVal" class="hl-amber">0.80</span></label>
+              <input id="pdpStrength" type="range" min="0.10" max="1.50" step="0.05" value="0.80" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="pdpCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>PDP curve</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.5 SHAP</h2>
+      <p>
+        <strong>SHAP</strong> — один из самых популярных подходов к объяснению модели.
+        Он пытается разложить предсказание на вклады отдельных признаков.
+      </p>
+
+      <div class="formula">Prediction decomposition:
+
+prediction = base_value + Σ_j φ_j
+
+где
+φ_j — SHAP contribution feature j</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="success">
+            SHAP даёт очень удобную идею:
+            каждое конкретное предсказание можно объяснить
+            как сумму базового уровня и вкладов признаков.
+          </div>
+        </div>
+        <div>
+          <div class="info">
+            SHAP удобен тем, что существует и для локальной интерпретации,
+            и для глобальных summary plots.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Но SHAP тоже не “читает причинность”.
+        Он объясняет вклад признаков в поведение модели,
+        а не доказывает, что именно эти признаки вызывают реальный исход в мире.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: SHAP-like decomposition</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь схематически показано разложение прогноза на base value и вклады признаков.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Base value: <span id="baseValVal" class="hl-amber">0.40</span></label>
+              <input id="baseValRange" type="range" min="0.00" max="1.00" step="0.01" value="0.40" />
+            </div>
+            <div class="control">
+              <label>Feature A contribution: <span id="shapAVal" class="hl-blue">0.18</span></label>
+              <input id="shapA" type="range" min="-0.50" max="0.50" step="0.01" value="0.18" />
+            </div>
+            <div class="control">
+              <label>Feature B contribution: <span id="shapBVal" class="hl-green">-0.07</span></label>
+              <input id="shapB" type="range" min="-0.50" max="0.50" step="0.01" value="-0.07" />
+            </div>
+            <div class="control">
+              <label>Feature C contribution: <span id="shapCVal" class="hl-red">0.09</span></label>
+              <input id="shapC" type="range" min="-0.50" max="0.50" step="0.01" value="0.09" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Base value</div>
+              <div class="value" id="baseOut">0.40</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Final prediction</div>
+              <div class="value" id="predOut">0.60</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="shapCanvas" width="400" height="270"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#f59e0b"></i>base value</span>
+            <span><i class="swatch" style="background:#10b981"></i>positive contribution</span>
+            <span><i class="swatch" style="background:#ef4444"></i>negative contribution</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.19.6 Локальная vs глобальная интерпретация</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Тип</th>
+              <th>Вопрос</th>
+              <th>Примеры методов</th>
+              <th>Когда полезен</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Глобальная</td>
+              <td>Как модель ведёт себя в целом?</td>
+              <td>Coefficients, feature importance, permutation importance, PDP, SHAP summary</td>
+              <td>Аудит, анализ паттернов, презентация модели</td>
+            </tr>
+            <tr>
+              <td>Локальная</td>
+              <td>Почему именно этот объект получил такой прогноз?</td>
+              <td>SHAP values, local feature contributions</td>
+              <td>Разбор кейса, объяснение решения пользователю или эксперту</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info">
+        Хорошая практика — не выбирать между ними,
+        а использовать оба уровня:
+        <strong>глобальный для понимания общей логики модели,
+        локальный — для разбора конкретных решений.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Что интерпретация не гарантирует</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Интерпретация не равна причинности.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Важный для модели признак не обязательно “истинная причина” явления.
+          </div>
+          <div class="warn">
+            <strong>3.</strong> Красивый график объяснений не гарантирует отсутствия leakage или bias в данных.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>4.</strong> При сильной корреляции признаков важности и вклады могут быть нестабильными.
+          </div>
+          <div class="warn">
+            <strong>5.</strong> Локальные объяснения не всегда легко обобщаются на всю модель.
+          </div>
+          <div class="warn">
+            <strong>6.</strong> Простая интерпретируемость не заменяет хорошую валидацию и качественные данные.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практический pipeline интерпретации</h2>
+      <div class="step"><strong>1.</strong> Начать с sanity checks: train/valid gap, leakage, data quality.</div>
+      <div class="step"><strong>2.</strong> Для линейных моделей посмотреть standardized coefficients.</div>
+      <div class="step"><strong>3.</strong> Для tree/boosting-моделей сравнить built-in importance и permutation importance.</div>
+      <div class="step"><strong>4.</strong> Для важных признаков построить PDP / dependence-style plots.</div>
+      <div class="step"><strong>5.</strong> Для конкретных объектов посмотреть SHAP-like локальные вклады.</div>
+      <div class="step"><strong>6.</strong> Всегда помнить о коррелированных признаках и границах интерпретации.</div>
+    </div>
+
+    <div class="card">
+      <h2>Как выбирать метод интерпретации</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ситуация</th>
+              <th>Что обычно полезно</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Линейная/логистическая модель</td>
+              <td>Coefficients + standardization + odds interpretation</td>
+            </tr>
+            <tr>
+              <td>Random forest / boosting</td>
+              <td>Permutation importance + PDP + SHAP summary</td>
+            </tr>
+            <tr>
+              <td>Нужно объяснить конкретный кейс</td>
+              <td>Local SHAP / local contribution view</td>
+            </tr>
+            <tr>
+              <td>Нужен быстрый обзор модели</td>
+              <td>Feature importance + несколько sanity checks</td>
+            </tr>
+            <tr>
+              <td>High-stakes задача</td>
+              <td>Комбинация глобальной и локальной интерпретации + аудит данных</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn / shap</h2>
+
+      <div class="tabs" data-tabs="interp-code-tabs">
+        <button class="tab-btn active" data-tab="code-coef">Coefficients</button>
+        <button class="tab-btn" data-tab="code-perm">Permutation importance</button>
+        <button class="tab-btn" data-tab="code-pdp">Partial dependence</button>
+        <button class="tab-btn" data-tab="code-shap">SHAP</button>
+      </div>
+
+      <div id="code-coef" class="tab-panel active">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+import pandas as pd
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=1000))
+])
+
+pipe.fit(X_train, y_train)
+
+coef = pipe.named_steps["clf"].coef_[0]
+coef_df = pd.DataFrame({
+    "feature": feature_names,
+    "coef": coef
+}).sort_values("coef", ascending=False)
+
+print(coef_df)</div>
+      </div>
+
+      <div id="code-perm" class="tab-panel">
+        <div class="code">from sklearn.inspection import permutation_importance
+import pandas as pd
+
+result = permutation_importance(
+    model,
+    X_valid,
+    y_valid,
+    n_repeats=10,
+    random_state=42,
+    n_jobs=-1
+)
+
+perm_df = pd.DataFrame({
+    "feature": feature_names,
+    "importance_mean": result.importances_mean,
+    "importance_std": result.importances_std
+}).sort_values("importance_mean", ascending=False)
+
+print(perm_df)</div>
+      </div>
+
+      <div id="code-pdp" class="tab-panel">
+        <div class="code">from sklearn.inspection import PartialDependenceDisplay
+import matplotlib.pyplot as plt
+
+features_to_plot = [0, 3]  # indices or feature names
+
+fig, ax = plt.subplots(figsize=(8, 4))
+PartialDependenceDisplay.from_estimator(
+    model,
+    X_valid,
+    features=features_to_plot,
+    ax=ax
+)
+plt.tight_layout()
+plt.show()</div>
+      </div>
+
+      <div id="code-shap" class="tab-panel">
+        <div class="code">import shap
+
+# пример для tree-based модели
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_valid)
+
+# глобально
+shap.summary_plot(shap_values, X_valid, feature_names=feature_names)
+
+# локально для одного объекта
+i = 0
+shap.force_plot(
+    explainer.expected_value,
+    shap_values[i],
+    X_valid.iloc[i],
+    feature_names=feature_names
+)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Считать feature importance причинным выводом.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Сравнивать коэффициенты без стандартизации признаков.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Полагаться только на built-in importance у деревьев.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Не учитывать коррелированные признаки.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Переинтерпретировать t-shaped / strange curves без проверки данных.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Думать, что наличие “объяснений” делает модель автоматически честной и безопасной.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить интерпретацию моделей на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Интерпретация нужна, чтобы понять, какие признаки важны и почему модель принимает конкретные решения.</div>
+      <div class="step"><strong>2.</strong> Для линейных моделей начинаем с коэффициентов, желательно после стандартизации признаков.</div>
+      <div class="step"><strong>3.</strong> Для tree-based моделей полезно сравнивать built-in importance и permutation importance.</div>
+      <div class="step"><strong>4.</strong> PDP помогает понять среднюю форму зависимости прогноза от признака.</div>
+      <div class="step"><strong>5.</strong> SHAP позволяет разложить конкретное предсказание на вклад отдельных признаков и также даёт глобальные summary plots.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Коэффициенты</strong> полезны для линейных моделей, но требуют осторожной интерпретации масштаба и корреляций.</div>
+          <div class="step"><strong>Feature importance</strong> даёт быстрый взгляд, но не всегда надёжна сама по себе.</div>
+          <div class="step"><strong>Permutation importance</strong> часто лучше показывает реальный вклад признака в качество.</div>
+        </div>
+        <div>
+          <div class="step"><strong>PDP</strong> помогает увидеть среднюю форму зависимости модели от признака.</div>
+          <div class="step"><strong>SHAP</strong> особенно удобен для локальных объяснений и глобальных summary-анализов.</div>
+          <div class="step">Главная мысль: <strong>интерпретация описывает поведение модели, но не заменяет причинный анализ и проверку данных.</strong></div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>coefficients = линейный вклад, importance = общая важность, PDP = средний эффект, SHAP = вклад в конкретный прогноз.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="18_imbalanced_classes.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.18 Несбалансированные классы
+      </a>
+      <a class="footer-link" href="20_practical_pipeline.html">
+        <span class="muted">Следующая тема →</span>
+        2.20 Практический pipeline
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // ---------- Linear coefficients demo ----------
+    const x1Range = document.getElementById('x1Range');
+    const x2Range = document.getElementById('x2Range');
+    const b1Range = document.getElementById('b1Range');
+    const b2Range = document.getElementById('b2Range');
+
+    const x1Val = document.getElementById('x1Val');
+    const x2Val = document.getElementById('x2Val');
+    const b1Val = document.getElementById('b1Val');
+    const b2Val = document.getElementById('b2Val');
+
+    const contr1Out = document.getElementById('contr1Out');
+    const contr2Out = document.getElementById('contr2Out');
+    const scoreOut = document.getElementById('scoreOut');
+
+    const linearInterpCanvas = document.getElementById('linearInterpCanvas');
+    const lctx = linearInterpCanvas.getContext('2d');
+
+    function drawLinearInterp(){
+      const x1 = +x1Range.value;
+      const x2 = +x2Range.value;
+      const b1 = +b1Range.value;
+      const b2 = +b2Range.value;
+
+      const c1 = x1 * b1;
+      const c2 = x2 * b2;
+      const score = c1 + c2;
+
+      x1Val.textContent = x1.toFixed(1);
+      x2Val.textContent = x2.toFixed(1);
+      b1Val.textContent = b1.toFixed(1);
+      b2Val.textContent = b2.toFixed(1);
+
+      contr1Out.textContent = c1.toFixed(1);
+      contr2Out.textContent = c2.toFixed(1);
+      scoreOut.textContent = score.toFixed(1);
+
+      const W = linearInterpCanvas.width, H = linearInterpCanvas.height;
+      lctx.clearRect(0,0,W,H);
+      lctx.fillStyle = '#0b1016';
+      lctx.fillRect(0,0,W,H);
+
+      const baseY = 190;
+      const scale = 26;
+
+      const vals = [c1, c2, score];
+      const colors = ['#60a5fa', '#10b981', '#f59e0b'];
+      const labels = ['β₁x₁', 'β₂x₂', 'Σ'];
+      const xs = [55, 165, 285];
+      const bw = 56;
+
+      lctx.strokeStyle = '#30363d';
+      lctx.beginPath();
+      lctx.moveTo(24, baseY);
+      lctx.lineTo(W-24, baseY);
+      lctx.stroke();
+
+      vals.forEach((v,i)=>{
+        const h = v * scale;
+        lctx.fillStyle = colors[i];
+        lctx.fillRect(xs[i], h >= 0 ? baseY - h : baseY, bw, Math.abs(h));
+
+        lctx.fillStyle = '#e6edf3';
+        lctx.font = '12px system-ui';
+        lctx.textAlign = 'center';
+        lctx.fillText(labels[i], xs[i] + bw/2, baseY + 18);
+        lctx.fillText(v.toFixed(1), xs[i] + bw/2, h >= 0 ? baseY - h - 8 : baseY + Math.abs(h) + 14);
+      });
+    }
+
+    [x1Range,x2Range,b1Range,b2Range].forEach(el=>el.addEventListener('input', drawLinearInterp));
+
+    // ---------- Gain importance demo ----------
+    const gainA = document.getElementById('gainA');
+    const gainB = document.getElementById('gainB');
+    const gainC = document.getElementById('gainC');
+    const gainAVal = document.getElementById('gainAVal');
+    const gainBVal = document.getElementById('gainBVal');
+    const gainCVal = document.getElementById('gainCVal');
+    const importanceText = document.getElementById('importanceText');
+    const importanceCanvas = document.getElementById('importanceCanvas');
+    const ictx = importanceCanvas.getContext('2d');
+
+    function drawImportance(){
+      const a = +gainA.value;
+      const b = +gainB.value;
+      const c = +gainC.value;
+      const s = a + b + c;
+
+      const pa = a/s, pb = b/s, pc = c/s;
+
+      gainAVal.textContent = a.toFixed(2);
+      gainBVal.textContent = b.toFixed(2);
+      gainCVal.textContent = c.toFixed(2);
+      importanceText.textContent = `A=${(pa*100).toFixed(1)}%, B=${(pb*100).toFixed(1)}%, C=${(pc*100).toFixed(1)}% of total split gain`;
+
+      const W = importanceCanvas.width, H = importanceCanvas.height;
+      ictx.clearRect(0,0,W,H);
+      ictx.fillStyle = '#0b1016';
+      ictx.fillRect(0,0,W,H);
+
+      const baseY = 220, maxH = 160;
+      const vals = [pa, pb, pc];
+      const colors = ['#60a5fa','#10b981','#ef4444'];
+      const labels = ['A','B','C'];
+      const xs = [55,165,275];
+      const bw = 58;
+
+      vals.forEach((v,i)=>{
+        const h = v * maxH;
+        ictx.fillStyle = colors[i];
+        ictx.fillRect(xs[i], baseY-h, bw, h);
+        ictx.fillStyle = '#e6edf3';
+        ictx.font = '12px system-ui';
+        ictx.textAlign = 'center';
+        ictx.fillText(labels[i], xs[i] + bw/2, baseY + 16);
+        ictx.fillText((v*100).toFixed(1)+'%', xs[i] + bw/2, baseY - h - 8);
+      });
+    }
+
+    [gainA,gainB,gainC].forEach(el=>el.addEventListener('input', drawImportance));
+
+    // ---------- Permutation importance demo ----------
+    const baseMetric = document.getElementById('baseMetric');
+    const dropA = document.getElementById('dropA');
+    const dropB = document.getElementById('dropB');
+    const baseMetricVal = document.getElementById('baseMetricVal');
+    const dropAVal = document.getElementById('dropAVal');
+    const dropBVal = document.getElementById('dropBVal');
+    const permAOut = document.getElementById('permAOut');
+    const permBOut = document.getElementById('permBOut');
+    const permCanvas = document.getElementById('permCanvas');
+    const pctx = permCanvas.getContext('2d');
+
+    function drawPerm(){
+      const base = +baseMetric.value;
+      const da = +dropA.value;
+      const db = +dropB.value;
+
+      const aAfter = clamp(base - da, 0, 1);
+      const bAfter = clamp(base - db, 0, 1);
+
+      baseMetricVal.textContent = base.toFixed(2);
+      dropAVal.textContent = da.toFixed(2);
+      dropBVal.textContent = db.toFixed(2);
+      permAOut.textContent = da.toFixed(2);
+      permBOut.textContent = db.toFixed(2);
+
+      const W = permCanvas.width, H = permCanvas.height;
+      pctx.clearRect(0,0,W,H);
+      pctx.fillStyle = '#0b1016';
+      pctx.fillRect(0,0,W,H);
+
+      const baseY = 215, maxH = 160;
+      const vals = [base, aAfter, bAfter];
+      const colors = ['#f59e0b','#60a5fa','#10b981'];
+      const labels = ['Baseline', 'Perm A', 'Perm B'];
+      const xs = [40,155,270];
+      const bw = 72;
+
+      vals.forEach((v,i)=>{
+        const h = v * maxH;
+        pctx.fillStyle = colors[i];
+        pctx.fillRect(xs[i], baseY-h, bw, h);
+        pctx.fillStyle = '#e6edf3';
+        pctx.font = '12px system-ui';
+        pctx.textAlign = 'center';
+        pctx.fillText(labels[i], xs[i] + bw/2, baseY + 18);
+        pctx.fillText(v.toFixed(2), xs[i] + bw/2, baseY - h - 8);
+      });
+    }
+
+    [baseMetric,dropA,dropB].forEach(el=>el.addEventListener('input', drawPerm));
+
+    // ---------- PDP demo ----------
+    const pdpStrength = document.getElementById('pdpStrength');
+    const pdpStrengthVal = document.getElementById('pdpStrengthVal');
+    const pdpCanvas = document.getElementById('pdpCanvas');
+    const pdpCtx = pdpCanvas.getContext('2d');
+    let pdpMode = 'linear';
+
+    document.querySelectorAll('#pdpTabs .tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#pdpTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        pdpMode = btn.dataset.pdp;
+        drawPDP();
+      });
+    });
+
+    function pdpFunc(x, strength){
+      if(pdpMode === 'linear') return 0.5 + strength * 0.22 * x;
+      if(pdpMode === 'threshold') return x < 0.2 ? 0.35 : 0.35 + strength * 0.38;
+      if(pdpMode === 'u') return 0.28 + strength * 0.22 * Math.pow(x-0.1, 2) * 2.2;
+      return 0.2 + strength * 0.5 * (1 / (1 + Math.exp(-5*(x-0.1))));
+    }
+
+    function drawPDP(){
+      const s = +pdpStrength.value;
+      pdpStrengthVal.textContent = s.toFixed(2);
+
+      const W = pdpCanvas.width, H = pdpCanvas.height;
+      pdpCtx.clearRect(0,0,W,H);
+      pdpCtx.fillStyle = '#0b1016';
+      pdpCtx.fillRect(0,0,W,H);
+
+      const padL=34,padR=10,padT=12,padB=24;
+      function X(x){ return padL + ((x+1)/2)*(W-padL-padR); }
+      function Y(y){ return H-padB - y*(H-padT-padB); }
+
+      pdpCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        pdpCtx.beginPath();
+        pdpCtx.moveTo(padL, Y(yy));
+        pdpCtx.lineTo(W-padR, Y(yy));
+        pdpCtx.stroke();
+      }
+
+      pdpCtx.strokeStyle = '#60a5fa';
+      pdpCtx.lineWidth = 2.3;
+      pdpCtx.beginPath();
+      for(let i=0;i<=200;i++){
+        const x = -1 + 2*i/200;
+        const y = clamp(pdpFunc(x, s), 0.02, 0.98);
+        if(i===0) pdpCtx.moveTo(X(x),Y(y));
+        else pdpCtx.lineTo(X(x),Y(y));
+      }
+      pdpCtx.stroke();
+    }
+
+    pdpStrength.addEventListener('input', drawPDP);
+
+    // ---------- SHAP demo ----------
+    const baseValRange = document.getElementById('baseValRange');
+    const shapA = document.getElementById('shapA');
+    const shapB = document.getElementById('shapB');
+    const shapC = document.getElementById('shapC');
+
+    const baseValVal = document.getElementById('baseValVal');
+    const shapAVal = document.getElementById('shapAVal');
+    const shapBVal = document.getElementById('shapBVal');
+    const shapCVal = document.getElementById('shapCVal');
+
+    const baseOut = document.getElementById('baseOut');
+    const predOut = document.getElementById('predOut');
+
+    const shapCanvas = document.getElementById('shapCanvas');
+    const sctx = shapCanvas.getContext('2d');
+
+    function drawSHAP(){
+      const base = +baseValRange.value;
+      const a = +shapA.value;
+      const b = +shapB.value;
+      const c = +shapC.value;
+      const pred = clamp(base + a + b + c, -1, 2);
+
+      baseValVal.textContent = base.toFixed(2);
+      shapAVal.textContent = a.toFixed(2);
+      shapBVal.textContent = b.toFixed(2);
+      shapCVal.textContent = c.toFixed(2);
+
+      baseOut.textContent = base.toFixed(2);
+      predOut.textContent = pred.toFixed(2);
+
+      const W = shapCanvas.width, H = shapCanvas.height;
+      sctx.clearRect(0,0,W,H);
+      sctx.fillStyle = '#0b1016';
+      sctx.fillRect(0,0,W,H);
+
+      const startX = 40;
+      const y = 135;
+      const scale = 180;
+
+      function xpos(v){ return startX + v * scale; }
+
+      // baseline
+      sctx.strokeStyle = '#f59e0b';
+      sctx.lineWidth = 3;
+      sctx.beginPath();
+      sctx.moveTo(xpos(base), y-36);
+      sctx.lineTo(xpos(base), y+36);
+      sctx.stroke();
+
+      let cur = base;
+      const parts = [
+        {name:'A', value:a},
+        {name:'B', value:b},
+        {name:'C', value:c}
+      ];
+
+      parts.forEach((part, idx)=>{
+        const next = cur + part.value;
+        sctx.strokeStyle = part.value >= 0 ? '#10b981' : '#ef4444';
+        sctx.lineWidth = 10;
+        sctx.beginPath();
+        sctx.moveTo(xpos(cur), y + idx*24 - 24);
+        sctx.lineTo(xpos(next), y + idx*24 - 24);
+        sctx.stroke();
+
+        sctx.fillStyle = '#e6edf3';
+        sctx.font = '12px system-ui';
+        sctx.textAlign = 'center';
+        sctx.fillText(`${part.name}: ${part.value >= 0 ? '+' : ''}${part.value.toFixed(2)}`, (xpos(cur)+xpos(next))/2, y + idx*24 - 34);
+
+        cur = next;
+      });
+
+      sctx.strokeStyle = '#60a5fa';
+      sctx.lineWidth = 3;
+      sctx.beginPath();
+      sctx.moveTo(xpos(pred), y-40);
+      sctx.lineTo(xpos(pred), y+46);
+      sctx.stroke();
+
+      sctx.fillStyle = '#8b949e';
+      sctx.font = '12px system-ui';
+      sctx.fillText('base', xpos(base), y+60);
+      sctx.fillText('prediction', xpos(pred), y+60);
+    }
+
+    [baseValRange, shapA, shapB, shapC].forEach(el=>el.addEventListener('input', drawSHAP));
+
+    drawLinearInterp();
+    drawImportance();
+    drawPerm();
+    drawPDP();
+    drawSHAP();
+  </script>
+</body>
+</html>

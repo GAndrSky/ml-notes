@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.16 Ансамбли</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="15_dimensionality_reduction.html">2.15 Снижение размерности</a>
+        <span class="tag active">2.16 Ансамбли</span>
+        <a class="tag tag-block" href="17_validation_and_hyperparameter_tuning.html">2.17 Валидация и HPO</a>
+      </div>
+
+      <h1>2.16 Ансамбли</h1>
+      <p class="muted">
+        Voting, bagging vs boosting, stacking, когда ансамбли помогают и когда они вредят.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Что такое ансамбль моделей</h2>
+      <p>
+        <strong>Ансамбль</strong> — это комбинация нескольких моделей, чьи предсказания
+        объединяются в одно итоговое решение. Главная идея очень проста:
+        если отдельные модели совершают ошибки по-разному, то их комбинация может работать лучше,
+        чем каждая модель по отдельности.
+      </p>
+
+      <div class="formula">Идея ансамбля:
+несколько моделей
+→ объединение предсказаний
+→ более стабильное и/или более точное решение</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Один эксперт может ошибиться. Несколько экспертов,
+        если они не копируют друг друга полностью, часто дают более надёжный итог.
+        В ML это превращается в bias-variance tradeoff на уровне группы моделей.
+      </div>
+
+      <div class="success">
+        Ансамбли особенно полезны, когда базовые модели:
+        <ul>
+          <li>достаточно сильные сами по себе;</li>
+          <li>ошибаются <strong>не одинаково</strong>;</li>
+          <li>дают разные взгляды на данные.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Почему ансамбли вообще работают</h2>
+      <div class="grid-2">
+        <div>
+          <p>
+            У ансамблей есть два основных механизма пользы:
+          </p>
+          <ul>
+            <li><strong>снижение variance</strong> через усреднение;</li>
+            <li><strong>снижение bias</strong> через последовательное исправление ошибок или более умную комбинацию моделей.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="formula">Если ошибки моделей не идеально коррелированы,
+среднее предсказание обычно стабильнее.
+
+Если разные модели ловят разные паттерны,
+мета-комбинация может использовать их сильные стороны.</div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Но ансамбль не магия:
+        если все модели почти одинаковые и ошибаются одинаково,
+        выигрыш будет маленьким.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Три больших идеи ансамблей</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Подход</th>
+              <th>Главная идея</th>
+              <th>Типичный механизм</th>
+              <th>Ключевая выгода</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Voting / Averaging</td>
+              <td>Просто объединить несколько моделей</td>
+              <td>Голосование или среднее вероятностей</td>
+              <td>Простота и устойчивость</td>
+            </tr>
+            <tr>
+              <td>Bagging / Random Forest</td>
+              <td>Обучить много версий модели на вариациях данных</td>
+              <td>Bootstrap + average / vote</td>
+              <td>Снижение variance</td>
+            </tr>
+            <tr>
+              <td>Boosting / Stacking</td>
+              <td>Более умно строить или комбинировать модели</td>
+              <td>Последовательное исправление или meta-model</td>
+              <td>Сильное качество</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.16.1 Voting</h2>
+      <p>
+        Самый простой ансамбль — это <strong>voting ensemble</strong>.
+        Берём несколько моделей и объединяем их ответы.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Hard voting</h3>
+          <div class="formula">ŷ = mode{ŷ₁, ŷ₂, ..., ŷ_M}</div>
+          <p>
+            Каждая модель отдаёт метку класса, и побеждает большинство голосов.
+          </p>
+        </div>
+        <div>
+          <h3>Soft voting</h3>
+          <div class="formula">p̂ = (1/M) Σ_m p̂_m
+ŷ = argmax_k p̂_k</div>
+          <p>
+            Мы усредняем вероятности классов и уже после этого выбираем итоговый класс.
+          </p>
+        </div>
+      </div>
+
+      <div class="info">
+        На практике <strong>soft voting</strong> часто лучше hard voting,
+        если вероятности моделей более-менее осмысленны.
+      </div>
+
+      <div class="warn">
+        Но если вероятности плохо откалиброваны, soft voting может вести себя хуже, чем кажется.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: hard voting vs soft voting</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь три модели предсказывают вероятность класса 1.
+            Можно подвигать их confidence и посмотреть,
+            как отличаются hard voting и soft voting.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Model A: <span id="voteAVal" class="hl-blue">0.80</span></label>
+              <input id="voteA" type="range" min="0" max="1" step="0.01" value="0.80" />
+            </div>
+            <div class="control">
+              <label>Model B: <span id="voteBVal" class="hl-green">0.55</span></label>
+              <input id="voteB" type="range" min="0" max="1" step="0.01" value="0.55" />
+            </div>
+            <div class="control">
+              <label>Model C: <span id="voteCVal" class="hl-red">0.45</span></label>
+              <input id="voteC" type="range" min="0" max="1" step="0.01" value="0.45" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Hard voting</div>
+              <div class="value" id="hardVoteOut">class 1</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Soft voting</div>
+              <div class="value" id="softVoteOut">class 1</div>
+            </div>
+          </div>
+
+          <div class="formula" id="voteFormulaBox">mean prob = (0.80 + 0.55 + 0.45) / 3 = 0.60</div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="votingCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>Model A</span>
+            <span><i class="swatch" style="background:#10b981"></i>Model B</span>
+            <span><i class="swatch" style="background:#ef4444"></i>Model C</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>mean probability</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Weighted voting</h2>
+      <p>
+        Не все модели одинаково полезны. Иногда одной модели можно доверять больше,
+        другой — меньше. Тогда используют <strong>weighted voting</strong>.
+      </p>
+
+      <div class="formula">Weighted soft voting:
+
+p̂ = (Σ_m w_m p̂_m) / (Σ_m w_m)</div>
+
+      <div class="intuition">
+        Если у одной модели стабильно лучше качество на валидации,
+        ей можно дать больший вес в ансамбле.
+      </div>
+
+      <div class="warn">
+        Но веса нельзя подгонять на test set. Иначе это уже leakage.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.16.2 Bagging vs boosting</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Свойство</th>
+              <th>Bagging</th>
+              <th>Boosting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Как обучаются модели</td>
+              <td>Независимо, параллельно</td>
+              <td>Последовательно</td>
+            </tr>
+            <tr>
+              <td>Главная цель</td>
+              <td>Снизить variance</td>
+              <td>Снизить bias и улучшать ансамбль шаг за шагом</td>
+            </tr>
+            <tr>
+              <td>Базовая идея</td>
+              <td>Усреднить много шумных моделей</td>
+              <td>Исправлять ошибки предыдущих моделей</td>
+            </tr>
+            <tr>
+              <td>Устойчивость</td>
+              <td>Обычно выше</td>
+              <td>Обычно ниже, требует tuning</td>
+            </tr>
+            <tr>
+              <td>Типичный пример</td>
+              <td>Random Forest</td>
+              <td>XGBoost / LightGBM / CatBoost</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            <strong>Bagging</strong> полезен, когда базовая модель нестабильна и чувствительна к данным.
+          </div>
+        </div>
+        <div>
+          <div class="info">
+            <strong>Boosting</strong> полезен, когда хочется получить максимально сильную модель
+            и готовы аккуратно управлять overfitting.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: variance reduction vs bias reduction</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже упрощённая схема. Можно менять “похожесть” моделей и смотреть,
+            насколько ensemble выигрывает от усреднения.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Число моделей M: <span id="ensMVal" class="hl-amber">10</span></label>
+              <input id="ensM" type="range" min="2" max="50" step="1" value="10" />
+            </div>
+            <div class="control">
+              <label>Корреляция ошибок: <span id="ensCorrVal" class="hl-red">0.30</span></label>
+              <input id="ensCorr" type="range" min="0" max="0.95" step="0.01" value="0.30" />
+            </div>
+            <div class="control">
+              <label>Variance одной модели: <span id="ensVarVal" class="hl-blue">1.00</span></label>
+              <input id="ensVar" type="range" min="0.2" max="3.0" step="0.05" value="1.00" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Single variance</div>
+              <div class="value" id="singleVarianceOut">1.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Ensemble variance</div>
+              <div class="value" id="ensembleVarianceOut">0.37</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="varianceReductionCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>variance ensemble</span>
+            <span><i class="swatch" style="background:#ef4444"></i>корреляционный floor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.16.3 Stacking</h2>
+      <p>
+        <strong>Stacking</strong> — это ансамбль, где мы не просто усредняем модели,
+        а обучаем специальную <strong>meta-model</strong>, которая получает на вход предсказания базовых моделей
+        и учится комбинировать их оптимально.
+      </p>
+
+      <div class="formula">Base models:
+h₁(x), h₂(x), ..., h_M(x)
+
+Meta-features:
+z(x) = [h₁(x), h₂(x), ..., h_M(x)]
+
+Meta-model:
+g(z) → final prediction</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            Если одна модель хорошо ловит линейные зависимости,
+            другая — нелинейности, третья — локальную структуру,
+            meta-model может научиться, кому и когда больше доверять.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Хороший stacking — это не “магия из трёх строк”,
+            а аккуратная работа с out-of-fold предсказаниями и защитой от leakage.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как правильно строить stacking</h2>
+      <p>
+        Самая важная проблема stacking — не допустить leakage.
+        Если meta-model увидит предсказания базовых моделей,
+        сделанные на тех же данных, на которых они обучались,
+        она получит слишком оптимистичную картину.
+      </p>
+
+      <div class="step"><strong>Шаг 1.</strong> Разбиваем train на фолды.</div>
+      <div class="step"><strong>Шаг 2.</strong> Для каждого фолда обучаем base-модели на остальных фолдах.</div>
+      <div class="step"><strong>Шаг 3.</strong> Получаем <strong>out-of-fold predictions</strong> для hold-out части.</div>
+      <div class="step"><strong>Шаг 4.</strong> Собираем из них новую матрицу признаков для meta-model.</div>
+      <div class="step"><strong>Шаг 5.</strong> Обучаем meta-model уже на этих честных предсказаниях.</div>
+
+      <div class="formula">Правильный stacking:
+meta-model train features = OOF predictions
+
+Неправильный stacking:
+meta-model train features = predictions on same train data
+→ leakage</div>
+
+      <div class="warn">
+        Это одна из самых частых ошибок в stacking.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: stacking и leakage</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже показана разница между “грязным” stacking с leakage и честным OOF stacking.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Сила overfit base-моделей: <span id="stackOverfitVal" class="hl-red">0.50</span></label>
+              <input id="stackOverfit" type="range" min="0" max="1" step="0.01" value="0.50" />
+            </div>
+            <div class="control">
+              <label>Сила разнообразия моделей: <span id="stackDiversityVal" class="hl-green">0.60</span></label>
+              <input id="stackDiversity" type="range" min="0" max="1" step="0.01" value="0.60" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Naive stack score</div>
+              <div class="value" id="naiveStackOut">0.95</div>
+            </div>
+            <div class="kpi">
+              <div class="label">OOF stack score</div>
+              <div class="value" id="oofStackOut">0.81</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="stackingCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#ef4444"></i>naive / leakage</span>
+            <span><i class="swatch" style="background:#10b981"></i>OOF stacking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда ансамбли помогают</h2>
+      <div class="grid-2">
+        <div>
+          <ul>
+            <li>когда отдельные модели дополняют друг друга;</li>
+            <li>когда важна максимальная точность, а не минимальная простота;</li>
+            <li>когда одна модель нестабильна и выигрывает от усреднения;</li>
+            <li>когда есть разные типы признаков и разные inductive bias;</li>
+            <li>когда single-model baseline уже хороший, но хочется ещё немного качества.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="success">
+            Сильные ансамбли часто рождаются из комбинации
+            <strong>разных по природе моделей</strong>:
+            линейной, tree-based, distance-based и т.д.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда ансамбли вредят</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Когда все модели одинаковые и не добавляют разнообразия.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Когда ансамбль усложняет систему, а качество почти не растёт.
+          </div>
+          <div class="warn">
+            <strong>3.</strong> Когда важнее интерпретируемость и latency, чем максимальная метрика.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>4.</strong> Когда возникает leakage, особенно в stacking.
+          </div>
+          <div class="warn">
+            <strong>5.</strong> Когда маленький датасет не позволяет честно построить meta-слой.
+          </div>
+          <div class="warn">
+            <strong>6.</strong> Когда ансамбль слишком тяжёлый по памяти, времени инференса и деплою.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bias-variance взгляд на ансамбли</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Подход</th>
+              <th>Главный эффект</th>
+              <th>Что важно</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Voting / averaging</td>
+              <td>Сглаживание и стабилизация</td>
+              <td>Качество и разнообразие base-моделей</td>
+            </tr>
+            <tr>
+              <td>Bagging</td>
+              <td>Снижение variance</td>
+              <td>Нестабильность base learner'а</td>
+            </tr>
+            <tr>
+              <td>Boosting</td>
+              <td>Часто сильное снижение bias</td>
+              <td>Регуляризация и overfitting control</td>
+            </tr>
+            <tr>
+              <td>Stacking</td>
+              <td>Умная комбинация разных inductive bias</td>
+              <td>OOF predictions и честная валидация</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: diversity base-моделей</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            У ансамбля есть два критических свойства:
+            <strong>сила базовых моделей</strong> и <strong>разнообразие их ошибок</strong>.
+            Если модели сильные, но одинаковые, выигрыш может быть маленьким.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Base model quality: <span id="baseQualityVal" class="hl-blue">0.78</span></label>
+              <input id="baseQuality" type="range" min="0.50" max="0.98" step="0.01" value="0.78" />
+            </div>
+            <div class="control">
+              <label>Error diversity: <span id="diversityVal" class="hl-green">0.55</span></label>
+              <input id="diversity" type="range" min="0" max="1" step="0.01" value="0.55" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Single model</div>
+              <div class="value" id="singleAccOut">0.78</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Ensemble</div>
+              <div class="value" id="ensembleAccOut">0.85</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Gain</div>
+              <div class="value" id="ensembleGainOut">+0.07</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="diversityCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>single model</span>
+            <span><i class="swatch" style="background:#10b981"></i>ensemble</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практические шаблоны ансамблей</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Простой и рабочий вариант</h3>
+          <ul>
+            <li>логистическая регрессия;</li>
+            <li>random forest;</li>
+            <li>gradient boosting;</li>
+            <li>soft voting.</li>
+          </ul>
+          <div class="info">
+            Это часто уже даёт неплохой robust baseline.
+          </div>
+        </div>
+        <div>
+          <h3>Более продвинутый вариант</h3>
+          <ul>
+            <li>несколько base-моделей разных семейств;</li>
+            <li>OOF predictions;</li>
+            <li>мета-модель: logistic regression / linear regression / small tree model;</li>
+            <li>stacking.</li>
+          </ul>
+          <div class="warn">
+            Чем сложнее ансамбль, тем выше риск сделать его неправильно.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ансамбли и продакшн</h2>
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Ансамбль часто поднимает качество на leaderboard и в offline-валидации.
+          </div>
+          <div class="info">
+            Но в продакшне важны ещё:
+            <ul>
+              <li>latency;</li>
+              <li>memory;</li>
+              <li>стоимость инференса;</li>
+              <li>сложность дебага;</li>
+              <li>обновление пайплайна.</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Иногда одна чуть более слабая, но простая модель —
+            лучший выбор для реальной системы, чем тяжёлый ансамбль.
+          </div>
+          <div class="success">
+            То есть ансамбли — это инструмент оптимизации качества,
+            а не универсально правильный финальный дизайн.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn</h2>
+
+      <div class="tabs" data-tabs="ensemble-code-tabs">
+        <button class="tab-btn active" data-tab="code-voting">Voting</button>
+        <button class="tab-btn" data-tab="code-bagboost">Bagging vs Boosting</button>
+        <button class="tab-btn" data-tab="code-stacking">Stacking</button>
+        <button class="tab-btn" data-tab="code-oof">OOF concept</button>
+      </div>
+
+      <div id="code-voting" class="tab-panel active">
+        <div class="code">from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+
+clf1 = LogisticRegression(max_iter=1000)
+clf2 = RandomForestClassifier(n_estimators=300, random_state=42)
+clf3 = GradientBoostingClassifier(random_state=42)
+
+hard_voting = VotingClassifier(
+    estimators=[
+        ("lr", clf1),
+        ("rf", clf2),
+        ("gb", clf3)
+    ],
+    voting="hard"
+)
+
+soft_voting = VotingClassifier(
+    estimators=[
+        ("lr", clf1),
+        ("rf", clf2),
+        ("gb", clf3)
+    ],
+    voting="soft"
+)
+
+hard_voting.fit(X_train, y_train)
+soft_voting.fit(X_train, y_train)</div>
+      </div>
+
+      <div id="code-bagboost" class="tab-panel">
+        <div class="code">from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+
+rf = RandomForestClassifier(
+    n_estimators=300,
+    random_state=42,
+    n_jobs=-1
+)
+
+ada = AdaBoostClassifier(
+    n_estimators=200,
+    learning_rate=0.05,
+    random_state=42
+)
+
+rf.fit(X_train, y_train)
+ada.fit(X_train, y_train)</div>
+      </div>
+
+      <div id="code-stacking" class="tab-panel">
+        <div class="code">from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+
+base_estimators = [
+    ("rf", RandomForestClassifier(n_estimators=300, random_state=42)),
+    ("gb", GradientBoostingClassifier(random_state=42)),
+    ("svm", SVC(kernel="rbf", probability=True, random_state=42))
+]
+
+meta_model = LogisticRegression(max_iter=1000)
+
+stack = StackingClassifier(
+    estimators=base_estimators,
+    final_estimator=meta_model,
+    cv=5,
+    stack_method="predict_proba",
+    passthrough=False,
+    n_jobs=-1
+)
+
+stack.fit(X_train, y_train)</div>
+      </div>
+
+      <div id="code-oof" class="tab-panel">
+        <div class="code"># Идея OOF stacking в псевдокоде
+
+split train into K folds
+
+for each base model:
+    create empty array oof_pred
+
+    for fold in 1..K:
+        fit base model on K-1 folds
+        predict on held-out fold
+        store predictions into oof_pred for that fold
+
+# Теперь oof_pred — честные предсказания на train,
+# полученные без просмотра target текущего объекта.
+
+train meta-model on stacked OOF predictions
+
+# Потом base-модели переобучаются на всём train,
+# и на test/valid meta-model использует их новые predictions.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Думать, что “больше моделей” автоматически значит “лучше”.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Строить ансамбль из почти одинаковых моделей и ждать большого прироста.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Делать stacking без OOF-предсказаний.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Настраивать веса ансамбля по test set.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Игнорировать latency и стоимость инференса.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Использовать ансамбль там, где одна простая модель уже достаточно хороша.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить ансамбли на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Ансамбли объединяют несколько моделей, чтобы повысить стабильность и/или качество.</div>
+      <div class="step"><strong>2.</strong> Voting — самый простой ансамбль: объединение через голосование или среднее вероятностей.</div>
+      <div class="step"><strong>3.</strong> Bagging в основном снижает variance, boosting — часто снижает bias и улучшает качество последовательно.</div>
+      <div class="step"><strong>4.</strong> Stacking обучает meta-model на предсказаниях base-моделей и требует OOF-предсказаний, чтобы избежать leakage.</div>
+      <div class="step"><strong>5.</strong> Ансамбли помогают, когда модели сильные и разнообразные, но вредят, если усложнение системы не окупается.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Voting</strong> — простой способ получить более устойчивое решение из нескольких моделей.</div>
+          <div class="step"><strong>Bagging</strong> помогает прежде всего через снижение variance.</div>
+          <div class="step"><strong>Boosting</strong> — более агрессивный способ получить сильную модель, но с большим риском overfitting.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Stacking</strong> может быть очень сильным, если base-модели действительно дополняют друг друга.</div>
+          <div class="step">Главный источник пользы ансамбля — <strong>разнообразие ошибок</strong>.</div>
+          <div class="step">Главный риск ансамбля — <strong>сложность без реального выигрыша</strong> и leakage.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>voting = просто объединить, bagging = усреднить шум, boosting = последовательно усилить, stacking = научиться комбинировать.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="15_dimensionality_reduction.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.15 Снижение размерности
+      </a>
+      <a class="footer-link" href="17_validation_and_hyperparameter_tuning.html">
+        <span class="muted">Следующая тема →</span>
+        2.17 Валидация и HPO
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // -------- Voting demo --------
+    const voteA = document.getElementById('voteA');
+    const voteB = document.getElementById('voteB');
+    const voteC = document.getElementById('voteC');
+    const voteAVal = document.getElementById('voteAVal');
+    const voteBVal = document.getElementById('voteBVal');
+    const voteCVal = document.getElementById('voteCVal');
+    const hardVoteOut = document.getElementById('hardVoteOut');
+    const softVoteOut = document.getElementById('softVoteOut');
+    const voteFormulaBox = document.getElementById('voteFormulaBox');
+    const votingCanvas = document.getElementById('votingCanvas');
+    const vCtx = votingCanvas.getContext('2d');
+
+    function drawVoting(){
+      const a = +voteA.value;
+      const b = +voteB.value;
+      const c = +voteC.value;
+      const mean = (a+b+c)/3;
+
+      voteAVal.textContent = a.toFixed(2);
+      voteBVal.textContent = b.toFixed(2);
+      voteCVal.textContent = c.toFixed(2);
+
+      const hardVotes = [a,b,c].map(v => v >= 0.5 ? 1 : 0);
+      const hard = hardVotes.reduce((s,v)=>s+v,0) >= 2 ? 1 : 0;
+      const soft = mean >= 0.5 ? 1 : 0;
+
+      hardVoteOut.textContent = 'class ' + hard;
+      softVoteOut.textContent = 'class ' + soft;
+      voteFormulaBox.textContent = `mean prob = (${a.toFixed(2)} + ${b.toFixed(2)} + ${c.toFixed(2)}) / 3 = ${mean.toFixed(2)}`;
+
+      const W = votingCanvas.width, H = votingCanvas.height;
+      vCtx.clearRect(0,0,W,H);
+      vCtx.fillStyle = '#0b1016';
+      vCtx.fillRect(0,0,W,H);
+
+      const vals = [a,b,c,mean];
+      const colors = ['#60a5fa','#10b981','#ef4444','#f59e0b'];
+      const labels = ['A','B','C','Mean'];
+      const barW = 55;
+      const gap = 28;
+      const startX = 45;
+      const baseY = 210;
+      const maxH = 160;
+
+      vals.forEach((val,i)=>{
+        const x = startX + i*(barW+gap);
+        const h = val * maxH;
+        vCtx.fillStyle = colors[i];
+        vCtx.fillRect(x, baseY-h, barW, h);
+
+        vCtx.fillStyle = '#e6edf3';
+        vCtx.font = '12px system-ui';
+        vCtx.textAlign = 'center';
+        vCtx.fillText(labels[i], x + barW/2, baseY + 18);
+        vCtx.fillText(val.toFixed(2), x + barW/2, baseY - h - 8);
+      });
+
+      vCtx.strokeStyle = '#a78bfa';
+      vCtx.setLineDash([6,6]);
+      vCtx.beginPath();
+      vCtx.moveTo(20, baseY - 0.5*maxH);
+      vCtx.lineTo(W-20, baseY - 0.5*maxH);
+      vCtx.stroke();
+      vCtx.setLineDash([]);
+    }
+
+    [voteA, voteB, voteC].forEach(el => el.addEventListener('input', drawVoting));
+
+    // -------- Variance reduction demo --------
+    const ensM = document.getElementById('ensM');
+    const ensCorr = document.getElementById('ensCorr');
+    const ensVar = document.getElementById('ensVar');
+    const ensMVal = document.getElementById('ensMVal');
+    const ensCorrVal = document.getElementById('ensCorrVal');
+    const ensVarVal = document.getElementById('ensVarVal');
+    const singleVarianceOut = document.getElementById('singleVarianceOut');
+    const ensembleVarianceOut = document.getElementById('ensembleVarianceOut');
+    const varianceReductionCanvas = document.getElementById('varianceReductionCanvas');
+    const vrCtx = varianceReductionCanvas.getContext('2d');
+
+    function ensembleVariance(M, sigma2, rho){
+      return rho*sigma2 + (1-rho)*sigma2/M;
+    }
+
+    function drawVarianceReduction(){
+      const M = +ensM.value;
+      const rho = +ensCorr.value;
+      const sigma2 = +ensVar.value;
+
+      ensMVal.textContent = M;
+      ensCorrVal.textContent = rho.toFixed(2);
+      ensVarVal.textContent = sigma2.toFixed(2);
+      singleVarianceOut.textContent = sigma2.toFixed(2);
+      ensembleVarianceOut.textContent = ensembleVariance(M, sigma2, rho).toFixed(2);
+
+      const W = varianceReductionCanvas.width, H = varianceReductionCanvas.height;
+      vrCtx.clearRect(0,0,W,H);
+      vrCtx.fillStyle = '#0b1016';
+      vrCtx.fillRect(0,0,W,H);
+
+      const padL=32,padR=10,padT=12,padB=24;
+      const yMax = sigma2 * 1.15;
+      function X(x){ return padL + (x-1)/(50-1)*(W-padL-padR); }
+      function Y(y){ return H-padB - (y/yMax)*(H-padT-padB); }
+
+      vrCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = yMax*i/4;
+        vrCtx.beginPath();
+        vrCtx.moveTo(padL,Y(yy));
+        vrCtx.lineTo(W-padR,Y(yy));
+        vrCtx.stroke();
+      }
+
+      vrCtx.strokeStyle = '#60a5fa';
+      vrCtx.lineWidth = 2.3;
+      vrCtx.beginPath();
+      for(let m=1;m<=50;m++){
+        const y = ensembleVariance(m, sigma2, rho);
+        if(m===1) vrCtx.moveTo(X(m),Y(y));
+        else vrCtx.lineTo(X(m),Y(y));
+      }
+      vrCtx.stroke();
+
+      const floor = rho*sigma2;
+      vrCtx.strokeStyle = '#ef4444';
+      vrCtx.setLineDash([6,6]);
+      vrCtx.beginPath();
+      vrCtx.moveTo(padL, Y(floor));
+      vrCtx.lineTo(W-padR, Y(floor));
+      vrCtx.stroke();
+      vrCtx.setLineDash([]);
+
+      vrCtx.fillStyle = '#e6edf3';
+      vrCtx.beginPath();
+      vrCtx.arc(X(Math.min(M,50)), Y(ensembleVariance(Math.min(M,50), sigma2, rho)), 5, 0, Math.PI*2);
+      vrCtx.fill();
+    }
+
+    [ensM, ensCorr, ensVar].forEach(el => el.addEventListener('input', drawVarianceReduction));
+
+    // -------- Stacking leakage demo --------
+    const stackOverfit = document.getElementById('stackOverfit');
+    const stackDiversity = document.getElementById('stackDiversity');
+    const stackOverfitVal = document.getElementById('stackOverfitVal');
+    const stackDiversityVal = document.getElementById('stackDiversityVal');
+    const naiveStackOut = document.getElementById('naiveStackOut');
+    const oofStackOut = document.getElementById('oofStackOut');
+    const stackingCanvas = document.getElementById('stackingCanvas');
+    const sCtx = stackingCanvas.getContext('2d');
+
+    function drawStacking(){
+      const overfit = +stackOverfit.value;
+      const diversity = +stackDiversity.value;
+
+      stackOverfitVal.textContent = overfit.toFixed(2);
+      stackDiversityVal.textContent = diversity.toFixed(2);
+
+      const naive = clamp(0.78 + 0.22*overfit + 0.10*diversity, 0, 0.99);
+      const oof = clamp(0.72 + 0.05*overfit + 0.15*diversity, 0, 0.97);
+
+      naiveStackOut.textContent = naive.toFixed(2);
+      oofStackOut.textContent = oof.toFixed(2);
+
+      const W = stackingCanvas.width, H = stackingCanvas.height;
+      sCtx.clearRect(0,0,W,H);
+      sCtx.fillStyle = '#0b1016';
+      sCtx.fillRect(0,0,W,H);
+
+      const baseY = 220;
+      const maxH = 160;
+      const values = [naive, oof];
+      const colors = ['#ef4444','#10b981'];
+      const labels = ['Naive', 'OOF'];
+      const xs = [95, 235];
+      const barW = 70;
+
+      values.forEach((v,i)=>{
+        const h = v * maxH;
+        sCtx.fillStyle = colors[i];
+        sCtx.fillRect(xs[i], baseY-h, barW, h);
+        sCtx.fillStyle = '#e6edf3';
+        sCtx.font = '13px system-ui';
+        sCtx.textAlign = 'center';
+        sCtx.fillText(labels[i], xs[i]+barW/2, baseY+18);
+        sCtx.fillText(v.toFixed(2), xs[i]+barW/2, baseY-h-8);
+      });
+    }
+
+    [stackOverfit, stackDiversity].forEach(el => el.addEventListener('input', drawStacking));
+
+    // -------- Diversity demo --------
+    const baseQuality = document.getElementById('baseQuality');
+    const diversity = document.getElementById('diversity');
+    const baseQualityVal = document.getElementById('baseQualityVal');
+    const diversityVal = document.getElementById('diversityVal');
+    const singleAccOut = document.getElementById('singleAccOut');
+    const ensembleAccOut = document.getElementById('ensembleAccOut');
+    const ensembleGainOut = document.getElementById('ensembleGainOut');
+    const diversityCanvas = document.getElementById('diversityCanvas');
+    const dCtx = diversityCanvas.getContext('2d');
+
+    function drawDiversity(){
+      const q = +baseQuality.value;
+      const div = +diversity.value;
+
+      baseQualityVal.textContent = q.toFixed(2);
+      diversityVal.textContent = div.toFixed(2);
+
+      const gain = clamp((1-q) * 0.55 * div, 0, 0.20);
+      const ens = clamp(q + gain, 0, 0.995);
+
+      singleAccOut.textContent = q.toFixed(2);
+      ensembleAccOut.textContent = ens.toFixed(2);
+      ensembleGainOut.textContent = '+' + gain.toFixed(2);
+
+      const W = diversityCanvas.width, H = diversityCanvas.height;
+      dCtx.clearRect(0,0,W,H);
+      dCtx.fillStyle = '#0b1016';
+      dCtx.fillRect(0,0,W,H);
+
+      const baseY = 220;
+      const maxH = 160;
+      const vals = [q, ens];
+      const colors = ['#60a5fa','#10b981'];
+      const labels = ['Single', 'Ensemble'];
+      const xs = [90, 230];
+      const barW = 72;
+
+      vals.forEach((v,i)=>{
+        const h = v * maxH;
+        dCtx.fillStyle = colors[i];
+        dCtx.fillRect(xs[i], baseY-h, barW, h);
+        dCtx.fillStyle = '#e6edf3';
+        dCtx.font = '13px system-ui';
+        dCtx.textAlign = 'center';
+        dCtx.fillText(labels[i], xs[i]+barW/2, baseY+18);
+        dCtx.fillText(v.toFixed(2), xs[i]+barW/2, baseY-h-8);
+      });
+
+      dCtx.strokeStyle = '#f59e0b';
+      dCtx.lineWidth = 2;
+      dCtx.beginPath();
+      dCtx.moveTo(xs[0]+barW+10, baseY - vals[0]*maxH);
+      dCtx.lineTo(xs[1]-10, baseY - vals[1]*maxH);
+      dCtx.stroke();
+    }
+
+    [baseQuality, diversity].forEach(el => el.addEventListener('input', drawDiversity));
+
+    drawVoting();
+    drawVarianceReduction();
+    drawStacking();
+    drawDiversity();
+  </script>
+</body>
+</html>

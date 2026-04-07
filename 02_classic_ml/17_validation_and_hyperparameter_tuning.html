@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.17 Валидация и подбор гиперпараметров</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="16_ensembles.html">2.16 Ансамбли</a>
+        <span class="tag active">2.17 Валидация и подбор гиперпараметров</span>
+        <a class="tag tag-block" href="18_imbalanced_classes.html">2.18 Несбалансированные классы</a>
+      </div>
+
+      <h1>2.17 Валидация и подбор гиперпараметров</h1>
+      <p class="muted">
+        Hold-out, cross-validation, stratified split, grid search, random search и leakage в CV.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Зачем вообще нужна валидация</h2>
+      <p>
+        Если мы оцениваем модель только на тех данных, на которых она обучалась,
+        то почти всегда получаем слишком оптимистичную картину.
+        Модель могла просто запомнить особенности train-набора.
+      </p>
+
+      <div class="formula">Train quality ≠ real generalization quality
+
+Нам нужна оценка того,
+как модель будет работать
+на новых, невиданных данных.</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Валидация — это попытка честно смоделировать будущее:
+        “Если завтра придут новые данные, как поведёт себя моя модель?”
+      </div>
+
+      <div class="warn">
+        Если валидация устроена неправильно, можно выбрать модель,
+        которая выглядит блестяще на бумаге, но разваливается в реальном использовании.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Главная структура: train / validation / test</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Train</strong> — на этих данных модель обучается.</div>
+          <div class="step"><strong>Validation</strong> — на этих данных выбираем гиперпараметры, сравниваем модели, принимаем решения.</div>
+          <div class="step"><strong>Test</strong> — используем один раз в конце для честной финальной оценки.</div>
+        </div>
+        <div>
+          <div class="formula">Train → fit parameters
+Validation → tune hyperparameters / compare models
+Test → final unbiased estimate</div>
+
+          <div class="info">
+            Очень важно не путать роли этих наборов.
+            Test set не должен участвовать в подборе параметров.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.1 Hold-out validation</h2>
+      <p>
+        Самый простой способ — сделать один разбиение:
+        часть данных оставить на обучение, часть — на валидацию.
+      </p>
+
+      <div class="formula">Пример:
+Train = 80%
+Validation = 20%</div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Плюсы</h3>
+          <ul>
+            <li>очень просто;</li>
+            <li>быстро считается;</li>
+            <li>понятно и прозрачно.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Минусы</h3>
+          <ul>
+            <li>результат зависит от конкретного split;</li>
+            <li>на маленьких выборках оценка может быть шумной;</li>
+            <li>часть данных не используется для обучения.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        Hold-out хорош как быстрый baseline, но на небольших или нестабильных датасетах
+        обычно хочется что-то надёжнее.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: hold-out split</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно менять размер validation set и смотреть,
+            как меняется число объектов в train/validation.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Общий размер датасета N: <span id="holdNVal" class="hl-blue">1000</span></label>
+              <input id="holdN" type="range" min="100" max="5000" step="100" value="1000" />
+            </div>
+            <div class="control">
+              <label>Validation fraction: <span id="holdFracVal" class="hl-amber">0.20</span></label>
+              <input id="holdFrac" type="range" min="0.05" max="0.40" step="0.01" value="0.20" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Train size</div>
+              <div class="value" id="trainSizeOut">800</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Validation size</div>
+              <div class="value" id="validSizeOut">200</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="holdoutCanvas" width="400" height="220"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>train</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>validation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.2 Cross-validation</h2>
+      <p>
+        <strong>Cross-validation</strong> позволяет использовать данные более эффективно.
+        Мы не делаем один фиксированный split, а много раз меняем,
+        какая часть данных играет роль validation.
+      </p>
+
+      <div class="formula">K-fold cross-validation:
+
+разбиваем данные на K фолдов
+для каждого фолда:
+  train = K-1 folds
+  validation = 1 fold
+
+Итоговая метрика =
+среднее по всем K валидациям</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            Каждая точка данных однажды побывает в validation,
+            а в остальные разы — в train.
+            Это даёт более устойчивую оценку качества.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Cross-validation уменьшает зависимость оценки
+            от одного случайного split и особенно полезен на небольших выборках.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: K-fold cross-validation</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Выбери число фолдов и посмотри, как каждый блок данных
+            по очереди становится validation.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>K folds: <span id="kfoldVal" class="hl-amber">5</span></label>
+              <input id="kfoldRange" type="range" min="3" max="10" step="1" value="5" />
+            </div>
+            <div class="control">
+              <label>Текущий fold: <span id="foldIdxVal" class="hl-blue">1</span></label>
+              <input id="foldIdxRange" type="range" min="1" max="5" step="1" value="1" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">K</div>
+              <div class="value" id="kOut">5</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Current fold</div>
+              <div class="value" id="foldOut">1</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Val share</div>
+              <div class="value" id="valShareOut">20%</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="kfoldCanvas" width="400" height="220"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>train folds</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>current validation fold</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Что даёт cross-validation, а что нет</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Что даёт</h3>
+          <ul>
+            <li>более стабильную оценку;</li>
+            <li>лучшее использование данных;</li>
+            <li>меньшую зависимость от одного split;</li>
+            <li>удобный механизм выбора гиперпараметров.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Что не даёт</h3>
+          <ul>
+            <li>не заменяет финальный test set;</li>
+            <li>не спасает от leakage;</li>
+            <li>не делает автоматически хороший pipeline;</li>
+            <li>не убирает bias, если метод оценки изначально неверный.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.3 Stratified split</h2>
+      <p>
+        Если задача классификации несбалансированная, обычный случайный split
+        может дать перекос по классам. Поэтому используют
+        <strong>stratified split</strong> — разбиение с сохранением долей классов.
+      </p>
+
+      <div class="formula">Идея stratification:
+доля классов в train / validation / folds
+должна быть примерно такой же,
+как в исходном датасете</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Особенно важно при редких классах:
+            иначе можно случайно получить fold почти без положительных примеров.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Для classification по умолчанию часто лучше думать:
+            “если можно — делай stratified”.
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label>Доля positive class: <span id="posRateVal" class="hl-red">0.10</span></label>
+              <input id="posRate" type="range" min="0.01" max="0.50" step="0.01" value="0.10" />
+            </div>
+            <div class="control">
+              <label>Validation fraction: <span id="stratFracVal" class="hl-blue">0.20</span></label>
+              <input id="stratFrac" type="range" min="0.10" max="0.40" step="0.01" value="0.20" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Naive split risk</div>
+              <div class="value" id="naiveRiskOut">medium</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Stratified split</div>
+              <div class="value" id="stratStableOut">stable</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="stratCanvas" width="400" height="230"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#ef4444"></i>positive class</span>
+            <span><i class="swatch" style="background:#10b981"></i>negative class</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.4 Grid search</h2>
+      <p>
+        <strong>Grid search</strong> — это полный перебор заранее заданной сетки гиперпараметров.
+      </p>
+
+      <div class="formula">Пример:
+C ∈ {0.1, 1, 10}
+gamma ∈ {0.01, 0.1, 1}
+
+Всего комбинаций:
+3 × 3 = 9</div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Плюсы</h3>
+          <ul>
+            <li>просто понимать;</li>
+            <li>легко воспроизводить;</li>
+            <li>полезно, если число параметров небольшое.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Минусы</h3>
+          <ul>
+            <li>быстро становится дорогим;</li>
+            <li>много точек сетки могут быть бесполезными;</li>
+            <li>неэффективен в пространствах высокой размерности.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.5 Random search</h2>
+      <p>
+        <strong>Random search</strong> случайно выбирает комбинации гиперпараметров из заданных диапазонов.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="formula">Grid search:
+обходит сетку полностью
+
+Random search:
+берёт случайные точки из пространства параметров</div>
+        </div>
+        <div>
+          <div class="intuition">
+            Если реально важны только 1–2 гиперпараметра,
+            random search часто находит хорошие настройки быстрее,
+            потому что не тратит одинаково много ресурса на все оси сетки.
+          </div>
+        </div>
+      </div>
+
+      <div class="success">
+        Для средних и больших пространств гиперпараметров
+        random search часто практичнее grid search.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: grid search vs random search</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь показано гиперпараметрическое пространство и “хорошая зона”.
+            Grid search исследует регулярную сетку, random search — случайные точки.
+          </p>
+
+          <div class="tabs" id="searchTabs">
+            <button class="tab-btn active" data-search="grid">Grid search</button>
+            <button class="tab-btn" data-search="random">Random search</button>
+          </div>
+
+          <div class="controls">
+            <div class="control">
+              <label>Budget (число проверок): <span id="budgetVal" class="hl-amber">16</span></label>
+              <input id="budgetRange" type="range" min="4" max="64" step="1" value="16" />
+            </div>
+          </div>
+
+          <button class="action" id="regenSearch">Сгенерировать новую траекторию</button>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Trials</div>
+              <div class="value" id="trialOut">16</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Good hits</div>
+              <div class="value" id="hitsOut">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="searchCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#a78bfa"></i>good region</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>sampled points</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как выбирать между grid и random search</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ситуация</th>
+              <th>Что чаще разумно</th>
+              <th>Почему</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Параметров мало и диапазоны хорошо понятны</td>
+              <td>Grid search</td>
+              <td>Можно перебрать всё аккуратно</td>
+            </tr>
+            <tr>
+              <td>Параметров много или диапазоны широкие</td>
+              <td>Random search</td>
+              <td>Лучше покрытие пространства при том же бюджете</td>
+            </tr>
+            <tr>
+              <td>Быстрый baseline tuning</td>
+              <td>Random search</td>
+              <td>Быстро даёт рабочие точки</td>
+            </tr>
+            <tr>
+              <td>Тонкая локальная донастройка</td>
+              <td>Grid search</td>
+              <td>Можно детально изучить небольшой регион</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.17.6 Leakage в cross-validation</h2>
+      <p>
+        <strong>Data leakage</strong> в CV возникает, когда информация из validation fold
+        каким-то образом попадает в train-пайплайн.
+      </p>
+
+      <div class="formula">Плохо:
+fit scaler / imputer / encoder / PCA
+на всём датасете до CV
+
+Хорошо:
+в каждом fold все preprocessing-шаги
+fit только на train-part этого fold</div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Частые источники leakage</h3>
+          <ul>
+            <li>масштабирование до split/CV;</li>
+            <li>imputation по всему датасету;</li>
+            <li>feature selection по всему датасету;</li>
+            <li>PCA до split/CV;</li>
+            <li>target encoding без fold-логики;</li>
+            <li>неправильный stacking.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="warn">
+            Leakage делает модель “умнее на бумаге”, но не в реальности.
+            Это одна из самых опасных ошибок в ML-пайплайне.
+          </div>
+          <div class="success">
+            Лучший практический способ защиты —
+            использовать <strong>Pipeline</strong> и проводить все fit-операции внутри CV.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: leakage vs no leakage</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь схематически показано, как leakage искусственно улучшает validation score.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Сила leakage: <span id="leakVal" class="hl-red">0.30</span></label>
+              <input id="leakRange" type="range" min="0" max="1" step="0.01" value="0.30" />
+            </div>
+            <div class="control">
+              <label>Model difficulty: <span id="difficultyVal" class="hl-blue">0.50</span></label>
+              <input id="difficultyRange" type="range" min="0" max="1" step="0.01" value="0.50" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Honest CV</div>
+              <div class="value" id="honestCvOut">0.76</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Leaky CV</div>
+              <div class="value" id="leakyCvOut">0.83</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="leakCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>honest estimate</span>
+            <span><i class="swatch" style="background:#ef4444"></i>leaky estimate</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Validation curve: underfitting vs overfitting</h2>
+      <p>
+        Подбор гиперпараметров почти всегда упирается в компромисс:
+        слишком простая модель → underfitting, слишком сложная → overfitting.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Train score обычно растёт с усложнением модели.
+          </div>
+          <div class="warn">
+            Validation score растёт только до некоторого момента, а потом может начать падать.
+          </div>
+        </div>
+        <div>
+          <div class="intuition">
+            Наша цель — не максимальный train score, а лучшая обобщающая способность.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: validation curve</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь гиперпараметр условно отвечает за “сложность модели”.
+            Смотри, как расходятся train и validation curve.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Noise level: <span id="curveNoiseVal" class="hl-blue">0.20</span></label>
+              <input id="curveNoise" type="range" min="0.00" max="0.60" step="0.01" value="0.20" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Best complexity</div>
+              <div class="value" id="bestComplexityOut">6</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Best valid</div>
+              <div class="value" id="bestValidOut">0.84</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Train-final</div>
+              <div class="value" id="trainFinalOut">0.99</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="curveCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>train score</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>validation score</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>best point</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практический pipeline подбора гиперпараметров</h2>
+      <div class="step"><strong>1.</strong> Зафиксировать train / test split.</div>
+      <div class="step"><strong>2.</strong> На train-части сделать CV для выбора модели и гиперпараметров.</div>
+      <div class="step"><strong>3.</strong> Все preprocessing steps завернуть в Pipeline.</div>
+      <div class="step"><strong>4.</strong> Начать с грубого random search или небольшой сетки.</div>
+      <div class="step"><strong>5.</strong> При необходимости сделать более локальный fine-tuning.</div>
+      <div class="step"><strong>6.</strong> После выбора финальной конфигурации один раз оценить её на test set.</div>
+    </div>
+
+    <div class="card">
+      <h2>Когда CV нужно адаптировать под задачу</h2>
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Не всегда подходит обычный KFold.
+          </div>
+          <ul>
+            <li>классификация → StratifiedKFold;</li>
+            <li>временные ряды → TimeSeriesSplit;</li>
+            <li>группированные объекты → GroupKFold;</li>
+            <li>медицинские/пользовательские данные → split по пациентам/пользователям, а не по строкам.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="warn">
+            Если зависимые объекты попали и в train, и в validation,
+            оценка становится слишком оптимистичной.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn</h2>
+
+      <div class="tabs" data-tabs="validation-code-tabs">
+        <button class="tab-btn active" data-tab="code-holdout">Hold-out</button>
+        <button class="tab-btn" data-tab="code-cv">Cross-validation</button>
+        <button class="tab-btn" data-tab="code-grid">GridSearchCV</button>
+        <button class="tab-btn" data-tab="code-random">RandomizedSearchCV</button>
+      </div>
+
+      <div id="code-holdout" class="tab-panel active">
+        <div class="code">from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score
+
+X_train, X_valid, y_train, y_valid = train_test_split(
+    X, y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(max_iter=1000))
+])
+
+pipe.fit(X_train, y_train)
+pred = pipe.predict(X_valid)
+
+print("F1:", f1_score(y_valid, pred))</div>
+      </div>
+
+      <div id="code-cv" class="tab-panel">
+        <div class="code">from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+import numpy as np
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svc", SVC(C=1.0, gamma="scale"))
+])
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+scores = cross_val_score(
+    pipe,
+    X, y,
+    cv=cv,
+    scoring="f1_macro",
+    n_jobs=-1
+)
+
+print("Fold scores:", scores)
+print("Mean CV:", np.mean(scores))
+print("Std CV :", np.std(scores))</div>
+      </div>
+
+      <div id="code-grid" class="tab-panel">
+        <div class="code">from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svc", SVC())
+])
+
+param_grid = {
+    "svc__C": [0.1, 1, 10, 100],
+    "svc__gamma": ["scale", 0.01, 0.1, 1.0],
+    "svc__kernel": ["rbf"]
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+grid = GridSearchCV(
+    estimator=pipe,
+    param_grid=param_grid,
+    scoring="f1_macro",
+    cv=cv,
+    n_jobs=-1,
+    refit=True
+)
+
+grid.fit(X_train, y_train)
+
+print("Best params:", grid.best_params_)
+print("Best CV score:", grid.best_score_)</div>
+      </div>
+
+      <div id="code-random" class="tab-panel">
+        <div class="code">from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import randint, uniform
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("rf", RandomForestClassifier(random_state=42))
+])
+
+param_dist = {
+    "rf__n_estimators": randint(100, 600),
+    "rf__max_depth": randint(2, 20),
+    "rf__min_samples_leaf": randint(1, 15),
+    "rf__max_features": uniform(0.2, 0.8)
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+search = RandomizedSearchCV(
+    estimator=pipe,
+    param_distributions=param_dist,
+    n_iter=40,
+    scoring="f1_macro",
+    cv=cv,
+    random_state=42,
+    n_jobs=-1,
+    refit=True
+)
+
+search.fit(X_train, y_train)
+
+print("Best params:", search.best_params_)
+print("Best CV score:", search.best_score_)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Использовать test set для выбора гиперпараметров.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Делать preprocessing на всём датасете до CV.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Игнорировать stratification при несбалансированных классах.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Смотреть только на средний CV score и не смотреть на std.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Делать огромный grid search без понимания диапазонов.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Путать честную validation-оценку с train-quality.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить validation и tuning на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Hold-out — быстрый и простой способ оценки, но зависит от одного split.</div>
+      <div class="step"><strong>2.</strong> K-fold cross-validation даёт более устойчивую оценку за счёт многократной проверки на разных фолдах.</div>
+      <div class="step"><strong>3.</strong> Stratified split нужен в классификации, чтобы сохранять пропорции классов.</div>
+      <div class="step"><strong>4.</strong> Grid search делает полный перебор сетки, random search часто эффективнее в больших пространствах параметров.</div>
+      <div class="step"><strong>5.</strong> Все preprocessing steps должны fit'иться только внутри train-part каждого fold, иначе возникает leakage.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Validation</strong> нужна, чтобы оценивать обобщающую способность, а не memorization на train.</div>
+          <div class="step"><strong>Cross-validation</strong> обычно надёжнее одного split, особенно на небольших данных.</div>
+          <div class="step"><strong>Stratification</strong> важна, когда классы несбалансированы.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Grid search</strong> хорош для небольших осмысленных сеток, <strong>random search</strong> — для более широкого поиска.</div>
+          <div class="step"><strong>Pipeline</strong> — главный щит против leakage.</div>
+          <div class="step">Test set нужен не для tuning, а для <strong>финальной честной оценки</strong>.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>train — учим, validation — выбираем, test — честно проверяем.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="16_ensembles.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.16 Ансамбли
+      </a>
+      <a class="footer-link" href="18_imbalanced_classes.html">
+        <span class="muted">Следующая тема →</span>
+        2.18 Несбалансированные классы
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // -------- Holdout demo --------
+    const holdN = document.getElementById('holdN');
+    const holdFrac = document.getElementById('holdFrac');
+    const holdNVal = document.getElementById('holdNVal');
+    const holdFracVal = document.getElementById('holdFracVal');
+    const trainSizeOut = document.getElementById('trainSizeOut');
+    const validSizeOut = document.getElementById('validSizeOut');
+    const holdoutCanvas = document.getElementById('holdoutCanvas');
+    const hCtx = holdoutCanvas.getContext('2d');
+
+    function drawHoldout(){
+      const N = +holdN.value;
+      const frac = +holdFrac.value;
+      const valid = Math.round(N * frac);
+      const train = N - valid;
+
+      holdNVal.textContent = N;
+      holdFracVal.textContent = frac.toFixed(2);
+      trainSizeOut.textContent = train;
+      validSizeOut.textContent = valid;
+
+      const W = holdoutCanvas.width, H = holdoutCanvas.height;
+      hCtx.clearRect(0,0,W,H);
+      hCtx.fillStyle = '#0b1016';
+      hCtx.fillRect(0,0,W,H);
+
+      const x = 30, y = 90, fullW = 340, h = 42;
+      const trainW = fullW * (1-frac);
+      const validW = fullW * frac;
+
+      hCtx.fillStyle = '#10b981';
+      hCtx.fillRect(x,y,trainW,h);
+      hCtx.fillStyle = '#60a5fa';
+      hCtx.fillRect(x+trainW,y,validW,h);
+
+      hCtx.fillStyle = '#e6edf3';
+      hCtx.font = '13px system-ui';
+      hCtx.textAlign = 'center';
+      hCtx.fillText('Train', x + trainW/2, y + 26);
+      hCtx.fillText('Validation', x + trainW + validW/2, y + 26);
+    }
+
+    [holdN, holdFrac].forEach(el => el.addEventListener('input', drawHoldout));
+
+    // -------- KFold demo --------
+    const kfoldRange = document.getElementById('kfoldRange');
+    const foldIdxRange = document.getElementById('foldIdxRange');
+    const kfoldVal = document.getElementById('kfoldVal');
+    const foldIdxVal = document.getElementById('foldIdxVal');
+    const kOut = document.getElementById('kOut');
+    const foldOut = document.getElementById('foldOut');
+    const valShareOut = document.getElementById('valShareOut');
+    const kfoldCanvas = document.getElementById('kfoldCanvas');
+    const kCtx = kfoldCanvas.getContext('2d');
+
+    function drawKFold(){
+      const k = +kfoldRange.value;
+      foldIdxRange.max = k;
+      if(+foldIdxRange.value > k) foldIdxRange.value = k;
+      const current = +foldIdxRange.value;
+
+      kfoldVal.textContent = k;
+      foldIdxVal.textContent = current;
+      kOut.textContent = k;
+      foldOut.textContent = current;
+      valShareOut.textContent = (100/k).toFixed(0) + '%';
+
+      const W = kfoldCanvas.width, H = kfoldCanvas.height;
+      kCtx.clearRect(0,0,W,H);
+      kCtx.fillStyle = '#0b1016';
+      kCtx.fillRect(0,0,W,H);
+
+      const x = 20, y = 80, gap = 6;
+      const totalW = 360;
+      const foldW = (totalW - gap*(k-1)) / k;
+
+      for(let i=0;i<k;i++){
+        kCtx.fillStyle = (i+1 === current) ? '#f59e0b' : '#10b981';
+        kCtx.fillRect(x + i*(foldW+gap), y, foldW, 46);
+
+        kCtx.fillStyle = '#0d1117';
+        kCtx.font = '12px system-ui';
+        kCtx.textAlign = 'center';
+        kCtx.fillText('F' + (i+1), x + i*(foldW+gap) + foldW/2, y + 28);
+      }
+    }
+
+    [kfoldRange, foldIdxRange].forEach(el => el.addEventListener('input', drawKFold));
+
+    // -------- Stratified demo --------
+    const posRate = document.getElementById('posRate');
+    const stratFrac = document.getElementById('stratFrac');
+    const posRateVal = document.getElementById('posRateVal');
+    const stratFracVal = document.getElementById('stratFracVal');
+    const naiveRiskOut = document.getElementById('naiveRiskOut');
+    const stratStableOut = document.getElementById('stratStableOut');
+    const stratCanvas = document.getElementById('stratCanvas');
+    const sCtx = stratCanvas.getContext('2d');
+
+    function drawStratified(){
+      const p = +posRate.value;
+      const frac = +stratFrac.value;
+
+      posRateVal.textContent = p.toFixed(2);
+      stratFracVal.textContent = frac.toFixed(2);
+
+      naiveRiskOut.textContent =
+        p < 0.05 ? 'high' :
+        p < 0.15 ? 'medium' : 'low';
+      stratStableOut.textContent = 'stable';
+
+      const W = stratCanvas.width, H = stratCanvas.height;
+      sCtx.clearRect(0,0,W,H);
+      sCtx.fillStyle = '#0b1016';
+      sCtx.fillRect(0,0,W,H);
+
+      const blocks = 40;
+      const trainPos = Math.round(blocks*(1-frac)*p);
+      const validPos = Math.round(blocks*frac*p);
+
+      // naive split bars
+      sCtx.fillStyle = '#8b949e';
+      sCtx.font = '12px system-ui';
+      sCtx.fillText('Naive', 55, 28);
+      sCtx.fillText('Stratified', 215, 28);
+
+      function drawBar(x0, y0, totalBlocks, posBlocks, width){
+        const bw = width / totalBlocks;
+        for(let i=0;i<totalBlocks;i++){
+          sCtx.fillStyle = i < posBlocks ? '#ef4444' : '#10b981';
+          sCtx.fillRect(x0 + i*bw, y0, bw-1, 22);
+        }
+      }
+
+      // naive train/valid can fluctuate
+      const naiveTrainPos = Math.max(0, Math.round(trainPos + (0.5-p)*8));
+      const naiveValidPos = Math.max(0, Math.round(validPos - (0.5-p)*8));
+
+      drawBar(20, 50, 28, naiveTrainPos, 120);
+      drawBar(20, 92, 12, naiveValidPos, 120);
+
+      drawBar(200, 50, 28, trainPos, 120);
+      drawBar(200, 92, 12, validPos, 120);
+
+      sCtx.fillStyle = '#8b949e';
+      sCtx.fillText('train', 20, 45);
+      sCtx.fillText('valid', 20, 87);
+      sCtx.fillText('train', 200, 45);
+      sCtx.fillText('valid', 200, 87);
+    }
+
+    [posRate, stratFrac].forEach(el => el.addEventListener('input', drawStratified));
+
+    // -------- Search demo --------
+    const budgetRange = document.getElementById('budgetRange');
+    const budgetVal = document.getElementById('budgetVal');
+    const trialOut = document.getElementById('trialOut');
+    const hitsOut = document.getElementById('hitsOut');
+    const searchCanvas = document.getElementById('searchCanvas');
+    const searchCtx = searchCanvas.getContext('2d');
+    const regenSearch = document.getElementById('regenSearch');
+    let searchMode = 'grid';
+    let searchPoints = [];
+
+    document.querySelectorAll('#searchTabs .tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#searchTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        searchMode = btn.dataset.search;
+        generateSearchPoints();
+        drawSearch();
+      });
+    });
+
+    function inGoodRegion(x,y){
+      return ((x-0.72)**2)/(0.09*0.09) + ((y-0.35)**2)/(0.13*0.13) <= 1;
+    }
+
+    function generateSearchPoints(){
+      const budget = +budgetRange.value;
+      searchPoints = [];
+
+      if(searchMode === 'grid'){
+        const n = Math.ceil(Math.sqrt(budget));
+        for(let i=0;i<n;i++){
+          for(let j=0;j<n;j++){
+            if(searchPoints.length >= budget) break;
+            searchPoints.push([
+              (i+0.5)/n,
+              (j+0.5)/n
+            ]);
+          }
+        }
+      } else {
+        for(let i=0;i<budget;i++){
+          searchPoints.push([Math.random(), Math.random()]);
+        }
+      }
+    }
+
+    function drawSearch(){
+      const budget = +budgetRange.value;
+      budgetVal.textContent = budget;
+      trialOut.textContent = budget;
+
+      const W = searchCanvas.width, H = searchCanvas.height;
+      searchCtx.clearRect(0,0,W,H);
+      searchCtx.fillStyle = '#0b1016';
+      searchCtx.fillRect(0,0,W,H);
+
+      // good region
+      searchCtx.fillStyle = 'rgba(167,139,250,0.22)';
+      searchCtx.beginPath();
+      searchCtx.ellipse(0.72*W, (1-0.35)*H, 0.09*W, 0.13*H, 0, 0, Math.PI*2);
+      searchCtx.fill();
+
+      let hits = 0;
+      searchPoints.forEach(([x,y])=>{
+        if(inGoodRegion(x,y)) hits++;
+        searchCtx.beginPath();
+        searchCtx.arc(x*W, (1-y)*H, 4, 0, Math.PI*2);
+        searchCtx.fillStyle = '#60a5fa';
+        searchCtx.fill();
+      });
+
+      hitsOut.textContent = hits;
+    }
+
+    budgetRange.addEventListener('input', ()=>{
+      generateSearchPoints();
+      drawSearch();
+    });
+    regenSearch.addEventListener('click', ()=>{
+      generateSearchPoints();
+      drawSearch();
+    });
+
+    // -------- Leakage demo --------
+    const leakRange = document.getElementById('leakRange');
+    const difficultyRange = document.getElementById('difficultyRange');
+    const leakVal = document.getElementById('leakVal');
+    const difficultyVal = document.getElementById('difficultyVal');
+    const honestCvOut = document.getElementById('honestCvOut');
+    const leakyCvOut = document.getElementById('leakyCvOut');
+    const leakCanvas = document.getElementById('leakCanvas');
+    const lCtx = leakCanvas.getContext('2d');
+
+    function drawLeakage(){
+      const leak = +leakRange.value;
+      const diff = +difficultyRange.value;
+
+      leakVal.textContent = leak.toFixed(2);
+      difficultyVal.textContent = diff.toFixed(2);
+
+      const honest = clamp(0.92 - 0.28*diff, 0.45, 0.98);
+      const leaky = clamp(honest + 0.18*leak, 0.45, 0.999);
+
+      honestCvOut.textContent = honest.toFixed(2);
+      leakyCvOut.textContent = leaky.toFixed(2);
+
+      const W = leakCanvas.width, H = leakCanvas.height;
+      lCtx.clearRect(0,0,W,H);
+      lCtx.fillStyle = '#0b1016';
+      lCtx.fillRect(0,0,W,H);
+
+      const baseY = 210, maxH = 150;
+      const vals = [honest, leaky];
+      const colors = ['#10b981','#ef4444'];
+      const labels = ['Honest', 'Leaky'];
+      const xs = [80, 220];
+      const bw = 70;
+
+      vals.forEach((v,i)=>{
+        const h = v * maxH;
+        lCtx.fillStyle = colors[i];
+        lCtx.fillRect(xs[i], baseY-h, bw, h);
+        lCtx.fillStyle = '#e6edf3';
+        lCtx.font = '13px system-ui';
+        lCtx.textAlign = 'center';
+        lCtx.fillText(labels[i], xs[i]+bw/2, baseY+18);
+        lCtx.fillText(v.toFixed(2), xs[i]+bw/2, baseY-h-8);
+      });
+    }
+
+    [leakRange, difficultyRange].forEach(el => el.addEventListener('input', drawLeakage));
+
+    // -------- Validation curve demo --------
+    const curveNoise = document.getElementById('curveNoise');
+    const curveNoiseVal = document.getElementById('curveNoiseVal');
+    const bestComplexityOut = document.getElementById('bestComplexityOut');
+    const bestValidOut = document.getElementById('bestValidOut');
+    const trainFinalOut = document.getElementById('trainFinalOut');
+    const curveCanvas = document.getElementById('curveCanvas');
+    const cCtx = curveCanvas.getContext('2d');
+
+    function drawCurve(){
+      const noise = +curveNoise.value;
+      curveNoiseVal.textContent = noise.toFixed(2);
+
+      const xs = Array.from({length:12}, (_,i)=>i+1);
+      const train = xs.map(x => clamp(0.55 + 0.43*(1 - Math.exp(-x/3)), 0, 0.999));
+      const valid = xs.map(x => clamp(0.54 + 0.38*(1 - Math.exp(-x/3.8)) - 0.02*Math.max(0,x-6)**1.35 - noise*0.25, 0, 0.999));
+
+      let bestIdx = 0;
+      for(let i=1;i<valid.length;i++){
+        if(valid[i] > valid[bestIdx]) bestIdx = i;
+      }
+
+      bestComplexityOut.textContent = xs[bestIdx];
+      bestValidOut.textContent = valid[bestIdx].toFixed(2);
+      trainFinalOut.textContent = train[train.length-1].toFixed(2);
+
+      const W = curveCanvas.width, H = curveCanvas.height;
+      cCtx.clearRect(0,0,W,H);
+      cCtx.fillStyle = '#0b1016';
+      cCtx.fillRect(0,0,W,H);
+
+      const padL=32,padR=10,padT=12,padB=24;
+      function X(i){ return padL + i/11*(W-padL-padR); }
+      function Y(v){ return H-padB - v*(H-padT-padB); }
+
+      cCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        cCtx.beginPath();
+        cCtx.moveTo(padL, Y(yy));
+        cCtx.lineTo(W-padR, Y(yy));
+        cCtx.stroke();
+      }
+
+      cCtx.strokeStyle = '#10b981';
+      cCtx.lineWidth = 2.2;
+      cCtx.beginPath();
+      train.forEach((v,i)=>{
+        if(i===0) cCtx.moveTo(X(i),Y(v));
+        else cCtx.lineTo(X(i),Y(v));
+      });
+      cCtx.stroke();
+
+      cCtx.strokeStyle = '#60a5fa';
+      cCtx.lineWidth = 2.2;
+      cCtx.beginPath();
+      valid.forEach((v,i)=>{
+        if(i===0) cCtx.moveTo(X(i),Y(v));
+        else cCtx.lineTo(X(i),Y(v));
+      });
+      cCtx.stroke();
+
+      cCtx.beginPath();
+      cCtx.arc(X(bestIdx), Y(valid[bestIdx]), 6, 0, Math.PI*2);
+      cCtx.fillStyle = '#f59e0b';
+      cCtx.fill();
+
+      xs.forEach((x,i)=>{
+        cCtx.fillStyle = '#8b949e';
+        cCtx.font = '11px system-ui';
+        cCtx.fillText(String(x), X(i)-3, H-6);
+      });
+    }
+
+    drawHoldout();
+    drawKFold();
+    drawStratified();
+    generateSearchPoints();
+    drawSearch();
+    drawLeakage();
+    drawCurve();
+  </script>
+</body>
+</html>

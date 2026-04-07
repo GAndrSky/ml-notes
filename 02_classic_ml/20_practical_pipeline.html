@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.20 Практический pipeline</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"], input[type="checkbox"]{
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="range"]{
+      width:100%;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .checkline{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:8px 0;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="19_model_interpretation.html">2.19 Интерпретация моделей</a>
+        <span class="tag active">2.20 Практический pipeline</span>
+        <a class="tag tag-block" href="../03_neural_basics/01_perceptron_and_neuron.html">3.1 Перцептрон и нейрон</a>
+      </div>
+
+      <h1>2.20 Практический pipeline</h1>
+      <p class="muted">
+        Постановка задачи, EDA, baseline model, feature engineering, model selection, evaluation и reproducibility — как выглядит нормальный ML-процесс целиком.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Зачем нужен практический pipeline</h2>
+      <p>
+        До этого мы разбирали отдельные инструменты: метрики, модели, валидацию,
+        preprocessing, feature engineering, интерпретацию. Но в реальной задаче
+        они почти никогда не существуют по отдельности. Нужен
+        <strong>связный рабочий процесс</strong>.
+      </p>
+
+      <div class="formula">Практический ML pipeline:
+problem framing
+→ data understanding
+→ baseline
+→ feature engineering
+→ model selection
+→ validation
+→ final evaluation
+→ reproducibility / deployment readiness</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Большая часть успеха в ML приходит не от того,
+        что ты знаешь “самую модную модель”, а от того, что у тебя
+        <strong>аккуратный, повторяемый и честный процесс</strong>.
+      </div>
+
+      <div class="warn">
+        Слабый pipeline легко приводит к leakage, переобучению, неверным выводам,
+        плохому baseline и невозможности воспроизвести результат позже.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Общая карта процесса</h2>
+      <div class="grid-3">
+        <div class="kpi">
+          <div class="label">1</div>
+          <div class="value">Problem</div>
+        </div>
+        <div class="kpi">
+          <div class="label">2</div>
+          <div class="value">EDA</div>
+        </div>
+        <div class="kpi">
+          <div class="label">3</div>
+          <div class="value">Baseline</div>
+        </div>
+        <div class="kpi">
+          <div class="label">4</div>
+          <div class="value">Features</div>
+        </div>
+        <div class="kpi">
+          <div class="label">5</div>
+          <div class="value">Selection</div>
+        </div>
+        <div class="kpi">
+          <div class="label">6</div>
+          <div class="value">Evaluation</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Это не всегда строго линейный процесс. Часто pipeline итеративный:
+        ты возвращаешься назад, уточняешь гипотезы, перепроверяешь признаки,
+        меняешь метрики и только потом идёшь дальше.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.1 Постановка задачи</h2>
+      <p>
+        Любой хороший ML-проект начинается не с модели, а с корректной постановки задачи.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Что мы предсказываем?</strong> Класс, число, ранжирование, сегмент?</div>
+          <div class="step"><strong>Какая целевая переменная?</strong> Откуда она берётся и насколько надёжна?</div>
+          <div class="step"><strong>Какая метрика успеха?</strong> Accuracy, F1, PR-AUC, RMSE, MAE, profit?</div>
+          <div class="step"><strong>Какая цена ошибок?</strong> Что хуже: false positive или false negative?</div>
+        </div>
+        <div>
+          <div class="warn">
+            Очень частая ошибка — начать с выбора модели,
+            не договорившись о задаче, метрике и бизнес-смысле.
+          </div>
+          <div class="success">
+            Хорошо поставленная задача часто автоматически сужает круг моделей,
+            метрик и дизайн валидации.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Плохой старт:
+"Давайте обучим XGBoost"
+
+Хороший старт:
+"Нам нужно находить редкий положительный класс,
+FN для нас дороже FP,
+значит будем оптимизировать recall / PR-AUC,
+используем stratified CV и threshold tuning"</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: framing задачи</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Выбери тип задачи и стоимость ошибок. Блок покажет,
+            как это влияет на метрику и общий подход.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label for="taskType">Тип задачи</label>
+              <select id="taskType">
+                <option value="classification">Классификация</option>
+                <option value="regression">Регрессия</option>
+                <option value="ranking">Ranking / prioritization</option>
+              </select>
+            </div>
+
+            <div class="control">
+              <label for="errorCost">Что дороже?</label>
+              <select id="errorCost">
+                <option value="balanced">Ошибки примерно равны</option>
+                <option value="fn">False Negative дороже</option>
+                <option value="fp">False Positive дороже</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="formula" id="framingOutput">
+Тип задачи: classification
+Рекомендованный фокус: precision/recall/F1/PR-AUC depending on error cost
+</div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="framingCanvas" width="400" height="230"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#f59e0b"></i>recommended metric focus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.2 EDA — exploratory data analysis</h2>
+      <p>
+        До модели нужно понять сами данные.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Что обычно смотрят в EDA</h3>
+          <ul>
+            <li>размер датасета и типы признаков;</li>
+            <li>missing values;</li>
+            <li>распределения признаков;</li>
+            <li>выбросы;</li>
+            <li>баланс классов;</li>
+            <li>корреляции и зависимости;</li>
+            <li>утечки и подозрительные признаки.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="intuition">
+            EDA — это не “красивые графики ради графиков”.
+            Это способ понять:
+            <strong>что вообще происходит в данных и где могут быть проблемы</strong>.
+          </div>
+          <div class="warn">
+            Если пропустить EDA, можно незаметно построить модель
+            на утечке, на мусорных признаках или на странной целевой переменной.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">EDA часто отвечает на вопросы:
+- есть ли leakage?
+- нужно ли scaling?
+- есть ли imbalance?
+- есть ли смысл в log-transform / clipping / imputation?
+- есть ли явные baseline-сигналы?</div>
+    </div>
+
+    <div class="card">
+      <h2>EDA checklist</h2>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Проверены типы признаков: numeric / categorical / datetime / text</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Посчитаны missing values и их паттерны</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Проверены target distribution и class balance</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Проверены дубликаты и аномальные записи</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Проверены подозрительные признаки на leakage</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Посмотрены простые baseline correlations / group statistics</span></div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.3 Baseline model</h2>
+      <p>
+        Перед сложными моделями всегда полезно сделать baseline.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Что может быть baseline</h3>
+          <ul>
+            <li>most frequent class;</li>
+            <li>mean / median predictor;</li>
+            <li>логистическая регрессия;</li>
+            <li>линейная регрессия;</li>
+            <li>небольшое дерево;</li>
+            <li>простое правило из бизнеса.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="success">
+            Baseline нужен не для красоты, а как точка отсчёта:
+            если сложная модель не бьёт baseline осмысленно,
+            значит в pipeline что-то не так.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Без baseline очень легко впечатлиться “0.87 ROC-AUC”,
+        не понимая, что простая логистическая регрессия уже давала 0.86.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: baseline vs improved model</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно менять baseline и прибавку от более сложного pipeline.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Baseline score: <span id="baselineVal" class="hl-blue">0.72</span></label>
+              <input id="baselineRange" type="range" min="0.40" max="0.95" step="0.01" value="0.72" />
+            </div>
+            <div class="control">
+              <label>Improvement from better pipeline: <span id="improveVal" class="hl-green">0.06</span></label>
+              <input id="improveRange" type="range" min="0.00" max="0.20" step="0.01" value="0.06" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Baseline</div>
+              <div class="value" id="baselineOut">0.72</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Improved</div>
+              <div class="value" id="improvedOut">0.78</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Delta</div>
+              <div class="value" id="deltaOut">+0.06</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="baselineCanvas" width="400" height="240"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>baseline</span>
+            <span><i class="swatch" style="background:#10b981"></i>improved pipeline</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.4 Feature engineering</h2>
+      <p>
+        После baseline обычно возникает вопрос: как сделать представление данных лучше?
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Типичные направления feature engineering</h3>
+          <ul>
+            <li>обработка missing values;</li>
+            <li>encoding категориальных признаков;</li>
+            <li>масштабирование;</li>
+            <li>логарифмирование / clipping;</li>
+            <li>агрегаты и статистики;</li>
+            <li>временные признаки;</li>
+            <li>interactions между фичами.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="info">
+            Часто хороший feature engineering даёт больше,
+            чем переход от одной сложной модели к другой.
+          </div>
+          <div class="warn">
+            Но feature engineering должен происходить внутри честного pipeline,
+            чтобы не словить leakage.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Хороший вопрос:
+"Какое представление данных поможет модели проще увидеть нужный сигнал?"</div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.5 Model selection</h2>
+      <p>
+        После baseline и базовой подготовки данных выбирают несколько кандидатов-моделей.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ситуация</th>
+              <th>Часто разумные кандидаты</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Табличная классификация</td>
+              <td>LogReg, Random Forest, XGBoost/LightGBM/CatBoost</td>
+            </tr>
+            <tr>
+              <td>Табличная регрессия</td>
+              <td>Linear/Ridge/Lasso, RF regressor, boosting regressor</td>
+            </tr>
+            <tr>
+              <td>Очень много sparse фичей</td>
+              <td>Linear models, linear SVM</td>
+            </tr>
+            <tr>
+              <td>Небольшой датасет и нелинейность</td>
+              <td>SVM, tree-based methods</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="success">
+        На практике часто не “угадывают лучшую модель заранее”,
+        а сравнивают несколько сильных baseline-кандидатов на одинаковой валидации.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: candidate model comparison</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Выбери характер данных и посмотри,
+            как может смещаться предпочтение между разными моделями.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label for="dataShape">Тип структуры данных</label>
+              <select id="dataShape">
+                <option value="linear">Почти линейная</option>
+                <option value="tabular">Табличная с нелинейностями</option>
+                <option value="sparse">Sparse / high-dimensional</option>
+                <option value="small_complex">Маленький, но сложный датасет</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="formula" id="modelSuggestBox">Recommended first candidates: Logistic Regression, Linear SVM</div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="selectionCanvas" width="400" height="240"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>linear models</span>
+            <span><i class="swatch" style="background:#10b981"></i>tree / boosting</span>
+            <span><i class="swatch" style="background:#a78bfa"></i>SVM / specialized</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.6 Evaluation</h2>
+      <p>
+        После выбора модели важно оценить её честно и по правильным метрикам.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Метрика должна соответствовать задаче</strong></div>
+          <div class="step"><strong>Validation должна быть честной</strong></div>
+          <div class="step"><strong>Нужен train/valid/test discipline</strong></div>
+          <div class="step"><strong>Смотреть не только mean, но и variance / fold stability</strong></div>
+        </div>
+        <div>
+          <div class="warn">
+            Очень частая ошибка — выбрать модель по удобной метрике,
+            а потом удивляться, что в реальности она не решает нужную задачу.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Evaluation questions:
+- What metric matters?
+- Is the split realistic?
+- Is there leakage?
+- Is the gain over baseline meaningful?
+- Is the model stable across folds / seeds?</div>
+    </div>
+
+    <div class="card">
+      <h2>2.20.7 Reproducibility</h2>
+      <p>
+        Хороший ML pipeline должен быть воспроизводимым.
+        Через неделю, месяц или для другого человека результат должен собираться заново.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Что обычно фиксируют</h3>
+          <ul>
+            <li>random seeds;</li>
+            <li>версии библиотек;</li>
+            <li>исходный код preprocessing;</li>
+            <li>список признаков;</li>
+            <li>схему split / CV;</li>
+            <li>конфиг гиперпараметров;</li>
+            <li>артефакты модели и метрики.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="success">
+            Reproducibility — это не “приятный бонус”, а часть инженерного качества.
+          </div>
+          <div class="warn">
+            Если результат нельзя повторить,
+            то очень трудно понять, что реально сработало, а что было случайностью.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: pipeline maturity checklist</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Отметь, какие части проекта уже сделаны, и посмотри,
+            насколько pipeline выглядит зрелым.
+          </p>
+
+          <div class="checkline">
+            <input type="checkbox" id="chkProblem" checked>
+            <label for="chkProblem">Problem framing done</label>
+          </div>
+          <div class="checkline">
+            <input type="checkbox" id="chkEDA" checked>
+            <label for="chkEDA">EDA done</label>
+          </div>
+          <div class="checkline">
+            <input type="checkbox" id="chkBaseline" checked>
+            <label for="chkBaseline">Baseline built</label>
+          </div>
+          <div class="checkline">
+            <input type="checkbox" id="chkCV" checked>
+            <label for="chkCV">Validation / CV set up correctly</label>
+          </div>
+          <div class="checkline">
+            <input type="checkbox" id="chkLeak">
+            <label for="chkLeak">Leakage checked</label>
+          </div>
+          <div class="checkline">
+            <input type="checkbox" id="chkRepro">
+            <label for="chkRepro">Reproducibility guaranteed</label>
+          </div>
+
+          <div class="grid-2" style="margin-top:10px;">
+            <div class="kpi">
+              <div class="label">Checklist completion</div>
+              <div class="value" id="maturityOut">67%</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Status</div>
+              <div class="value" id="statusOut">decent</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="maturityCanvas" width="400" height="240"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>completed</span>
+            <span><i class="swatch" style="background:#30363d"></i>missing</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>End-to-end checklist</h2>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Постановка задачи и метрика определены</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Сделан EDA и проверены подозрительные места</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Построен baseline</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Выбран корректный split / CV protocol</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Все preprocessing шаги завернуты в pipeline</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Проверен leakage</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Сравнены несколько candidate models</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Оценка сделана по правильной метрике</span></div>
+      <div class="checkline"><input type="checkbox" checked disabled><span>Финальная модель и результаты воспроизводимы</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Типичный порядок работы в реальном mini-project</h2>
+      <div class="step"><strong>1.</strong> Понять задачу и определить metric of success.</div>
+      <div class="step"><strong>2.</strong> Сделать EDA и sanity checks.</div>
+      <div class="step"><strong>3.</strong> Зафиксировать honest split / CV design.</div>
+      <div class="step"><strong>4.</strong> Построить baseline.</div>
+      <div class="step"><strong>5.</strong> Сделать простой preprocessing pipeline.</div>
+      <div class="step"><strong>6.</strong> Протестировать 2–4 разумных модели.</div>
+      <div class="step"><strong>7.</strong> Добавить feature engineering и tuning только там, где это оправдано.</div>
+      <div class="step"><strong>8.</strong> Провести финальную evaluation и сохранить reproducible artifacts.</div>
+    </div>
+
+    <div class="card">
+      <h2>Антипаттерны практического pipeline</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn"><strong>1.</strong> Начинать с самой сложной модели без baseline.</div>
+          <div class="warn"><strong>2.</strong> Делать preprocessing до split / CV.</div>
+          <div class="warn"><strong>3.</strong> Смотреть на test set в процессе tuning.</div>
+          <div class="warn"><strong>4.</strong> Не понимать стоимость ошибок и выбирать “удобную” метрику.</div>
+        </div>
+        <div>
+          <div class="warn"><strong>5.</strong> Не фиксировать seeds, конфиги, версии библиотек.</div>
+          <div class="warn"><strong>6.</strong> Игнорировать EDA и аномалии в данных.</div>
+          <div class="warn"><strong>7.</strong> Пытаться “вытюнить” проблему, которую надо было решить на уровне данных и признаков.</div>
+          <div class="warn"><strong>8.</strong> Делать красивый ноутбук, но не воспроизводимый pipeline.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: practical pipeline skeleton</h2>
+
+      <div class="tabs" data-tabs="pipeline-code-tabs">
+        <button class="tab-btn active" data-tab="code-end2end">End-to-end sklearn pipeline</button>
+        <button class="tab-btn" data-tab="code-column">ColumnTransformer</button>
+        <button class="tab-btn" data-tab="code-compare">Model comparison</button>
+        <button class="tab-btn" data-tab="code-repro">Reproducibility notes</button>
+      </div>
+
+      <div id="code-end2end" class="tab-panel active">
+        <div class="code">from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.ensemble import RandomForestClassifier
+
+# 1. split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
+
+# 2. define columns
+num_features = ["age", "income", "days_since_last_order"]
+cat_features = ["city", "device_type", "segment"]
+
+# 3. preprocessing
+numeric_transformer = Pipeline([
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler())
+])
+
+categorical_transformer = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocessor = ColumnTransformer([
+    ("num", numeric_transformer, num_features),
+    ("cat", categorical_transformer, cat_features)
+])
+
+# 4. model
+model = Pipeline([
+    ("prep", preprocessor),
+    ("clf", RandomForestClassifier(
+        n_estimators=300,
+        random_state=42,
+        n_jobs=-1
+    ))
+])
+
+# 5. CV on train only
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(model, X_train, y_train, cv=cv, scoring="f1_macro", n_jobs=-1)
+
+print("CV scores:", scores)
+print("Mean CV :", scores.mean())
+
+# 6. fit final model on full train
+model.fit(X_train, y_train)
+
+# 7. evaluate once on test
+test_score = model.score(X_test, y_test)
+print("Test score:", test_score)</div>
+      </div>
+
+      <div id="code-column" class="tab-panel">
+        <div class="code">from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+
+numeric_features = ["num1", "num2", "num3"]
+categorical_features = ["cat1", "cat2"]
+
+numeric_pipeline = Pipeline([
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler())
+])
+
+categorical_pipeline = Pipeline([
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore"))
+])
+
+preprocessor = ColumnTransformer([
+    ("num", numeric_pipeline, numeric_features),
+    ("cat", categorical_pipeline, categorical_features)
+])</div>
+      </div>
+
+      <div id="code-compare" class="tab-panel">
+        <div class="code">from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.pipeline import Pipeline
+import numpy as np
+
+models = {
+    "logreg": LogisticRegression(max_iter=1000),
+    "rf": RandomForestClassifier(n_estimators=300, random_state=42, n_jobs=-1),
+    "gb": GradientBoostingClassifier(random_state=42)
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+for name, clf in models.items():
+    pipe = Pipeline([
+        ("prep", preprocessor),
+        ("clf", clf)
+    ])
+
+    scores = cross_val_score(
+        pipe,
+        X_train, y_train,
+        cv=cv,
+        scoring="f1_macro",
+        n_jobs=-1
+    )
+
+    print(name, "mean=", np.mean(scores), "std=", np.std(scores))</div>
+      </div>
+
+      <div id="code-repro" class="tab-panel">
+        <div class="code"># Practical reproducibility checklist
+
+RANDOM_STATE = 42
+
+# 1. Fix random seeds in all models / splitters
+# 2. Save feature list and preprocessing config
+# 3. Save model hyperparameters
+# 4. Store CV protocol
+# 5. Save package versions
+# 6. Save metrics + predictions on validation/test
+# 7. Version control code and notebooks
+
+# Example:
+import sklearn, numpy, pandas, sys
+
+print("Python :", sys.version)
+print("numpy  :", numpy.__version__)
+print("pandas :", pandas.__version__)
+print("sklearn:", sklearn.__version__)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить practical pipeline на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Начинаю с problem framing: target, metric, cost of errors.</div>
+      <div class="step"><strong>2.</strong> Делаю EDA и sanity checks: missing values, target balance, suspicious features, leakage risk.</div>
+      <div class="step"><strong>3.</strong> Фиксирую honest validation protocol: hold-out или CV, в зависимости от задачи.</div>
+      <div class="step"><strong>4.</strong> Строю baseline и только потом перехожу к feature engineering и более сильным моделям.</div>
+      <div class="step"><strong>5.</strong> Все preprocessing steps держу внутри pipeline, чтобы избежать leakage и обеспечить reproducibility.</div>
+      <div class="step"><strong>6.</strong> Сравниваю несколько candidate models, выбираю по правильной метрике и только потом один раз смотрю test.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Постановка задачи</strong> определяет метрику, split и тип моделей.</div>
+          <div class="step"><strong>EDA</strong> нужен, чтобы понять данные и поймать проблемы до обучения.</div>
+          <div class="step"><strong>Baseline</strong> — обязательная точка отсчёта.</div>
+          <div class="step"><strong>Feature engineering</strong> часто даёт больше, чем просто смена модели.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Model selection</strong> должен быть честным и сравнительным.</div>
+          <div class="step"><strong>Evaluation</strong> должна соответствовать реальной цене ошибок.</div>
+          <div class="step"><strong>Reproducibility</strong> — часть инженерного качества, а не “дополнение”.</div>
+          <div class="step">Сильный ML-проект = <strong>не одна супер-модель, а хороший end-to-end pipeline.</strong></div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>problem → data → baseline → features → models → validation → final test → reproducibility.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="19_model_interpretation.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.19 Интерпретация моделей
+      </a>
+      <a class="footer-link" href="../03_neural_basics/01_perceptron_and_neuron.html">
+        <span class="muted">Следующий блок →</span>
+        3.1 Перцептрон и нейрон
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // ---------- Framing ----------
+    const taskType = document.getElementById('taskType');
+    const errorCost = document.getElementById('errorCost');
+    const framingOutput = document.getElementById('framingOutput');
+    const framingCanvas = document.getElementById('framingCanvas');
+    const fctx = framingCanvas.getContext('2d');
+
+    function drawFraming() {
+      const task = taskType.value;
+      const cost = errorCost.value;
+
+      let text = '';
+      let bars = [0.4, 0.6, 0.5];
+      let labels = ['baseline', 'main', 'aux'];
+
+      if (task === 'classification') {
+        if (cost === 'fn') {
+          text = 'Тип задачи: classification\nФокус: recall / PR-AUC / threshold tuning\nКомментарий: пропуск positive class дорог';
+          bars = [0.35, 0.9, 0.6];
+          labels = ['accuracy', 'recall', 'precision'];
+        } else if (cost === 'fp') {
+          text = 'Тип задачи: classification\nФокус: precision / cost-sensitive threshold\nКомментарий: ложные тревоги дорогие';
+          bars = [0.35, 0.6, 0.9];
+          labels = ['accuracy', 'recall', 'precision'];
+        } else {
+          text = 'Тип задачи: classification\nФокус: F1 / balanced accuracy / ROC-AUC or PR-AUC\nКомментарий: нужен баланс ошибок';
+          bars = [0.45, 0.72, 0.72];
+          labels = ['accuracy', 'recall', 'precision'];
+        }
+      } else if (task === 'regression') {
+        text = 'Тип задачи: regression\nФокус: MAE / RMSE / R²\nКомментарий: metric зависит от чувствительности к крупным ошибкам';
+        bars = [0.75, 0.60, 0.50];
+        labels = ['MAE', 'RMSE', 'R²'];
+      } else {
+        text = 'Тип задачи: ranking / prioritization\nФокус: PR-AUC / MAP / Recall@K\nКомментарий: важен порядок объектов, а не только точная метка';
+        bars = [0.85, 0.65, 0.55];
+        labels = ['Recall@K', 'MAP', 'ROC-AUC'];
+      }
+
+      framingOutput.textContent = text;
+
+      const W = framingCanvas.width, H = framingCanvas.height;
+      fctx.clearRect(0,0,W,H);
+      fctx.fillStyle = '#0b1016';
+      fctx.fillRect(0,0,W,H);
+
+      const xs = [55, 165, 275];
+      const bw = 70;
+      const baseY = 205;
+      const maxH = 145;
+
+      bars.forEach((v, i) => {
+        const h = v * maxH;
+        fctx.fillStyle = '#f59e0b';
+        fctx.fillRect(xs[i], baseY - h, bw, h);
+
+        fctx.fillStyle = '#e6edf3';
+        fctx.font = '12px system-ui';
+        fctx.textAlign = 'center';
+        fctx.fillText(labels[i], xs[i] + bw/2, baseY + 18);
+        fctx.fillText(v.toFixed(2), xs[i] + bw/2, baseY - h - 8);
+      });
+    }
+
+    taskType.addEventListener('change', drawFraming);
+    errorCost.addEventListener('change', drawFraming);
+
+    // ---------- Baseline ----------
+    const baselineRange = document.getElementById('baselineRange');
+    const improveRange = document.getElementById('improveRange');
+    const baselineVal = document.getElementById('baselineVal');
+    const improveVal = document.getElementById('improveVal');
+    const baselineOut = document.getElementById('baselineOut');
+    const improvedOut = document.getElementById('improvedOut');
+    const deltaOut = document.getElementById('deltaOut');
+    const baselineCanvas = document.getElementById('baselineCanvas');
+    const bctx = baselineCanvas.getContext('2d');
+
+    function drawBaseline() {
+      const base = +baselineRange.value;
+      const delta = +improveRange.value;
+      const improved = clamp(base + delta, 0, 1);
+
+      baselineVal.textContent = base.toFixed(2);
+      improveVal.textContent = delta.toFixed(2);
+      baselineOut.textContent = base.toFixed(2);
+      improvedOut.textContent = improved.toFixed(2);
+      deltaOut.textContent = '+' + (improved - base).toFixed(2);
+
+      const W = baselineCanvas.width, H = baselineCanvas.height;
+      bctx.clearRect(0,0,W,H);
+      bctx.fillStyle = '#0b1016';
+      bctx.fillRect(0,0,W,H);
+
+      const xs = [80, 230];
+      const bw = 72;
+      const baseY = 205;
+      const maxH = 150;
+
+      [base, improved].forEach((v, i) => {
+        const h = v * maxH;
+        bctx.fillStyle = i === 0 ? '#60a5fa' : '#10b981';
+        bctx.fillRect(xs[i], baseY - h, bw, h);
+
+        bctx.fillStyle = '#e6edf3';
+        bctx.font = '13px system-ui';
+        bctx.textAlign = 'center';
+        bctx.fillText(i === 0 ? 'Baseline' : 'Improved', xs[i] + bw/2, baseY + 18);
+        bctx.fillText(v.toFixed(2), xs[i] + bw/2, baseY - h - 8);
+      });
+    }
+
+    [baselineRange, improveRange].forEach(el => el.addEventListener('input', drawBaseline));
+
+    // ---------- Model selection ----------
+    const dataShape = document.getElementById('dataShape');
+    const modelSuggestBox = document.getElementById('modelSuggestBox');
+    const selectionCanvas = document.getElementById('selectionCanvas');
+    const sctx = selectionCanvas.getContext('2d');
+
+    function drawSelection() {
+      const shape = dataShape.value;
+      let vals, text, labels;
+
+      if (shape === 'linear') {
+        vals = [0.9, 0.55, 0.5];
+        labels = ['linear', 'trees', 'svm'];
+        text = 'Recommended first candidates: Logistic Regression, Linear SVM';
+      } else if (shape === 'tabular') {
+        vals = [0.55, 0.92, 0.5];
+        labels = ['linear', 'trees', 'svm'];
+        text = 'Recommended first candidates: Random Forest, Gradient Boosting, CatBoost / LightGBM';
+      } else if (shape === 'sparse') {
+        vals = [0.88, 0.45, 0.72];
+        labels = ['linear', 'trees', 'svm'];
+        text = 'Recommended first candidates: Logistic Regression, Linear SVM, maybe Naive Bayes';
+      } else {
+        vals = [0.55, 0.72, 0.88];
+        labels = ['linear', 'trees', 'svm'];
+        text = 'Recommended first candidates: SVM, tree-based model, careful CV';
+      }
+
+      modelSuggestBox.textContent = text;
+
+      const W = selectionCanvas.width, H = selectionCanvas.height;
+      sctx.clearRect(0,0,W,H);
+      sctx.fillStyle = '#0b1016';
+      sctx.fillRect(0,0,W,H);
+
+      const xs = [60, 165, 270];
+      const bw = 62;
+      const baseY = 205;
+      const maxH = 145;
+      const colors = ['#60a5fa', '#10b981', '#a78bfa'];
+
+      vals.forEach((v, i) => {
+        const h = v * maxH;
+        sctx.fillStyle = colors[i];
+        sctx.fillRect(xs[i], baseY - h, bw, h);
+
+        sctx.fillStyle = '#e6edf3';
+        sctx.font = '12px system-ui';
+        sctx.textAlign = 'center';
+        sctx.fillText(labels[i], xs[i] + bw/2, baseY + 18);
+        sctx.fillText(v.toFixed(2), xs[i] + bw/2, baseY - h - 8);
+      });
+    }
+
+    dataShape.addEventListener('change', drawSelection);
+
+    // ---------- Maturity ----------
+    const checkIds = ['chkProblem', 'chkEDA', 'chkBaseline', 'chkCV', 'chkLeak', 'chkRepro'];
+    const maturityOut = document.getElementById('maturityOut');
+    const statusOut = document.getElementById('statusOut');
+    const maturityCanvas = document.getElementById('maturityCanvas');
+    const mctx = maturityCanvas.getContext('2d');
+
+    function drawMaturity() {
+      const checked = checkIds.map(id => document.getElementById(id).checked);
+      const done = checked.filter(Boolean).length;
+      const pct = Math.round(done / checkIds.length * 100);
+
+      maturityOut.textContent = pct + '%';
+      statusOut.textContent =
+        pct < 40 ? 'fragile' :
+        pct < 70 ? 'decent' :
+        pct < 100 ? 'strong' : 'excellent';
+
+      const W = maturityCanvas.width, H = maturityCanvas.height;
+      mctx.clearRect(0,0,W,H);
+      mctx.fillStyle = '#0b1016';
+      mctx.fillRect(0,0,W,H);
+
+      const cols = 3;
+      const rows = 2;
+      const padX = 34, padY = 48, gap = 18;
+      const cellW = 90, cellH = 56;
+
+      checked.forEach((ok, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = padX + col * (cellW + gap);
+        const y = padY + row * (cellH + gap);
+
+        mctx.fillStyle = ok ? '#10b981' : '#30363d';
+        mctx.fillRect(x, y, cellW, cellH);
+
+        mctx.fillStyle = '#e6edf3';
+        mctx.font = '12px system-ui';
+        mctx.textAlign = 'center';
+        mctx.fillText((i + 1).toString(), x + cellW/2, y + cellH/2 + 4);
+      });
+    }
+
+    checkIds.forEach(id => {
+      document.getElementById(id).addEventListener('change', drawMaturity);
+    });
+
+    drawFraming();
+    drawBaseline();
+    drawSelection();
+    drawMaturity();
+  </script>
+</body>
+</html>

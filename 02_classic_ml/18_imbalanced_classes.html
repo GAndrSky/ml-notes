@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.18 Несбалансированные классы</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="17_validation_and_hyperparameter_tuning.html">2.17 Валидация и HPO</a>
+        <span class="tag active">2.18 Несбалансированные классы</span>
+        <a class="tag tag-block" href="19_model_interpretation.html">2.19 Интерпретация моделей</a>
+      </div>
+
+      <h1>2.18 Несбалансированные классы</h1>
+      <p class="muted">
+        Почему accuracy ломается, class weights, over/under-sampling, SMOTE и какие метрики реально важны при imbalance.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Почему imbalance — это отдельная проблема</h2>
+      <p>
+        Во многих реальных задачах классы распределены неравномерно.
+        Например, мошенничество, дефекты, редкие заболевания, отток клиентов,
+        аварии, спам, фрод, отказ оборудования — всё это обычно редкие события.
+      </p>
+
+      <div class="formula">Пример:
+Class 0 = 99%
+Class 1 = 1%
+
+Модель, которая всегда говорит "0",
+получит accuracy = 99%</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Когда положительный класс редкий, модель может почти игнорировать его
+        и всё равно показывать высокую “среднюю” точность. Это делает стандартный взгляд на качество обманчивым.
+      </div>
+
+      <div class="warn">
+        В задачах с imbalance вопрос обычно не в том,
+        “насколько хорошо модель угадывает большинство”,
+        а в том,
+        <strong>насколько хорошо она находит редкий, но важный класс</strong>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.18.1 Почему accuracy ломается</h2>
+      <div class="grid-2">
+        <div>
+          <p>
+            Accuracy считает долю всех правильных ответов:
+          </p>
+          <div class="formula">Accuracy = (TP + TN) / (TP + TN + FP + FN)</div>
+          <p>
+            Но если класс 0 сильно доминирует, TN может быть огромным,
+            и accuracy будет большой даже у бесполезной модели.
+          </p>
+        </div>
+        <div>
+          <div class="info">
+            Поэтому accuracy хороша только тогда,
+            когда классы более-менее сбалансированы
+            и цена ошибок примерно одинакова.
+          </div>
+          <div class="warn">
+            Для imbalance accuracy часто маскирует провал по minority class.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: высокая accuracy при плохой модели</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже можно менять долю positive class и долю найденных positives,
+            чтобы увидеть, как accuracy может быть высокой даже при плохом recall.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Positive class rate: <span id="posRateVal" class="hl-red">0.05</span></label>
+              <input id="posRate" type="range" min="0.01" max="0.50" step="0.01" value="0.05" />
+            </div>
+            <div class="control">
+              <label>Recall on positive class: <span id="recallVal" class="hl-green">0.20</span></label>
+              <input id="recallRange" type="range" min="0.00" max="1.00" step="0.01" value="0.20" />
+            </div>
+            <div class="control">
+              <label>False positive rate: <span id="fprVal" class="hl-blue">0.02</span></label>
+              <input id="fprRange" type="range" min="0.00" max="0.50" step="0.01" value="0.02" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Accuracy</div>
+              <div class="value" id="accOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Precision</div>
+              <div class="value" id="precOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Recall</div>
+              <div class="value" id="recOut">0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="accuracyTrapCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>majority class</span>
+            <span><i class="swatch" style="background:#ef4444"></i>minority class</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>predicted positives</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Что обычно становится важнее accuracy</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Метрика</th>
+              <th>Что показывает</th>
+              <th>Когда особенно важна</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Recall</td>
+              <td>Какую долю minority class мы нашли</td>
+              <td>Когда пропустить положительный объект очень дорого</td>
+            </tr>
+            <tr>
+              <td>Precision</td>
+              <td>Насколько чисты найденные positives</td>
+              <td>Когда ложные тревоги дорогие</td>
+            </tr>
+            <tr>
+              <td>F1-score</td>
+              <td>Баланс precision и recall</td>
+              <td>Когда важны оба аспекта</td>
+            </tr>
+            <tr>
+              <td>PR-AUC</td>
+              <td>Качество ранжирования positives при imbalance</td>
+              <td>Часто важнее ROC-AUC при редком классе</td>
+            </tr>
+            <tr>
+              <td>Balanced accuracy</td>
+              <td>Средняя точность по классам</td>
+              <td>Когда хочется ослабить доминирование majority</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="success">
+        Практическое правило:
+        <strong>при сильном imbalance PR-AUC и recall/precision часто важнее accuracy.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.18.2 Class weights</h2>
+      <p>
+        Один из самых простых способов бороться с imbalance —
+        сделать ошибки на minority class дороже.
+      </p>
+
+      <div class="formula">Идея:
+loss на объектах редкого класса
+умножается на больший вес
+
+Weighted loss:
+L = Σ_i w_{y_i} · loss_i</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Это заставляет модель сильнее реагировать на ошибки по minority class.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но слишком сильные веса могут ухудшить precision и сделать модель слишком “нервной”.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Если положительный класс редкий, без весов модель учится в мире,
+        где ошибаться по редкому классу “дёшево”. Class weights меняют эту экономику.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: влияние class weights</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже условно показано, как увеличение веса minority class обычно поднимает recall,
+            но может снижать precision.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Minority class weight: <span id="classWeightVal" class="hl-amber">1.0</span></label>
+              <input id="classWeightRange" type="range" min="1" max="20" step="0.5" value="1.0" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Estimated recall</div>
+              <div class="value" id="weightRecallOut">0.20</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Estimated precision</div>
+              <div class="value" id="weightPrecisionOut">0.83</div>
+            </div>
+          </div>
+
+          <div class="formula" id="weightText">Higher class weight → model cares more about positive errors</div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="classWeightCanvas" width="400" height="240"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>recall</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>precision</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.18.3 Oversampling и undersampling</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Oversampling</h3>
+          <p>
+            Увеличиваем minority class,
+            дублируя или синтетически создавая дополнительные объекты.
+          </p>
+          <div class="success">
+            Плюс: модель лучше “видит” minority class.
+          </div>
+          <div class="warn">
+            Минус: простой duplicate oversampling может усиливать overfitting.
+          </div>
+        </div>
+
+        <div>
+          <h3>Undersampling</h3>
+          <p>
+            Уменьшаем majority class,
+            случайно выбрасывая часть его объектов.
+          </p>
+          <div class="success">
+            Плюс: баланс становится лучше, обучение может стать быстрее.
+          </div>
+          <div class="warn">
+            Минус: можно выбросить полезную информацию о majority class.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Oversampling:
+minority ↑
+
+Undersampling:
+majority ↓
+
+Обе техники меняют обучающую выборку,
+но не меняют реальное распределение мира.</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: over/under-sampling</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно менять исходный дисбаланс и смотреть,
+            как oversampling и undersampling меняют обучающую выборку.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Original minority share: <span id="sampleMinorVal" class="hl-red">0.10</span></label>
+              <input id="sampleMinor" type="range" min="0.02" max="0.40" step="0.01" value="0.10" />
+            </div>
+            <div class="control">
+              <label>Target balanced share: <span id="sampleTargetVal" class="hl-amber">0.50</span></label>
+              <input id="sampleTarget" type="range" min="0.20" max="0.50" step="0.01" value="0.50" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Original</div>
+              <div class="value" id="origRatioOut">10/90</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Oversampled</div>
+              <div class="value" id="overRatioOut">50/50</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Undersampled</div>
+              <div class="value" id="underRatioOut">50/50</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="samplingCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#ef4444"></i>minority</span>
+            <span><i class="swatch" style="background:#10b981"></i>majority</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.18.4 SMOTE</h2>
+      <p>
+        <strong>SMOTE</strong> (Synthetic Minority Over-sampling Technique) —
+        это не просто дублирование minority объектов.
+        Он генерирует новые synthetic samples между существующими объектами minority class.
+      </p>
+
+      <div class="formula">Упрощённая идея SMOTE:
+берём minority point x_i
+находим его minority-neighbor x_j
+создаём новый объект:
+
+x_new = x_i + λ(x_j - x_i),   где λ ∈ [0,1]</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            В отличие от простого oversampling, SMOTE создаёт новые точки внутри области minority class,
+            а не просто копирует старые.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но SMOTE тоже не универсален.
+            Если minority class сложный, многомодальный, шумный или пересекается с majority,
+            synthetic points могут появляться в неудачных местах.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        SMOTE особенно полезен, когда minority class слишком редкий,
+        но его геометрия в пространстве признаков всё же более-менее осмысленна.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: как SMOTE создаёт synthetic points</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь показаны несколько minority-точек и synthetic samples,
+            возникающие между соседями.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Количество synthetic points: <span id="smoteCountVal" class="hl-amber">8</span></label>
+              <input id="smoteCount" type="range" min="1" max="20" step="1" value="8" />
+            </div>
+          </div>
+
+          <button class="action" id="regenSmote">Сгенерировать заново</button>
+
+          <div class="info" id="smoteInfoBox">
+            SMOTE interpolates between minority neighbors instead of simple duplication.
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="smoteCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#ef4444"></i>original minority</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>synthetic points</span>
+            <span><i class="swatch" style="background:#10b981"></i>majority</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.18.5 Какие метрики важны при imbalance</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Метрика</th>
+              <th>Смысл</th>
+              <th>Почему полезна при imbalance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Recall</td>
+              <td>Сколько положительных нашли</td>
+              <td>Показывает, насколько модель пропускает minority class</td>
+            </tr>
+            <tr>
+              <td>Precision</td>
+              <td>Насколько чисты найденные positives</td>
+              <td>Не даёт модели “спамить” positives без контроля</td>
+            </tr>
+            <tr>
+              <td>F1-score</td>
+              <td>Компромисс precision/recall</td>
+              <td>Хорош, когда важны обе стороны</td>
+            </tr>
+            <tr>
+              <td>PR-AUC</td>
+              <td>Качество precision-recall tradeoff</td>
+              <td>Очень полезна при редком положительном классе</td>
+            </tr>
+            <tr>
+              <td>Balanced accuracy</td>
+              <td>Средний recall по классам</td>
+              <td>Ослабляет эффект доминирования majority</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="success">
+        При сильном imbalance метрика должна соответствовать цене ошибки.
+        Вопрос не “какая метрика моднее”, а “какая ошибка для бизнеса/домена реально дорогая”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>PR curve vs ROC curve при imbalance</h2>
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            ROC-AUC может выглядеть неплохо даже тогда,
+            когда модель слабо справляется с minority class на практических порогах.
+          </div>
+          <div class="success">
+            PR curve больше фокусируется на positive class
+            и часто оказывается информативнее при сильном imbalance.
+          </div>
+        </div>
+        <div>
+          <div class="formula">ROC:
+TPR vs FPR
+
+PR:
+Precision vs Recall
+
+Когда positive class редкий,
+PR-AUC часто отражает реальность лучше.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: threshold tuning при imbalance</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Порог классификации сильно влияет на precision и recall.
+            При imbalance менять threshold особенно важно.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Threshold: <span id="thrVal" class="hl-amber">0.50</span></label>
+              <input id="thrRange" type="range" min="0.01" max="0.99" step="0.01" value="0.50" />
+            </div>
+            <div class="control">
+              <label>Base separability: <span id="sepVal" class="hl-blue">0.70</span></label>
+              <input id="sepRange" type="range" min="0.30" max="0.95" step="0.01" value="0.70" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Precision</div>
+              <div class="value" id="thrPrecisionOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Recall</div>
+              <div class="value" id="thrRecallOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">F1</div>
+              <div class="value" id="thrF1Out">0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="thresholdCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>precision</span>
+            <span><i class="swatch" style="background:#10b981"></i>recall</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>current threshold</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практические стратегии борьбы с imbalance</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>1.</strong> Сначала выбрать правильную метрику задачи.</div>
+          <div class="step"><strong>2.</strong> Сделать stratified split / stratified CV.</div>
+          <div class="step"><strong>3.</strong> Попробовать class weights.</div>
+          <div class="step"><strong>4.</strong> Попробовать threshold tuning.</div>
+        </div>
+        <div>
+          <div class="step"><strong>5.</strong> При необходимости попробовать oversampling / undersampling / SMOTE.</div>
+          <div class="step"><strong>6.</strong> Сравнить PR-AUC, recall, precision, F1 на честной валидации.</div>
+          <div class="step"><strong>7.</strong> Всегда помнить про стоимость FP и FN в реальном контексте.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Что важно при sampling-техниках</h2>
+      <div class="warn">
+        Oversampling, undersampling и SMOTE должны применяться
+        <strong>только внутри train-fold</strong>,
+        а не до split / не до cross-validation.
+      </div>
+
+      <div class="formula">Плохо:
+сделать SMOTE на всём датасете
+→ потом split / CV
+
+Хорошо:
+в каждом train fold:
+  fit resampling only there
+validation fold remains untouched</div>
+
+      <div class="info">
+        Иначе synthetic points и дубли могут утечь в validation,
+        и оценка станет нечестной.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда oversampling и SMOTE могут вредить</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Когда minority class очень шумный.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Когда minority и majority сильно пересекаются.
+          </div>
+          <div class="warn">
+            <strong>3.</strong> Когда synthetic points создаются в “пограничной каше”.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>4.</strong> Когда у minority class очень мало реальных точек и геометрия нестабильна.
+          </div>
+          <div class="warn">
+            <strong>5.</strong> Когда проблема решается проще через class weights и threshold tuning.
+          </div>
+          <div class="warn">
+            <strong>6.</strong> Когда sampling делают до CV и получают leakage.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Какая стратегия часто работает первой</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Шаг</th>
+              <th>Что делать</th>
+              <th>Зачем</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Stratified split / CV</td>
+              <td>Стабильная оценка minority class</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Подобрать правильную метрику</td>
+              <td>Не обманываться accuracy</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Попробовать class_weight</td>
+              <td>Простой baseline без изменения данных</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Поиграть threshold</td>
+              <td>Подогнать precision/recall под задачу</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Проверить sampling/SMOTE</td>
+              <td>Если minority по-прежнему плохо ловится</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn / imbalanced-learn</h2>
+
+      <div class="tabs" data-tabs="imbalance-code-tabs">
+        <button class="tab-btn active" data-tab="code-classweight">Class weights</button>
+        <button class="tab-btn" data-tab="code-metrics">PR-AUC / F1</button>
+        <button class="tab-btn" data-tab="code-smote">SMOTE in pipeline</button>
+        <button class="tab-btn" data-tab="code-threshold">Threshold tuning</button>
+      </div>
+
+      <div id="code-classweight" class="tab-panel active">
+        <div class="code">from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+X_train, X_valid, y_train, y_valid = train_test_split(
+    X, y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
+
+model = LogisticRegression(
+    max_iter=1000,
+    class_weight="balanced"
+)
+
+model.fit(X_train, y_train)
+pred = model.predict(X_valid)
+
+print(classification_report(y_valid, pred))</div>
+      </div>
+
+      <div id="code-metrics" class="tab-panel">
+        <div class="code">from sklearn.metrics import (
+    precision_score, recall_score, f1_score,
+    average_precision_score, roc_auc_score
+)
+
+pred = model.predict(X_valid)
+proba = model.predict_proba(X_valid)[:, 1]
+
+print("Precision:", precision_score(y_valid, pred))
+print("Recall   :", recall_score(y_valid, pred))
+print("F1       :", f1_score(y_valid, pred))
+print("PR-AUC   :", average_precision_score(y_valid, proba))
+print("ROC-AUC  :", roc_auc_score(y_valid, proba))</div>
+      </div>
+
+      <div id="code-smote" class="tab-panel">
+        <div class="code">from imblearn.pipeline import Pipeline
+from imblearn.over_sampling import SMOTE
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("smote", SMOTE(random_state=42)),
+    ("clf", LogisticRegression(max_iter=1000))
+])
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+scores = cross_val_score(
+    pipe,
+    X, y,
+    cv=cv,
+    scoring="f1",
+    n_jobs=-1
+)
+
+print("CV F1 scores:", scores)
+print("Mean F1:", scores.mean())</div>
+      </div>
+
+      <div id="code-threshold" class="tab-panel">
+        <div class="code">import numpy as np
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+proba = model.predict_proba(X_valid)[:, 1]
+
+thresholds = np.linspace(0.05, 0.95, 19)
+best_thr = None
+best_f1 = -1
+
+for thr in thresholds:
+    pred_thr = (proba >= thr).astype(int)
+    f1 = f1_score(y_valid, pred_thr)
+
+    if f1 > best_f1:
+        best_f1 = f1
+        best_thr = thr
+
+print("Best threshold:", best_thr)
+print("Best F1:", best_f1)
+
+pred_best = (proba >= best_thr).astype(int)
+print("Precision:", precision_score(y_valid, pred_best))
+print("Recall   :", recall_score(y_valid, pred_best))</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Смотреть только на accuracy.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Делать random split без stratification.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Делать oversampling / SMOTE до split или до CV.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Игнорировать threshold tuning.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Выбирать метрику без понимания цены FP и FN.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Верить красивому ROC-AUC, не проверяя PR-AUC и реальные operating points.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить imbalance на собеседовании</h2>
+      <div class="step"><strong>1.</strong> При сильном дисбалансе accuracy может быть высокой даже у плохой модели.</div>
+      <div class="step"><strong>2.</strong> Нужно смотреть на recall, precision, F1, PR-AUC, balanced accuracy — в зависимости от цены ошибок.</div>
+      <div class="step"><strong>3.</strong> Простые базовые техники: stratified split, class weights, threshold tuning.</div>
+      <div class="step"><strong>4.</strong> Более продвинутые техники: oversampling, undersampling, SMOTE.</div>
+      <div class="step"><strong>5.</strong> Все sampling-операции нужно делать только внутри train-fold, иначе получится leakage.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Imbalance</strong> ломает наивную интерпретацию accuracy.</div>
+          <div class="step"><strong>Class weights</strong> — простой и сильный baseline-подход.</div>
+          <div class="step"><strong>PR-AUC, precision, recall, F1</strong> обычно важнее accuracy при редком positive class.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Oversampling / undersampling / SMOTE</strong> меняют обучающую выборку и могут помочь модели увидеть minority class.</div>
+          <div class="step"><strong>Threshold tuning</strong> часто даёт большой практический эффект без смены модели.</div>
+          <div class="step">Главный вопрос всегда один: <strong>какая ошибка в реальной задаче дороже — FP или FN?</strong></div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>imbalance = не “мало единиц”, а “нужна другая логика оценки, обучения и выбора порога”.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="17_validation_and_hyperparameter_tuning.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.17 Валидация и HPO
+      </a>
+      <a class="footer-link" href="19_model_interpretation.html">
+        <span class="muted">Следующая тема →</span>
+        2.19 Интерпретация моделей
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // -------- Accuracy trap demo --------
+    const posRate = document.getElementById('posRate');
+    const recallRange = document.getElementById('recallRange');
+    const fprRange = document.getElementById('fprRange');
+    const posRateVal = document.getElementById('posRateVal');
+    const recallVal = document.getElementById('recallVal');
+    const fprVal = document.getElementById('fprVal');
+    const accOut = document.getElementById('accOut');
+    const precOut = document.getElementById('precOut');
+    const recOut = document.getElementById('recOut');
+    const accuracyTrapCanvas = document.getElementById('accuracyTrapCanvas');
+    const atCtx = accuracyTrapCanvas.getContext('2d');
+
+    function drawAccuracyTrap(){
+      const p = +posRate.value;
+      const recall = +recallRange.value;
+      const fpr = +fprRange.value;
+
+      posRateVal.textContent = p.toFixed(2);
+      recallVal.textContent = recall.toFixed(2);
+      fprVal.textContent = fpr.toFixed(2);
+
+      const tp = p * recall;
+      const fn = p * (1 - recall);
+      const fp = (1 - p) * fpr;
+      const tn = (1 - p) * (1 - fpr);
+
+      const acc = tp + tn;
+      const prec = tp + fp > 0 ? tp / (tp + fp) : 0;
+
+      accOut.textContent = acc.toFixed(2);
+      precOut.textContent = prec.toFixed(2);
+      recOut.textContent = recall.toFixed(2);
+
+      const W = accuracyTrapCanvas.width, H = accuracyTrapCanvas.height;
+      atCtx.clearRect(0,0,W,H);
+      atCtx.fillStyle = '#0b1016';
+      atCtx.fillRect(0,0,W,H);
+
+      const pad = 24;
+      const totalW = W - pad * 2;
+      const majorityW = totalW * (1 - p);
+      const minorityW = totalW * p;
+
+      atCtx.fillStyle = '#10b981';
+      atCtx.fillRect(pad, 50, majorityW, 50);
+      atCtx.fillStyle = '#ef4444';
+      atCtx.fillRect(pad + majorityW, 50, minorityW, 50);
+
+      const predPosW = totalW * (tp + fp);
+      atCtx.fillStyle = '#60a5fa';
+      atCtx.fillRect(pad, 150, predPosW, 38);
+
+      atCtx.fillStyle = '#e6edf3';
+      atCtx.font = '12px system-ui';
+      atCtx.textAlign = 'center';
+      atCtx.fillText('real majority', pad + majorityW/2, 80);
+      atCtx.fillText('real minority', pad + majorityW + minorityW/2, 80);
+      atCtx.fillText('predicted positive share', pad + predPosW/2, 173);
+    }
+
+    [posRate, recallRange, fprRange].forEach(el => el.addEventListener('input', drawAccuracyTrap));
+
+    // -------- Class weight demo --------
+    const classWeightRange = document.getElementById('classWeightRange');
+    const classWeightVal = document.getElementById('classWeightVal');
+    const weightRecallOut = document.getElementById('weightRecallOut');
+    const weightPrecisionOut = document.getElementById('weightPrecisionOut');
+    const weightText = document.getElementById('weightText');
+    const classWeightCanvas = document.getElementById('classWeightCanvas');
+    const cwCtx = classWeightCanvas.getContext('2d');
+
+    function drawClassWeight(){
+      const w = +classWeightRange.value;
+      classWeightVal.textContent = w.toFixed(1);
+
+      const recall = clamp(0.18 + 0.22 * Math.log(w + 1), 0, 0.98);
+      const precision = clamp(0.92 - 0.12 * Math.log(w + 1), 0.15, 0.99);
+
+      weightRecallOut.textContent = recall.toFixed(2);
+      weightPrecisionOut.textContent = precision.toFixed(2);
+      weightText.textContent = `weight=${w.toFixed(1)} usually pushes recall up, but may reduce precision`;
+
+      const W = classWeightCanvas.width, H = classWeightCanvas.height;
+      cwCtx.clearRect(0,0,W,H);
+      cwCtx.fillStyle = '#0b1016';
+      cwCtx.fillRect(0,0,W,H);
+
+      const padL = 36, padR = 12, padT = 12, padB = 24;
+      function X(i){ return padL + i / 19 * (W - padL - padR); }
+      function Y(v){ return H - padB - v * (H - padT - padB); }
+
+      cwCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        cwCtx.beginPath();
+        cwCtx.moveTo(padL, Y(yy));
+        cwCtx.lineTo(W - padR, Y(yy));
+        cwCtx.stroke();
+      }
+
+      const recalls = [];
+      const precisions = [];
+      for(let i=1;i<=20;i++){
+        recalls.push(clamp(0.18 + 0.22 * Math.log(i + 1), 0, 0.98));
+        precisions.push(clamp(0.92 - 0.12 * Math.log(i + 1), 0.15, 0.99));
+      }
+
+      cwCtx.strokeStyle = '#10b981';
+      cwCtx.lineWidth = 2.2;
+      cwCtx.beginPath();
+      recalls.forEach((v,i)=>{
+        if(i===0) cwCtx.moveTo(X(i), Y(v));
+        else cwCtx.lineTo(X(i), Y(v));
+      });
+      cwCtx.stroke();
+
+      cwCtx.strokeStyle = '#60a5fa';
+      cwCtx.lineWidth = 2.2;
+      cwCtx.beginPath();
+      precisions.forEach((v,i)=>{
+        if(i===0) cwCtx.moveTo(X(i), Y(v));
+        else cwCtx.lineTo(X(i), Y(v));
+      });
+      cwCtx.stroke();
+
+      const idx = Math.round(w) - 1;
+      cwCtx.fillStyle = '#e6edf3';
+      cwCtx.beginPath();
+      cwCtx.arc(X(clamp(idx,0,19)), Y(recall), 4, 0, Math.PI*2);
+      cwCtx.fill();
+    }
+
+    classWeightRange.addEventListener('input', drawClassWeight);
+
+    // -------- Sampling demo --------
+    const sampleMinor = document.getElementById('sampleMinor');
+    const sampleTarget = document.getElementById('sampleTarget');
+    const sampleMinorVal = document.getElementById('sampleMinorVal');
+    const sampleTargetVal = document.getElementById('sampleTargetVal');
+    const origRatioOut = document.getElementById('origRatioOut');
+    const overRatioOut = document.getElementById('overRatioOut');
+    const underRatioOut = document.getElementById('underRatioOut');
+    const samplingCanvas = document.getElementById('samplingCanvas');
+    const spCtx = samplingCanvas.getContext('2d');
+
+    function drawSampling(){
+      const m = +sampleMinor.value;
+      const t = +sampleTarget.value;
+
+      sampleMinorVal.textContent = m.toFixed(2);
+      sampleTargetVal.textContent = t.toFixed(2);
+
+      origRatioOut.textContent = `${Math.round(m*100)}/${Math.round((1-m)*100)}`;
+      overRatioOut.textContent = `${Math.round(t*100)}/${Math.round((1-t)*100)}`;
+      underRatioOut.textContent = `${Math.round(t*100)}/${Math.round((1-t)*100)}`;
+
+      const W = samplingCanvas.width, H = samplingCanvas.height;
+      spCtx.clearRect(0,0,W,H);
+      spCtx.fillStyle = '#0b1016';
+      spCtx.fillRect(0,0,W,H);
+
+      const groups = [
+        {label:'Original', ratio:m},
+        {label:'Oversample', ratio:t},
+        {label:'Undersample', ratio:t}
+      ];
+
+      groups.forEach((g, idx)=>{
+        const x = 35 + idx*120;
+        const y = 60;
+        const totalH = 140;
+        const redH = totalH * g.ratio;
+        const greenH = totalH - redH;
+
+        spCtx.fillStyle = '#10b981';
+        spCtx.fillRect(x, y, 48, greenH);
+
+        spCtx.fillStyle = '#ef4444';
+        spCtx.fillRect(x, y + greenH, 48, redH);
+
+        spCtx.fillStyle = '#e6edf3';
+        spCtx.font = '12px system-ui';
+        spCtx.textAlign = 'center';
+        spCtx.fillText(g.label, x + 24, y + totalH + 18);
+      });
+    }
+
+    [sampleMinor, sampleTarget].forEach(el => el.addEventListener('input', drawSampling));
+
+    // -------- SMOTE demo --------
+    const smoteCount = document.getElementById('smoteCount');
+    const smoteCountVal = document.getElementById('smoteCountVal');
+    const regenSmote = document.getElementById('regenSmote');
+    const smoteCanvas = document.getElementById('smoteCanvas');
+    const smoteInfoBox = document.getElementById('smoteInfoBox');
+    const smCtx = smoteCanvas.getContext('2d');
+
+    const majPts = [
+      [60,70],[100,60],[120,95],[140,80],[320,70],[350,110],[300,130],[280,85],[220,170],[250,190],[310,210]
+    ];
+    const minPts = [
+      [130,190],[155,170],[175,205],[195,185],[165,225]
+    ];
+    let syntheticPts = [];
+
+    function generateSMOTE(){
+      const n = +smoteCount.value;
+      smoteCountVal.textContent = n;
+      syntheticPts = [];
+
+      for(let i=0;i<n;i++){
+        const a = minPts[Math.floor(Math.random()*minPts.length)];
+        let b = minPts[Math.floor(Math.random()*minPts.length)];
+        while(b === a){
+          b = minPts[Math.floor(Math.random()*minPts.length)];
+        }
+        const lambda = Math.random();
+        const x = a[0] + lambda*(b[0]-a[0]);
+        const y = a[1] + lambda*(b[1]-a[1]);
+        syntheticPts.push([x,y]);
+      }
+
+      smoteInfoBox.textContent = `Generated ${n} synthetic samples by interpolating between minority neighbors.`;
+      drawSMOTE();
+    }
+
+    function drawSMOTE(){
+      const W = smoteCanvas.width, H = smoteCanvas.height;
+      smCtx.clearRect(0,0,W,H);
+      smCtx.fillStyle = '#0b1016';
+      smCtx.fillRect(0,0,W,H);
+
+      majPts.forEach(([x,y])=>{
+        smCtx.beginPath();
+        smCtx.arc(x,y,5,0,Math.PI*2);
+        smCtx.fillStyle = '#10b981';
+        smCtx.fill();
+      });
+
+      minPts.forEach(([x,y])=>{
+        smCtx.beginPath();
+        smCtx.arc(x,y,6,0,Math.PI*2);
+        smCtx.fillStyle = '#ef4444';
+        smCtx.fill();
+      });
+
+      syntheticPts.forEach(([x,y])=>{
+        smCtx.beginPath();
+        smCtx.arc(x,y,4.5,0,Math.PI*2);
+        smCtx.fillStyle = '#f59e0b';
+        smCtx.fill();
+      });
+    }
+
+    smoteCount.addEventListener('input', generateSMOTE);
+    regenSmote.addEventListener('click', generateSMOTE);
+
+    // -------- Threshold demo --------
+    const thrRange = document.getElementById('thrRange');
+    const sepRange = document.getElementById('sepRange');
+    const thrVal = document.getElementById('thrVal');
+    const sepVal = document.getElementById('sepVal');
+    const thrPrecisionOut = document.getElementById('thrPrecisionOut');
+    const thrRecallOut = document.getElementById('thrRecallOut');
+    const thrF1Out = document.getElementById('thrF1Out');
+    const thresholdCanvas = document.getElementById('thresholdCanvas');
+    const thCtx = thresholdCanvas.getContext('2d');
+
+    function drawThreshold(){
+      const thr = +thrRange.value;
+      const sep = +sepRange.value;
+
+      thrVal.textContent = thr.toFixed(2);
+      sepVal.textContent = sep.toFixed(2);
+
+      const precision = clamp(0.25 + 0.75*thr + 0.10*(sep-0.5), 0, 1);
+      const recall = clamp(1.05 - 0.95*thr + 0.20*(sep-0.5), 0, 1);
+      const f1 = precision + recall > 0 ? 2*precision*recall/(precision+recall) : 0;
+
+      thrPrecisionOut.textContent = precision.toFixed(2);
+      thrRecallOut.textContent = recall.toFixed(2);
+      thrF1Out.textContent = f1.toFixed(2);
+
+      const W = thresholdCanvas.width, H = thresholdCanvas.height;
+      thCtx.clearRect(0,0,W,H);
+      thCtx.fillStyle = '#0b1016';
+      thCtx.fillRect(0,0,W,H);
+
+      const padL=36, padR=12, padT=12, padB=24;
+      function X(v){ return padL + v*(W-padL-padR); }
+      function Y(v){ return H-padB - v*(H-padT-padB); }
+
+      thCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        thCtx.beginPath();
+        thCtx.moveTo(padL, Y(yy));
+        thCtx.lineTo(W-padR, Y(yy));
+        thCtx.stroke();
+      }
+
+      thCtx.strokeStyle = '#60a5fa';
+      thCtx.lineWidth = 2.2;
+      thCtx.beginPath();
+      for(let i=0;i<=100;i++){
+        const t = i/100;
+        const p = clamp(0.25 + 0.75*t + 0.10*(sep-0.5), 0, 1);
+        if(i===0) thCtx.moveTo(X(t),Y(p));
+        else thCtx.lineTo(X(t),Y(p));
+      }
+      thCtx.stroke();
+
+      thCtx.strokeStyle = '#10b981';
+      thCtx.lineWidth = 2.2;
+      thCtx.beginPath();
+      for(let i=0;i<=100;i++){
+        const t = i/100;
+        const r = clamp(1.05 - 0.95*t + 0.20*(sep-0.5), 0, 1);
+        if(i===0) thCtx.moveTo(X(t),Y(r));
+        else thCtx.lineTo(X(t),Y(r));
+      }
+      thCtx.stroke();
+
+      thCtx.strokeStyle = '#f59e0b';
+      thCtx.setLineDash([6,6]);
+      thCtx.beginPath();
+      thCtx.moveTo(X(thr), padT);
+      thCtx.lineTo(X(thr), H-padB);
+      thCtx.stroke();
+      thCtx.setLineDash([]);
+    }
+
+    [thrRange, sepRange].forEach(el => el.addEventListener('input', drawThreshold));
+
+    drawAccuracyTrap();
+    drawClassWeight();
+    drawSampling();
+    generateSMOTE();
+    drawThreshold();
+  </script>
+</body>
+</html>
