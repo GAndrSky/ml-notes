@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -41,43 +41,43 @@ select{background:#0d1117;border:1px solid var(--border);color:var(--text);paddi
 <body>
 
 <div style="margin-bottom:14px;">
-  <span class="tag tag-done">âœ“ 4.1 Backprop</span>
-  <span class="tag tag-active">â–¶ 4.2 ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</span>
+  <span class="tag tag-done">✓ 4.1 Backprop</span>
+  <span class="tag tag-active">▶ 4.2 Оптимизаторы</span>
   <span class="tag tag-next">4.3 Adam / AdamW / Lion</span>
-  <span class="tag tag-next">4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+  <span class="tag tag-next">4.4 Регуляризация</span>
 </div>
 
-<h1>4.2 ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</h1>
-<p class="muted">SGD â†’ Momentum â†’ Adam â†’ AdamW â€” Ð¾Ñ‚ÐºÑƒÐ´Ð° Ð±ÐµÑ€ÑƒÑ‚ÑÑ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹ Ð¸ Ð¿Ð¾Ñ‡ÐµÐ¼Ñƒ Ð¾Ð½Ð¸ Ñ€Ð°Ð±Ð¾Ñ‚Ð°ÑŽÑ‚</p>
+<h1>4.2 Оптимизаторы</h1>
+<p class="muted">SGD → Momentum → Adam → AdamW — откуда берутся формулы и почему они работают</p>
 
-<!-- 1. ÐžÐ±Ñ‰Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð° -->
+<!-- 1. Общая форма -->
 <div class="card">
-  <h2>ðŸ—ºï¸ ÐžÐ±Ñ‰Ð°Ñ Ð·Ð°Ð´Ð°Ñ‡Ð° Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸</h2>
-  <p>ÐŸÐ¾ÑÐ»Ðµ backprop Ñƒ Ð½Ð°Ñ ÐµÑÑ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ <span class="hl-amber">g = âˆ‚L/âˆ‚Î¸</span>. ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€ Ñ€ÐµÑˆÐ°ÐµÑ‚: <strong>ÐºÐ°Ðº Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð¾Ð±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Î¸?</strong></p>
-  <div class="formula">Î¸_{t+1} = Î¸_t âˆ’ Î· Â· update(g_t, g_{t-1}, ...)
+  <h2>🗺️ Общая задача оптимизации</h2>
+  <p>После backprop у нас есть градиент <span class="hl-amber">g = ∂L/∂θ</span>. Оптимизатор решает: <strong>как именно обновить θ?</strong></p>
+  <div class="formula">θ_{t+1} = θ_t − η · update(g_t, g_{t-1}, ...)
 
-update Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ð°:
+update зависит от оптимизатора:
   SGD:      update = g_t
-  Momentum: update = ÑÐºÑÐ¿Ð¾Ð½. ÑÐºÐ¾Ð»ÑŒÐ·ÑÑ‰ÐµÐµ ÑÑ€ÐµÐ´Ð½ÐµÐµ g
-  Adam:     update = Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð¾Ðµ EMA g / âˆš(EMA gÂ²)</div>
+  Momentum: update = экспон. скользящее среднее g
+  Adam:     update = нормированное EMA g / √(EMA g²)</div>
   <div class="intuition">
-    ðŸ’¡ Ð’ÑÐµ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹ Ñ€ÐµÑˆÐ°ÑŽÑ‚ Ð¾Ð´Ð½Ñƒ Ð·Ð°Ð´Ð°Ñ‡Ñƒ: Ð´Ð²Ð¸Ð³Ð°Ñ‚ÑŒÑÑ Ð²Ð½Ð¸Ð· Ð¿Ð¾ loss surface, Ð½Ð¾ Ð´ÐµÐ»Ð°ÑŽÑ‚ ÑÑ‚Ð¾ Ð¿Ð¾-Ñ€Ð°Ð·Ð½Ð¾Ð¼Ñƒ. SGD â€” Ð¿Ñ€ÑÐ¼Ð¾Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾. Momentum â€” Ñ Ð¸Ð½ÐµÑ€Ñ†Ð¸ÐµÐ¹. Adam â€” Ð°Ð´Ð°Ð¿Ñ‚Ð¸Ð²Ð½Ð¾ Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°.
+    💡 Все оптимизаторы решают одну задачу: двигаться вниз по loss surface, но делают это по-разному. SGD — прямолинейно. Momentum — с инерцией. Adam — адаптивно для каждого параметра.
   </div>
 </div>
 
-<!-- 2. Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ loss surface + Ñ‚Ñ€Ð°ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸ -->
+<!-- 2. Интерактивная loss surface + траектории -->
 <div class="card">
-  <h2>ðŸŽ® Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ loss surface â€” ÑÑ€Ð°Ð²Ð½Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</h2>
-  <p class="muted">Ð’Ñ‹Ð±ÐµÑ€Ð¸ Ð¿Ð¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚ÑŒ Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹, Ð½Ð°Ð¶Ð¼Ð¸ Run</p>
+  <h2>🎮 Интерактивная loss surface — сравни оптимизаторы</h2>
+  <p class="muted">Выбери поверхность и оптимизаторы, нажми Run</p>
   <br>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
     <div>
-      <div class="muted" style="font-size:.82em;margin-bottom:4px;">ÐŸÐ¾Ð²ÐµÑ€Ñ…Ð½Ð¾ÑÑ‚ÑŒ</div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Поверхность</div>
       <select id="surfType" onchange="resetTraj()">
         <option value="rosenbrock">Rosenbrock (banana)</option>
-        <option value="saddle">Ð¡ÐµÐ´Ð»Ð¾</option>
-        <option value="ravine">Ð£Ñ‰ÐµÐ»ÑŒÐµ (ravine)</option>
-        <option value="bowl">ÐŸÐ°Ñ€Ð°Ð±Ð¾Ð»Ð¾Ð¸Ð´</option>
+        <option value="saddle">Седло</option>
+        <option value="ravine">Ущелье (ravine)</option>
+        <option value="bowl">Параболоид</option>
       </select>
     </div>
     <div>
@@ -85,17 +85,17 @@ update Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°
       <input type="number" id="lrInput" value="0.003" step="0.001" min="0.0001" max="0.1">
     </div>
     <div>
-      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Ð¨Ð°Ð³Ð¾Ð²</div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Шагов</div>
       <input type="number" id="nSteps" value="200" min="10" max="1000">
     </div>
-    <button onclick="runOpt()" style="border-color:var(--green);color:var(--green);">â–¶ Run</button>
-    <button onclick="resetTraj()">â†º Ð¡Ð±Ñ€Ð¾Ñ</button>
+    <button onclick="runOpt()" style="border-color:var(--green);color:var(--green);">▶ Run</button>
+    <button onclick="resetTraj()">↺ Сброс</button>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkSGD" checked> <span style="color:#ef4444">â— SGD</span></label>
-    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkMom" checked> <span style="color:#f59e0b">â— Momentum</span></label>
-    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdam" checked> <span style="color:#10b981">â— Adam</span></label>
-    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdamW"> <span style="color:#a78bfa">â— AdamW</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkSGD" checked> <span style="color:#ef4444">● SGD</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkMom" checked> <span style="color:#f59e0b">● Momentum</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdam" checked> <span style="color:#10b981">● Adam</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdamW"> <span style="color:#a78bfa">● AdamW</span></label>
   </div>
   <canvas id="surfCanvas" width="880" height="380" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;border-radius:8px;"></canvas>
   <div id="surfResult" style="margin-top:8px;font-family:monospace;font-size:.82em;color:var(--muted);"></div>
@@ -103,31 +103,31 @@ update Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°
 
 <!-- 3. SGD -->
 <div class="card">
-  <h2>1ï¸âƒ£ SGD â€” Stochastic Gradient Descent</h2>
+  <h2>1️⃣ SGD — Stochastic Gradient Descent</h2>
   <div class="grid-2">
     <div>
-      <div class="formula">Î¸_{t+1} = Î¸_t âˆ’ Î· Â· g_t
+      <div class="formula">θ_{t+1} = θ_t − η · g_t
 
-g_t = âˆ‚L_batch/âˆ‚Î¸   (Ð½Ð° Ð¼Ð¸Ð½Ð¸-Ð±Ð°Ñ‚Ñ‡Ðµ)</div>
-      <p style="margin-top:8px;font-size:.88em;">Â«Ð¡Ñ‚Ð¾Ñ…Ð°ÑÑ‚Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹Â» â€” Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÐ¼ ÑÐ»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹Ð¹ Ð¼Ð¸Ð½Ð¸-Ð±Ð°Ñ‚Ñ‡, Ð° Ð½Ðµ Ð²ÐµÑÑŒ Ð´Ð°Ñ‚Ð°ÑÐµÑ‚. Ð­Ñ‚Ð¾ Ð´Ð¾Ð±Ð°Ð²Ð»ÑÐµÑ‚ ÑˆÑƒÐ¼, Ð½Ð¾ ÑƒÑÐºÐ¾Ñ€ÑÐµÑ‚ ÑÑ…Ð¾Ð´Ð¸Ð¼Ð¾ÑÑ‚ÑŒ Ð¸ Ð¿Ð¾Ð¼Ð¾Ð³Ð°ÐµÑ‚ Ð²Ñ‹Ð¹Ñ‚Ð¸ Ð¸Ð· Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ñ… Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼Ð¾Ð².</p>
+g_t = ∂L_batch/∂θ   (на мини-батче)</div>
+      <p style="margin-top:8px;font-size:.88em;">«Стохастический» — потому что используем случайный мини-батч, а не весь датасет. Это добавляет шум, но ускоряет сходимость и помогает выйти из локальных минимумов.</p>
       <div class="warn" style="margin-top:10px;font-size:.85em;">
-        âš ï¸ ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ SGD:<br>
-        â€¢ ÐžÐ´Ð¸Ð½Ð°ÐºÐ¾Ð²Ñ‹Ð¹ lr Ð´Ð»Ñ Ð²ÑÐµÑ… Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð²<br>
-        â€¢ ÐœÐµÐ´Ð»ÐµÐ½Ð½Ð°Ñ ÑÑ…Ð¾Ð´Ð¸Ð¼Ð¾ÑÑ‚ÑŒ Ð² Â«ÑƒÑ‰ÐµÐ»ÑŒÑÑ…Â» (ravines)<br>
-        â€¢ ÐžÑÑ†Ð¸Ð»Ð»Ð¸Ñ€ÑƒÐµÑ‚ Ð¿Ð¾Ð¿ÐµÑ€Ñ‘Ðº Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ñ Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼Ð°<br>
-        â€¢ Ð—Ð°ÑÑ‚Ñ€ÐµÐ²Ð°ÐµÑ‚ Ñƒ ÑÐµÐ´Ð»Ð¾Ð²Ñ‹Ñ… Ñ‚Ð¾Ñ‡ÐµÐº
+        ⚠️ Проблемы SGD:<br>
+        • Одинаковый lr для всех параметров<br>
+        • Медленная сходимость в «ущельях» (ravines)<br>
+        • Осциллирует поперёк направления минимума<br>
+        • Застревает у седловых точек
       </div>
     </div>
     <div>
-      <h3>Ð Ð°Ð·Ð¼ÐµÑ€ Ð±Ð°Ñ‚Ñ‡Ð° vs lr</h3>
+      <h3>Размер батча vs lr</h3>
       <div style="margin:8px 0;">
         <span class="muted" style="font-size:.85em;">Batch size B: <span id="bsVal" style="color:var(--green);font-weight:600;">32</span></span>
         <input type="range" min="1" max="512" step="1" value="32" id="bsRange" oninput="updateBS()">
       </div>
       <div id="bsInfo" style="font-family:monospace;font-size:.83em;background:#0d1117;border-radius:8px;padding:10px 12px;"></div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ Linear scaling rule: Ð¿Ñ€Ð¸ ÑƒÐ´Ð²Ð¾ÐµÐ½Ð¸Ð¸ B â†’ ÑƒÐ´Ð²Ð°Ð¸Ð²Ð°Ð¹ lr.<br>
-        Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¼Ð¸Ð½Ð¸-Ð±Ð°Ñ‚Ñ‡Ð° â‰ˆ ÑÑ€ÐµÐ´Ð½ÐµÐµ Ð¿Ð¾ B Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°Ð¼ â€” Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐµÐ¼ B Ð¾Ð½ Ñ‚Ð¾Ñ‡Ð½ÐµÐµ, Ð½Ð¾ Ñ€Ð°Ð·Ð½Ð¾Ð¾Ð±Ñ€Ð°Ð·Ð¸Ñ Ð¼ÐµÐ½ÑŒÑˆÐµ.
+        💡 Linear scaling rule: при удвоении B → удваивай lr.<br>
+        Градиент мини-батча ≈ среднее по B примерам — при большем B он точнее, но разнообразия меньше.
       </div>
     </div>
   </div>
@@ -135,30 +135,30 @@ g_t = âˆ‚L_batch/âˆ‚Î¸   (Ð½Ð° Ð¼Ð¸Ð½Ð¸-Ð±Ð°Ñ‚Ñ‡
 
 <!-- 4. Momentum -->
 <div class="card">
-  <h2>2ï¸âƒ£ SGD + Momentum</h2>
+  <h2>2️⃣ SGD + Momentum</h2>
   <div class="grid-2">
     <div>
-      <div class="formula">v_t = Î²Â·v_{t-1} + g_t        (EMA Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð²)
-Î¸_{t+1} = Î¸_t âˆ’ Î·Â·v_t
+      <div class="formula">v_t = β·v_{t-1} + g_t        (EMA градиентов)
+θ_{t+1} = θ_t − η·v_t
 
-Î² Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾ = 0.9</div>
-      <p style="font-size:.88em;margin-top:8px;">v_t â€” Â«ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒÂ» (velocity). ÐÐ½Ð°Ð»Ð¾Ð³ Ñ„Ð¸Ð·Ð¸Ñ‡ÐµÑÐºÐ¾Ð¹ Ð¸Ð½ÐµÑ€Ñ†Ð¸Ð¸: ÑˆÐ°Ñ€Ð¸Ðº ÐºÐ°Ñ‚Ð¸Ñ‚ÑÑ Ð²Ð½Ð¸Ð·, Ð½Ð°Ð±Ð¸Ñ€Ð°ÐµÑ‚ ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒ, Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚ Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ñ€ÐµÐ·ÐºÐ¾.</p>
+β обычно = 0.9</div>
+      <p style="font-size:.88em;margin-top:8px;">v_t — «скорость» (velocity). Аналог физической инерции: шарик катится вниз, набирает скорость, не меняет направление резко.</p>
       <br>
-      <h3>Ð Ð°ÑÐºÑ€Ñ‹Ñ‚Ð¸Ðµ ÑÑƒÐ¼Ð¼Ñ‹ (Ð¿Ð¾Ñ‡ÐµÐ¼Ñƒ EMA?)</h3>
-      <div class="formula" style="font-size:.85em;">v_t = g_t + Î²Â·g_{t-1} + Î²Â²Â·g_{t-2} + ...
-     = Î£_{k=0}^{t} Î²^k Â· g_{t-k}
+      <h3>Раскрытие суммы (почему EMA?)</h3>
+      <div class="formula" style="font-size:.85em;">v_t = g_t + β·g_{t-1} + β²·g_{t-2} + ...
+     = Σ_{k=0}^{t} β^k · g_{t-k}
 
-â†’ ÑÐºÑÐ¿Ð¾Ð½ÐµÐ½Ñ†Ð¸Ð°Ð»ÑŒÐ½Ð¾ Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð¾Ðµ ÑÑ€ÐµÐ´Ð½ÐµÐµ
-  Ð¿Ñ€Ð¾ÑˆÐ»Ñ‹Ñ… Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² Ñ Ð²ÐµÑÐ°Ð¼Ð¸ Î²^k</div>
+→ экспоненциально взвешенное среднее
+  прошлых градиентов с весами β^k</div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ Ð­Ñ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ð¾Ðµ Ð¾ÐºÐ½Ð¾ Ð¿Ð°Ð¼ÑÑ‚Ð¸ â‰ˆ 1/(1âˆ’Î²).<br>
-        Î²=0.9: ~10 ÑˆÐ°Ð³Ð¾Ð². Î²=0.99: ~100 ÑˆÐ°Ð³Ð¾Ð².
+        💡 Эффективное окно памяти ≈ 1/(1−β).<br>
+        β=0.9: ~10 шагов. β=0.99: ~100 шагов.
       </div>
     </div>
     <div>
-      <h3>Ð­Ñ„Ñ„ÐµÐºÑ‚ momentum Ð½Ð° ÑƒÑ‰ÐµÐ»ÑŒÐµ</h3>
+      <h3>Эффект momentum на ущелье</h3>
       <div style="margin:8px 0;">
-        <span class="muted" style="font-size:.85em;">Î² = <span id="betaVal" style="color:var(--green);font-weight:600;">0.90</span></span>
+        <span class="muted" style="font-size:.85em;">β = <span id="betaVal" style="color:var(--green);font-weight:600;">0.90</span></span>
         <input type="range" min="0" max=".99" step=".01" value=".9" id="betaRange" oninput="drawMomentum()">
       </div>
       <canvas id="momCanvas" width="340" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
@@ -169,39 +169,39 @@ g_t = âˆ‚L_batch/âˆ‚Î¸   (Ð½Ð° Ð¼Ð¸Ð½Ð¸-Ð±Ð°Ñ‚Ñ‡
 
 <!-- 5. Adam -->
 <div class="card">
-  <h2>3ï¸âƒ£ Adam â€” Adaptive Moment Estimation</h2>
+  <h2>3️⃣ Adam — Adaptive Moment Estimation</h2>
   <div class="grid-2">
     <div>
-      <div class="formula">m_t = Î²â‚Â·m_{t-1} + (1âˆ’Î²â‚)Â·g_t    â† 1Ð¹ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚ (EMA g)
-v_t = Î²â‚‚Â·v_{t-1} + (1âˆ’Î²â‚‚)Â·g_tÂ²   â† 2Ð¹ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚ (EMA gÂ²)
+      <div class="formula">m_t = β₁·m_{t-1} + (1−β₁)·g_t    ← 1й момент (EMA g)
+v_t = β₂·v_{t-1} + (1−β₂)·g_t²   ← 2й момент (EMA g²)
 
-mÌ‚_t = m_t/(1âˆ’Î²â‚áµ—)   â† bias correction
-vÌ‚_t = v_t/(1âˆ’Î²â‚‚áµ—)
+m̂_t = m_t/(1−β₁ᵗ)   ← bias correction
+v̂_t = v_t/(1−β₂ᵗ)
 
-Î¸_{t+1} = Î¸_t âˆ’ Î· Â· mÌ‚_t / (âˆšvÌ‚_t + Îµ)
+θ_{t+1} = θ_t − η · m̂_t / (√v̂_t + ε)
 
-Ð“Ð¸Ð¿ÐµÑ€Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹: Î²â‚=0.9, Î²â‚‚=0.999, Îµ=1e-8</div>
+Гиперпараметры: β₁=0.9, β₂=0.999, ε=1e-8</div>
       <div class="intuition" style="font-size:.85em;margin-top:10px;">
-        ðŸ’¡ <strong>mÌ‚ / âˆšvÌ‚</strong> â€” Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚.<br>
-        Ð•ÑÐ»Ð¸ g Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ð¾ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ â†’ vÌ‚ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹ â†’ ÑˆÐ°Ð³ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹.<br>
-        Ð•ÑÐ»Ð¸ g Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹ â†’ vÌ‚ Ð¼Ð°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹ â†’ ÑˆÐ°Ð³ Ð¾Ñ‚Ð½Ð¾ÑÐ¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¹.<br>
-        ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÐ²Ð¾Ð¹ ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ lr!
+        💡 <strong>m̂ / √v̂</strong> — нормированный градиент.<br>
+        Если g постоянно большой → v̂ большой → шаг маленький.<br>
+        Если g маленький → v̂ маленький → шаг относительно большой.<br>
+        Каждый параметр получает свой эффективный lr!
       </div>
     </div>
     <div>
-      <h3>Bias correction â€” Ð·Ð°Ñ‡ÐµÐ¼?</h3>
-      <div class="formula" style="font-size:.85em;">ÐŸÑ€Ð¸ t=1, Î²â‚=0.9:
-m_1 = 0.9Â·0 + 0.1Â·g_1 = 0.1Â·g_1
-mÌ‚_1 = 0.1Â·g_1 / (1âˆ’0.9Â¹) = 0.1Â·g_1/0.1 = g_1 âœ“
+      <h3>Bias correction — зачем?</h3>
+      <div class="formula" style="font-size:.85em;">При t=1, β₁=0.9:
+m_1 = 0.9·0 + 0.1·g_1 = 0.1·g_1
+m̂_1 = 0.1·g_1 / (1−0.9¹) = 0.1·g_1/0.1 = g_1 ✓
 
-Ð‘ÐµÐ· ÐºÐ¾Ñ€Ñ€ÐµÐºÑ†Ð¸Ð¸ m_1 = 0.1Â·g_1 â†’ Ð½ÐµÐ´Ð¾Ð¾Ñ†ÐµÐ½ÐºÐ° Ð² 10Ã—!
-ÐšÐ¾Ñ€Ñ€ÐµÐºÑ†Ð¸Ñ Ð½ÑƒÐ¶Ð½Ð° Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² Ð½Ð°Ñ‡Ð°Ð»Ðµ (Î²^t â†’ 0 Ð¿Ñ€Ð¸ tâ†’âˆž)</div>
+Без коррекции m_1 = 0.1·g_1 → недооценка в 10×!
+Коррекция нужна только в начале (β^t → 0 при t→∞)</div>
       <br>
-      <h3>Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ: Adam = Momentum + RMSProp</h3>
+      <h3>Интуиция: Adam = Momentum + RMSProp</h3>
       <div style="font-size:.85em;background:#0d1117;border-radius:8px;padding:10px 12px;font-family:monospace;">
-        <span style="color:var(--amber)">Momentum:</span> mÌ‚_t (Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ)<br>
-        <span style="color:var(--green)">RMSProp:</span>  1/âˆšvÌ‚_t (Ð¼Ð°ÑÑˆÑ‚Ð°Ð± ÑˆÐ°Ð³Ð°)<br>
-        <span style="color:var(--blue)">Adam:</span>      mÌ‚_t / âˆšvÌ‚_t (Ð¾Ð±Ð° Ð²Ð¼ÐµÑÑ‚Ðµ)
+        <span style="color:var(--amber)">Momentum:</span> m̂_t (направление)<br>
+        <span style="color:var(--green)">RMSProp:</span>  1/√v̂_t (масштаб шага)<br>
+        <span style="color:var(--blue)">Adam:</span>      m̂_t / √v̂_t (оба вместе)
       </div>
     </div>
   </div>
@@ -209,26 +209,26 @@ mÌ‚_1 = 0.1Â·g_1 / (1âˆ’0.9Â¹) = 0.1Â·g_1/0.1 = g_1 âœ“
 
 <!-- 6. AdamW -->
 <div class="card">
-  <h2>4ï¸âƒ£ AdamW â€” Adam + Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ Weight Decay</h2>
+  <h2>4️⃣ AdamW — Adam + правильный Weight Decay</h2>
   <div class="grid-2">
     <div>
-      <div class="formula">Adam Ñ L2 (Ð½ÐµÐ¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾!):
-  g_t = âˆ‚L/âˆ‚Î¸ + Î»Â·Î¸      â† Î»Î¸ Ð¿Ð¾Ð¿Ð°Ð´Ð°ÐµÑ‚ Ð² EMA
-  Î¸_{t+1} = Î¸_t âˆ’ Î·Â·mÌ‚/(âˆšvÌ‚+Îµ)
-  ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°: Î»Î¸ Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€ÑƒÐµÑ‚ÑÑ Ð½Ð° 1/âˆšvÌ‚ â† Ð½ÐµÐºÐ¾Ñ€Ñ€ÐµÐºÑ‚Ð½Ð¾
+      <div class="formula">Adam с L2 (неправильно!):
+  g_t = ∂L/∂θ + λ·θ      ← λθ попадает в EMA
+  θ_{t+1} = θ_t − η·m̂/(√v̂+ε)
+  Проблема: λθ масштабируется на 1/√v̂ ← некорректно
 
-AdamW (Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾):
-  g_t = âˆ‚L/âˆ‚Î¸             â† Ñ‡Ð¸ÑÑ‚Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚
-  Î¸_{t+1} = Î¸_t âˆ’ Î·Â·mÌ‚/(âˆšvÌ‚+Îµ) âˆ’ Î·Â·Î»Â·Î¸_t
-                            â†‘ weight decay Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾!</div>
+AdamW (правильно):
+  g_t = ∂L/∂θ             ← чистый градиент
+  θ_{t+1} = θ_t − η·m̂/(√v̂+ε) − η·λ·θ_t
+                            ↑ weight decay отдельно!</div>
       <div class="warn" style="margin-top:10px;font-size:.85em;">
-        âš ï¸ Ð’ Adam+L2 weight decay Ð¼Ð°ÑÑˆÑ‚Ð°Ð±Ð¸Ñ€ÑƒÐµÑ‚ÑÑ Ð°Ð´Ð°Ð¿Ñ‚Ð¸Ð²Ð½Ñ‹Ð¼Ð¸ ÑÑ‚Ð°Ð²ÐºÐ°Ð¼Ð¸ vÌ‚, Ð¸Ð·-Ð·Ð° Ñ‡ÐµÐ³Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ Ñ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ð¼ vÌ‚ (Ñ‡Ð°ÑÑ‚Ñ‹Ðµ, ÑˆÑƒÐ¼Ð½Ñ‹Ðµ) Ñ€ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð¸Ñ€ÑƒÑŽÑ‚ÑÑ ÑÐ»Ð°Ð±ÐµÐµ. AdamW Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÐµÑ‚ decay Ð½Ð°Ð¿Ñ€ÑÐ¼ÑƒÑŽ Ðº Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°Ð¼ â€” Ñ€Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½Ð¾.
+        ⚠️ В Adam+L2 weight decay масштабируется адаптивными ставками v̂, из-за чего параметры с большим v̂ (частые, шумные) регуляризируются слабее. AdamW применяет decay напрямую к параметрам — равномерно.
       </div>
     </div>
     <div>
-      <h3>Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ ÑÑ„Ñ„ÐµÐºÑ‚Ð° decay</h3>
+      <h3>Сравнение эффекта decay</h3>
       <div style="margin:8px 0;">
-        <span class="muted" style="font-size:.85em;">Î» (weight decay): <span id="wdVal" style="color:var(--green);font-weight:600;">0.01</span></span>
+        <span class="muted" style="font-size:.85em;">λ (weight decay): <span id="wdVal" style="color:var(--green);font-weight:600;">0.01</span></span>
         <input type="range" min="0" max=".2" step=".001" value=".01" id="wdRange" oninput="drawWD()">
       </div>
       <canvas id="wdCanvas" width="340" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
@@ -237,35 +237,35 @@ AdamW (Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ð¾):
   </div>
 </div>
 
-<!-- 7. Ð¡Ñ€Ð°Ð²Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð° -->
+<!-- 7. Сравнительная таблица -->
 <div class="card">
-  <h2>ðŸ“‹ Ð¡Ñ€Ð°Ð²Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð° Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ð¾Ð²</h2>
+  <h2>📋 Сравнительная таблица оптимизаторов</h2>
   <table>
-    <tr><th>ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€</th><th>Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð° update</th><th>ÐŸÐ°Ð¼ÑÑ‚ÑŒ</th><th>ÐšÐ¾Ð³Ð´Ð° Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ</th></tr>
-    <tr><td><strong>SGD</strong></td><td class="mono">Î·Â·g</td><td class="mono">O(P)</td><td>CV Ñ lr scheduling; Ð¿Ñ€Ð¾ÑÑ‚Ñ‹Ðµ Ð·Ð°Ð´Ð°Ñ‡Ð¸</td></tr>
-    <tr><td><strong>SGD+Momentum</strong></td><td class="mono">Î·Â·v, v=Î²v+g</td><td class="mono">O(2P)</td><td>CNN â€” Ñ‡Ð°ÑÑ‚Ð¾ Ð»ÑƒÑ‡ÑˆÐµ Adam Ð½Ð° ImageNet</td></tr>
-    <tr><td><strong>Adam</strong></td><td class="mono">Î·Â·mÌ‚/âˆšvÌ‚</td><td class="mono">O(3P)</td><td>NLP, Transformer, Ð±Ñ‹ÑÑ‚Ñ€Ñ‹Ð¹ ÑÑ‚Ð°Ñ€Ñ‚</td></tr>
-    <tr><td><strong>AdamW</strong></td><td class="mono">Î·Â·mÌ‚/âˆšvÌ‚ + Î»Î¸</td><td class="mono">O(3P)</td><td>LLM, BERT, GPT â€” Ð´ÐµÑ„Ð¾Ð»Ñ‚</td></tr>
-    <tr><td><strong>RMSProp</strong></td><td class="mono">Î·Â·g/âˆšvÌ‚</td><td class="mono">O(2P)</td><td>RNN â€” Ð¸ÑÑ‚Ð¾Ñ€Ð¸Ñ‡ÐµÑÐºÐ¸</td></tr>
+    <tr><th>Оптимизатор</th><th>Формула update</th><th>Память</th><th>Когда использовать</th></tr>
+    <tr><td><strong>SGD</strong></td><td class="mono">η·g</td><td class="mono">O(P)</td><td>CV с lr scheduling; простые задачи</td></tr>
+    <tr><td><strong>SGD+Momentum</strong></td><td class="mono">η·v, v=βv+g</td><td class="mono">O(2P)</td><td>CNN — часто лучше Adam на ImageNet</td></tr>
+    <tr><td><strong>Adam</strong></td><td class="mono">η·m̂/√v̂</td><td class="mono">O(3P)</td><td>NLP, Transformer, быстрый старт</td></tr>
+    <tr><td><strong>AdamW</strong></td><td class="mono">η·m̂/√v̂ + λθ</td><td class="mono">O(3P)</td><td>LLM, BERT, GPT — дефолт</td></tr>
+    <tr><td><strong>RMSProp</strong></td><td class="mono">η·g/√v̂</td><td class="mono">O(2P)</td><td>RNN — исторически</td></tr>
   </table>
 </div>
 
 <!-- 8. LR Scheduling -->
 <div class="card">
-  <h2>ðŸ“‰ Learning Rate Scheduling</h2>
+  <h2>📉 Learning Rate Scheduling</h2>
   <div class="grid-2">
     <div>
-      <p style="font-size:.88em;">ÐŸÐ¾ÑÑ‚Ð¾ÑÐ½Ð½Ñ‹Ð¹ lr Ñ€ÐµÐ´ÐºÐ¾ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð°Ð»ÐµÐ½. Ð¡Ñ‚Ñ€Ð°Ñ‚ÐµÐ³Ð¸Ð¸:</p>
-      <div class="formula" style="font-size:.85em;">Step decay:   Î·_t = Î·â‚€ Â· Î³^(t//step)
-Cosine:       Î·_t = Î·_min + Â½(Î·â‚€âˆ’Î·_min)Â·(1+cos(Ï€t/T))
-Warmup:       Î·_t = Î·â‚€ Â· t/t_warmup  (Ð¿ÐµÑ€Ð²Ñ‹Ðµ t_warmup ÑˆÐ°Ð³Ð¾Ð²)
-Linear decay: Î·_t = Î·â‚€ Â· (1 âˆ’ t/T)</div>
+      <p style="font-size:.88em;">Постоянный lr редко оптимален. Стратегии:</p>
+      <div class="formula" style="font-size:.85em;">Step decay:   η_t = η₀ · γ^(t//step)
+Cosine:       η_t = η_min + ½(η₀−η_min)·(1+cos(πt/T))
+Warmup:       η_t = η₀ · t/t_warmup  (первые t_warmup шагов)
+Linear decay: η_t = η₀ · (1 − t/T)</div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ <strong>Warmup</strong> Ð²Ð°Ð¶ÐµÐ½ Ð´Ð»Ñ Adam: Ð² Ð½Ð°Ñ‡Ð°Ð»Ðµ m Ð¸ v ÐµÑ‰Ñ‘ Ð½Ðµ Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑ‚Ñ‹, ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ lr Ð½ÐµÑÑ‚Ð°Ð±Ð¸Ð»ÐµÐ½. ÐœÐ°Ð»ÐµÐ½ÑŒÐºÐ¸Ð¹ Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ñ‹Ð¹ lr Ð´Ð°Ñ‘Ñ‚ EMA "Ð½Ð°Ð±Ñ€Ð°Ñ‚ÑŒ" ÑÑ‚Ð°Ñ‚Ð¸ÑÑ‚Ð¸ÐºÑƒ. BERT, GPT Ð²ÑÐµ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ warmup + cosine decay.
+        💡 <strong>Warmup</strong> важен для Adam: в начале m и v ещё не прогреты, эффективный lr нестабилен. Маленький начальный lr даёт EMA "набрать" статистику. BERT, GPT все используют warmup + cosine decay.
       </div>
     </div>
     <div>
-      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ LR Schedule</h3>
+      <h3>Интерактивный LR Schedule</h3>
       <div style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap;">
         <button class="active" onclick="setSchedule('cosine',this)">Cosine</button>
         <button onclick="setSchedule('step',this)">Step</button>
@@ -277,12 +277,12 @@ Linear decay: Î·_t = Î·â‚€ Â· (1 âˆ’ t/T)</div>
   </div>
 </div>
 
-<!-- 9. ÐšÐ¾Ð´ -->
+<!-- 9. Код -->
 <div class="card">
-  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð² PyTorch</h2>
+  <h2>💻 Реализация в PyTorch</h2>
   <div class="tabs" id="codeTabs">
     <button class="active" onclick="showCode('api',this)">API PyTorch</button>
-    <button onclick="showCode('adam',this)">Adam Ñ Ð½ÑƒÐ»Ñ</button>
+    <button onclick="showCode('adam',this)">Adam с нуля</button>
     <button onclick="showCode('loop',this)">Training loop</button>
   </div>
   <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
@@ -379,7 +379,7 @@ function drawSurface() {
   const surf=document.getElementById('surfType').value;
   const [x0,x1]=XRANGE[surf], [y0,y1]=YRANGE[surf];
 
-  // Draw contours via image â€” log scale avoids monochrome on Rosenbrock
+  // Draw contours via image — log scale avoids monochrome on Rosenbrock
   const img=ctx.createImageData(W,H);
   const vals=new Float32Array(W*H);
   let rawMin=Infinity, rawMax=-Infinity;
@@ -391,7 +391,7 @@ function drawSurface() {
   }
   if(!Number.isFinite(rawMin))rawMin=0;
   if(!Number.isFinite(rawMax))rawMax=1;
-  // log1p transform for contrast â€” use loop, NOT spread (stack overflow on 300k elements)
+  // log1p transform for contrast — use loop, NOT spread (stack overflow on 300k elements)
   const logMax=Math.log1p(rawMax-rawMin)||1;
   for(let i=0;i<W*H;i++){
     const v=Number.isFinite(vals[i])?vals[i]:rawMax;
@@ -429,7 +429,7 @@ function drawSurface() {
 
   // Legend
   ctx.fillStyle='#8b949e'; ctx.font='10px system-ui';
-  ctx.fillText(`â— start  â—‹ end  |  ${surf}`,8,H-6);
+  ctx.fillText(`● start  ○ end  |  ${surf}`,8,H-6);
 }
 
 // ===================== BS INFO =====================
@@ -438,9 +438,9 @@ function updateBS(){
   document.getElementById('bsVal').textContent=B;
   const noise=Math.sqrt(1/B);
   document.getElementById('bsInfo').innerHTML=
-    `B=${B}\nGrad variance âˆ 1/B: ~${(noise*100).toFixed(0)}% Ð¾Ñ‚Ð½. Ðº B=1\n`+
-    `Linear scaling: lr â‰ˆ ${(0.001*B/32).toFixed(4)}\n`+
-    `Ð ÐµÐºÐ¾Ð¼ÐµÐ½Ð´Ð°Ñ†Ð¸Ñ: ${B<=32?'Ð¼Ð°Ð»Ð¾ Ð¿Ð°Ð¼ÑÑ‚Ð¸, ÑˆÑƒÐ¼Ð½Ñ‹Ð¹ grad':B<=256?'Ð±Ð°Ð»Ð°Ð½Ñ ÑˆÑƒÐ¼/ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒ':'Ð½Ð¸Ð·ÐºÐ¸Ð¹ ÑˆÑƒÐ¼, Ð½ÑƒÐ¶ÐµÐ½ warmup'}`;
+    `B=${B}\nGrad variance ∝ 1/B: ~${(noise*100).toFixed(0)}% отн. к B=1\n`+
+    `Linear scaling: lr ≈ ${(0.001*B/32).toFixed(4)}\n`+
+    `Рекомендация: ${B<=32?'мало памяти, шумный grad':B<=256?'баланс шум/скорость':'низкий шум, нужен warmup'}`;
 }
 
 // ===================== MOMENTUM CANVAS =====================
@@ -452,7 +452,7 @@ function drawMomentum(){
   const W=c.width,H=c.height;
   ctx.clearRect(0,0,W,H);
 
-  // Simulate 1D ravine: f(x,y) = xÂ² + 10yÂ², gradient varies
+  // Simulate 1D ravine: f(x,y) = x² + 10y², gradient varies
   let x=1.5, y=0.8, vx=0, vy=0;
   const lr=0.05;
   const pts=[[x,y]];
@@ -486,8 +486,8 @@ function drawMomentum(){
   ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(tx(pts[0][0]),ty(pts[0][1]),4,0,Math.PI*2); ctx.fill();
 
   const last=pts[pts.length-1];
-  const eff=beta>=1?'âˆž':Math.round(1/(1-beta));
-  document.getElementById('momInfo').textContent=`Î²=${beta.toFixed(2)}, ÑÑ„Ñ„.Ð¾ÐºÐ½Ð¾â‰ˆ${eff} ÑˆÐ°Ð³Ð¾Ð², ÐºÐ¾Ð½ÐµÑ†:(${last[0].toFixed(3)},${last[1].toFixed(3)})`;
+  const eff=beta>=1?'∞':Math.round(1/(1-beta));
+  document.getElementById('momInfo').textContent=`β=${beta.toFixed(2)}, эфф.окно≈${eff} шагов, конец:(${last[0].toFixed(3)},${last[1].toFixed(3)})`;
 }
 
 // ===================== WEIGHT DECAY CANVAS =====================
@@ -506,7 +506,7 @@ function drawWD(){
   const pts_a=[th_adam], pts_w=[th_adamw];
 
   for(let i=1;i<=steps;i++){
-    // Simulate loss where optimal Î¸=0, gâ‰ˆÎ¸ + noise
+    // Simulate loss where optimal θ=0, g≈θ + noise
     const g_a=th_adam*0.1+0.01*(Math.random()-0.5);
     mA=0.9*mA+0.1*g_a+0.1*wd*th_adam; // L2 in grad
     vA=0.999*vA+0.001*(g_a+wd*th_adam)**2;
@@ -535,11 +535,11 @@ function drawWD(){
   ctx.beginPath(); pts_w.forEach((v,i)=>{i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v));});ctx.stroke();
 
   ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
-  ctx.fillText('Adam+L2 (ÑÐ¸Ð½Ð¸Ð¹)  AdamW (Ñ„Ð¸Ð¾Ð»ÐµÑ‚)',4,12);
-  ctx.fillText(`Î»=${wd.toFixed(3)}`,W-50,12);
+  ctx.fillText('Adam+L2 (синий)  AdamW (фиолет)',4,12);
+  ctx.fillText(`λ=${wd.toFixed(3)}`,W-50,12);
 
   document.getElementById('wdInfo').innerHTML=
-    `Adam+L2 Ñ„Ð¸Ð½Ð°Ð»: Î¸â‰ˆ${pts_a[steps].toFixed(4)}\nAdamW Ñ„Ð¸Ð½Ð°Ð»:   Î¸â‰ˆ${pts_w[steps].toFixed(4)}`;
+    `Adam+L2 финал: θ≈${pts_a[steps].toFixed(4)}\nAdamW финал:   θ≈${pts_w[steps].toFixed(4)}`;
 }
 
 // ===================== LR SCHEDULE =====================
@@ -581,7 +581,7 @@ function drawLRSchedule(){
   }
   ctx.stroke();
   ctx.fillStyle='#8b949e';ctx.font='9px monospace';
-  ctx.fillText(schedType,4,13);ctx.fillText('lr',4,H*0.15);ctx.fillText('step â†’',W-45,H-4);
+  ctx.fillText(schedType,4,13);ctx.fillText('lr',4,H*0.15);ctx.fillText('step →',W-45,H-4);
 }
 
 // ===================== CODE =====================
@@ -601,16 +601,16 @@ opt = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 opt = torch.optim.Adam(model.parameters(), lr=1e-3,
                         betas=(0.9, 0.999), eps=1e-8)
 
-# AdamW (Ð´ÐµÑ„Ð¾Ð»Ñ‚ Ð´Ð»Ñ LLM/Transformer)
+# AdamW (дефолт для LLM/Transformer)
 opt = torch.optim.AdamW(model.parameters(), lr=1e-3,
                          betas=(0.9, 0.999), weight_decay=0.01)
 
-# LR Scheduler (cosine + warmup Ñ‡ÐµÑ€ÐµÐ· transformers)
+# LR Scheduler (cosine + warmup через transformers)
 from torch.optim.lr_scheduler import CosineAnnealingLR
 scheduler = CosineAnnealingLR(opt, T_max=1000, eta_min=1e-6)
 
-# Ð’ training loop:
-# scheduler.step()  # Ð²Ñ‹Ð·Ñ‹Ð²Ð°Ñ‚ÑŒ ÐºÐ°Ð¶Ð´ÑƒÑŽ ÑÐ¿Ð¾Ñ…Ñƒ/ÑˆÐ°Ð³`,
+# В training loop:
+# scheduler.step()  # вызывать каждую эпоху/шаг`,
 
 adam:`import torch
 
@@ -628,10 +628,10 @@ class AdamOptimizer:
         for i, p in enumerate(self.params):
             if p.grad is None: continue
             g = p.grad
-            # AdamW: weight decay Ð½Ð° Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€, Ð½Ðµ Ð½Ð° Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚
+            # AdamW: weight decay на параметр, не на градиент
             if self.wd > 0:
                 p.mul_(1 - self.lr * self.wd)
-            # EMA Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ð¾Ð²
+            # EMA моментов
             self.m[i] = self.b1 * self.m[i] + (1-self.b1) * g
             self.v[i] = self.b2 * self.v[i] + (1-self.b2) * g**2
             # Bias correction
@@ -652,7 +652,7 @@ model = nn.Sequential(nn.Linear(784,256),nn.ReLU(),nn.Linear(256,10))
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.01)
 criterion = nn.CrossEntropyLoss()
 
-# OneCycleLR: warmup â†’ peak â†’ cosine decay (Ð¾Ð´Ð¸Ð½ Ð¸Ð· Ð»ÑƒÑ‡ÑˆÐ¸Ñ…)
+# OneCycleLR: warmup → peak → cosine decay (один из лучших)
 scheduler = OneCycleLR(optimizer, max_lr=3e-4,
                         steps_per_epoch=len(train_loader),
                         epochs=10)
@@ -660,13 +660,13 @@ scheduler = OneCycleLR(optimizer, max_lr=3e-4,
 for epoch in range(10):
     model.train()
     for X, y in train_loader:
-        optimizer.zero_grad()      # 1. ÐžÑ‡Ð¸ÑÑ‚Ð¸Ñ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹
+        optimizer.zero_grad()      # 1. Очистить градиенты
         logits = model(X)          # 2. Forward pass
         loss = criterion(logits, y)# 3. Loss
         loss.backward()            # 4. Backward pass
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)  # grad clip!
-        optimizer.step()           # 5. ÐžÐ±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹
-        scheduler.step()           # 6. ÐžÐ±Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ lr`
+        optimizer.step()           # 5. Обновить параметры
+        scheduler.step()           # 6. Обновить lr`
 };
 function showCode(key,btn){
   document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));

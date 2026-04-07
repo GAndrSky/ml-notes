@@ -1,4 +1,4 @@
-﻿
+
 <link rel="stylesheet" href="../shared-nav.css">
 <style>
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--text:#e6edf3;--muted:#8b949e}
@@ -38,116 +38,116 @@ canvas{border-radius:6px;display:block}
 .tok-ctx{background:rgba(96,165,250,.15);border:1px solid var(--blue);color:var(--blue)}
 </style>
 
-<h1>5.3 â€” Transformer (Ð§Ð°ÑÑ‚ÑŒ 1): Attention</h1>
-<p class="muted">Scaled Dot-Product Attention Â· Multi-Head Attention Â· Ð¼Ð°ÑÐºÐ¸ Â· Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ</p>
+<h1>5.3 — Transformer (Часть 1): Attention</h1>
+<p class="muted">Scaled Dot-Product Attention · Multi-Head Attention · маски · интерпретация</p>
 
 <div class="tabs">
-  <button class="tab active" onclick="sw('t-why')">ÐœÐ¾Ñ‚Ð¸Ð²Ð°Ñ†Ð¸Ñ</button>
+  <button class="tab active" onclick="sw('t-why')">Мотивация</button>
   <button class="tab" onclick="sw('t-sdpa')">Scaled Dot-Product</button>
-  <button class="tab" onclick="sw('t-viz')">Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²</button>
+  <button class="tab" onclick="sw('t-viz')">Интерактив</button>
   <button class="tab" onclick="sw('t-mha')">Multi-Head</button>
-  <button class="tab" onclick="sw('t-mask')">ÐœÐ°ÑÐºÐ¸</button>
-  <button class="tab" onclick="sw('t-math')">ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð°</button>
+  <button class="tab" onclick="sw('t-mask')">Маски</button>
+  <button class="tab" onclick="sw('t-math')">Матричная форма</button>
   <button class="tab" onclick="sw('t-code')">PyTorch</button>
 </div>
 
-<!-- ===== 1. ÐœÐžÐ¢Ð˜Ð’ÐÐ¦Ð˜Ð¯ ===== -->
+<!-- ===== 1. МОТИВАЦИЯ ===== -->
 <div id="t-why" class="tab-content active">
-<h2>Ð—Ð°Ñ‡ÐµÐ¼ Attention? ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ RNN</h2>
+<h2>Зачем Attention? Проблемы RNN</h2>
 <div class="card">
 <div class="grid2">
 <div>
-<h3 class="hl-r">RNN â€” ÑƒÐ·ÐºÐ¾Ðµ Ð¼ÐµÑÑ‚Ð¾</h3>
-<div class="step-box"><span class="sn">1.</span>Ð˜Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ñ Ð¾ ÑˆÐ°Ð³Ðµ t=1 Ð´Ð¾Ð»Ð¶Ð½Ð° Ð¿Ñ€Ð¾Ð¹Ñ‚Ð¸ Ñ‡ÐµÑ€ÐµÐ· Ð²ÑÐµ T hidden states Ð´Ð¾ ÑˆÐ°Ð³Ð° T â†’ Ð·Ð°Ñ‚ÑƒÑ…Ð°Ð½Ð¸Ðµ</div>
-<div class="step-box"><span class="sn">2.</span>ÐŸÐ¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ Ð¾Ð±Ñ€Ð°Ð±Ð¾Ñ‚ÐºÐ° â€” Ð½ÐµÐ»ÑŒÐ·Ñ Ñ€Ð°ÑÐ¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»Ð¸Ñ‚ÑŒ</div>
-<div class="step-box"><span class="sn">3.</span>Ð¤Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ð½Ñ‚ÐµÐºÑÑ‚Ð° Ð² seq2seq â€” Â«Ð±ÑƒÑ‚Ñ‹Ð»Ð¾Ñ‡Ð½Ð¾Ðµ Ð³Ð¾Ñ€Ð»Ñ‹ÑˆÐºÐ¾Â»</div>
+<h3 class="hl-r">RNN — узкое место</h3>
+<div class="step-box"><span class="sn">1.</span>Информация о шаге t=1 должна пройти через все T hidden states до шага T → затухание</div>
+<div class="step-box"><span class="sn">2.</span>Последовательная обработка — нельзя распараллелить</div>
+<div class="step-box"><span class="sn">3.</span>Фиксированный вектор контекста в seq2seq — «бутылочное горлышко»</div>
 </div>
 <div>
-<h3 class="hl-g">Attention â€” Ñ€ÐµÑˆÐµÐ½Ð¸Ðµ</h3>
-<div class="step-box"><span class="sn">1.</span>ÐŸÑ€ÑÐ¼Ð¾Ðµ ÑÐ¾ÐµÐ´Ð¸Ð½ÐµÐ½Ð¸Ðµ Ð¼ÐµÐ¶Ð´Ñƒ Ð»ÑŽÐ±Ñ‹Ð¼Ð¸ Ð´Ð²ÑƒÐ¼Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸ÑÐ¼Ð¸ â€” O(1) Ð¿ÑƒÑ‚ÑŒ</div>
-<div class="step-box"><span class="sn">2.</span>Ð’ÐµÑÑŒ Ð²Ñ…Ð¾Ð´ Ð¾Ð±Ñ€Ð°Ð±Ð°Ñ‚Ñ‹Ð²Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»ÑŒÐ½Ð¾</div>
-<div class="step-box"><span class="sn">3.</span>ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ñ‚Ð¾ÐºÐµÐ½ Â«ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚Â» Ð½Ð° Ð²ÑÐµ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ðµ Ñ Ñ€Ð°Ð·Ð½Ñ‹Ð¼Ð¸ Ð²ÐµÑÐ°Ð¼Ð¸</div>
+<h3 class="hl-g">Attention — решение</h3>
+<div class="step-box"><span class="sn">1.</span>Прямое соединение между любыми двумя позициями — O(1) путь</div>
+<div class="step-box"><span class="sn">2.</span>Весь вход обрабатывается параллельно</div>
+<div class="step-box"><span class="sn">3.</span>Каждый токен «смотрит» на все остальные с разными весами</div>
 </div>
 </div>
 
-<h3>ÐšÐ»ÑŽÑ‡ÐµÐ²Ð°Ñ Ð¸Ð´ÐµÑ: Ð·Ð°Ð¿Ñ€Ð¾Ñ, ÐºÐ»ÑŽÑ‡, Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ</h3>
-<p>ÐÐ½Ð°Ð»Ð¾Ð³Ð¸Ñ: <strong>Ð¿Ð¾Ð¸ÑÐº Ð¿Ð¾ Ð±Ð°Ð·Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ…</strong>.</p>
-<div class="step-box"><span class="sn" style="color:var(--amber)">Query Q</span> â€” Â«Ñ‡Ñ‚Ð¾ Ñ Ð¸Ñ‰Ñƒ?Â» (Ð·Ð°Ð¿Ñ€Ð¾Ñ Ð¾Ñ‚ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð°)</div>
-<div class="step-box"><span class="sn" style="color:var(--blue)">Key K</span> â€” Â«Ñ‡Ñ‚Ð¾ Ñƒ Ð¼ÐµÐ½Ñ ÐµÑÑ‚ÑŒ?Â» (Ð¼ÐµÑ‚ÐºÐ° ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð° Ð² ÐºÐ¾Ð½Ñ‚ÐµÐºÑÑ‚Ðµ)</div>
-<div class="step-box"><span class="sn" style="color:var(--green)">Value V</span> â€” Â«Ñ‡Ñ‚Ð¾ Ð²ÐµÑ€Ð½ÑƒÑ‚ÑŒ?Â» (ÐºÐ¾Ð½Ñ‚ÐµÐ½Ñ‚ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ñ‚Ð¾ÐºÐµÐ½Ð°)</div>
+<h3>Ключевая идея: запрос, ключ, значение</h3>
+<p>Аналогия: <strong>поиск по базе данных</strong>.</p>
+<div class="step-box"><span class="sn" style="color:var(--amber)">Query Q</span> — «что я ищу?» (запрос от текущего токена)</div>
+<div class="step-box"><span class="sn" style="color:var(--blue)">Key K</span> — «что у меня есть?» (метка каждого токена в контексте)</div>
+<div class="step-box"><span class="sn" style="color:var(--green)">Value V</span> — «что вернуть?» (контент каждого токена)</div>
 
-<div class="info-box">Softmax(QÂ·Káµ€/âˆšdâ‚–) Ð´Ð°Ñ‘Ñ‚ Ð²ÐµÑÐ° ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸ Q Ñ ÐºÐ°Ð¶Ð´Ñ‹Ð¼ K. Ð­Ñ‚Ð¸ Ð²ÐµÑÐ° Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽÑ‚ÑÑ Ð´Ð»Ñ Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð¾Ð¹ ÑÑƒÐ¼Ð¼Ñ‹ V.</div>
+<div class="info-box">Softmax(Q·Kᵀ/√dₖ) даёт веса совместимости Q с каждым K. Эти веса используются для взвешенной суммы V.</div>
 </div>
 
-<h2>Ð˜ÑÑ‚Ð¾Ñ€Ð¸Ñ: Ð¾Ñ‚ Bahdanau (2015) Ðº Transformer (2017)</h2>
+<h2>История: от Bahdanau (2015) к Transformer (2017)</h2>
 <div class="card">
 <table>
-<tr><th>Ð“Ð¾Ð´</th><th>Ð Ð°Ð±Ð¾Ñ‚Ð°</th><th>Ð’ÐºÐ»Ð°Ð´</th></tr>
-<tr><td>2015</td><td>Bahdanau et al.</td><td>Additive attention Ð´Ð»Ñ seq2seq NMT</td></tr>
+<tr><th>Год</th><th>Работа</th><th>Вклад</th></tr>
+<tr><td>2015</td><td>Bahdanau et al.</td><td>Additive attention для seq2seq NMT</td></tr>
 <tr><td>2015</td><td>Luong et al.</td><td>Multiplicative (dot-product) attention</td></tr>
-<tr><td>2017</td><td>Vaswani et al.</td><td>Â«Attention is All You NeedÂ» â€” Transformer Ð±ÐµÐ· RNN</td></tr>
-<tr><td>2018</td><td>BERT / GPT</td><td>Pre-training Ð½Ð° Transformer encoder / decoder</td></tr>
+<tr><td>2017</td><td>Vaswani et al.</td><td>«Attention is All You Need» — Transformer без RNN</td></tr>
+<tr><td>2018</td><td>BERT / GPT</td><td>Pre-training на Transformer encoder / decoder</td></tr>
 </table>
 </div>
 </div>
 
 <!-- ===== 2. SCALED DOT-PRODUCT ===== -->
 <div id="t-sdpa" class="tab-content">
-<h2>Scaled Dot-Product Attention â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´</h2>
+<h2>Scaled Dot-Product Attention — полный вывод</h2>
 <div class="card">
-<div class="formula">Attention(Q, K, V) = <span class="hl-g">softmax</span>( <span class="hl-a">QÂ·Káµ€</span> / <span class="hl-b">âˆšdâ‚–</span> ) Â· <span class="hl-p">V</span></div>
-<p>Q âˆˆ â„<sup>LÃ—dâ‚–</sup>, K âˆˆ â„<sup>SÃ—dâ‚–</sup>, V âˆˆ â„<sup>SÃ—dáµ¥</sup> â†’ Ð²Ñ‹Ñ…Ð¾Ð´ âˆˆ â„<sup>LÃ—dáµ¥</sup></p>
+<div class="formula">Attention(Q, K, V) = <span class="hl-g">softmax</span>( <span class="hl-a">Q·Kᵀ</span> / <span class="hl-b">√dₖ</span> ) · <span class="hl-p">V</span></div>
+<p>Q ∈ ℝ<sup>L×dₖ</sup>, K ∈ ℝ<sup>S×dₖ</sup>, V ∈ ℝ<sup>S×dᵥ</sup> → выход ∈ ℝ<sup>L×dᵥ</sup></p>
 
-<h3>ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ Ð´ÐµÐ»Ð¸Ð¼ Ð½Ð° âˆšdâ‚–?</h3>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 1.</span>Q Ð¸ K Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ Ð¸Ð· N(0,1). Ð¡ÐºÐ°Ð»ÑÑ€Ð½Ð¾Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ qáµ¢áµ€kâ±¼ = Î£â‚– qâ‚–kâ‚– â€” ÑÑƒÐ¼Ð¼Ð° dâ‚– Ð½ÐµÐ·Ð°Ð²Ð¸ÑÐ¸Ð¼Ñ‹Ñ… ÑÐ»Ð°Ð³Ð°ÐµÐ¼Ñ‹Ñ….</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 2.</span>Var[qáµ¢áµ€kâ±¼] = dâ‚– â†’ std = <span class="hl-b">âˆšdâ‚–</span></div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 3.</span>Ð‘ÐµÐ· Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸ Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¾Ð¼ dâ‚– Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹ Ð¾Ð³Ñ€Ð¾Ð¼Ð½Ñ‹ â†’ softmax Ð½Ð°ÑÑ‹Ñ‰Ð°ÐµÑ‚ÑÑ â†’ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ â‰ˆ 0</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 4.</span>Ð”ÐµÐ»Ð¸Ð¼ Ð½Ð° âˆšdâ‚– â†’ Var[qáµ¢áµ€kâ±¼/âˆšdâ‚–] = 1 â†’ softmax Ð² Ñ€Ð°Ð±Ð¾Ñ‡ÐµÐ¼ Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½Ðµ âœ“</div>
+<h3>Почему делим на √dₖ?</h3>
+<div class="step-box"><span class="sn">Шаг 1.</span>Q и K инициализированы из N(0,1). Скалярное произведение qᵢᵀkⱼ = Σₖ qₖkₖ — сумма dₖ независимых слагаемых.</div>
+<div class="step-box"><span class="sn">Шаг 2.</span>Var[qᵢᵀkⱼ] = dₖ → std = <span class="hl-b">√dₖ</span></div>
+<div class="step-box"><span class="sn">Шаг 3.</span>Без нормировки при большом dₖ логиты огромны → softmax насыщается → градиент ≈ 0</div>
+<div class="step-box"><span class="sn">Шаг 4.</span>Делим на √dₖ → Var[qᵢᵀkⱼ/√dₖ] = 1 → softmax в рабочем диапазоне ✓</div>
 
-<h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ ÑÑ„Ñ„ÐµÐºÑ‚Ð° âˆšdâ‚–</h3>
+<h3>Визуализация эффекта √dₖ</h3>
 <canvas id="softmax-canvas" width="800" height="180" style="width:100%;margin-top:10px"></canvas>
-<div class="sr" style="margin-top:8px"><span>dâ‚–</span><input type="range" id="dk-sl" min="1" max="512" value="64" oninput="drawSoftmaxEffect()"><span class="sv" id="dk-v">64</span></div>
+<div class="sr" style="margin-top:8px"><span>dₖ</span><input type="range" id="dk-sl" min="1" max="512" value="64" oninput="drawSoftmaxEffect()"><span class="sv" id="dk-v">64</span></div>
 
 <h3>Additive vs Dot-Product Attention</h3>
 <div class="grid2">
 <div class="step-box">
   <strong class="hl-a">Dot-Product (Luong)</strong><br>
-  score(q,k) = qáµ€k / âˆšdâ‚–<br>
-  Ð‘Ñ‹ÑÑ‚Ñ€ÐµÐµ (matmul), Ð»ÑƒÑ‡ÑˆÐµ Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ñ… dâ‚–
+  score(q,k) = qᵀk / √dₖ<br>
+  Быстрее (matmul), лучше при больших dₖ
 </div>
 <div class="step-box">
   <strong class="hl-g">Additive (Bahdanau)</strong><br>
-  score(q,k) = váµ€Â·tanh(WqÂ·q + WkÂ·k)<br>
-  ÐœÐµÐ´Ð»ÐµÐ½Ð½ÐµÐµ, Ð¸Ð½Ð¾Ð³Ð´Ð° Ð»ÑƒÑ‡ÑˆÐµ Ð¿Ñ€Ð¸ Ð¼Ð°Ð»Ñ‹Ñ… dâ‚–
+  score(q,k) = vᵀ·tanh(Wq·q + Wk·k)<br>
+  Медленнее, иногда лучше при малых dₖ
 </div>
 </div>
 </div>
 
-<h2>ÐŸÐ¾ÑˆÐ°Ð³Ð¾Ð²Ð¾Ðµ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ (Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€)</h2>
+<h2>Пошаговое вычисление (числовой пример)</h2>
 <div class="card">
-<p class="muted">L=3 Ñ‚Ð¾ÐºÐµÐ½Ð°, dâ‚–=2, dáµ¥=2</p>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 1.</span>Q = [[1,0],[0,1],[1,1]], K = [[1,0],[0,1],[1,1]], V = [[1,0],[0,1],[1,1]]</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 2.</span>QKáµ€ = [[1,0,1],[0,1,1],[1,1,2]]  (Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸ 3Ã—3)</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 3.</span>/ âˆš2 = [[0.71,0,0.71],[0,0.71,0.71],[0.71,0.71,1.41]]</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 4.</span>softmax Ð¿Ð¾ ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼ â†’ A[0] = [0.42, 0.21, 0.37] (ÑÑƒÐ¼Ð¼Ð°=1)</div>
-<div class="step-box"><span class="sn">Ð¨Ð°Ð³ 5.</span>AÂ·V â†’ Ð²Ñ‹Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð´Ð»Ñ Ñ‚Ð¾ÐºÐµÐ½Ð° 0: 0.42Â·[1,0]+0.21Â·[0,1]+0.37Â·[1,1] = [0.79, 0.58]</div>
+<p class="muted">L=3 токена, dₖ=2, dᵥ=2</p>
+<div class="step-box"><span class="sn">Шаг 1.</span>Q = [[1,0],[0,1],[1,1]], K = [[1,0],[0,1],[1,1]], V = [[1,0],[0,1],[1,1]]</div>
+<div class="step-box"><span class="sn">Шаг 2.</span>QKᵀ = [[1,0,1],[0,1,1],[1,1,2]]  (матрица совместимости 3×3)</div>
+<div class="step-box"><span class="sn">Шаг 3.</span>/ √2 = [[0.71,0,0.71],[0,0.71,0.71],[0.71,0.71,1.41]]</div>
+<div class="step-box"><span class="sn">Шаг 4.</span>softmax по строкам → A[0] = [0.42, 0.21, 0.37] (сумма=1)</div>
+<div class="step-box"><span class="sn">Шаг 5.</span>A·V → выходной вектор для токена 0: 0.42·[1,0]+0.21·[0,1]+0.37·[1,1] = [0.79, 0.58]</div>
 </div>
 </div>
 
-<!-- ===== 3. Ð˜ÐÐ¢Ð•Ð ÐÐšÐ¢Ð˜Ð’ ===== -->
+<!-- ===== 3. ИНТЕРАКТИВ ===== -->
 <div id="t-viz" class="tab-content">
-<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ Ð²Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Attention</h2>
+<h2>Интерактивная визуализация Attention</h2>
 <div class="card">
-<p class="muted">ÐÐ°Ð¶Ð¼Ð¸Ñ‚Ðµ Ð½Ð° Ñ‚Ð¾ÐºÐµÐ½, Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑƒÐ²Ð¸Ð´ÐµÑ‚ÑŒ ÐµÐ³Ð¾ Ð²ÐµÑÐ° attention ÐºÐ¾ Ð²ÑÐµÐ¼ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ð¼</p>
+<p class="muted">Нажмите на токен, чтобы увидеть его веса attention ко всем остальным</p>
 <div id="tok-row" style="margin:12px 0;display:flex;flex-wrap:wrap;gap:4px"></div>
 <canvas id="attn-canvas" width="800" height="320" style="width:100%;margin-top:8px"></canvas>
 <div id="attn-info" style="margin-top:10px;font-size:.88em;font-family:'Courier New',monospace;line-height:1.8;color:var(--muted)"></div>
 </div>
 
-<h2>ÐšÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ Attention</h2>
+<h2>Калькулятор Attention</h2>
 <div class="card">
-<div class="sr"><span>dâ‚– (Ñ€Ð°Ð·Ð¼ÐµÑ€ ÐºÐ»ÑŽÑ‡Ð°)</span><input type="range" id="calc-dk" min="1" max="8" value="4" oninput="calcAttn()"><span class="sv" id="calc-dk-v">4</span></div>
-<div class="sr"><span>Ð¢ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ð° (1/âˆšdâ‚– scale)</span><input type="range" id="calc-temp" min="1" max="40" value="10" oninput="calcAttn()"><span class="sv" id="calc-temp-v">1.0</span></div>
+<div class="sr"><span>dₖ (размер ключа)</span><input type="range" id="calc-dk" min="1" max="8" value="4" oninput="calcAttn()"><span class="sv" id="calc-dk-v">4</span></div>
+<div class="sr"><span>Температура (1/√dₖ scale)</span><input type="range" id="calc-temp" min="1" max="40" value="10" oninput="calcAttn()"><span class="sv" id="calc-temp-v">1.0</span></div>
 <div id="calc-result" style="font-size:.85em;font-family:'Courier New',monospace;margin-top:10px;line-height:1.9"></div>
 <canvas id="calc-canvas" width="700" height="120" style="width:100%;margin-top:10px"></canvas>
 </div>
@@ -157,81 +157,81 @@ canvas{border-radius:6px;display:block}
 <div id="t-mha" class="tab-content">
 <h2>Multi-Head Attention</h2>
 <div class="card">
-<p>ÐžÐ´Ð¸Ð½ head Ð¾Ð³Ñ€Ð°Ð½Ð¸Ñ‡ÐµÐ½ â€” ÑƒÑ‡Ð¸Ñ‚ Ð¾Ð´Ð½Ñƒ Â«Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸ÑŽÂ» ÑÐ¾Ð²Ð¼ÐµÑÑ‚Ð¸Ð¼Ð¾ÑÑ‚Ð¸. MHA Ð·Ð°Ð¿ÑƒÑÐºÐ°ÐµÑ‚ <span class="hl-a">h</span> Ð¿Ð°Ñ€Ð°Ð»Ð»ÐµÐ»ÑŒÐ½Ñ‹Ñ… head, ÐºÐ°Ð¶Ð´Ñ‹Ð¹ Ð² ÑÐ²Ð¾Ñ‘Ð¼ Ð¿Ð¾Ð´Ð¿Ñ€Ð¾ÑÑ‚Ñ€Ð°Ð½ÑÑ‚Ð²Ðµ.</p>
+<p>Один head ограничен — учит одну «проекцию» совместимости. MHA запускает <span class="hl-a">h</span> параллельных head, каждый в своём подпространстве.</p>
 
-<div class="formula">head<sub>i</sub> = Attention(<span class="hl-a">QÂ·W<sub>i</sub><sup>Q</sup></span>, <span class="hl-b">KÂ·W<sub>i</sub><sup>K</sup></span>, <span class="hl-g">VÂ·W<sub>i</sub><sup>V</sup></span>)
+<div class="formula">head<sub>i</sub> = Attention(<span class="hl-a">Q·W<sub>i</sub><sup>Q</sup></span>, <span class="hl-b">K·W<sub>i</sub><sup>K</sup></span>, <span class="hl-g">V·W<sub>i</sub><sup>V</sup></span>)
 
-MHA(Q,K,V) = Concat(head<sub>1</sub>, â€¦, head<sub>h</sub>) Â· <span class="hl-p">W<sup>O</sup></span></div>
+MHA(Q,K,V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · <span class="hl-p">W<sup>O</sup></span></div>
 
-<p>ÐŸÑ€Ð¾ÐµÐºÑ†Ð¸Ð¸: W<sub>i</sub><sup>Q</sup> âˆˆ â„<sup>d_modelÃ—d_k</sup>, W<sub>i</sub><sup>K</sup> âˆˆ â„<sup>d_modelÃ—d_k</sup>, W<sub>i</sub><sup>V</sup> âˆˆ â„<sup>d_modelÃ—d_v</sup></p>
-<p>Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ð¾: dâ‚– = dáµ¥ = d_model / h. Ð”Ð»Ñ d_model=512, h=8: <span class="hl-a">dâ‚– = 64</span></p>
+<p>Проекции: W<sub>i</sub><sup>Q</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>K</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>V</sup> ∈ ℝ<sup>d_model×d_v</sup></p>
+<p>Стандартно: dₖ = dᵥ = d_model / h. Для d_model=512, h=8: <span class="hl-a">dₖ = 64</span></p>
 
-<h3>ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ MHA</h3>
-<div class="formula">hÂ·(d_modelÂ·dâ‚– + d_modelÂ·dâ‚– + d_modelÂ·dáµ¥) + d_modelÂ·d_model
-= hÂ·d_modelÂ·(2dâ‚– + dáµ¥) + d_modelÂ²
-= 4Â·d_modelÂ²   (Ð¿Ñ€Ð¸ dâ‚–=dáµ¥=d_model/h)</div>
+<h3>Параметры MHA</h3>
+<div class="formula">h·(d_model·dₖ + d_model·dₖ + d_model·dᵥ) + d_model·d_model
+= h·d_model·(2dₖ + dᵥ) + d_model²
+= 4·d_model²   (при dₖ=dᵥ=d_model/h)</div>
 
-<div class="info-box"><strong>Ð—Ð°Ñ‡ÐµÐ¼ Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð³Ð¾Ð»Ð¾Ð²?</strong><br>
-head 1 Ð¼Ð¾Ð¶ÐµÑ‚ ÑƒÑ‡Ð¸Ñ‚ÑŒ ÑÐ¸Ð½Ñ‚Ð°ÐºÑÐ¸Ñ‡ÐµÑÐºÐ¸Ðµ ÑÐ²ÑÐ·Ð¸ (Ð¿Ð¾Ð´Ð»ÐµÐ¶Ð°Ñ‰ÐµÐµâ†”ÑÐºÐ°Ð·ÑƒÐµÐ¼Ð¾Ðµ),<br>
-head 2 â€” ÐºÐ¾Ñ€ÐµÑ„ÐµÑ€ÐµÐ½Ñ†Ð¸ÑŽ (Ð¼ÐµÑÑ‚Ð¾Ð¸Ð¼ÐµÐ½Ð¸Ðµâ†”Ð°Ð½Ñ‚ÐµÑ†ÐµÐ´ÐµÐ½Ñ‚),<br>
-head 3 â€” Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¾Ð½Ð½Ñ‹Ðµ Ð¿Ð°Ñ‚Ñ‚ÐµÑ€Ð½Ñ‹ (ÑÐ¾ÑÐµÐ´Ð½Ð¸Ðµ Ñ‚Ð¾ÐºÐµÐ½Ñ‹), Ð¸ Ñ‚.Ð´.</div>
+<div class="info-box"><strong>Зачем несколько голов?</strong><br>
+head 1 может учить синтаксические связи (подлежащее↔сказуемое),<br>
+head 2 — кореференцию (местоимение↔антецедент),<br>
+head 3 — позиционные паттерны (соседние токены), и т.д.</div>
 </div>
 
-<h2>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ MHA</h2>
+<h2>Интерактивный MHA</h2>
 <div class="card">
-<div class="sr"><span>Ð“Ð¾Ð»Ð¾Ð² h</span><input type="range" id="mha-h" min="1" max="16" value="8" oninput="drawMHA()"><span class="sv" id="mha-h-v">8</span></div>
+<div class="sr"><span>Голов h</span><input type="range" id="mha-h" min="1" max="16" value="8" oninput="drawMHA()"><span class="sv" id="mha-h-v">8</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="mha-d" min="64" max="1024" step="64" value="512" oninput="drawMHA()"><span class="sv" id="mha-d-v">512</span></div>
 <canvas id="mha-canvas" width="800" height="200" style="width:100%;margin-top:10px"></canvas>
 <div id="mha-info" style="margin-top:10px;font-size:.9em;line-height:1.9"></div>
 </div>
 </div>
 
-<!-- ===== 5. ÐœÐÐ¡ÐšÐ˜ ===== -->
+<!-- ===== 5. МАСКИ ===== -->
 <div id="t-mask" class="tab-content">
-<h2>ÐœÐ°ÑÐºÐ¸ Ð² Attention</h2>
+<h2>Маски в Attention</h2>
 <div class="card">
 <h3>Padding Mask</h3>
-<p>Ð‘Ð°Ñ‚Ñ‡ ÑÐ¾Ð´ÐµÑ€Ð¶Ð¸Ñ‚ Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸ Ñ€Ð°Ð·Ð½Ð¾Ð¹ Ð´Ð»Ð¸Ð½Ñ‹ â€” Ð´Ð¾Ð¿Ð¾Ð»Ð½ÑÐµÐ¼ PAD-Ñ‚Ð¾ÐºÐµÐ½Ð°Ð¼Ð¸. ÐœÐ°ÑÐºÐ¸Ñ€ÑƒÐµÐ¼, Ñ‡Ñ‚Ð¾Ð±Ñ‹ attention Ð½Ðµ ÑÐ¼Ð¾Ñ‚Ñ€ÐµÐ» Ð½Ð° Ð¿Ð°Ð´Ð´Ð¸Ð½Ð³:</p>
-<div class="formula">score[i][j] = -âˆž,  ÐµÑÐ»Ð¸ j â€” PAD-Ñ‚Ð¾ÐºÐµÐ½
-â†’ softmax: exp(-âˆž)=0  â†’ Ð²ÐµÑ=0  âœ“</div>
+<p>Батч содержит последовательности разной длины — дополняем PAD-токенами. Маскируем, чтобы attention не смотрел на паддинг:</p>
+<div class="formula">score[i][j] = -∞,  если j — PAD-токен
+→ softmax: exp(-∞)=0  → вес=0  ✓</div>
 
 <h3>Causal Mask (Look-ahead Mask)</h3>
-<p>Ð’ <strong>Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ðµ</strong> (Ð°Ð²Ñ‚Ð¾Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ð²Ð½Ð°Ñ Ð³ÐµÐ½ÐµÑ€Ð°Ñ†Ð¸Ñ) Ñ‚Ð¾ÐºÐµÐ½ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸ t Ð½Ðµ Ð´Ð¾Ð»Ð¶ÐµÐ½ Ð²Ð¸Ð´ÐµÑ‚ÑŒ t+1, t+2, â€¦:</p>
-<div class="formula">M[i][j] = -âˆž  Ð¿Ñ€Ð¸ j > i
-M[i][j] = 0   Ð¿Ñ€Ð¸ j â‰¤ i</div>
-<p>Ð­Ñ‚Ð¾ Ð½Ð¸Ð¶Ð½ÐµÑ‚Ñ€ÐµÑƒÐ³Ð¾Ð»ÑŒÐ½Ð°Ñ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ð° (lower triangular mask).</p>
+<p>В <strong>декодере</strong> (авторегрессивная генерация) токен позиции t не должен видеть t+1, t+2, …:</p>
+<div class="formula">M[i][j] = -∞  при j > i
+M[i][j] = 0   при j ≤ i</div>
+<p>Это нижнетреугольная матрица (lower triangular mask).</p>
 </div>
 
-<h2>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð¼Ð°ÑÐ¾Ðº</h2>
+<h2>Визуализация масок</h2>
 <div class="card">
 <div class="tabs" style="margin-bottom:12px">
   <button class="tab active" onclick="switchMask('pad')" id="mask-tab-pad">Padding Mask</button>
   <button class="tab" onclick="switchMask('causal')" id="mask-tab-causal">Causal Mask</button>
-  <button class="tab" onclick="switchMask('both')" id="mask-tab-both">ÐšÐ¾Ð¼Ð±Ð¸Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ð°Ñ</button>
+  <button class="tab" onclick="switchMask('both')" id="mask-tab-both">Комбинированная</button>
 </div>
-<div class="sr"><span>Ð”Ð»Ð¸Ð½Ð° L</span><input type="range" id="mask-L" min="4" max="10" value="6" oninput="drawMask()"><span class="sv" id="mask-L-v">6</span></div>
-<div class="sr"><span>PAD Ñ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸</span><input type="range" id="mask-P" min="2" max="10" value="5" oninput="drawMask()"><span class="sv" id="mask-P-v">5</span></div>
+<div class="sr"><span>Длина L</span><input type="range" id="mask-L" min="4" max="10" value="6" oninput="drawMask()"><span class="sv" id="mask-L-v">6</span></div>
+<div class="sr"><span>PAD с позиции</span><input type="range" id="mask-P" min="2" max="10" value="5" oninput="drawMask()"><span class="sv" id="mask-P-v">5</span></div>
 <canvas id="mask-canvas" width="700" height="340" style="width:100%;max-width:500px;margin:10px auto"></canvas>
 </div>
 
-<h2>PyTorch: ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð¼Ð°ÑÐ¾Ðº</h2>
+<h2>PyTorch: создание масок</h2>
 <div class="card">
 <div class="code-block">import torch
 import torch.nn.functional as F
 
-# Causal mask (look-ahead) Ð´Ð»Ñ Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°
+# Causal mask (look-ahead) для декодера
 def causal_mask(L, device='cpu'):
-    # True = Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ (Ð·Ð°Ð¿Ñ€ÐµÑ‰ÐµÐ½Ð¾ ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒ)
+    # True = маскировать (запрещено смотреть)
     mask = torch.triu(torch.ones(L, L, device=device), diagonal=1).bool()
     return mask          # (L, L) upper triangular
 
 # Padding mask
 def padding_mask(lengths, max_len):
-    # lengths: (B,) â€” Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ðµ Ð´Ð»Ð¸Ð½Ñ‹ Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÐµÐ¹
+    # lengths: (B,) — реальные длины последовательностей
     idx = torch.arange(max_len).unsqueeze(0)  # (1, max_len)
     return idx >= lengths.unsqueeze(1)         # (B, max_len) True=PAD
 
-# ÐŸÑ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ Ð² scaled_dot_product_attention
+# Применение в scaled_dot_product_attention
 scores = Q @ K.transpose(-2,-1) / (dk**0.5)
 if mask is not None:
     scores = scores.masked_fill(mask, float('-inf'))
@@ -239,57 +239,57 @@ attn_weights = F.softmax(scores, dim=-1)</div>
 </div>
 </div>
 
-<!-- ===== 6. ÐœÐÐ¢Ð Ð˜Ð§ÐÐÐ¯ Ð¤ÐžÐ ÐœÐ ===== -->
+<!-- ===== 6. МАТРИЧНАЯ ФОРМА ===== -->
 <div id="t-math" class="tab-content">
-<h2>ÐŸÐ¾Ð»Ð½Ð°Ñ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð°Ñ Ñ„Ð¾Ñ€Ð¼Ð° â€” Ð²ÑÐµ Ð´ÐµÑ‚Ð°Ð»Ð¸</h2>
+<h2>Полная матричная форма — все детали</h2>
 <div class="card">
 <h3>Self-Attention vs Cross-Attention</h3>
 <div class="grid2">
 <div class="step-box">
   <strong class="hl-a">Self-Attention</strong><br>
-  Q = K = V = X (Ð¾Ð´Ð¸Ð½ Ð²Ñ…Ð¾Ð´)<br>
-  Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ Ð² ÑÐ½ÐºÐ¾Ð´ÐµÑ€Ðµ Ð¸ Ð² self-attn Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°
+  Q = K = V = X (один вход)<br>
+  Используется в энкодере и в self-attn декодера
 </div>
 <div class="step-box">
   <strong class="hl-g">Cross-Attention</strong><br>
-  Q Ð¸Ð· Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ð°, K=V Ð¸Ð· ÑÐ½ÐºÐ¾Ð´ÐµÑ€Ð°<br>
-  ÐŸÐ¾Ð·Ð²Ð¾Ð»ÑÐµÑ‚ Ð´ÐµÐºÐ¾Ð´ÐµÑ€Ñƒ Â«ÑÐ¼Ð¾Ñ‚Ñ€ÐµÑ‚ÑŒÂ» Ð½Ð° Ð²Ñ…Ð¾Ð´
+  Q из декодера, K=V из энкодера<br>
+  Позволяет декодеру «смотреть» на вход
 </div>
 </div>
 
-<h3>Ð’Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð°Ñ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ</h3>
-<div class="formula">Self-Attention:   O(<span class="hl-a">LÂ²</span>Â·d)   â€” ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð¸Ñ‡Ð½Ð¾ Ð¿Ð¾ Ð´Ð»Ð¸Ð½Ðµ!
-FFN:              O(<span class="hl-g">L</span>Â·dÂ²)  â€” Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾ Ð¿Ð¾ Ð´Ð»Ð¸Ð½Ðµ</div>
-<p class="muted">ÐŸÑ€Ð¸ L=1024, d=512: LÂ²Â·d = 536M, LÂ·dÂ² = 268M â€” ÑÐ¾Ð¿Ð¾ÑÑ‚Ð°Ð²Ð¸Ð¼Ð¾</p>
-<p class="muted">ÐŸÑ€Ð¸ L=8192: LÂ²Â·d = 34G â€” attention ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑÑ ÑƒÐ·ÐºÐ¸Ð¼ Ð¼ÐµÑÑ‚Ð¾Ð¼ â†’ Flash Attention, Sparse Attention</p>
+<h3>Вычислительная сложность</h3>
+<div class="formula">Self-Attention:   O(<span class="hl-a">L²</span>·d)   — квадратично по длине!
+FFN:              O(<span class="hl-g">L</span>·d²)  — линейно по длине</div>
+<p class="muted">При L=1024, d=512: L²·d = 536M, L·d² = 268M — сопоставимо</p>
+<p class="muted">При L=8192: L²·d = 34G — attention становится узким местом → Flash Attention, Sparse Attention</p>
 
-<h3>ÐŸÑ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ð°Ñ Attention Ð¿Ð¾ Q</h3>
-<div class="formula">ÐŸÑƒÑÑ‚ÑŒ A = softmax(QKáµ€/âˆšdâ‚–), Ð²Ñ‹Ñ…Ð¾Ð´ O = AÂ·V
+<h3>Производная Attention по Q</h3>
+<div class="formula">Пусть A = softmax(QKᵀ/√dₖ), выход O = A·V
 
-âˆ‚L/âˆ‚Q = <span class="hl-a">dA/dQ</span> Â· (âˆ‚A_soft/âˆ‚logits) Â· <span class="hl-g">V</span>
+∂L/∂Q = <span class="hl-a">dA/dQ</span> · (∂A_soft/∂logits) · <span class="hl-g">V</span>
 
-dA/dQ: ÐºÐ°Ð¶Ð´Ð°Ñ ÑÑ‚Ñ€Ð¾ÐºÐ° Aáµ¢ = softmax(qáµ¢Káµ€/âˆšdâ‚–)
-âˆ‚Aáµ¢/âˆ‚qáµ¢ = (diag(Aáµ¢) - Aáµ¢Â·Aáµ¢áµ€) Â· Káµ€/âˆšdâ‚–   â† Ð¯ÐºÐ¾Ð±Ð¸Ð°Ð½ softmax Ð¸Ð· 1.2</div>
+dA/dQ: каждая строка Aᵢ = softmax(qᵢKᵀ/√dₖ)
+∂Aᵢ/∂qᵢ = (diag(Aᵢ) - Aᵢ·Aᵢᵀ) · Kᵀ/√dₖ   ← Якобиан softmax из 1.2</div>
 
-<h3>Flash Attention â€” Ð·Ð°Ñ‡ÐµÐ¼ Ð½ÑƒÐ¶ÐµÐ½</h3>
-<div class="step-box"><span class="sn">ÐŸÑ€Ð¾Ð±Ð»ÐµÐ¼Ð°:</span>ÐœÐ°Ñ‚Ñ€Ð¸Ñ†Ð° QKáµ€ Ð¿Ñ€Ð¸ L=4096 Ð·Ð°Ð½Ð¸Ð¼Ð°ÐµÑ‚ 4096Â²Ã—4 Ð±Ð°Ð¹Ñ‚ = 64 ÐœÐ‘ Ð½Ð° Ð³Ð¾Ð»Ð¾Ð²Ñƒ Ã— 32 Ð³Ð¾Ð»Ð¾Ð²Ñ‹ = 2 GB â€” Ð½Ðµ Ð²Ð»ÐµÐ·Ð°ÐµÑ‚ Ð² SRAM GPU</div>
-<div class="step-box"><span class="sn">Flash Attention:</span>Ð’Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ attention Ð±Ð»Ð¾ÐºÐ°Ð¼Ð¸ (tiling) Ð±ÐµÐ· Ð¼Ð°Ñ‚ÐµÑ€Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾Ð»Ð½Ð¾Ð¹ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ñ‹ QKáµ€ Ð² HBM. Ð¡Ð»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ Ð¿Ð°Ð¼ÑÑ‚Ð¸: O(L) Ð²Ð¼ÐµÑÑ‚Ð¾ O(LÂ²)</div>
+<h3>Flash Attention — зачем нужен</h3>
+<div class="step-box"><span class="sn">Проблема:</span>Матрица QKᵀ при L=4096 занимает 4096²×4 байт = 64 МБ на голову × 32 головы = 2 GB — не влезает в SRAM GPU</div>
+<div class="step-box"><span class="sn">Flash Attention:</span>Вычисляет attention блоками (tiling) без материализации полной матрицы QKᵀ в HBM. Сложность памяти: O(L) вместо O(L²)</div>
 
-<div class="info-box"><strong>Ð¡Ð²ÑÐ·ÑŒ Ñ Info Theory (Ð±Ð»Ð¾Ðº 1.4):</strong> Attention â€” ÑÑ‚Ð¾ Ð²Ð·Ð²ÐµÑˆÐµÐ½Ð½Ð°Ñ ÑÑƒÐ¼Ð¼Ð°, Ð³Ð´Ðµ Ð²ÐµÑÐ° â€” ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ. ÐœÐ¾Ð¶Ð½Ð¾ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ ÐºÐ°Ðº H(attention) â€” ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸ÑŽ Ð²Ð½Ð¸Ð¼Ð°Ð½Ð¸Ñ: Ð½Ð¸Ð·ÐºÐ°Ñ ÑÐ½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ â†’ Â«Ð¾ÑÑ‚Ñ€Ñ‹Ð¹Â» Ñ„Ð¾ÐºÑƒÑ Ð½Ð° Ð¾Ð´Ð½Ð¾Ð¼ Ñ‚Ð¾ÐºÐµÐ½Ðµ, Ð²Ñ‹ÑÐ¾ÐºÐ°Ñ â†’ Ñ€Ð°Ð²Ð½Ð¾Ð¼ÐµÑ€Ð½Ð¾Ðµ Ñ€Ð°ÑÑÐµÐ¸Ð²Ð°Ð½Ð¸Ðµ.</div>
+<div class="info-box"><strong>Связь с Info Theory (блок 1.4):</strong> Attention — это взвешенная сумма, где веса — категориальное распределение. Можно интерпретировать как H(attention) — энтропию внимания: низкая энтропия → «острый» фокус на одном токене, высокая → равномерное рассеивание.</div>
 </div>
 
-<h2>ÐšÐ°Ð»ÑŒÐºÑƒÐ»ÑÑ‚Ð¾Ñ€ ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚Ð¸</h2>
+<h2>Калькулятор сложности</h2>
 <div class="card">
-<div class="sr"><span>L (Ð´Ð»Ð¸Ð½Ð° Ð¿Ð¾ÑÐ»ÐµÐ´Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚Ð¸)</span><input type="range" id="comp-L" min="64" max="16384" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-L-v">512</span></div>
+<div class="sr"><span>L (длина последовательности)</span><input type="range" id="comp-L" min="64" max="16384" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-L-v">512</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="comp-d" min="64" max="2048" step="64" value="512" oninput="calcComp()"><span class="sv" id="comp-d-v">512</span></div>
 <div class="sr"><span>Heads h</span><input type="range" id="comp-h" min="1" max="32" value="8" oninput="calcComp()"><span class="sv" id="comp-h-v">8</span></div>
 <div id="comp-result" style="margin-top:10px;font-size:.9em;line-height:2"></div>
 </div>
 </div>
 
-<!-- ===== 7. ÐšÐžÐ” ===== -->
+<!-- ===== 7. КОД ===== -->
 <div id="t-code" class="tab-content">
-<h2>PyTorch â€” Ñ€ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ñ Ð½ÑƒÐ»Ñ</h2>
+<h2>PyTorch — реализация с нуля</h2>
 <div class="card">
 
 <h3>Scaled Dot-Product Attention</h3>
@@ -298,17 +298,17 @@ import torch.nn.functional as F
 
 def scaled_dot_product_attention(Q, K, V, mask=None):
     """
-    Q: (B, H, L, dâ‚–)
-    K: (B, H, S, dâ‚–)
-    V: (B, H, S, dáµ¥)
-    mask: (B, 1, L, S) Ð¸Ð»Ð¸ (L, S) â€” True = Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ
+    Q: (B, H, L, dₖ)
+    K: (B, H, S, dₖ)
+    V: (B, H, S, dᵥ)
+    mask: (B, 1, L, S) или (L, S) — True = маскировать
     """
     dk = Q.shape[-1]
     scores = Q @ K.transpose(-2, -1) / math.sqrt(dk)   # (B,H,L,S)
     if mask is not None:
         scores = scores.masked_fill(mask, float('-inf'))
     weights = F.softmax(scores, dim=-1)                 # (B,H,L,S)
-    return weights @ V, weights                         # (B,H,L,dáµ¥), weights</div>
+    return weights @ V, weights                         # (B,H,L,dᵥ), weights</div>
 
 <h3>Multi-Head Attention</h3>
 <div class="code-block">class MultiHeadAttention(nn.Module):
@@ -317,7 +317,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
         assert d_model % num_heads == 0
         self.h  = num_heads
         self.dk = d_model // num_heads
-        # ÐžÐ±ÑŠÐµÐ´Ð¸Ð½Ñ‘Ð½Ð½Ñ‹Ðµ Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ð¸ (ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½ÐµÐµ Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ñ‹Ñ…)
+        # Объединённые проекции (эффективнее отдельных)
         self.W_q = nn.Linear(d_model, d_model, bias=False)
         self.W_k = nn.Linear(d_model, d_model, bias=False)
         self.W_v = nn.Linear(d_model, d_model, bias=False)
@@ -338,7 +338,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
         out = out.transpose(1, 2).contiguous().view(B, -1, self.h * self.dk)
         return self.W_o(out), weights    # (B,L,d_model)</div>
 
-<h3>Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ðµ PyTorch Ð²ÑÑ‚Ñ€Ð¾ÐµÐ½Ð½Ð¾Ð³Ð¾ MHA</h3>
+<h3>Использование PyTorch встроенного MHA</h3>
 <div class="code-block">mha = nn.MultiheadAttention(embed_dim=512, num_heads=8,
                             dropout=0.1, batch_first=True)
 x   = torch.randn(4, 32, 512)   # (batch, seq, d_model)
@@ -346,21 +346,21 @@ x   = torch.randn(4, 32, 512)   # (batch, seq, d_model)
 # Self-attention
 out, attn_w = mha(x, x, x)                             # (4,32,512)
 
-# Cross-attention (Ð´ÐµÐºÐ¾Ð´ÐµÑ€ ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚ Ð½Ð° ÑÐ½ÐºÐ¾Ð´ÐµÑ€)
+# Cross-attention (декодер смотрит на энкодер)
 memory = torch.randn(4, 20, 512)
 out2, _ = mha(query=x, key=memory, value=memory)
 
-# Ð¡ causal mask
+# С causal mask
 causal = torch.triu(torch.ones(32,32), diagonal=1).bool()
 out3, _ = mha(x, x, x, attn_mask=causal)</div>
 
 <h3>PyTorch 2.0: F.scaled_dot_product_attention (Flash Attention)</h3>
-<div class="code-block"># ÐÐ²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸ Ð²Ñ‹Ð±Ð¸Ñ€Ð°ÐµÑ‚ Flash Attention ÐµÑÐ»Ð¸ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð°
+<div class="code-block"># Автоматически выбирает Flash Attention если доступна
 out = F.scaled_dot_product_attention(
     Q, K, V,
     attn_mask=None,
     dropout_p=0.1,
-    is_causal=True    # ÐºÐ°ÑƒÐ·Ð°Ð»ÑŒÐ½Ð°Ñ Ð¼Ð°ÑÐºÐ° Ð±ÐµÐ· Ð¼Ð°Ñ‚ÐµÑ€Ð¸Ð°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ð¸
+    is_causal=True    # каузальная маска без материализации
 )</div>
 </div>
 </div>
@@ -403,14 +403,14 @@ function drawSoftmaxEffect(){
   // Raw logits scaled by sqrt(dk) vs /sqrt(dk)
   const raw=logits.map(v=>v*Math.sqrt(dk));
   const scaled=logits;
-  drawBar(px,raw,`softmax(scoreÂ·âˆš${dk}) â€” Ð±ÐµÐ· Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¸`,'#ef4444');
-  drawBar(px+pw+80,scaled,`softmax(score/âˆš${dk}) â€” Ñ Ð½Ð¾Ñ€Ð¼Ð¸Ñ€Ð¾Ð²ÐºÐ¾Ð¹`,'#10b981');
+  drawBar(px,raw,`softmax(score·√${dk}) — без нормировки`,'#ef4444');
+  drawBar(px+pw+80,scaled,`softmax(score/√${dk}) — с нормировкой`,'#10b981');
   // entropy labels
   const h1=-softmax(raw).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
   const h2=-softmax(scaled).reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
   ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='center';
-  ctx.fillText(`H=${h1.toFixed(2)} Ð±Ð¸Ñ‚`,px+pw/2,py+ph+34);
-  ctx.fillStyle='#10b981';ctx.fillText(`H=${h2.toFixed(2)} Ð±Ð¸Ñ‚`,px+pw+80+pw/2,py+ph+34);
+  ctx.fillText(`H=${h1.toFixed(2)} бит`,px+pw/2,py+ph+34);
+  ctx.fillStyle='#10b981';ctx.fillText(`H=${h2.toFixed(2)} бит`,px+pw+80+pw/2,py+ph+34);
 }
 function softmax(arr){const m=Math.max(...arr);const e=arr.map(v=>Math.exp(v-m));const s=e.reduce((a,b)=>a+b,0);return e.map(v=>v/s);}
 drawSoftmaxEffect();
@@ -478,7 +478,7 @@ function drawAttn(){
   ctx.fillStyle='#161b22';ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
   roundRect(ctx,chartX,chartY,chartW,chartH,8);ctx.fill();ctx.stroke();
   ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
-  ctx.fillText(`Ð’ÐµÑÐ° Attention (Query: "${SENTENCE[selTok]}")`,chartX+chartW/2,chartY+14);
+  ctx.fillText(`Веса Attention (Query: "${SENTENCE[selTok]}")`,chartX+chartW/2,chartY+14);
   const bh2=12;const gap=4;
   SENTENCE.forEach((t,i)=>{
     const y=chartY+22+i*(bh2+gap);
@@ -493,7 +493,7 @@ function drawAttn(){
   // Info
   const maxI=w.indexOf(Math.max(...w));
   document.getElementById('attn-info').textContent=
-    `"${SENTENCE[selTok]}" ÑƒÐ´ÐµÐ»ÑÐµÑ‚ Ð½Ð°Ð¸Ð±Ð¾Ð»ÑŒÑˆÐµÐµ Ð²Ð½Ð¸Ð¼Ð°Ð½Ð¸Ðµ "${SENTENCE[maxI]}" (${(w[maxI]*100).toFixed(0)}%). Ð­Ð½Ñ‚Ñ€Ð¾Ð¿Ð¸Ñ: H=${(-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0)).toFixed(2)} Ð±Ð¸Ñ‚`;
+    `"${SENTENCE[selTok]}" уделяет наибольшее внимание "${SENTENCE[maxI]}" (${(w[maxI]*100).toFixed(0)}%). Энтропия: H=${(-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0)).toFixed(2)} бит`;
 }
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
 initAttn();
@@ -508,7 +508,7 @@ function calcAttn(){
   const rawScores=[2.1,0.8,1.5,-0.3,1.0];
   const scaled=rawScores.map(v=>v/sqrtdk*tempV);
   const sm=softmax(scaled);
-  let html=`dâ‚–=${dk}  âˆšdâ‚–=${sqrtdk.toFixed(2)}  scale=1/âˆšdâ‚–=${(1/sqrtdk).toFixed(3)}\n`;
+  let html=`dₖ=${dk}  √dₖ=${sqrtdk.toFixed(2)}  scale=1/√dₖ=${(1/sqrtdk).toFixed(3)}\n`;
   html+=`Raw scores:    [${rawScores.map(v=>v.toFixed(2)).join(', ')}]\n`;
   html+=`Scaled scores: [${scaled.map(v=>v.toFixed(2)).join(', ')}]\n`;
   html+=`Softmax:       [${sm.map(v=>v.toFixed(3)).join(', ')}]`;
@@ -547,17 +547,17 @@ function drawMHA(){
     ctx.fillStyle=`rgba(${r},${g},${b},0.2)`;ctx.strokeStyle=`rgba(${r},${g},${b},0.7)`;ctx.lineWidth=1;
     roundRect(ctx,x,py,bw,bh,6);ctx.fill();ctx.stroke();
     ctx.fillStyle='#e6edf3';ctx.font='9px system-ui';ctx.textAlign='center';
-    ctx.fillText(`h${i+1}`,x+bw/2,py+30);ctx.fillText(`dâ‚–=${dk}`,x+bw/2,py+45);
+    ctx.fillText(`h${i+1}`,x+bw/2,py+30);ctx.fillText(`dₖ=${dk}`,x+bw/2,py+45);
   }
   // Concat arrow
   ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(px,py+bh+8);ctx.lineTo(px+720,py+bh+8);ctx.stroke();
   ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';ctx.textAlign='center';
-  ctx.fillText(`Concat â†’ (L, ${h}Â·${dk}=${d}) â†’ W_O â†’ (L, ${d})`,px+360,py+bh+24);
+  ctx.fillText(`Concat → (L, ${h}·${dk}=${d}) → W_O → (L, ${d})`,px+360,py+bh+24);
   document.getElementById('mha-info').innerHTML=
-    `dâ‚– = dáµ¥ = d_model/h = <span class="hl-a">${dk}</span> &nbsp;|&nbsp; `+
-    `ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² MHA: 4Â·d_modelÂ² = <span class="hl-g">${(4*d*d).toLocaleString()}</span> &nbsp;|&nbsp; `+
-    `FLOPs Ð½Ð° ÑˆÐ°Ð³: â‰ˆ <span class="hl-b">${(8*d*d).toLocaleString()}</span>`;
+    `dₖ = dᵥ = d_model/h = <span class="hl-a">${dk}</span> &nbsp;|&nbsp; `+
+    `Параметров MHA: 4·d_model² = <span class="hl-g">${(4*d*d).toLocaleString()}</span> &nbsp;|&nbsp; `+
+    `FLOPs на шаг: ≈ <span class="hl-b">${(8*d*d).toLocaleString()}</span>`;
 }
 drawMHA();
 
@@ -592,7 +592,7 @@ function drawMask(){
       ctx.fillRect(ox+j*cs,oy+i*cs,cs-1,cs-1);
       ctx.fillStyle=masked?'#ef4444':'#10b981';
       ctx.font=`${Math.max(9,cs-8)}px system-ui`;ctx.textAlign='center';
-      ctx.fillText(masked?'-âˆž':'0',ox+j*cs+cs/2,oy+i*cs+cs/2+4);
+      ctx.fillText(masked?'-∞':'0',ox+j*cs+cs/2,oy+i*cs+cs/2+4);
     }
   }
   // Axis labels
@@ -603,9 +603,9 @@ function drawMask(){
   }
   // Legend
   ctx.fillStyle='rgba(239,68,68,0.5)';ctx.fillRect(ox,oy+L*cs+15,14,14);
-  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('-âˆž (Ð¼Ð°ÑÐºÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð¾)',ox+18,oy+L*cs+26);
+  ctx.fillStyle='#ef4444';ctx.font='11px system-ui';ctx.textAlign='left';ctx.fillText('-∞ (маскировано)',ox+18,oy+L*cs+26);
   ctx.fillStyle='rgba(16,185,129,0.4)';ctx.fillRect(ox+160,oy+L*cs+15,14,14);
-  ctx.fillStyle='#10b981';ctx.fillText('0 (Ñ€Ð°Ð·Ñ€ÐµÑˆÐµÐ½Ð¾)',ox+178,oy+L*cs+26);
+  ctx.fillStyle='#10b981';ctx.fillText('0 (разрешено)',ox+178,oy+L*cs+26);
 }
 drawMask();
 
@@ -623,10 +623,10 @@ function calcComp(){
   const memQK=L*L*4;
   const fmt=n=>n>=1e9?(n/1e9).toFixed(1)+'G':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
   document.getElementById('comp-result').innerHTML=
-    `Attention FLOPs (QKáµ€ + AV): <span class="hl-a">${fmt(attnFlops)}</span> &nbsp;| ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ <strong>O(LÂ²Â·d)</strong><br>`+
-    `FFN FLOPs (Ã—4 expand):       <span class="hl-g">${fmt(ffnFlops)}</span> &nbsp;| ÑÐ»Ð¾Ð¶Ð½Ð¾ÑÑ‚ÑŒ <strong>O(LÂ·dÂ²)</strong><br>`+
-    `ÐŸÐ°Ð¼ÑÑ‚ÑŒ QKáµ€ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ†Ñ‹:          <span class="hl-b">${(memQK/1e6).toFixed(1)} MB</span> Ã— ${h} heads = <span class="hl-r">${(memQK*h/1e6).toFixed(1)} MB</span><br>`+
-    `dâ‚– = d/h = ${d}/${h} = <span class="hl-p">${dk}</span>`;
+    `Attention FLOPs (QKᵀ + AV): <span class="hl-a">${fmt(attnFlops)}</span> &nbsp;| сложность <strong>O(L²·d)</strong><br>`+
+    `FFN FLOPs (×4 expand):       <span class="hl-g">${fmt(ffnFlops)}</span> &nbsp;| сложность <strong>O(L·d²)</strong><br>`+
+    `Память QKᵀ матрицы:          <span class="hl-b">${(memQK/1e6).toFixed(1)} MB</span> × ${h} heads = <span class="hl-r">${(memQK*h/1e6).toFixed(1)} MB</span><br>`+
+    `dₖ = d/h = ${d}/${h} = <span class="hl-p">${dk}</span>`;
 }
 calcComp();
 </script>

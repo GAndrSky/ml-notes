@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -43,39 +43,39 @@ td.mono{font-family:monospace;}
 <body>
 
 <div style="margin-bottom:14px;">
-  <span class="tag tag-done">âœ“ 3.1 ÐÐµÐ¹Ñ€Ð¾Ð½</span>
-  <span class="tag tag-done">âœ“ 3.2 ÐÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸</span>
-  <span class="tag tag-done">âœ“ 3.3 Forward pass</span>
-  <span class="tag tag-active">â–¶ 3.4 Loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</span>
+  <span class="tag tag-done">✓ 3.1 Нейрон</span>
+  <span class="tag tag-done">✓ 3.2 Активации</span>
+  <span class="tag tag-done">✓ 3.3 Forward pass</span>
+  <span class="tag tag-active">▶ 3.4 Loss-функции</span>
 </div>
 
-<h1>3.4 Loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸</h1>
-<p class="muted">MSE, BCE, CrossEntropy, Focal Loss â€” Ð²Ñ‹Ð²Ð¾Ð´Ñ‹ Ð¸Ð· MLE, Ð³ÐµÐ¾Ð¼ÐµÑ‚Ñ€Ð¸Ñ, Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹</p>
+<h1>3.4 Loss-функции</h1>
+<p class="muted">MSE, BCE, CrossEntropy, Focal Loss — выводы из MLE, геометрия, градиенты</p>
 
-<!-- 1. Ð•Ð´Ð¸Ð½Ñ‹Ð¹ MLE-Ñ„Ñ€ÐµÐ¹Ð¼ -->
+<!-- 1. Единый MLE-фрейм -->
 <div class="card">
-  <h2>ðŸŽ¯ Ð•Ð´Ð¸Ð½Ñ‹Ð¹ Ñ„Ñ€ÐµÐ¹Ð¼: Ð²ÑÑ‘ Ð¸Ð· MLE</h2>
-  <p>Ð›ÑŽÐ±Ð°Ñ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ â€” ÑÑ‚Ð¾ <strong>Ð¾Ñ‚Ñ€Ð¸Ñ†Ð°Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ðµ log-Ð¿Ñ€Ð°Ð²Ð´Ð¾Ð¿Ð¾Ð´Ð¾Ð±Ð¸Ðµ</strong> Ð¿Ñ€Ð¸ Ð²Ñ‹Ð±Ð¾Ñ€Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ Ð´Ð»Ñ ÑˆÑƒÐ¼Ð°/Ð¼ÐµÑ‚Ð¾Ðº:</p>
-  <div class="formula">L(Î¸) = âˆ’log p(y | x, Î¸)    â† NLL = negative log-likelihood
+  <h2>🎯 Единый фрейм: всё из MLE</h2>
+  <p>Любая loss-функция — это <strong>отрицательное log-правдоподобие</strong> при выборе распределения для шума/меток:</p>
+  <div class="formula">L(θ) = −log p(y | x, θ)    ← NLL = negative log-likelihood
 
-ÐœÐ¸Ð½Ð¸Ð¼Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ L(Î¸)  âŸº  Ð¼Ð°ÐºÑÐ¸Ð¼Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ log p(y|x,Î¸)</div>
+Минимизировать L(θ)  ⟺  максимизировать log p(y|x,θ)</div>
 
   <div style="margin-top:14px;">
     <table>
-      <tr><th>Ð Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ y|x</th><th>NLL â†’</th><th>Loss</th><th>Ð—Ð°Ð´Ð°Ñ‡Ð°</th></tr>
-      <tr><td>Ð“Ð°ÑƒÑÑÐ¾Ð²Ð¾ N(f_Î¸(x), ÏƒÂ²)</td><td>âˆ’log N</td><td class="mono">MSE</td><td>Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</td></tr>
-      <tr><td>Ð‘ÐµÑ€Ð½ÑƒÐ»Ð»Ð¸ Ber(Ïƒ(f_Î¸(x)))</td><td>âˆ’log Ber</td><td class="mono">BCE</td><td>Ð‘Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</td></tr>
-      <tr><td>ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ Cat(softmax(f_Î¸))</td><td>âˆ’log Cat</td><td class="mono">CrossEntropy</td><td>ÐœÐ½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ</td></tr>
+      <tr><th>Распределение y|x</th><th>NLL →</th><th>Loss</th><th>Задача</th></tr>
+      <tr><td>Гауссово N(f_θ(x), σ²)</td><td>−log N</td><td class="mono">MSE</td><td>Регрессия</td></tr>
+      <tr><td>Бернулли Ber(σ(f_θ(x)))</td><td>−log Ber</td><td class="mono">BCE</td><td>Бинарная классификация</td></tr>
+      <tr><td>Категориальное Cat(softmax(f_θ))</td><td>−log Cat</td><td class="mono">CrossEntropy</td><td>Многоклассовая</td></tr>
     </table>
   </div>
   <div class="intuition" style="margin-top:12px;">
-    ðŸ’¡ ÐœÐµÐ½ÑÐµÑˆÑŒ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð¾Ð¶ÐµÐ½Ð¸Ðµ Ð¾ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ð¸ â€” Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑˆÑŒ Ð´Ñ€ÑƒÐ³ÑƒÑŽ loss. ÐÑ€Ñ…Ð¸Ñ‚ÐµÐºÑ‚ÑƒÑ€Ð° ÑÐµÑ‚Ð¸ Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ, Ð¼ÐµÐ½ÑÐµÑ‚ÑÑ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ Ð²Ñ‹Ñ…Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ.
+    💡 Меняешь предположение о распределении — получаешь другую loss. Архитектура сети не меняется, меняется только интерпретация выходного слоя.
   </div>
 </div>
 
-<!-- 2. Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð°Ñ‚Ð»Ð°Ñ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹ -->
+<!-- 2. Интерактивный атлас loss-функций -->
 <div class="card">
-  <h2>ðŸ“Š Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð°Ñ‚Ð»Ð°Ñ: Ð²Ñ‹Ð±ÐµÑ€Ð¸ Ñ„ÑƒÐ½ÐºÑ†Ð¸ÑŽ Ð¿Ð¾Ñ‚ÐµÑ€ÑŒ</h2>
+  <h2>📊 Интерактивный атлас: выбери функцию потерь</h2>
   <div class="grid-2">
     <div id="lossCardList"></div>
     <div id="lossDetail" style="background:#0d1117;border-radius:10px;padding:14px;font-size:.88em;"></div>
@@ -85,43 +85,43 @@ td.mono{font-family:monospace;}
   <div id="lossLegend" style="margin-top:6px;font-size:.82em;color:var(--muted);"></div>
 </div>
 
-<!-- 3. Ð’Ñ‹Ð²Ð¾Ð´ MSE Ð¸Ð· MLE -->
+<!-- 3. Вывод MSE из MLE -->
 <div class="card">
-  <h2>ðŸ“ Ð’Ñ‹Ð²Ð¾Ð´ MSE Ð¸Ð· MLE (Ð³Ð°ÑƒÑÑÐ¾Ð²ÑÐºÐ¸Ð¹ ÑˆÑƒÐ¼)</h2>
-  <p>ÐŸÑ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÐ¼: Ð¼ÐµÑ‚ÐºÐ¸ Ð·Ð°ÑˆÑƒÐ¼Ð»ÐµÐ½Ñ‹ Ð³Ð°ÑƒÑÑÐ¾Ð²ÑÐºÐ¸ â€” <span class="hl-amber">y = f_Î¸(x) + Îµ,  Îµ ~ N(0, ÏƒÂ²)</span></p>
+  <h2>📐 Вывод MSE из MLE (гауссовский шум)</h2>
+  <p>Предполагаем: метки зашумлены гауссовски — <span class="hl-amber">y = f_θ(x) + ε,  ε ~ N(0, σ²)</span></p>
   <br>
   <div id="mseDerivSteps">
-    <div class="step hl">Ð¨Ð°Ð³ 1: p(y|x,Î¸) = (1/âˆš(2Ï€ÏƒÂ²)) Â· exp(âˆ’(y âˆ’ f_Î¸(x))Â² / (2ÏƒÂ²))</div>
-    <div class="step">Ð¨Ð°Ð³ 2: log p = âˆ’Â½log(2Ï€ÏƒÂ²) âˆ’ (y âˆ’ f_Î¸(x))Â² / (2ÏƒÂ²)</div>
-    <div class="step">Ð¨Ð°Ð³ 3: NLL = âˆ’log p = const + (y âˆ’ f_Î¸(x))Â² / (2ÏƒÂ²)</div>
-    <div class="step hl">Ð¨Ð°Ð³ 4: L_MSE = (1/N)Â·Î£ (yáµ¢ âˆ’ Å·áµ¢)Â²   â† Ð¼Ð¸Ð½Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ñ NLL â‰¡ MSE</div>
-    <div class="step">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚: âˆ‚L/âˆ‚Å· = âˆ’2(y âˆ’ Å·)/N = 2(Å· âˆ’ y)/N</div>
+    <div class="step hl">Шаг 1: p(y|x,θ) = (1/√(2πσ²)) · exp(−(y − f_θ(x))² / (2σ²))</div>
+    <div class="step">Шаг 2: log p = −½log(2πσ²) − (y − f_θ(x))² / (2σ²)</div>
+    <div class="step">Шаг 3: NLL = −log p = const + (y − f_θ(x))² / (2σ²)</div>
+    <div class="step hl">Шаг 4: L_MSE = (1/N)·Σ (yᵢ − ŷᵢ)²   ← минимизация NLL ≡ MSE</div>
+    <div class="step">Градиент: ∂L/∂ŷ = −2(y − ŷ)/N = 2(ŷ − y)/N</div>
   </div>
   <div class="intuition" style="margin-top:10px;">
-    ðŸ’¡ ÏƒÂ² â€” Ð¿Ñ€Ð¾ÑÑ‚Ð¾ ÐºÐ¾Ð½ÑÑ‚Ð°Ð½Ñ‚Ð° Ð¿Ñ€Ð¸ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸. MSE Ð½ÐµÑÐ²Ð½Ð¾ Ð¿Ñ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÑ‚, Ñ‡Ñ‚Ð¾ Ð¾ÑˆÐ¸Ð±ÐºÐ¸ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ñ‹ Ð½Ð¾Ñ€Ð¼Ð°Ð»ÑŒÐ½Ð¾ Ñ Ð¿Ð¾ÑÑ‚Ð¾ÑÐ½Ð½Ð¾Ð¹ Ð´Ð¸ÑÐ¿ÐµÑ€ÑÐ¸ÐµÐ¹ (Ð³Ð¾Ð¼Ð¾ÑÐºÐµÐ´Ð°ÑÑ‚Ð¸Ñ‡Ð½Ð¾ÑÑ‚ÑŒ). Ð’Ñ‹Ð±Ñ€Ð¾ÑÑ‹ ÑÐ¸Ð»ÑŒÐ½Ð¾ ÑˆÑ‚Ñ€Ð°Ñ„ÑƒÑŽÑ‚ÑÑ Ð¸Ð·-Ð·Ð° ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð°.
+    💡 σ² — просто константа при оптимизации. MSE неявно предполагает, что ошибки распределены нормально с постоянной дисперсией (гомоскедастичность). Выбросы сильно штрафуются из-за квадрата.
   </div>
 </div>
 
-<!-- 4. Ð’Ñ‹Ð²Ð¾Ð´ BCE Ð¸Ð· MLE -->
+<!-- 4. Вывод BCE из MLE -->
 <div class="card">
-  <h2>ðŸ“ Ð’Ñ‹Ð²Ð¾Ð´ BCE Ð¸Ð· MLE (Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð‘ÐµÑ€Ð½ÑƒÐ»Ð»Ð¸)</h2>
-  <p>ÐŸÑ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÐ¼: y âˆˆ {0,1}, Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ ÐºÐ»Ð°ÑÑÐ° 1: <span class="hl-amber">pÌ‚ = Ïƒ(f_Î¸(x))</span></p>
+  <h2>📐 Вывод BCE из MLE (распределение Бернулли)</h2>
+  <p>Предполагаем: y ∈ {0,1}, вероятность класса 1: <span class="hl-amber">p̂ = σ(f_θ(x))</span></p>
   <br>
-  <div class="step hl">Ð¨Ð°Ð³ 1: p(y|x,Î¸) = pÌ‚Ê¸ Â· (1âˆ’pÌ‚)^(1âˆ’y)  â† PMF Ð‘ÐµÑ€Ð½ÑƒÐ»Ð»Ð¸</div>
-  <div class="step">Ð¨Ð°Ð³ 2: log p = yÂ·log(pÌ‚) + (1âˆ’y)Â·log(1âˆ’pÌ‚)</div>
-  <div class="step hl">Ð¨Ð°Ð³ 3: L_BCE = âˆ’(1/N)Â·Î£ [yáµ¢Â·log(pÌ‚áµ¢) + (1âˆ’yáµ¢)Â·log(1âˆ’pÌ‚áµ¢)]</div>
-  <div class="step">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (Ñ‡ÐµÑ€ÐµÐ· sigmoid): âˆ‚L/âˆ‚z = pÌ‚ âˆ’ y  â† ÑÐ»ÐµÐ³Ð°Ð½Ñ‚Ð½Ð¾!</div>
+  <div class="step hl">Шаг 1: p(y|x,θ) = p̂ʸ · (1−p̂)^(1−y)  ← PMF Бернулли</div>
+  <div class="step">Шаг 2: log p = y·log(p̂) + (1−y)·log(1−p̂)</div>
+  <div class="step hl">Шаг 3: L_BCE = −(1/N)·Σ [yᵢ·log(p̂ᵢ) + (1−yᵢ)·log(1−p̂ᵢ)]</div>
+  <div class="step">Градиент (через sigmoid): ∂L/∂z = p̂ − y  ← элегантно!</div>
   <br>
   <div class="grid-2">
     <div>
       <div class="intuition">
-        ðŸ’¡ Ð•ÑÐ»Ð¸ y=1: loss = âˆ’log(pÌ‚). Ð§ÐµÐ¼ ÑƒÐ²ÐµÑ€ÐµÐ½Ð½ÐµÐµ Ð¼Ð¾Ð´ÐµÐ»ÑŒ (pÌ‚â†’1), Ñ‚ÐµÐ¼ Ð¼ÐµÐ½ÑŒÑˆÐµ loss. Ð•ÑÐ»Ð¸ pÌ‚â†’0 Ð¿Ñ€Ð¸ y=1: âˆ’log(0)â†’âˆž.
+        💡 Если y=1: loss = −log(p̂). Чем увереннее модель (p̂→1), тем меньше loss. Если p̂→0 при y=1: −log(0)→∞.
       </div>
     </div>
     <div>
-      <h3>Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€</h3>
+      <h3>Числовой пример</h3>
       <div style="margin:8px 0;">
-        <span class="muted" style="font-size:.85em;">pÌ‚ (Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ðµ): <span id="bceP" style="color:var(--green);font-weight:600;">0.70</span></span>
+        <span class="muted" style="font-size:.85em;">p̂ (предсказание): <span id="bceP" style="color:var(--green);font-weight:600;">0.70</span></span>
         <input type="range" min=".01" max=".99" step=".01" value=".7" id="bcePrange" oninput="updateBCE()">
       </div>
       <div id="bceResult" style="font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:10px 12px;"></div>
@@ -129,271 +129,271 @@ td.mono{font-family:monospace;}
   </div>
 </div>
 
-<!-- 5. Ð’Ñ‹Ð²Ð¾Ð´ CrossEntropy Ð¸Ð· MLE -->
+<!-- 5. Вывод CrossEntropy из MLE -->
 <div class="card">
-  <h2>ðŸ“ Ð’Ñ‹Ð²Ð¾Ð´ CrossEntropy Ð¸Ð· MLE (ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ)</h2>
-  <p>ÐŸÑ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÐ¼: y â€” one-hot Ð²ÐµÐºÑ‚Ð¾Ñ€, Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸: <span class="hl-amber">pÌ‚ = softmax(f_Î¸(x))</span></p>
+  <h2>📐 Вывод CrossEntropy из MLE (категориальное)</h2>
+  <p>Предполагаем: y — one-hot вектор, вероятности: <span class="hl-amber">p̂ = softmax(f_θ(x))</span></p>
   <br>
-  <div class="step hl">Ð¨Ð°Ð³ 1: p(y|x,Î¸) = Î â‚– pÌ‚â‚–^(yâ‚–)  â† PMF ÐºÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ð³Ð¾</div>
-  <div class="step">Ð¨Ð°Ð³ 2: log p = Î£â‚– yâ‚– Â· log(pÌ‚â‚–)  = log(pÌ‚_c),  c = Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ</div>
-  <div class="step hl">Ð¨Ð°Ð³ 3: L_CE = âˆ’(1/N)Â·Î£áµ¢ log(pÌ‚áµ¢_cáµ¢) = âˆ’(1/N)Â·Î£áµ¢ Î£â‚– yáµ¢â‚–Â·log(pÌ‚áµ¢â‚–)</div>
-  <div class="step">Ð¡Ð²ÑÐ·ÑŒ Ñ Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¾Ð½Ð½Ð¾Ð¹ Ñ‚ÐµÐ¾Ñ€Ð¸ÐµÐ¹: L_CE = H(y, pÌ‚) = H(y) + KL(yâ€–pÌ‚) = KL(yâ€–pÌ‚)  (Ñ‚.Ðº. H(y)=0 Ð´Ð»Ñ one-hot)</div>
-  <div class="step hl">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (softmax+CE): âˆ‚L/âˆ‚zâ‚– = pÌ‚â‚– âˆ’ yâ‚–  â† Ð¸Ð´ÐµÐ½Ñ‚Ð¸Ñ‡Ð½Ð¾ BCE!</div>
+  <div class="step hl">Шаг 1: p(y|x,θ) = Πₖ p̂ₖ^(yₖ)  ← PMF категориального</div>
+  <div class="step">Шаг 2: log p = Σₖ yₖ · log(p̂ₖ)  = log(p̂_c),  c = истинный класс</div>
+  <div class="step hl">Шаг 3: L_CE = −(1/N)·Σᵢ log(p̂ᵢ_cᵢ) = −(1/N)·Σᵢ Σₖ yᵢₖ·log(p̂ᵢₖ)</div>
+  <div class="step">Связь с информационной теорией: L_CE = H(y, p̂) = H(y) + KL(y‖p̂) = KL(y‖p̂)  (т.к. H(y)=0 для one-hot)</div>
+  <div class="step hl">Градиент (softmax+CE): ∂L/∂zₖ = p̂ₖ − yₖ  ← идентично BCE!</div>
   <br>
-  <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ CalcCE</h3>
-  <div style="margin:8px 0;font-size:.85em;color:var(--muted);">Ð—Ð°Ð´Ð°Ð¹ 4 Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ softmax (Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ = 0):</div>
+  <h3>Интерактивный CalcCE</h3>
+  <div style="margin:8px 0;font-size:.85em;color:var(--muted);">Задай 4 вероятности softmax (истинный класс = 0):</div>
   <div id="ceInputs" style="display:flex;gap:10px;margin:8px 0;flex-wrap:wrap;"></div>
   <div id="ceResult" style="font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:10px 12px;margin-top:8px;"></div>
 </div>
 
 <!-- 6. Focal Loss -->
 <div class="card">
-  <h2>ðŸ” Focal Loss â€” Ð´Ð»Ñ Ð½ÐµÑÐ±Ð°Ð»Ð°Ð½ÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ñ… ÐºÐ»Ð°ÑÑÐ¾Ð²</h2>
+  <h2>🔍 Focal Loss — для несбалансированных классов</h2>
   <div class="grid-2">
     <div>
-      <p>Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ð½Ñ‹Ð¹ BCE Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ð¾ ÑˆÑ‚Ñ€Ð°Ñ„ÑƒÐµÑ‚ Ð»Ñ‘Ð³ÐºÐ¸Ðµ Ð¸ ÑÐ»Ð¾Ð¶Ð½Ñ‹Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ñ‹. ÐŸÑ€Ð¸ Ð´Ð¸ÑÐ±Ð°Ð»Ð°Ð½ÑÐµ ÐºÐ»Ð°ÑÑÐ¾Ð² (99% Ñ„Ð¾Ð½Ð°, 1% Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð²) Ð¼Ð¾Ð´ÐµÐ»ÑŒ Â«Ð»ÐµÐ½Ð¸Ñ‚ÑÑÂ».</p>
+      <p>Стандартный BCE одинаково штрафует лёгкие и сложные примеры. При дисбалансе классов (99% фона, 1% объектов) модель «ленится».</p>
       <br>
-      <div class="formula">FL(pÌ‚, y) = âˆ’Î±â‚œ Â· (1 âˆ’ pâ‚œ)^Î³ Â· log(pâ‚œ)
+      <div class="formula">FL(p̂, y) = −αₜ · (1 − pₜ)^γ · log(pₜ)
 
-pâ‚œ = pÌ‚   if y=1
-     1âˆ’pÌ‚  if y=0
-Î±  â€” Ð±Ð°Ð»Ð°Ð½ÑÐ¸Ñ€Ð¾Ð²Ð¾Ñ‡Ð½Ñ‹Ð¹ Ð²ÐµÑ ÐºÐ»Ð°ÑÑÐ°
-Î³  â€” focusing parameter (Ð¾Ð±Ñ‹Ñ‡Ð½Ð¾ 2)</div>
+pₜ = p̂   if y=1
+     1−p̂  if y=0
+α  — балансировочный вес класса
+γ  — focusing parameter (обычно 2)</div>
       <div class="intuition" style="margin-top:10px;font-size:.85em;">
-        ðŸ’¡ (1âˆ’pâ‚œ)^Î³ â€” ÑÑ‚Ð¾ Â«Ð¼Ð¾Ð´ÑƒÐ»Ð¸Ñ€ÑƒÑŽÑ‰Ð¸Ð¹ Ñ„Ð°ÐºÑ‚Ð¾Ñ€Â».<br>
-        Ð›Ñ‘Ð³ÐºÐ¸Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ (pÌ‚â†’1): (1âˆ’0.9)Â²=0.01 â†’ loss Ð¿Ð¾Ñ‡Ñ‚Ð¸ 0<br>
-        Ð¡Ð»Ð¾Ð¶Ð½Ñ‹Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€ (pÌ‚=0.5): (1âˆ’0.5)Â²=0.25 â†’ Ð¿Ð¾Ð»Ð½Ð°Ñ loss<br>
-        Ð¤Ð¾ÐºÑƒÑ Ð½Ð° Ñ‚Ñ€ÑƒÐ´Ð½Ñ‹Ñ… Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°Ñ…!
+        💡 (1−pₜ)^γ — это «модулирующий фактор».<br>
+        Лёгкий пример (p̂→1): (1−0.9)²=0.01 → loss почти 0<br>
+        Сложный пример (p̂=0.5): (1−0.5)²=0.25 → полная loss<br>
+        Фокус на трудных примерах!
       </div>
     </div>
     <div>
-      <h3>Focal vs BCE (Ð¸Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾)</h3>
+      <h3>Focal vs BCE (интерактивно)</h3>
       <div style="margin:6px 0;">
-        <span class="muted" style="font-size:.85em;">Î³ = <span id="gammaVal" style="color:var(--green);font-weight:600;">2.0</span></span>
+        <span class="muted" style="font-size:.85em;">γ = <span id="gammaVal" style="color:var(--green);font-weight:600;">2.0</span></span>
         <input type="range" min="0" max="5" step=".1" value="2" id="gammaRange" oninput="drawFocal()">
       </div>
       <canvas id="focalCanvas" width="360" height="200" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:360px;"></canvas>
       <div style="margin-top:5px;font-size:.8em;color:var(--muted);">
-        <span style="color:var(--amber)">â€”</span> BCE &nbsp; <span style="color:var(--green)">â€”</span> Focal (Î³) &nbsp; Ð¾ÑÑŒ x: pÌ‚ (y=1)
+        <span style="color:var(--amber)">—</span> BCE &nbsp; <span style="color:var(--green)">—</span> Focal (γ) &nbsp; ось x: p̂ (y=1)
       </div>
     </div>
   </div>
 </div>
 
-<!-- 7. Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² -->
+<!-- 7. Сравнение градиентов -->
 <div class="card">
-  <h2>âš¡ Ð¡Ñ€Ð°Ð²Ð½ÐµÐ½Ð¸Ðµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹</h2>
+  <h2>⚡ Сравнение градиентов loss-функций</h2>
   <div class="grid-2">
     <div>
-      <h3>Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð¿Ð¾ Ð»Ð¾Ð³Ð¸Ñ‚Ñƒ z (ÐºÐ»ÑŽÑ‡ÐµÐ²Ð¾Ð¹ Ñ„Ð°ÐºÑ‚)</h3>
-      <div class="formula" style="font-size:.88em;">MSE:  âˆ‚L/âˆ‚Å· = 2(Å· âˆ’ y)/N
-           (Ð»Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ð¹, ÑÐ¸Ð¼Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ð¹)
+      <h3>Градиент по логиту z (ключевой факт)</h3>
+      <div class="formula" style="font-size:.88em;">MSE:  ∂L/∂ŷ = 2(ŷ − y)/N
+           (линейный, симметричный)
 
-BCE+sigmoid:  âˆ‚L/âˆ‚z = (pÌ‚ âˆ’ y)/N
-              (Ð½Ðµ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ Ïƒâ€²!)
+BCE+sigmoid:  ∂L/∂z = (p̂ − y)/N
+              (не зависит от σ′!)
 
-CE+softmax:   âˆ‚L/âˆ‚zâ‚– = (pÌ‚â‚– âˆ’ yâ‚–)/N
-              (ÑÐ»ÐµÐ³Ð°Ð½Ñ‚Ð½Ð¾: pred âˆ’ true)</div>
+CE+softmax:   ∂L/∂zₖ = (p̂ₖ − yₖ)/N
+              (элегантно: pred − true)</div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ BCE Ñ‡ÐµÑ€ÐµÐ· z (Ð½Ðµ Ñ‡ÐµÑ€ÐµÐ· pÌ‚!) Ð¾Ñ‚Ð¼ÐµÐ½ÑÐµÑ‚ Ïƒâ€²(z) Ð·Ð½Ð°Ð¼ÐµÐ½Ð°Ñ‚ÐµÐ»Ñ â€” Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ sigmoid+BCE Ð½Ðµ Ð¸Ð¼ÐµÐµÑ‚ Ð¿Ñ€Ð¾Ð±Ð»ÐµÐ¼Ñ‹ vanishing gradient Ð² Ð²Ñ‹Ñ…Ð¾Ð´Ð½Ð¾Ð¼ ÑÐ»Ð¾Ðµ.
+        💡 Градиент BCE через z (не через p̂!) отменяет σ′(z) знаменателя — именно поэтому sigmoid+BCE не имеет проблемы vanishing gradient в выходном слое.
       </div>
     </div>
     <div>
-      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð° BCE</h3>
+      <h3>Визуализация градиента BCE</h3>
       <div style="margin:6px 0;">
-        <span class="muted" style="font-size:.85em;">Ð˜ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ y:
+        <span class="muted" style="font-size:.85em;">Истинный класс y:
           <button id="btnY0" onclick="setY(0,this)" style="margin-left:8px;">y=0</button>
           <button id="btnY1" class="active" onclick="setY(1,this)">y=1</button>
         </span>
       </div>
       <canvas id="gradCanvas" width="340" height="190" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
-      <div style="margin-top:5px;font-size:.8em;color:var(--muted);"><span style="color:var(--amber)">â€”</span> loss &nbsp; <span style="color:var(--green)">â€”</span> gradient âˆ‚L/âˆ‚z</div>
+      <div style="margin-top:5px;font-size:.8em;color:var(--muted);"><span style="color:var(--amber)">—</span> loss &nbsp; <span style="color:var(--green)">—</span> gradient ∂L/∂z</div>
     </div>
   </div>
 </div>
 
-<!-- 8. ÐŸÐ¾Ð»Ð½Ð°Ñ ÐºÐ°Ñ€Ñ‚Ð¸Ð½Ð°: Ð¾Ñ‚ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð´Ð¾ loss -->
+<!-- 8. Полная картина: от данных до loss -->
 <div class="card">
-  <h2>ðŸ—ºï¸ ÐŸÐ¾Ð»Ð½Ð°Ñ Ñ†ÐµÐ¿Ð¾Ñ‡ÐºÐ°: Ð´Ð°Ð½Ð½Ñ‹Ðµ â†’ loss</h2>
+  <h2>🗺️ Полная цепочка: данные → loss</h2>
   <div class="tabs" id="chainTabs">
-    <button class="active" onclick="showChain('clf',this)">ÐšÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</button>
-    <button onclick="showChain('reg',this)">Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</button>
-    <button onclick="showChain('binary',this)">Ð‘Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ</button>
+    <button class="active" onclick="showChain('clf',this)">Классификация</button>
+    <button onclick="showChain('reg',this)">Регрессия</button>
+    <button onclick="showChain('binary',this)">Бинарная</button>
   </div>
   <div id="chainContent"></div>
 </div>
 
-<!-- 9. MAE Ð¸ Huber -->
+<!-- 9. MAE и Huber -->
 <div class="card">
-  <h2>ðŸ“ MAE Ð¸ Huber Loss â€” Ñ€Ð¾Ð±Ð°ÑÑ‚Ð½Ð°Ñ Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ</h2>
+  <h2>📐 MAE и Huber Loss — робастная регрессия</h2>
   <div class="grid-2">
     <div>
-      <h3>MAE Ð¸Ð· MLE (Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ Ð›Ð°Ð¿Ð»Ð°ÑÐ°)</h3>
-      <p style="font-size:.88em;">ÐŸÑ€ÐµÐ´Ð¿Ð¾Ð»Ð°Ð³Ð°ÐµÐ¼: <span class="hl-amber">y = f_Î¸(x) + Îµ,  Îµ ~ Laplace(0, b)</span></p>
-      <div class="formula" style="margin-top:8px;font-size:.85em;">p(y|x,Î¸) = (1/2b)Â·exp(âˆ’|y âˆ’ f_Î¸(x)| / b)
+      <h3>MAE из MLE (распределение Лапласа)</h3>
+      <p style="font-size:.88em;">Предполагаем: <span class="hl-amber">y = f_θ(x) + ε,  ε ~ Laplace(0, b)</span></p>
+      <div class="formula" style="margin-top:8px;font-size:.85em;">p(y|x,θ) = (1/2b)·exp(−|y − f_θ(x)| / b)
 
-log p = âˆ’log(2b) âˆ’ |y âˆ’ f_Î¸(x)| / b
+log p = −log(2b) − |y − f_θ(x)| / b
 
-NLL = const + |y âˆ’ Å·| / b
+NLL = const + |y − ŷ| / b
 
-L_MAE = (1/N)Â·Î£ |yáµ¢ âˆ’ Å·áµ¢|
+L_MAE = (1/N)·Σ |yᵢ − ŷᵢ|
 
-âˆ‚L/âˆ‚Å· = sign(Å· âˆ’ y)  â† ÑÑƒÐ±Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚!</div>
+∂L/∂ŷ = sign(ŷ − y)  ← субградиент!</div>
       <div class="warn" style="margin-top:10px;font-size:.85em;">
-        âš ï¸ MAE Ð½ÐµÐ³Ð»Ð°Ð´ÐºÐ¸Ð¹ Ð² 0 â€” ÑÑƒÐ±Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚, Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹ Ñ…ÑƒÐ¶Ðµ ÑÑ…Ð¾Ð´ÑÑ‚ÑÑ. Ð—Ð°Ñ‚Ð¾ Ñ€Ð¾Ð±Ð°ÑÑ‚ÐµÐ½ Ðº Ð²Ñ‹Ð±Ñ€Ð¾ÑÐ°Ð¼ (Ð»Ð¸Ð½ÐµÐ¹Ð½Ñ‹Ð¹ ÑˆÑ‚Ñ€Ð°Ñ„, Ð½Ðµ ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð½Ñ‹Ð¹).
+        ⚠️ MAE негладкий в 0 — субградиент, оптимизаторы хуже сходятся. Зато робастен к выбросам (линейный штраф, не квадратный).
       </div>
     </div>
     <div>
-      <h3>Huber Loss â€” ÐºÐ¾Ð¼Ð¿Ñ€Ð¾Ð¼Ð¸ÑÑ MSE+MAE</h3>
-      <div class="formula" style="font-size:.85em;">LÎ´(y, Å·) = {
-  Â½(yâˆ’Å·)Â²        ÐµÑÐ»Ð¸ |yâˆ’Å·| â‰¤ Î´  â† MSE
-  Î´Â·|yâˆ’Å·| âˆ’ Â½Î´Â²  ÐµÑÐ»Ð¸ |yâˆ’Å·| > Î´  â† MAE
+      <h3>Huber Loss — компромисс MSE+MAE</h3>
+      <div class="formula" style="font-size:.85em;">Lδ(y, ŷ) = {
+  ½(y−ŷ)²        если |y−ŷ| ≤ δ  ← MSE
+  δ·|y−ŷ| − ½δ²  если |y−ŷ| > δ  ← MAE
 
-Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚:
-  âˆ‚L/âˆ‚Å· = (Å·âˆ’y)       ÐµÑÐ»Ð¸ |e| â‰¤ Î´
-  âˆ‚L/âˆ‚Å· = Î´Â·sign(Å·âˆ’y) ÐµÑÐ»Ð¸ |e| > Î´</div>
+Градиент:
+  ∂L/∂ŷ = (ŷ−y)       если |e| ≤ δ
+  ∂L/∂ŷ = δ·sign(ŷ−y) если |e| > δ</div>
       <div class="intuition" style="margin-top:8px;font-size:.85em;">
-        ðŸ’¡ Î´ â€” Ð¿Ð¾Ñ€Ð¾Ð³ Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ. ÐŸÑ€Ð¸ Î´â†’âˆž: Huber â‰ˆ MSE. ÐŸÑ€Ð¸ Î´â†’0: Huber â‰ˆ MAE.<br>
-        Ð“Ð»Ð°Ð´ÐºÐ¾ÑÑ‚ÑŒ MSE Ñ‚Ð°Ð¼, Ð³Ð´Ðµ Ð²Ð°Ð¶Ð½Ð° Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚ÑŒ; ÑƒÑÑ‚Ð¾Ð¹Ñ‡Ð¸Ð²Ð¾ÑÑ‚ÑŒ MAE Ñ‚Ð°Ð¼, Ð³Ð´Ðµ Ð²Ñ‹Ð±Ñ€Ð¾ÑÑ‹.
+        💡 δ — порог переключения. При δ→∞: Huber ≈ MSE. При δ→0: Huber ≈ MAE.<br>
+        Гладкость MSE там, где важна точность; устойчивость MAE там, где выбросы.
       </div>
       <div style="margin-top:10px;">
         <canvas id="huberCanvas" width="320" height="170" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:320px;"></canvas>
         <div style="margin-top:4px;font-size:.8em;color:var(--muted);">
-          Î´ = <span id="huberDeltaVal" style="color:var(--green);font-weight:600;">1.0</span>
+          δ = <span id="huberDeltaVal" style="color:var(--green);font-weight:600;">1.0</span>
           <input type="range" min="0.1" max="3" step="0.1" value="1" id="huberDelta" oninput="drawHuber()">
-          <span style="color:var(--blue)">â€”</span> MSE &nbsp; <span style="color:var(--amber)">â€”</span> MAE &nbsp; <span style="color:var(--green)">â€”</span> Huber
+          <span style="color:var(--blue)">—</span> MSE &nbsp; <span style="color:var(--amber)">—</span> MAE &nbsp; <span style="color:var(--green)">—</span> Huber
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 10. Ð§Ð¸ÑÐ»Ð¾Ð²Ð°Ñ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒ -->
+<!-- 10. Числовая стабильность -->
 <div class="card">
-  <h2>ðŸ”¢ Ð§Ð¸ÑÐ»Ð¾Ð²Ð°Ñ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒ: log-sum-exp Ñ‚Ñ€ÑŽÐº</h2>
+  <h2>🔢 Числовая стабильность: log-sum-exp трюк</h2>
   <div class="grid-2">
     <div>
-      <p>ÐÐ°Ð¸Ð²Ð½Ñ‹Ð¹ softmax Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ñ… Ð»Ð¾Ð³Ð¸Ñ‚Ð°Ñ… Ð´Ð°Ñ‘Ñ‚ <span class="hl-red">overflow/underflow</span>:</p>
-      <div class="formula" style="font-size:.85em;">ÐÐ°Ð¸Ð²Ð½Ð¾ (ÐŸÐ›ÐžÐ¥Ðž):
-  exp(1000) = âˆž   â†’ nan Ð² softmax
+      <p>Наивный softmax при больших логитах даёт <span class="hl-red">overflow/underflow</span>:</p>
+      <div class="formula" style="font-size:.85em;">Наивно (ПЛОХО):
+  exp(1000) = ∞   → nan в softmax
 
-log-sum-exp Ñ‚Ñ€ÑŽÐº (Ð¥ÐžÐ ÐžÐ¨Ðž):
-  m = max(zâ‚,...,zâ‚–)
-  log Î£ exp(záµ¢) = m + log Î£ exp(záµ¢ âˆ’ m)
+log-sum-exp трюк (ХОРОШО):
+  m = max(z₁,...,zₖ)
+  log Σ exp(zᵢ) = m + log Σ exp(zᵢ − m)
   
-  â†’ Ð²ÑÐµÐ³Ð´Ð° exp(â‰¤0), Ð½ÐµÑ‚ overflow
+  → всегда exp(≤0), нет overflow
 
-Ð¡Ñ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ softmax:
-  pÌ‚áµ¢ = exp(záµ¢ âˆ’ m) / Î£â±¼ exp(zâ±¼ âˆ’ m)</div>
+Стабильный softmax:
+  p̂ᵢ = exp(zᵢ − m) / Σⱼ exp(zⱼ − m)</div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ PyTorch <code style="color:var(--amber)">F.cross_entropy</code> Ð¸ <code style="color:var(--amber)">F.log_softmax</code> Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÑÑŽÑ‚ ÑÑ‚Ð¾Ñ‚ Ñ‚Ñ€ÑŽÐº Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸. Ð˜Ð¼ÐµÐ½Ð½Ð¾ Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ <strong>Ð¿ÐµÑ€ÐµÐ´Ð°Ð²Ð°Ð¹ Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹, Ð° Ð½Ðµ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸</strong> Ð² CrossEntropyLoss.
+        💡 PyTorch <code style="color:var(--amber)">F.cross_entropy</code> и <code style="color:var(--amber)">F.log_softmax</code> применяют этот трюк автоматически. Именно поэтому <strong>передавай логиты, а не вероятности</strong> в CrossEntropyLoss.
       </div>
     </div>
     <div>
-      <h3>Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ð°Ñ Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ°</h3>
-      <div style="font-size:.85em;color:var(--muted);margin-bottom:6px;">ÐœÐ°ÐºÑÐ¸Ð¼Ð°Ð»ÑŒÐ½Ñ‹Ð¹ Ð»Ð¾Ð³Ð¸Ñ‚ (Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ðµ = 0):</div>
+      <h3>Интерактивная проверка</h3>
+      <div style="font-size:.85em;color:var(--muted);margin-bottom:6px;">Максимальный логит (остальные = 0):</div>
       <input type="range" min="-10" max="100" step="1" value="10" id="lseRange" oninput="calcLSE()">
       <div style="font-size:.85em;margin-bottom:6px;">max logit = <span id="lseVal" style="color:var(--green);font-weight:600;">10</span></div>
       <div id="lseResult" style="font-family:monospace;font-size:.83em;background:#0d1117;border-radius:8px;padding:10px 12px;"></div>
       <div class="warn" style="margin-top:10px;font-size:.83em;">
-        âš ï¸ ÐÐ¸ÐºÐ¾Ð³Ð´Ð° Ð½Ðµ Ð´ÐµÐ»Ð°Ð¹ <code>BCE(sigmoid(z), y)</code> â€” Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐ¹ <code>BCEWithLogitsLoss(z, y)</code>. Ð¢Ð¾ Ð¶Ðµ Ð´Ð»Ñ CE: Ð¿ÐµÑ€ÐµÐ´Ð°Ð²Ð°Ð¹ Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹, Ð½Ðµ softmax.
+        ⚠️ Никогда не делай <code>BCE(sigmoid(z), y)</code> — используй <code>BCEWithLogitsLoss(z, y)</code>. То же для CE: передавай логиты, не softmax.
       </div>
     </div>
   </div>
 </div>
 
-<!-- 11. Ð¨Ð¿Ð°Ñ€Ð³Ð°Ð»ÐºÐ°: ÐºÐ¾Ð³Ð´Ð° Ñ‡Ñ‚Ð¾ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ -->
+<!-- 11. Шпаргалка: когда что использовать -->
 <div class="card">
-  <h2>ðŸ—‚ï¸ Ð¨Ð¿Ð°Ñ€Ð³Ð°Ð»ÐºÐ°: ÐºÐ¾Ð³Ð´Ð° ÐºÐ°ÐºÑƒÑŽ loss Ð²Ñ‹Ð±Ñ€Ð°Ñ‚ÑŒ</h2>
+  <h2>🗂️ Шпаргалка: когда какую loss выбрать</h2>
   <table>
     <tr>
-      <th>Ð—Ð°Ð´Ð°Ñ‡Ð°</th>
-      <th>Ð’Ñ‹Ñ…Ð¾Ð´ ÑÐµÑ‚Ð¸</th>
+      <th>Задача</th>
+      <th>Выход сети</th>
       <th>Loss</th>
       <th>PyTorch</th>
-      <th>ÐšÐ¾Ð³Ð´Ð° Ð¼ÐµÐ½ÑÑ‚ÑŒ</th>
+      <th>Когда менять</th>
     </tr>
     <tr>
-      <td>Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ, Ð½ÐµÑ‚ Ð²Ñ‹Ð±Ñ€Ð¾ÑÐ¾Ð²</td>
-      <td class="mono">Å· âˆˆ â„</td>
+      <td>Регрессия, нет выбросов</td>
+      <td class="mono">ŷ ∈ ℝ</td>
       <td class="mono" style="color:var(--blue);">MSE</td>
       <td class="mono">MSELoss()</td>
-      <td style="font-size:.82em;color:var(--muted);">Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚</td>
+      <td style="font-size:.82em;color:var(--muted);">Стандарт</td>
     </tr>
     <tr>
-      <td>Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ, ÐµÑÑ‚ÑŒ Ð²Ñ‹Ð±Ñ€Ð¾ÑÑ‹</td>
-      <td class="mono">Å· âˆˆ â„</td>
+      <td>Регрессия, есть выбросы</td>
+      <td class="mono">ŷ ∈ ℝ</td>
       <td class="mono" style="color:var(--green);">Huber / MAE</td>
       <td class="mono">HuberLoss() / L1Loss()</td>
-      <td style="font-size:.82em;color:var(--muted);">Ð¨ÑƒÐ¼Ð½Ñ‹Ðµ Ð´Ð°Ð½Ð½Ñ‹Ðµ</td>
+      <td style="font-size:.82em;color:var(--muted);">Шумные данные</td>
     </tr>
     <tr>
-      <td>Ð‘Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ</td>
-      <td class="mono">z âˆˆ â„ (Ð»Ð¾Ð³Ð¸Ñ‚)</td>
+      <td>Бинарная классификация</td>
+      <td class="mono">z ∈ ℝ (логит)</td>
       <td class="mono" style="color:var(--amber);">BCE</td>
       <td class="mono">BCEWithLogitsLoss()</td>
-      <td style="font-size:.82em;color:var(--muted);">Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚</td>
+      <td style="font-size:.82em;color:var(--muted);">Стандарт</td>
     </tr>
     <tr>
-      <td>Ð”Ð¸ÑÐ±Ð°Ð»Ð°Ð½Ñ ÐºÐ»Ð°ÑÑÐ¾Ð²</td>
-      <td class="mono">z âˆˆ â„ (Ð»Ð¾Ð³Ð¸Ñ‚)</td>
+      <td>Дисбаланс классов</td>
+      <td class="mono">z ∈ ℝ (логит)</td>
       <td class="mono" style="color:var(--pink);">Focal</td>
       <td class="mono">FocalLoss (custom)</td>
       <td style="font-size:.82em;color:var(--muted);">99%/1% split</td>
     </tr>
     <tr>
-      <td>ÐœÐ½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ (K ÐºÐ»Ð°ÑÑÐ¾Ð²)</td>
-      <td class="mono">z âˆˆ â„á´· (Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹)</td>
+      <td>Многоклассовая (K классов)</td>
+      <td class="mono">z ∈ ℝᴷ (логиты)</td>
       <td class="mono" style="color:var(--purple);">CrossEntropy</td>
       <td class="mono">CrossEntropyLoss()</td>
-      <td style="font-size:.82em;color:var(--muted);">Ð¡Ñ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚</td>
+      <td style="font-size:.82em;color:var(--muted);">Стандарт</td>
     </tr>
     <tr>
-      <td>ÐœÐ½Ð¾Ð³Ð¾Ð¼ÐµÑ‚Ð¾Ñ‡Ð½Ð°Ñ (multi-label)</td>
-      <td class="mono">z âˆˆ â„á´· (Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹)</td>
-      <td class="mono" style="color:var(--amber);">BCE Ã— K</td>
+      <td>Многометочная (multi-label)</td>
+      <td class="mono">z ∈ ℝᴷ (логиты)</td>
+      <td class="mono" style="color:var(--amber);">BCE × K</td>
       <td class="mono">BCEWithLogitsLoss()</td>
-      <td style="font-size:.82em;color:var(--muted);">ÐÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¼ÐµÑ‚Ð¾Ðº ÑÑ€Ð°Ð·Ñƒ</td>
+      <td style="font-size:.82em;color:var(--muted);">Несколько меток сразу</td>
     </tr>
   </table>
   <div class="intuition" style="margin-top:12px;">
-    ðŸ’¡ ÐŸÑ€Ð°Ð²Ð¸Ð»Ð¾: ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ Ð½Ð° <strong>Ñ‚Ð¸Ð¿ Ð²Ñ‹Ñ…Ð¾Ð´Ð° Ð¸ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ðµ</strong>. Ð§ÐµÐ¼ Ð±Ð¾Ð»ÑŒÑˆÐµ Ñ…Ð¾Ñ‡ÐµÑˆÑŒ ÑˆÑ‚Ñ€Ð°Ñ„Ð¾Ð²Ð°Ñ‚ÑŒ ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ñ‹Ðµ Ð¾ÑˆÐ¸Ð±ÐºÐ¸ â€” Ñ‚ÐµÐ¼ Ð±Ð¾Ð»ÑŒÑˆÐµ Ð»Ð¾Ð³Ð°Ñ€Ð¸Ñ„Ð¼Ð¸Ñ‡ÐµÑÐºÐ¸Ð¹ ÑˆÑ‚Ñ€Ð°Ñ„ (CE/BCE) Ð»ÑƒÑ‡ÑˆÐµ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾Ð³Ð¾ (MAE) Ð¸Ð»Ð¸ ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚Ð½Ð¾Ð³Ð¾ (MSE).
+    💡 Правило: смотри на <strong>тип выхода и распределение</strong>. Чем больше хочешь штрафовать уверенные ошибки — тем больше логарифмический штраф (CE/BCE) лучше линейного (MAE) или квадратного (MSE).
   </div>
 </div>
 
-<!-- 12. ÐšÐ¾Ð´ -->
+<!-- 12. Код -->
 <div class="card">
-  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð² PyTorch</h2>
+  <h2>💻 Реализация в PyTorch</h2>
   <div class="tabs" id="codeTabs">
     <button class="active" onclick="showCode('basic',this)">MSE / BCE / CE</button>
     <button onclick="showCode('custom',this)">Focal Loss</button>
-    <button onclick="showCode('grad',this)">ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð²</button>
-    <button onclick="showCode('stable',this)">Ð§Ð¸ÑÐ»Ð¾Ð²Ð°Ñ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒ</button>
+    <button onclick="showCode('grad',this)">Проверка градиентов</button>
+    <button onclick="showCode('stable',this)">Числовая стабильность</button>
   </div>
   <div id="codeContent" class="formula" style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
 </div>
 
-<!-- 13. Ð˜Ñ‚Ð¾Ð³Ð¾ -->
+<!-- 13. Итого -->
 <div class="card" style="border-color:var(--amber);">
-  <h2>âœ… Ð§Ñ‚Ð¾ Ð·Ð°Ð¿Ð¾Ð¼Ð½Ð¸Ñ‚ÑŒ Ð¸Ð· 2.4</h2>
+  <h2>✅ Что запомнить из 2.4</h2>
   <div class="grid-2">
     <div>
-      <h3>ÐšÐ¾Ð½Ñ†ÐµÐ¿Ñ†Ð¸Ð¸</h3>
-      <div class="step hl">Ð›ÑŽÐ±Ð°Ñ loss = NLL Ð¿Ñ€Ð¸ Ð²Ñ‹Ð±Ð¾Ñ€Ðµ Ñ€Ð°ÑÐ¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ð¸Ñ Ð´Ð»Ñ y|x</div>
-      <div class="step">MSE â† Ð“Ð°ÑƒÑÑÐ¾Ð²Ð¾, BCE â† Ð‘ÐµÑ€Ð½ÑƒÐ»Ð»Ð¸, CE â† ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ, MAE â† Ð›Ð°Ð¿Ð»Ð°ÑÐ¾Ð²Ð¾</div>
-      <div class="step hl">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ BCE/CE Ñ‡ÐµÑ€ÐµÐ· Ð»Ð¾Ð³Ð¸Ñ‚: âˆ‚L/âˆ‚z = pÌ‚ âˆ’ y (ÑÐ»ÐµÐ³Ð°Ð½Ñ‚Ð½Ð¾ Ð¸ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾)</div>
-      <div class="step">Focal Loss Ð¿Ð¾Ð´Ð°Ð²Ð»ÑÐµÑ‚ Ð»Ñ‘Ð³ÐºÐ¸Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ñ‹ Ñ‡ÐµÑ€ÐµÐ· (1âˆ’pâ‚œ)^Î³ â€” Ð´Ð»Ñ Ð´Ð¸ÑÐ±Ð°Ð»Ð°Ð½ÑÐ° ÐºÐ»Ð°ÑÑÐ¾Ð²</div>
+      <h3>Концепции</h3>
+      <div class="step hl">Любая loss = NLL при выборе распределения для y|x</div>
+      <div class="step">MSE ← Гауссово, BCE ← Бернулли, CE ← Категориальное, MAE ← Лапласово</div>
+      <div class="step hl">Градиент BCE/CE через логит: ∂L/∂z = p̂ − y (элегантно и стабильно)</div>
+      <div class="step">Focal Loss подавляет лёгкие примеры через (1−pₜ)^γ — для дисбаланса классов</div>
     </div>
     <div>
-      <h3>ÐŸÑ€Ð°ÐºÑ‚Ð¸ÐºÐ° PyTorch</h3>
-      <div class="step hl">CrossEntropyLoss Ð¸ BCEWithLogitsLoss Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÑŽÑ‚ Ð›ÐžÐ“Ð˜Ð¢Ð« â€” Ð½Ðµ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸!</div>
-      <div class="step">log-sum-exp Ñ‚Ñ€ÑŽÐº Ð²Ð½ÑƒÑ‚Ñ€Ð¸ ÑÑ‚Ð¸Ñ… Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¹ Ð¿Ñ€ÐµÐ´Ð¾Ñ‚Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ overflow</div>
-      <div class="step hl">ÐŸÑ€Ð¸ Ð²Ñ‹Ð±Ñ€Ð¾ÑÐ°Ñ…: Huber (Î´=1) Ð²Ð¼ÐµÑÑ‚Ð¾ MSE; Ð¿Ñ€Ð¸ Ð´Ð¸ÑÐ±Ð°Ð»Ð°Ð½ÑÐµ: Focal (Î³=2)</div>
-      <div class="step">Multi-label â‰  Multiclass: Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐ¹ BCEÃ—K, Ð° Ð½Ðµ CrossEntropy</div>
+      <h3>Практика PyTorch</h3>
+      <div class="step hl">CrossEntropyLoss и BCEWithLogitsLoss принимают ЛОГИТЫ — не вероятности!</div>
+      <div class="step">log-sum-exp трюк внутри этих функций предотвращает overflow</div>
+      <div class="step hl">При выбросах: Huber (δ=1) вместо MSE; при дисбалансе: Focal (γ=2)</div>
+      <div class="step">Multi-label ≠ Multiclass: используй BCE×K, а не CrossEntropy</div>
     </div>
   </div>
   <div class="info" style="margin-top:14px;">
-    ðŸ“Œ Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ Ð±Ð»Ð¾Ðº: <strong>2.5 Backpropagation</strong> â€” ÐºÐ°Ðº Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ñ‚ÐµÑ‡Ñ‘Ñ‚ Ð¾Ð±Ñ€Ð°Ñ‚Ð½Ð¾ Ñ‡ÐµÑ€ÐµÐ· Ð²ÑÐµ ÑÑ‚Ð¸ loss-Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ðº Ð²ÐµÑÐ°Ð¼ ÑÐµÑ‚Ð¸.
+    📌 Следующий блок: <strong>2.5 Backpropagation</strong> — как градиент течёт обратно через все эти loss-функции к весам сети.
   </div>
 </div>
 
@@ -403,51 +403,51 @@ const LOSSES = {
   mse: {
     name:"MSE", color:"#60a5fa",
     subtitle:"Mean Squared Error",
-    formula:"L = (1/N) Î£áµ¢ (yáµ¢ âˆ’ Å·áµ¢)Â²",
-    deriv:"âˆ‚L/âˆ‚Å· = 2(Å·âˆ’y)/N",
-    mle:"Ð“Ð°ÑƒÑÑÐ¾Ð²Ð¾: y|x ~ N(f_Î¸(x), ÏƒÂ²)",
-    props:["Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ","Ð§ÑƒÐ²ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÐµÐ½ Ðº Ð²Ñ‹Ð±Ñ€Ð¾ÑÐ°Ð¼ (ÐºÐ²Ð°Ð´Ñ€Ð°Ñ‚)","Ð¡Ð¸Ð¼Ð¼ÐµÑ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ð¹ ÑˆÑ‚Ñ€Ð°Ñ„"],
-    range:"[0, +âˆž)",
+    formula:"L = (1/N) Σᵢ (yᵢ − ŷᵢ)²",
+    deriv:"∂L/∂ŷ = 2(ŷ−y)/N",
+    mle:"Гауссово: y|x ~ N(f_θ(x), σ²)",
+    props:["Регрессия","Чувствителен к выбросам (квадрат)","Симметричный штраф"],
+    range:"[0, +∞)",
     fn:(y,p)=>(y-p)**2
   },
   mae: {
     name:"MAE", color:"#34d399",
     subtitle:"Mean Absolute Error",
-    formula:"L = (1/N) Î£áµ¢ |yáµ¢ âˆ’ Å·áµ¢|",
-    deriv:"âˆ‚L/âˆ‚Å· = sign(Å·âˆ’y)",
-    mle:"Ð›Ð°Ð¿Ð»Ð°ÑÐ¾Ð²Ð¾: y|x ~ Laplace(f_Î¸(x), b)",
-    props:["Ð ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ","Ð Ð¾Ð±Ð°ÑÑ‚ÐµÐ½ Ðº Ð²Ñ‹Ð±Ñ€Ð¾ÑÐ°Ð¼","ÐÐµÐ³Ð»Ð°Ð´ÐºÐ¸Ð¹ Ð² 0 (ÑÑƒÐ±Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚)"],
-    range:"[0, +âˆž)",
+    formula:"L = (1/N) Σᵢ |yᵢ − ŷᵢ|",
+    deriv:"∂L/∂ŷ = sign(ŷ−y)",
+    mle:"Лапласово: y|x ~ Laplace(f_θ(x), b)",
+    props:["Регрессия","Робастен к выбросам","Негладкий в 0 (субградиент)"],
+    range:"[0, +∞)",
     fn:(y,p)=>Math.abs(y-p)
   },
   bce: {
     name:"BCE", color:"#f59e0b",
     subtitle:"Binary CrossEntropy",
-    formula:"L = âˆ’[yÂ·log(pÌ‚)+(1âˆ’y)Â·log(1âˆ’pÌ‚)]",
-    deriv:"âˆ‚L/âˆ‚z = pÌ‚âˆ’y  (Ñ‡ÐµÑ€ÐµÐ· logit z)",
-    mle:"Ð‘ÐµÑ€Ð½ÑƒÐ»Ð»Ð¸: y|x ~ Ber(Ïƒ(f_Î¸(x)))",
-    props:["Ð‘Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ","pÌ‚=Ïƒ(z)âˆˆ(0,1)","log-ÑˆÑ‚Ñ€Ð°Ñ„ ÑÐ¸Ð»ÑŒÐ½ÐµÐµ Ð¿Ñ€Ð¸ ÑƒÐ²ÐµÑ€ÐµÐ½Ð½Ð¾Ð¹ Ð¾ÑˆÐ¸Ð±ÐºÐµ"],
-    range:"[0, +âˆž)",
+    formula:"L = −[y·log(p̂)+(1−y)·log(1−p̂)]",
+    deriv:"∂L/∂z = p̂−y  (через logit z)",
+    mle:"Бернулли: y|x ~ Ber(σ(f_θ(x)))",
+    props:["Бинарная классификация","p̂=σ(z)∈(0,1)","log-штраф сильнее при уверенной ошибке"],
+    range:"[0, +∞)",
     fn:(y,p)=>-(y*Math.log(p+1e-9)+(1-y)*Math.log(1-p+1e-9))
   },
   ce: {
     name:"CrossEntropy", color:"#a78bfa",
     subtitle:"Categorical CrossEntropy",
-    formula:"L = âˆ’Î£â‚– yâ‚–Â·log(pÌ‚â‚–) = âˆ’log(pÌ‚_c)",
-    deriv:"âˆ‚L/âˆ‚zâ‚– = pÌ‚â‚–âˆ’yâ‚–  (Ñ‡ÐµÑ€ÐµÐ· logit)",
-    mle:"ÐšÐ°Ñ‚ÐµÐ³Ð¾Ñ€Ð¸Ð°Ð»ÑŒÐ½Ð¾Ðµ: y|x ~ Cat(softmax(f_Î¸))",
-    props:["ÐœÐ½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ","Ð¡Ð²ÑÐ·ÑŒ Ñ KL(yâ€–pÌ‚)","Ð¡Ð¾Ð²Ð¼ÐµÑ‰Ð°ÐµÑ‚ÑÑ Ñ softmax"],
-    range:"[0, +âˆž)",
+    formula:"L = −Σₖ yₖ·log(p̂ₖ) = −log(p̂_c)",
+    deriv:"∂L/∂zₖ = p̂ₖ−yₖ  (через logit)",
+    mle:"Категориальное: y|x ~ Cat(softmax(f_θ))",
+    props:["Многоклассовая классификация","Связь с KL(y‖p̂)","Совмещается с softmax"],
+    range:"[0, +∞)",
     fn:(y,p)=>-Math.log(p+1e-9)  // y=1 case, p = correct class prob
   },
   focal: {
     name:"Focal", color:"#f472b6",
-    subtitle:"Focal Loss (Î³=2)",
-    formula:"FL = âˆ’(1âˆ’pÌ‚)^Î³ Â· log(pÌ‚)  Ð¿Ñ€Ð¸ y=1",
-    deriv:"âˆ‚FL/âˆ‚z = Î³(1âˆ’pÌ‚)^(Î³-1)Â·pÌ‚Â·log(pÌ‚)+(1âˆ’pÌ‚)^Î³Â·(pÌ‚âˆ’y)",
-    mle:"ÐœÐ¾Ð´Ð¸Ñ„Ð¸Ñ†Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ BCE Ñ Ñ„Ð¾ÐºÑƒÑÐ¾Ð¼ Ð½Ð° Ñ‚Ñ€ÑƒÐ´Ð½Ñ‹Ñ… Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°Ñ…",
-    props:["Ð”Ð¸ÑÐ±Ð°Ð»Ð°Ð½Ñ ÐºÐ»Ð°ÑÑÐ¾Ð² (RetinaNet)","Î³=0: Ð¾Ð±Ñ‹Ñ‡Ð½Ñ‹Ð¹ BCE","Î³>0: Ð¼ÐµÐ½ÑŒÑˆÐµ ÑˆÑ‚Ñ€Ð°Ñ„ Ð·Ð° Ð»Ñ‘Ð³ÐºÐ¸Ðµ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ñ‹"],
-    range:"[0, +âˆž)",
+    subtitle:"Focal Loss (γ=2)",
+    formula:"FL = −(1−p̂)^γ · log(p̂)  при y=1",
+    deriv:"∂FL/∂z = γ(1−p̂)^(γ-1)·p̂·log(p̂)+(1−p̂)^γ·(p̂−y)",
+    mle:"Модифицированный BCE с фокусом на трудных примерах",
+    props:["Дисбаланс классов (RetinaNet)","γ=0: обычный BCE","γ>0: меньше штраф за лёгкие примеры"],
+    range:"[0, +∞)",
     fn:(y,p)=>{ const pt=y?p:1-p; return -Math.pow(1-pt,2)*Math.log(pt+1e-9); }
   }
 };
@@ -468,16 +468,16 @@ function buildLossDetail(){
   const l=LOSSES[activeLoss];
   document.getElementById('lossDetail').innerHTML=`
     <div style="color:${l.color};font-size:1.1em;font-weight:700;margin-bottom:8px;">${l.name}</div>
-    <div class="muted" style="margin-bottom:4px;">Ð¤Ð¾Ñ€Ð¼ÑƒÐ»Ð°:</div>
+    <div class="muted" style="margin-bottom:4px;">Формула:</div>
     <div class="formula" style="margin:4px 0;font-size:.85em;">${l.formula}</div>
-    <div class="muted" style="margin:8px 0 4px;">Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚:</div>
+    <div class="muted" style="margin:8px 0 4px;">Градиент:</div>
     <div style="font-family:monospace;font-size:.85em;color:var(--green);">${l.deriv}</div>
-    <div class="muted" style="margin:8px 0 4px;">MLE-Ð¸Ð½Ñ‚ÐµÑ€Ð¿Ñ€ÐµÑ‚Ð°Ñ†Ð¸Ñ:</div>
+    <div class="muted" style="margin:8px 0 4px;">MLE-интерпретация:</div>
     <div style="font-size:.85em;">${l.mle}</div>
     <div style="margin-top:8px;">
-      ${l.props.map(p=>`<div style="font-size:.82em;color:var(--muted);padding:2px 0;">â€¢ ${p}</div>`).join('')}
+      ${l.props.map(p=>`<div style="font-size:.82em;color:var(--muted);padding:2px 0;">• ${p}</div>`).join('')}
     </div>
-    <div class="muted" style="margin-top:8px;font-size:.82em;">Ð’Ñ‹Ñ…Ð¾Ð´: ${l.range}</div>
+    <div class="muted" style="margin-top:8px;font-size:.82em;">Выход: ${l.range}</div>
   `;
 }
 
@@ -489,7 +489,7 @@ function drawLossPlot(){
   // For MSE/MAE: x = predicted, y_true = 0
   // For BCE/CE/Focal: x = p_hat, y_true = 1
   const isReg = activeLoss==='mse'||activeLoss==='mae';
-  const xLabel = isReg ? 'Å· (Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ðµ, y=0)' : 'pÌ‚ (Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ, y=1)';
+  const xLabel = isReg ? 'ŷ (предсказание, y=0)' : 'p̂ (вероятность, y=1)';
   const xMin=isReg?-3:0.01, xMax=isReg?3:0.99;
   const keys = ['mse','mae','bce','ce','focal'];
   // y range
@@ -534,7 +534,7 @@ function drawLossPlot(){
     ctx.globalAlpha=1;
   });
 
-  document.getElementById('lossLegend').innerHTML = keys.map(k=>`<span style="color:${LOSSES[k].color};margin-right:14px;font-weight:${k===activeLoss?700:400};">â€” ${LOSSES[k].name}</span>`).join('');
+  document.getElementById('lossLegend').innerHTML = keys.map(k=>`<span style="color:${LOSSES[k].color};margin-right:14px;font-weight:${k===activeLoss?700:400};">— ${LOSSES[k].name}</span>`).join('');
 }
 
 // ============ BCE CALC ============
@@ -544,11 +544,11 @@ function updateBCE(){
   const l0=-(Math.log(1-p+1e-9));
   const l1=-(Math.log(p+1e-9));
   document.getElementById('bceResult').innerHTML=
-    `y=1: BCE = âˆ’log(${p.toFixed(2)}) = <span style="color:var(--amber);font-weight:600;">${l1.toFixed(4)}</span>\n`+
-    `y=0: BCE = âˆ’log(${(1-p).toFixed(2)}) = <span style="color:var(--green);font-weight:600;">${l0.toFixed(4)}</span>\n\n`+
-    `Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ âˆ‚L/âˆ‚z:\n`+
-    `  y=1: pÌ‚âˆ’1 = ${(p-1).toFixed(4)}  (Ñ‚Ð¾Ð»ÐºÐ°ÐµÑ‚ z Ð²Ð²ÐµÑ€Ñ… â†‘)\n`+
-    `  y=0: pÌ‚âˆ’0 = ${p.toFixed(4)}  (Ñ‚Ð¾Ð»ÐºÐ°ÐµÑ‚ z Ð²Ð½Ð¸Ð· â†“)`;
+    `y=1: BCE = −log(${p.toFixed(2)}) = <span style="color:var(--amber);font-weight:600;">${l1.toFixed(4)}</span>\n`+
+    `y=0: BCE = −log(${(1-p).toFixed(2)}) = <span style="color:var(--green);font-weight:600;">${l0.toFixed(4)}</span>\n\n`+
+    `Градиент ∂L/∂z:\n`+
+    `  y=1: p̂−1 = ${(p-1).toFixed(4)}  (толкает z вверх ↑)\n`+
+    `  y=0: p̂−0 = ${p.toFixed(4)}  (толкает z вниз ↓)`;
 }
 
 // ============ CE CALC ============
@@ -556,7 +556,7 @@ const ceLogits=[2,1,0.5,-0.5];
 function buildCEInputs(){
   document.getElementById('ceInputs').innerHTML=ceLogits.map((v,i)=>`
     <div style="text-align:center;">
-      <div class="muted" style="font-size:.8em;">${i===0?'âœ“ ÐºÐ»Ð°ÑÑ '+i:'ÐºÐ»Ð°ÑÑ '+i}</div>
+      <div class="muted" style="font-size:.8em;">${i===0?'✓ класс '+i:'класс '+i}</div>
       <input type="number" value="${v}" step=".1" style="background:#0d1117;border:1px solid ${i===0?'var(--amber)':'var(--border)'};color:var(--text);padding:5px;border-radius:5px;width:62px;text-align:center;"
         oninput="ceLogits[${i}]=+this.value;calcCE()">
     </div>`).join('');
@@ -571,9 +571,9 @@ function calcCE(){
   document.getElementById('ceResult').innerHTML=
     `softmax: [${p.map(v=>v.toFixed(4)).join(', ')}]\n`+
     `p_correct = p[0] = ${p[0].toFixed(4)}\n`+
-    `L_CE = âˆ’log(${p[0].toFixed(4)}) = <span style="color:var(--amber);font-weight:600;">${ce.toFixed(4)}</span>\n\n`+
-    `Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ âˆ‚L/âˆ‚z:\n`+
-    p.map((pi,i)=>`  z[${i}]: pÌ‚âˆ’y = ${pi.toFixed(4)} âˆ’ ${i===0?1:0} = <span style="color:${i===0?'var(--red)':'var(--green)'};">${(pi-(i===0?1:0)).toFixed(4)}</span>`).join('\n');
+    `L_CE = −log(${p[0].toFixed(4)}) = <span style="color:var(--amber);font-weight:600;">${ce.toFixed(4)}</span>\n\n`+
+    `Градиенты ∂L/∂z:\n`+
+    p.map((pi,i)=>`  z[${i}]: p̂−y = ${pi.toFixed(4)} − ${i===0?1:0} = <span style="color:${i===0?'var(--red)':'var(--green)'};">${(pi-(i===0?1:0)).toFixed(4)}</span>`).join('\n');
 }
 
 // ============ FOCAL ============
@@ -607,7 +607,7 @@ function drawFocal(){
     if(px===1)ctx.moveTo(tx(p),ty(v));else ctx.lineTo(tx(p),ty(v));
   }ctx.stroke();
   ctx.fillStyle='#8b949e';ctx.font='9px monospace';
-  ctx.fillText('pÌ‚=0',2,H-3);ctx.fillText('pÌ‚=1',W-28,H-3);
+  ctx.fillText('p̂=0',2,H-3);ctx.fillText('p̂=1',W-28,H-3);
   ctx.fillText('loss',4,12);
 }
 
@@ -643,7 +643,7 @@ function drawGradCanvas(){
     const cy=ty(Math.min(l,5),0,5);
     if(px===0)ctx.moveTo(px,cy);else ctx.lineTo(px,cy);
   }ctx.stroke();
-  // Gradient âˆ‚L/âˆ‚z = p - y
+  // Gradient ∂L/∂z = p - y
   ctx.strokeStyle='#10b981';ctx.lineWidth=2;
   ctx.beginPath();
   for(let px=0;px<W;px++){
@@ -655,57 +655,57 @@ function drawGradCanvas(){
   }ctx.stroke();
   ctx.fillStyle='#8b949e';ctx.font='9px system-ui';
   ctx.fillText('loss (top)',4,14);
-  ctx.fillText('grad pÌ‚âˆ’y (bottom)',4,H*0.55+12);
+  ctx.fillText('grad p̂−y (bottom)',4,H*0.55+12);
   ctx.fillText('y='+yTrue,W-30,14);
   ctx.fillText('z',W-8,H*0.45+12);
 }
 
 // ============ CHAIN TABS ============
 const CHAINS={
-clf:`Ð—Ð°Ð´Ð°Ñ‡Ð°: Ð¼Ð½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ (K ÐºÐ»Ð°ÑÑÐ¾Ð²)
+clf:`Задача: многоклассовая классификация (K классов)
 
-  Ð”Ð°Ð½Ð½Ñ‹Ðµ: X âˆˆ â„^(BÃ—d), y âˆˆ {0,...,Kâˆ’1}^B
+  Данные: X ∈ ℝ^(B×d), y ∈ {0,...,K−1}^B
 
-  [1] Ð’Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð±Ð°Ñ‚Ñ‡ X      shape: (B, d)
-       â†“   Linear + ReLU (ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ ÑÐ»Ð¾Ð¸)
-  [2] Ð›Ð¾Ð³Ð¸Ñ‚Ñ‹ Z            shape: (B, K)     â† Ð²Ñ‹Ñ…Ð¾Ð´ ÑÐµÑ‚Ð¸, Ð±ÐµÐ· Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸
-       â†“   softmax(dim=-1)
-  [3] Ð’ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ pÌ‚      shape: (B, K)     â† Î£â‚– pÌ‚â‚– = 1
-       â†“   CrossEntropyLoss(Z, y)
-  [4] Ð¡ÐºÐ°Ð»ÑÑ€ loss L
+  [1] Входной батч X      shape: (B, d)
+       ↓   Linear + ReLU (скрытые слои)
+  [2] Логиты Z            shape: (B, K)     ← выход сети, без активации
+       ↓   softmax(dim=-1)
+  [3] Вероятности p̂      shape: (B, K)     ← Σₖ p̂ₖ = 1
+       ↓   CrossEntropyLoss(Z, y)
+  [4] Скаляр loss L
 
-  âš ï¸ nn.CrossEntropyLoss Ð² PyTorch Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÐµÑ‚ Ð›ÐžÐ“Ð˜Ð¢Ð«, Ð½Ðµ pÌ‚!
-  Softmax Ð²Ð½ÑƒÑ‚Ñ€Ð¸ (Ñ‡Ð¸ÑÐ»ÐµÐ½Ð½Ð¾ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ Ñ‡ÐµÑ€ÐµÐ· log-sum-exp)`,
+  ⚠️ nn.CrossEntropyLoss в PyTorch принимает ЛОГИТЫ, не p̂!
+  Softmax внутри (численно стабильно через log-sum-exp)`,
 
-reg:`Ð—Ð°Ð´Ð°Ñ‡Ð°: Ñ€ÐµÐ³Ñ€ÐµÑÑÐ¸Ñ (Ð¿Ñ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ðµ Ñ‡Ð¸ÑÐ»Ð°)
+reg:`Задача: регрессия (предсказание числа)
 
-  Ð”Ð°Ð½Ð½Ñ‹Ðµ: X âˆˆ â„^(BÃ—d), y âˆˆ â„^B
+  Данные: X ∈ ℝ^(B×d), y ∈ ℝ^B
 
-  [1] Ð’Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð±Ð°Ñ‚Ñ‡ X      shape: (B, d)
-       â†“   Linear + ReLU (ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ ÑÐ»Ð¾Ð¸)
-       â†“   Linear (Ñ„Ð¸Ð½Ð°Ð»ÑŒÐ½Ñ‹Ð¹, Ð±ÐµÐ· Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸)
-  [2] ÐŸÑ€ÐµÐ´ÑÐºÐ°Ð·Ð°Ð½Ð¸Ñ Å·     shape: (B, 1) Ð¸Ð»Ð¸ (B,)
-       â†“   MSELoss(Å·, y)   Ð¸Ð»Ð¸   L1Loss(Å·, y)
-  [3] Ð¡ÐºÐ°Ð»ÑÑ€ loss L
+  [1] Входной батч X      shape: (B, d)
+       ↓   Linear + ReLU (скрытые слои)
+       ↓   Linear (финальный, без активации)
+  [2] Предсказания ŷ     shape: (B, 1) или (B,)
+       ↓   MSELoss(ŷ, y)   или   L1Loss(ŷ, y)
+  [3] Скаляр loss L
 
-  Ð’Ð°Ñ€Ð¸Ð°Ð½Ñ‚: Huber Loss = MSE Ð¿Ñ€Ð¸ |e|<Î´, MAE Ð¿Ñ€Ð¸ |e|â‰¥Î´
-  â†’ ÐºÐ¾Ð¼Ð¿Ñ€Ð¾Ð¼Ð¸ÑÑ: Ð³Ð»Ð°Ð´ÐºÐ¾ÑÑ‚ÑŒ MSE + Ñ€Ð¾Ð±Ð°ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒ MAE`,
+  Вариант: Huber Loss = MSE при |e|<δ, MAE при |e|≥δ
+  → компромисс: гладкость MSE + робастность MAE`,
 
-binary:`Ð—Ð°Ð´Ð°Ñ‡Ð°: Ð±Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ (y âˆˆ {0,1})
+binary:`Задача: бинарная классификация (y ∈ {0,1})
 
-  Ð”Ð°Ð½Ð½Ñ‹Ðµ: X âˆˆ â„^(BÃ—d), y âˆˆ {0,1}^B
+  Данные: X ∈ ℝ^(B×d), y ∈ {0,1}^B
 
-  [1] Ð’Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð±Ð°Ñ‚Ñ‡ X      shape: (B, d)
-       â†“   Linear + ReLU (ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ðµ ÑÐ»Ð¾Ð¸)
-       â†“   Linear (Ñ„Ð¸Ð½Ð°Ð»ÑŒÐ½Ñ‹Ð¹, 1 Ð½ÐµÐ¹Ñ€Ð¾Ð½)
-  [2] Ð›Ð¾Ð³Ð¸Ñ‚ z            shape: (B, 1)
-       â†“   sigmoid(z) â†’ pÌ‚
-  [3] Ð’ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚Ð¸ pÌ‚     shape: (B, 1)
-       â†“   BCEWithLogitsLoss(z, y)
-  [4] Ð¡ÐºÐ°Ð»ÑÑ€ loss L
+  [1] Входной батч X      shape: (B, d)
+       ↓   Linear + ReLU (скрытые слои)
+       ↓   Linear (финальный, 1 нейрон)
+  [2] Логит z            shape: (B, 1)
+       ↓   sigmoid(z) → p̂
+  [3] Вероятности p̂     shape: (B, 1)
+       ↓   BCEWithLogitsLoss(z, y)
+  [4] Скаляр loss L
 
-  âš ï¸ BCEWithLogitsLoss = sigmoid + BCE ÑÐ¾Ð²Ð¼ÐµÑ‰Ñ‘Ð½Ð½Ð¾
-  Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐ¹ ÐµÐ³Ð¾ Ð²Ð¼ÐµÑÑ‚Ð¾ BCE(sigmoid(z), y) â€” Ñ‡Ð¸ÑÐ»ÐµÐ½Ð½Ð¾ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½ÐµÐµ!`
+  ⚠️ BCEWithLogitsLoss = sigmoid + BCE совмещённо
+  Используй его вместо BCE(sigmoid(z), y) — численно стабильнее!`
 };
 function showChain(key,btn){
   document.querySelectorAll('#chainTabs button').forEach(b=>b.classList.remove('active'));
@@ -752,7 +752,7 @@ function drawHuber(){
   ctx.setLineDash([]);
   ctx.fillStyle='#8b949e';ctx.font='9px monospace';
   ctx.fillText('e=0',tx(0)+2,H-3);
-  ctx.fillText('Â±Î´',tx(delta)+2,H-3);
+  ctx.fillText('±δ',tx(delta)+2,H-3);
 }
 
 // ============ LSE CALCULATOR ============
@@ -772,11 +772,11 @@ function calcLSE(){
   const stableP=stableExp.map(v=>v/stableSum);
   const naiveStr=naiveOk
     ?`exp(${m}) = ${naiveExp[0].toExponential(3)}\nsum = ${naiveSum.toExponential(3)}\np = [${naiveP.map(v=>v.toFixed(4)).join(', ')}]`
-    :`exp(${m}) = <span style="color:var(--red)">âˆž (overflow!)</span>\nsum = Infinity\np = [NaN, NaN, NaN]`;
+    :`exp(${m}) = <span style="color:var(--red)">∞ (overflow!)</span>\nsum = Infinity\np = [NaN, NaN, NaN]`;
   document.getElementById('lseResult').innerHTML=
-    `Ð›Ð¾Ð³Ð¸Ñ‚Ñ‹ z = [${m}, 0, 0]\n\n`+
-    `<span style="color:var(--red)">ÐÐ°Ð¸Ð²Ð½Ñ‹Ð¹ softmax:</span>\n${naiveStr}\n\n`+
-    `<span style="color:var(--green)">Ð¡Ñ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ñ‹Ð¹ (log-sum-exp):</span>\nmax = ${maxZ}, exp(zâˆ’max) = [1, ${stableExp[1].toFixed(4)}, ${stableExp[2].toFixed(4)}]\np = [<span style="color:var(--amber);font-weight:600;">${stableP[0].toFixed(4)}</span>, ${stableP[1].toFixed(4)}, ${stableP[2].toFixed(4)}]`;
+    `Логиты z = [${m}, 0, 0]\n\n`+
+    `<span style="color:var(--red)">Наивный softmax:</span>\n${naiveStr}\n\n`+
+    `<span style="color:var(--green)">Стабильный (log-sum-exp):</span>\nmax = ${maxZ}, exp(z−max) = [1, ${stableExp[1].toFixed(4)}, ${stableExp[2].toFixed(4)}]\np = [<span style="color:var(--amber);font-weight:600;">${stableP[0].toFixed(4)}</span>, ${stableP[1].toFixed(4)}, ${stableP[2].toFixed(4)}]`;
 }
 
 // ============ CODE (stable tab) ============
@@ -785,27 +785,27 @@ basic:`import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# â”€â”€ MSE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── MSE ──────────────────────────────────────────────
 criterion = nn.MSELoss()
 y_pred = torch.tensor([2.5, 0.0, 2.0])
 y_true = torch.tensor([3.0, -0.5, 2.0])
 loss = criterion(y_pred, y_true)   # 0.1667
 
-# â”€â”€ BCE (Ð±Ð¸Ð½Ð°Ñ€Ð½Ð°Ñ ÐºÐ»Ð°ÑÑÐ¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Ð’ÐÐ–ÐÐž: Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐ¹ BCEWithLogitsLoss, Ð° Ð½Ðµ BCE+sigmoid
+# ── BCE (бинарная классификация) ─────────────────────
+# ВАЖНО: используй BCEWithLogitsLoss, а не BCE+sigmoid
 criterion = nn.BCEWithLogitsLoss()
-logits = torch.tensor([1.2, -0.5, 2.3])   # raw logits (Ð´Ð¾ sigmoid)
+logits = torch.tensor([1.2, -0.5, 2.3])   # raw logits (до sigmoid)
 labels = torch.tensor([1.0, 0.0, 1.0])
 loss = criterion(logits, labels)
 
-# â”€â”€ CrossEntropy (Ð¼Ð½Ð¾Ð³Ð¾ÐºÐ»Ð°ÑÑÐ¾Ð²Ð°Ñ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# Ð’ÐÐ–ÐÐž: Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÐµÑ‚ Ð›ÐžÐ“Ð˜Ð¢Ð«, softmax Ð²Ð½ÑƒÑ‚Ñ€Ð¸!
+# ── CrossEntropy (многоклассовая) ────────────────────
+# ВАЖНО: принимает ЛОГИТЫ, softmax внутри!
 criterion = nn.CrossEntropyLoss()
 logits = torch.randn(32, 10)   # (batch, n_classes)
 labels = torch.randint(0, 10, (32,))  # class indices
 loss = criterion(logits, labels)
 
-# Ð­ÐºÐ²Ð¸Ð²Ð°Ð»ÐµÐ½Ñ‚Ð½Ð¾ Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ:
+# Эквивалентно вручную:
 log_probs = F.log_softmax(logits, dim=-1)
 nll = F.nll_loss(log_probs, labels)   # = CE`,
 
@@ -831,7 +831,7 @@ class FocalLoss(nn.Module):
                   logits, targets.float(), reduction='none')
         return (focal_weight * bce).mean()
 
-# Ð˜ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ðµ
+# Использование
 criterion = FocalLoss(gamma=2.0)
 logits = torch.randn(32)
 targets = torch.randint(0, 2, (32,))
@@ -840,7 +840,7 @@ loss = criterion(logits, targets)`,
 grad:`import torch
 import torch.nn as nn
 
-# ÐŸÑ€Ð¾Ð²ÐµÑ€ÑÐµÐ¼ dL/dz = p - y Ð´Ð»Ñ BCE+sigmoid
+# Проверяем dL/dz = p - y для BCE+sigmoid
 z = torch.tensor([1.0], requires_grad=True)
 y = torch.tensor([1.0])
 
@@ -850,11 +850,11 @@ loss.backward()
 
 print("p =", round(p.item(), 4))
 print("p - y =", round((p-y).item(), 4))
-print("dL/dz =", round(z.grad.item(), 4))   # ÑÐ¾Ð²Ð¿Ð°Ð´Ð°ÑŽÑ‚!
+print("dL/dz =", round(z.grad.item(), 4))   # совпадают!
 
-# Ð¢Ð¾ Ð¶Ðµ Ð´Ð»Ñ CrossEntropy+softmax
+# То же для CrossEntropy+softmax
 z2 = torch.tensor([[2.0, 1.0, 0.5]], requires_grad=True)
-y2 = torch.tensor([0])   # Ð¸ÑÑ‚Ð¸Ð½Ð½Ñ‹Ð¹ ÐºÐ»Ð°ÑÑ = 0
+y2 = torch.tensor([0])   # истинный класс = 0
 
 loss2 = nn.CrossEntropyLoss()(z2, y2)
 loss2.backward()
@@ -867,19 +867,19 @@ stable:`import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# -- Ð§Ð¸ÑÐ»Ð¾Ð²Ð°Ñ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾ÑÑ‚ÑŒ: ÐÐ˜ÐšÐžÐ“Ð”Ð Ñ‚Ð°Ðº Ð½Ðµ Ð´ÐµÐ»Ð°Ð¹ ------
-# ÐŸÐ›ÐžÐ¥Ðž: BCE(sigmoid(z), y) -- Ð¿Ð¾Ñ‚ÐµÑ€Ñ Ñ‚Ð¾Ñ‡Ð½Ð¾ÑÑ‚Ð¸ Ð¿Ñ€Ð¸ Ð±Ð¾Ð»ÑŒÑˆÐ¸Ñ… z
+# -- Числовая стабильность: НИКОГДА так не делай ------
+# ПЛОХО: BCE(sigmoid(z), y) -- потеря точности при больших z
 criterion_bad = nn.BCELoss()
 logits = torch.tensor([50.0, -50.0])
 probs  = torch.sigmoid(logits)   # -> [1.0, 0.0] (rounded!)
 labels = torch.tensor([1.0, 0.0])
-# loss = criterion_bad(probs, labels)  # -> Ð¼Ð¾Ð¶ÐµÑ‚ Ð´Ð°Ñ‚ÑŒ nan
+# loss = criterion_bad(probs, labels)  # -> может дать nan
 
-# Ð¥ÐžÐ ÐžÐ¨Ðž: BCEWithLogitsLoss Ð¿Ñ€Ð¸Ð½Ð¸Ð¼Ð°ÐµÑ‚ Ð»Ð¾Ð³Ð¸Ñ‚Ñ‹
+# ХОРОШО: BCEWithLogitsLoss принимает логиты
 criterion_good = nn.BCEWithLogitsLoss()
-loss = criterion_good(logits, labels)  # Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾ ÑÑ‚Ð°Ð±Ð¸Ð»ÑŒÐ½Ð¾
+loss = criterion_good(logits, labels)  # числово стабильно
 
-# -- log-sum-exp Ð²Ñ€ÑƒÑ‡Ð½ÑƒÑŽ ------------------------------
+# -- log-sum-exp вручную ------------------------------
 def stable_softmax(z):
     m = z.max(dim=-1, keepdim=True).values
     exp_z = torch.exp(z - m)
@@ -890,10 +890,10 @@ def stable_log_softmax(z):
     log_sum = m + torch.log(torch.exp(z - m).sum(dim=-1, keepdim=True))
     return z - log_sum
 
-# ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ°
+# Проверка
 z = torch.tensor([[1000.0, 999.0, 998.0]])
-print(stable_softmax(z))     # [0.5761, 0.2119, 0.0780] ÐºÐ¾Ñ€Ñ€ÐµÐºÑ‚Ð½Ð¾
-print(torch.softmax(z, -1))  # Ñ‚Ð¾ Ð¶Ðµ -- PyTorch Ð´ÐµÐ»Ð°ÐµÑ‚ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸
+print(stable_softmax(z))     # [0.5761, 0.2119, 0.0780] корректно
+print(torch.softmax(z, -1))  # то же -- PyTorch делает автоматически
 
 # -- Huber Loss ----------------------------------------
 criterion_huber = nn.HuberLoss(delta=1.0)

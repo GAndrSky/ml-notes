@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -38,127 +38,127 @@ canvas{border-radius:8px;display:block;}
 <body>
 
 <div style="margin-bottom:14px;">
-  <span class="tag tag-done">âœ“ Ð‘Ð»Ð¾Ðº 3</span>
-  <span class="tag tag-active">â–¶ 4.1 Backpropagation</span>
-  <span class="tag tag-next">4.2 ÐžÐ¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ‚Ð¾Ñ€Ñ‹</span>
+  <span class="tag tag-done">✓ Блок 3</span>
+  <span class="tag tag-active">▶ 4.1 Backpropagation</span>
+  <span class="tag tag-next">4.2 Оптимизаторы</span>
   <span class="tag tag-next">4.3 Adam / AdamW / Lion</span>
-  <span class="tag tag-next">4.4 Ð ÐµÐ³ÑƒÐ»ÑÑ€Ð¸Ð·Ð°Ñ†Ð¸Ñ</span>
+  <span class="tag tag-next">4.4 Регуляризация</span>
 </div>
 
 <h1>4.1 Backpropagation</h1>
-<p class="muted">Chain rule Ð½Ð° Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¼ Ð³Ñ€Ð°Ñ„Ðµ â€” Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ñ Ð½ÑƒÐ»Ñ</p>
+<p class="muted">Chain rule на вычислительном графе — полный вывод с нуля</p>
 
-<!-- 1. Ð˜Ð´ÐµÑ -->
+<!-- 1. Идея -->
 <div class="card">
-  <h2>ðŸ’¡ Ð˜Ð´ÐµÑ Ð² Ð¾Ð´Ð½Ð¾Ð¹ Ñ„Ñ€Ð°Ð·Ðµ</h2>
-  <p>Backprop â€” ÑÑ‚Ð¾ <strong>Ð°Ð»Ð³Ð¾Ñ€Ð¸Ñ‚Ð¼ ÑÑ„Ñ„ÐµÐºÑ‚Ð¸Ð²Ð½Ð¾Ð³Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ñ Ð²ÑÐµÑ… Ñ‡Ð°ÑÑ‚Ð½Ñ‹Ñ… Ð¿Ñ€Ð¾Ð¸Ð·Ð²Ð¾Ð´Ð½Ñ‹Ñ…</strong> âˆ‚L/âˆ‚Î¸áµ¢ Ð·Ð° Ð¾Ð´Ð¸Ð½ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´ Ð½Ð°Ð·Ð°Ð´ Ð¿Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ð¼Ñƒ Ð³Ñ€Ð°Ñ„Ñƒ, Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑ Ñ†ÐµÐ¿Ð½Ð¾Ðµ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾.</p>
-  <div class="formula">Ð‘Ñ€ÑƒÑ‚Ñ„Ð¾Ñ€Ñ: Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÑŒ âˆ‚L/âˆ‚Î¸áµ¢ Ð´Ð»Ñ ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¸Ð· P Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ð¾ â†’ O(P) forward pass'Ð¾Ð²
-Backprop: Ð¾Ð´Ð¸Ð½ forward + Ð¾Ð´Ð¸Ð½ backward â†’ O(1) Ð¿Ð¾ Ñ‡Ð¸ÑÐ»Ñƒ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¾Ð²</div>
+  <h2>💡 Идея в одной фразе</h2>
+  <p>Backprop — это <strong>алгоритм эффективного вычисления всех частных производных</strong> ∂L/∂θᵢ за один проход назад по вычислительному графу, используя цепное правило.</p>
+  <div class="formula">Брутфорс: вычислить ∂L/∂θᵢ для каждого из P параметров отдельно → O(P) forward pass'ов
+Backprop: один forward + один backward → O(1) по числу проходов</div>
   <div class="intuition">
-    ðŸ’¡ ÐŸÑ€Ð¸ P=175 Ð¼Ð»Ñ€Ð´ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð² (GPT-3) Ð±Ñ€ÑƒÑ‚Ñ„Ð¾Ñ€Ñ Ð½ÐµÐ²Ð¾Ð·Ð¼Ð¾Ð¶ÐµÐ½. Backprop Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ Ð²ÑÐµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð·Ð° <strong>Ð¾Ð´Ð½Ñƒ Ð¿Ð°Ñ€Ñƒ forward+backward</strong> â€” Ñ‚Ð¾ Ð¶Ðµ Ð²Ñ€ÐµÐ¼Ñ, Ñ‡Ñ‚Ð¾ Ð¾Ð´Ð¸Ð½ forward pass.
+    💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
   </div>
 </div>
 
-<!-- 2. Ð¦ÐµÐ¿Ð½Ð¾Ðµ Ð¿Ñ€Ð°Ð²Ð¸Ð»Ð¾ â€” Ð¾ÑÐ²ÐµÐ¶ÐµÐ½Ð¸Ðµ -->
+<!-- 2. Цепное правило — освежение -->
 <div class="card">
-  <h2>ðŸ”— Chain rule â€” Ð¾ÑÐ½Ð¾Ð²Ð° backprop</h2>
+  <h2>🔗 Chain rule — основа backprop</h2>
   <div class="grid-2">
     <div>
-      <h3>Ð¡ÐºÐ°Ð»ÑÑ€Ð½Ñ‹Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹</h3>
+      <h3>Скалярный случай</h3>
       <div class="formula">z = g(y),  y = f(x)
-dz/dx = dz/dy Â· dy/dx</div>
-      <h3 style="margin-top:14px;">Ð’ÐµÐºÑ‚Ð¾Ñ€Ð½Ñ‹Ð¹ ÑÐ»ÑƒÑ‡Ð°Ð¹ (VJP)</h3>
-      <div class="formula">z = g(y),  y = f(x),  x,y,z âˆˆ â„â¿
-âˆ‚z/âˆ‚x = (âˆ‚y/âˆ‚x)áµ€ Â· âˆ‚z/âˆ‚y
-       = Jáµ€ Â· v
-v = âˆ‚z/âˆ‚y â€” Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð¸Ð· Ð²Ñ‹ÑˆÐµ,
-J = âˆ‚y/âˆ‚x â€” ÑÐºÐ¾Ð±Ð¸Ð°Ð½ ÑÐ»Ð¾Ñ</div>
-      <p style="font-size:.88em;margin-top:8px;">ÐÐ° Ð¿Ñ€Ð°ÐºÑ‚Ð¸ÐºÐµ Ð½Ð°Ð¼ Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½ Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ ÑÐºÐ¾Ð±Ð¸Ð°Ð½ J â€” Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ Jáµ€v. Ð­Ñ‚Ð¾ VJP (Vector-Jacobian Product) â€” Ð¸Ð¼ÐµÐ½Ð½Ð¾ ÑÑ‚Ð¾ Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÑÐµÑ‚ autograd.</p>
+dz/dx = dz/dy · dy/dx</div>
+      <h3 style="margin-top:14px;">Векторный случай (VJP)</h3>
+      <div class="formula">z = g(y),  y = f(x),  x,y,z ∈ ℝⁿ
+∂z/∂x = (∂y/∂x)ᵀ · ∂z/∂y
+       = Jᵀ · v
+v = ∂z/∂y — вектор из выше,
+J = ∂y/∂x — якобиан слоя</div>
+      <p style="font-size:.88em;margin-top:8px;">На практике нам не нужен полный якобиан J — только произведение Jᵀv. Это VJP (Vector-Jacobian Product) — именно это вычисляет autograd.</p>
     </div>
     <div>
-      <h3>Ð“Ñ€Ð°Ñ„ Ð¸ Ð´ÐµÐ»ÑŒÑ‚Ñ‹</h3>
-      <p style="font-size:.88em;">ÐžÐ±Ð¾Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ: <span class="hl-amber">Î´Ë¡</span> = Â«Ð»Ð¾ÐºÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Â» = âˆ‚L/âˆ‚ZË¡</p>
-      <div class="formula" style="font-size:.85em;">Forward:  ZË¡ = AË¡â»Â¹Â·(WË¡)áµ€ + bË¡
-          AË¡ = f(ZË¡)
+      <h3>Граф и дельты</h3>
+      <p style="font-size:.88em;">Обозначение: <span class="hl-amber">δˡ</span> = «локальный градиент» = ∂L/∂Zˡ</p>
+      <div class="formula" style="font-size:.85em;">Forward:  Zˡ = Aˡ⁻¹·(Wˡ)ᵀ + bˡ
+          Aˡ = f(Zˡ)
 
-Backward: Î´Ë¡ = (âˆ‚L/âˆ‚AË¡) âŠ™ fâ€²(ZË¡)   â† Ð¿Ð¾ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð½Ð¾
-          âˆ‚L/âˆ‚WË¡ = (Î´Ë¡)áµ€ Â· AË¡â»Â¹
-          âˆ‚L/âˆ‚bË¡ = sum(Î´Ë¡, axis=0)
-          âˆ‚L/âˆ‚AË¡â»Â¹ = Î´Ë¡ Â· WË¡         â† Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ð¼ Ð½Ð¸Ð¶Ðµ</div>
+Backward: δˡ = (∂L/∂Aˡ) ⊙ f′(Zˡ)   ← поэлементно
+          ∂L/∂Wˡ = (δˡ)ᵀ · Aˡ⁻¹
+          ∂L/∂bˡ = sum(δˡ, axis=0)
+          ∂L/∂Aˡ⁻¹ = δˡ · Wˡ         ← передаём ниже</div>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
-        ðŸ’¡ Ð¢Ñ€Ð¸ ÑƒÑ€Ð°Ð²Ð½ÐµÐ½Ð¸Ñ backward â€” Ð²Ð¾Ñ‚ Ð¸ Ð²ÐµÑÑŒ backprop Ð´Ð»Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ. ÐŸÑ€Ð¸Ð¼ÐµÐ½ÑÐµÑˆÑŒ Ð¸Ñ… Ð¾Ñ‚ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ Ðº Ð¿ÐµÑ€Ð²Ð¾Ð¼Ñƒ.
+        💡 Три уравнения backward — вот и весь backprop для одного слоя. Применяешь их от последнего слоя к первому.
       </div>
     </div>
   </div>
 </div>
 
-<!-- 3. Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„ -->
+<!-- 3. Интерактивный граф -->
 <div class="card">
-  <h2>ðŸŽ¬ Ð˜Ð½Ñ‚ÐµÑ€Ð°ÐºÑ‚Ð¸Ð²Ð½Ñ‹Ð¹ Ð²Ñ‹Ñ‡Ð¸ÑÐ»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„</h2>
-  <p class="muted">ÐÐ°Ð¶Ð¸Ð¼Ð°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹ Ð¿Ð¾ Ð¿Ð¾Ñ€ÑÐ´ÐºÑƒ â€” ÑÐ¼Ð¾Ñ‚Ñ€Ð¸ forward (â†’) Ð¸ backward (â†) Ñ Ñ‡Ð¸ÑÐ»Ð°Ð¼Ð¸</p>
+  <h2>🎬 Интерактивный вычислительный граф</h2>
+  <p class="muted">Нажимай на узлы по порядку — смотри forward (→) и backward (←) с числами</p>
   <br>
   <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-    <button class="active" id="btnFwd" onclick="setMode('fwd',this)">â–¶ Forward pass</button>
-    <button id="btnBwd" onclick="setMode('bwd',this)">â—€ Backward pass</button>
-    <button onclick="resetGraph()">â†º Ð¡Ð±Ñ€Ð¾Ñ</button>
+    <button class="active" id="btnFwd" onclick="setMode('fwd',this)">▶ Forward pass</button>
+    <button id="btnBwd" onclick="setMode('bwd',this)">◀ Backward pass</button>
+    <button onclick="resetGraph()">↺ Сброс</button>
   </div>
   <svg id="cgSvg" viewBox="0 0 860 300" style="width:100%;background:#0a0d14;border:1px solid var(--border);border-radius:8px;"></svg>
   <div id="cgInfo" style="margin-top:10px;font-family:monospace;font-size:.85em;background:#0d1117;border-radius:8px;padding:12px 14px;min-height:60px;"></div>
 </div>
 
-<!-- 4. ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ð´Ð»Ñ Ð¾Ð´Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ -->
+<!-- 4. Полный вывод для одного слоя -->
 <div class="card">
-  <h2>ðŸ“ ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ð²Ñ‹Ð²Ð¾Ð´ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ð¾Ð² Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð»Ð¸Ð½ÐµÐ¹Ð½Ð¾Ð³Ð¾ ÑÐ»Ð¾Ñ</h2>
+  <h2>📐 Полный вывод градиентов одного линейного слоя</h2>
   <div class="tabs" id="derivTabs">
-    <button class="active" onclick="showDeriv('dW',this)">âˆ‚L/âˆ‚W</button>
-    <button onclick="showDeriv('db',this)">âˆ‚L/âˆ‚b</button>
-    <button onclick="showDeriv('dX',this)">âˆ‚L/âˆ‚X (Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‚ÑŒ Ð²Ð½Ð¸Ð·)</button>
+    <button class="active" onclick="showDeriv('dW',this)">∂L/∂W</button>
+    <button onclick="showDeriv('db',this)">∂L/∂b</button>
+    <button onclick="showDeriv('dX',this)">∂L/∂X (передать вниз)</button>
   </div>
   <div id="derivContent"></div>
 </div>
 
-<!-- 5. ÐŸÐ¾Ð»Ð½Ñ‹Ð¹ Ñ‡Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€: ÑÐµÑ‚ÑŒ 2â†’2â†’1 -->
+<!-- 5. Полный числовой пример: сеть 2→2→1 -->
 <div class="card">
-  <h2>ðŸ”¢ Ð§Ð¸ÑÐ»Ð¾Ð²Ð¾Ð¹ Ð¿Ñ€Ð¸Ð¼ÐµÑ€: ÑÐµÑ‚ÑŒ 2â†’2â†’1, MSE loss</h2>
-  <p class="muted">Ð ÐµÐ´Ð°ÐºÑ‚Ð¸Ñ€ÑƒÐ¹ x Ð¸ y_true â€” Ð²ÑÐµ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð¿ÐµÑ€ÐµÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°ÑŽÑ‚ÑÑ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸</p>
+  <h2>🔢 Числовой пример: сеть 2→2→1, MSE loss</h2>
+  <p class="muted">Редактируй x и y_true — все градиенты пересчитываются автоматически</p>
   <br>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;">
-    <div><div class="muted" style="font-size:.82em;">xâ‚</div><input type="number" id="nx1" value="1.0" step=".1" oninput="calcNet()"></div>
-    <div><div class="muted" style="font-size:.82em;">xâ‚‚</div><input type="number" id="nx2" value="-1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">x₁</div><input type="number" id="nx1" value="1.0" step=".1" oninput="calcNet()"></div>
+    <div><div class="muted" style="font-size:.82em;">x₂</div><input type="number" id="nx2" value="-1.0" step=".1" oninput="calcNet()"></div>
     <div><div class="muted" style="font-size:.82em;">y_true</div><input type="number" id="ny" value="1.0" step=".1" oninput="calcNet()"></div>
-    <button onclick="randNet()">ðŸŽ² Ð¡Ð»ÑƒÑ‡Ð°Ð¹Ð½Ñ‹Ðµ</button>
+    <button onclick="randNet()">🎲 Случайные</button>
   </div>
   <!-- Fixed weights display -->
-  <div class="muted" style="font-size:.82em;margin-bottom:6px;">Ð’ÐµÑÐ° (Ñ„Ð¸ÐºÑÐ¸Ñ€Ð¾Ð²Ð°Ð½Ñ‹ Ð´Ð»Ñ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð°):</div>
+  <div class="muted" style="font-size:.82em;margin-bottom:6px;">Веса (фиксированы для примера):</div>
   <div class="formula" style="font-size:.82em;" id="netWeightsDisplay"></div>
   <br>
   <div id="netSteps"></div>
 </div>
 
-<!-- 6. Backprop Ð´Ð»Ñ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¹ -->
+<!-- 6. Backprop для активаций -->
 <div class="card">
-  <h2>âš¡ Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ñ‡ÐµÑ€ÐµÐ· Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸ Ð°ÐºÑ‚Ð¸Ð²Ð°Ñ†Ð¸Ð¸</h2>
+  <h2>⚡ Градиенты через функции активации</h2>
   <div class="grid-2">
     <div>
       <div class="formula" style="font-size:.88em;">ReLU:
   forward:  A = max(0, Z)
-  backward: Î´_prev = Î´ âŠ™ ðŸ™[Z > 0]
-  â†’ Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Â«Ð¼Ð°ÑÐºÐ°Â»: Ð¿Ñ€Ð¾Ð¿ÑƒÑÐºÐ°ÐµÑ‚ grad Ñ‚Ð°Ð¼, Ð³Ð´Ðµ Z>0
+  backward: δ_prev = δ ⊙ 𝟙[Z > 0]
+  → просто «маска»: пропускает grad там, где Z>0
 
 Sigmoid:
-  forward:  A = Ïƒ(Z)
-  backward: Î´_prev = Î´ âŠ™ AâŠ™(1âˆ’A)
-  â†’ ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÐµÑ‚ÑÑ Ð½Ð° Ïƒâ€² = Ïƒ(1âˆ’Ïƒ) â‰¤ 0.25
+  forward:  A = σ(Z)
+  backward: δ_prev = δ ⊙ A⊙(1−A)
+  → умножается на σ′ = σ(1−σ) ≤ 0.25
 
 Tanh:
   forward:  A = tanh(Z)
-  backward: Î´_prev = Î´ âŠ™ (1âˆ’AÂ²)
-  â†’ ÑƒÐ¼Ð½Ð¾Ð¶Ð°ÐµÑ‚ÑÑ Ð½Ð° tanhâ€² = 1âˆ’tanhÂ² â‰¤ 1</div>
+  backward: δ_prev = δ ⊙ (1−A²)
+  → умножается на tanh′ = 1−tanh² ≤ 1</div>
     </div>
     <div>
-      <h3>Ð’Ð¸Ð·ÑƒÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ Ð¼Ð°ÑÐºÐ¸ ReLU</h3>
+      <h3>Визуализация маски ReLU</h3>
       <div style="margin:6px 0;">
-        <span class="muted" style="font-size:.85em;">Ð’Ñ…Ð¾Ð´Ð½Ð¾Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Î´: <span id="maskDeltaVal" style="color:var(--green);font-weight:600;">1.0</span></span>
+        <span class="muted" style="font-size:.85em;">Входной градиент δ: <span id="maskDeltaVal" style="color:var(--green);font-weight:600;">1.0</span></span>
         <input type="range" min="-3" max="3" step=".1" value="1" id="maskDelta" oninput="drawMask()">
       </div>
       <canvas id="maskCanvas" width="340" height="160" style="background:#0a0d14;border:1px solid var(--border);border-radius:8px;width:100%;max-width:340px;"></canvas>
@@ -167,35 +167,35 @@ Tanh:
   </div>
 </div>
 
-<!-- 7. ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹ backprop -->
+<!-- 7. Матричные формулы backprop -->
 <div class="card">
-  <h2>ðŸ—‚ ÐœÐ°Ñ‚Ñ€Ð¸Ñ‡Ð½Ñ‹Ðµ Ñ„Ð¾Ñ€Ð¼ÑƒÐ»Ñ‹ backprop â€” ÑˆÐ¿Ð°Ñ€Ð³Ð°Ð»ÐºÐ°</h2>
-  <div class="formula" style="font-size:.88em;">Ð¡Ð»Ð¾Ð¹ l: Z = A_prev Â· Wáµ€ + b,  A = f(Z)
+  <h2>🗂 Матричные формулы backprop — шпаргалка</h2>
+  <div class="formula" style="font-size:.88em;">Слой l: Z = A_prev · Wᵀ + b,  A = f(Z)
 
 FORWARD:
-  Z^l      = A^(l-1) Â· (W^l)áµ€ + b^l        shape: (B, n_out)
+  Z^l      = A^(l-1) · (W^l)ᵀ + b^l        shape: (B, n_out)
   A^l      = f(Z^l)                          shape: (B, n_out)
 
-BACKWARD (Ð´Ð°Ð½Ð¾ Î´^l = âˆ‚L/âˆ‚A^l, shape (B, n_out)):
-  âˆ‚L/âˆ‚Z^l  = Î´^l âŠ™ fâ€²(Z^l)                 shape: (B, n_out)
-  âˆ‚L/âˆ‚W^l  = (âˆ‚L/âˆ‚Z^l)áµ€ Â· A^(l-1)          shape: (n_out, n_in)
-  âˆ‚L/âˆ‚b^l  = Î£_B âˆ‚L/âˆ‚Z^l                   shape: (n_out,)
-  Î´^(l-1)  = âˆ‚L/âˆ‚A^(l-1)  = âˆ‚L/âˆ‚Z^l Â· W^l shape: (B, n_in)
+BACKWARD (дано δ^l = ∂L/∂A^l, shape (B, n_out)):
+  ∂L/∂Z^l  = δ^l ⊙ f′(Z^l)                 shape: (B, n_out)
+  ∂L/∂W^l  = (∂L/∂Z^l)ᵀ · A^(l-1)          shape: (n_out, n_in)
+  ∂L/∂b^l  = Σ_B ∂L/∂Z^l                   shape: (n_out,)
+  δ^(l-1)  = ∂L/∂A^(l-1)  = ∂L/∂Z^l · W^l shape: (B, n_in)
 
-Ð¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (MSE):  âˆ‚L/âˆ‚A^L = 2(A^L âˆ’ y)/B
-Ð¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ (CE):   âˆ‚L/âˆ‚Z^L = (pÌ‚ âˆ’ y)/B   â† softmax+CE Ð²Ð¼ÐµÑÑ‚Ðµ</div>
+Стартовый градиент (MSE):  ∂L/∂A^L = 2(A^L − y)/B
+Стартовый градиент (CE):   ∂L/∂Z^L = (p̂ − y)/B   ← softmax+CE вместе</div>
   <div class="intuition">
-    ðŸ’¡ <strong>ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ:</strong> âˆ‚L/âˆ‚W = Î´áµ€Â·X Ð¸Ð¼ÐµÐµÑ‚ shape (n_out, n_in) â€” Ñ‚Ð¾ Ð¶Ðµ, Ñ‡Ñ‚Ð¾ Ñƒ W. ÐšÐ°Ð¶Ð´Ñ‹Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ ÑÐ²Ð¾Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸ Ð¸Ð· Ð¾Ð´Ð½Ð¾Ð³Ð¾ Ð¼Ð°Ñ‚Ñ€Ð¸Ñ‡Ð½Ð¾Ð³Ð¾ ÑƒÐ¼Ð½Ð¾Ð¶ÐµÐ½Ð¸Ñ.
+    💡 <strong>Ключевое наблюдение:</strong> ∂L/∂W = δᵀ·X имеет shape (n_out, n_in) — то же, что у W. Каждый параметр получает свой градиент автоматически из одного матричного умножения.
   </div>
 </div>
 
-<!-- 8. ÐšÐ¾Ð´ -->
+<!-- 8. Код -->
 <div class="card">
-  <h2>ðŸ’» Ð ÐµÐ°Ð»Ð¸Ð·Ð°Ñ†Ð¸Ñ</h2>
+  <h2>💻 Реализация</h2>
   <div class="tabs" id="codeTabs">
-    <button class="active" onclick="showCode('numpy',this)">NumPy (Ñ Ð½ÑƒÐ»Ñ)</button>
+    <button class="active" onclick="showCode('numpy',this)">NumPy (с нуля)</button>
     <button onclick="showCode('auto',this)">PyTorch autograd</button>
-    <button onclick="showCode('manual',this)">Ð ÑƒÑ‡Ð½Ð¾Ð¹ backward()</button>
+    <button onclick="showCode('manual',this)">Ручной backward()</button>
   </div>
   <div id="codeContent" class="formula" style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
 </div>
@@ -203,15 +203,15 @@ BACKWARD (Ð´Ð°Ð½Ð¾ Î´^l = âˆ‚L/âˆ‚A^l, shape (B, n_out)):
 <script>
 // ===================== COMPUTATIONAL GRAPH =====================
 const CG_NODES = [
-  {id:'x',  label:'x', sub:'Ð²Ñ…Ð¾Ð´',      x:60,  y:150, col:'#60a5fa'},
-  {id:'w1', label:'Wâ‚',sub:'Ð²ÐµÑÐ°',      x:60,  y:240, col:'#a78bfa'},
-  {id:'mm', label:'Â·', sub:'matmul',    x:200, y:150, col:'#f59e0b'},
-  {id:'b1', label:'bâ‚',sub:'bias',      x:200, y:240, col:'#a78bfa'},
+  {id:'x',  label:'x', sub:'вход',      x:60,  y:150, col:'#60a5fa'},
+  {id:'w1', label:'W₁',sub:'веса',      x:60,  y:240, col:'#a78bfa'},
+  {id:'mm', label:'·', sub:'matmul',    x:200, y:150, col:'#f59e0b'},
+  {id:'b1', label:'b₁',sub:'bias',      x:200, y:240, col:'#a78bfa'},
   {id:'add1',label:'+',sub:'add bias',  x:320, y:150, col:'#f59e0b'},
   {id:'relu',label:'f', sub:'ReLU',     x:440, y:150, col:'#10b981'},
-  {id:'w2', label:'Wâ‚‚',sub:'Ð²ÐµÑÐ°',      x:440, y:240, col:'#a78bfa'},
-  {id:'mm2',label:'Â·', sub:'matmul',    x:560, y:150, col:'#f59e0b'},
-  {id:'b2', label:'bâ‚‚',sub:'bias',      x:560, y:240, col:'#a78bfa'},
+  {id:'w2', label:'W₂',sub:'веса',      x:440, y:240, col:'#a78bfa'},
+  {id:'mm2',label:'·', sub:'matmul',    x:560, y:150, col:'#f59e0b'},
+  {id:'b2', label:'b₂',sub:'bias',      x:560, y:240, col:'#a78bfa'},
   {id:'add2',label:'+',sub:'add bias',  x:680, y:150, col:'#f59e0b'},
   {id:'loss',label:'L', sub:'loss',     x:800, y:150, col:'#ef4444'},
 ];
@@ -221,30 +221,30 @@ const CG_EDGES = [
   ['mm2','add2'],['b2','add2'],['add2','loss']
 ];
 const FWD_INFO = {
-  'x':    'Ð’Ñ…Ð¾Ð´ x\nshape: (B, n_in)',
-  'w1':   'Ð’ÐµÑÐ° Wâ‚\nshape: (n_h, n_in)',
-  'mm':   'Z_pre = x Â· Wâ‚áµ€\nmatmul: (B,n_in)Â·(n_in,n_h)=(B,n_h)',
-  'b1':   'bias bâ‚, shape: (n_h,)',
-  'add1': 'Zâ‚ = Z_pre + bâ‚\nbroadcast bias Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ',
-  'relu': 'Aâ‚ = ReLU(Zâ‚) = max(0, Zâ‚)\nÐ¿Ð¾ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð½Ð¾, shape ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÑ‚ÑÑ',
-  'w2':   'Ð’ÐµÑÐ° Wâ‚‚\nshape: (n_out, n_h)',
-  'mm2':  'Z_pre2 = Aâ‚ Â· Wâ‚‚áµ€\nmatmul: (B,n_h)Â·(n_h,n_out)=(B,n_out)',
-  'b2':   'bias bâ‚‚, shape: (n_out,)',
-  'add2': 'Å¶ = Z_pre2 + bâ‚‚  (logits/output)\nshape: (B, n_out)',
-  'loss': 'L = MSE(Å¶, y)\nÑÐºÐ°Ð»ÑÑ€',
+  'x':    'Вход x\nshape: (B, n_in)',
+  'w1':   'Веса W₁\nshape: (n_h, n_in)',
+  'mm':   'Z_pre = x · W₁ᵀ\nmatmul: (B,n_in)·(n_in,n_h)=(B,n_h)',
+  'b1':   'bias b₁, shape: (n_h,)',
+  'add1': 'Z₁ = Z_pre + b₁\nbroadcast bias по батчу',
+  'relu': 'A₁ = ReLU(Z₁) = max(0, Z₁)\nпоэлементно, shape сохраняется',
+  'w2':   'Веса W₂\nshape: (n_out, n_h)',
+  'mm2':  'Z_pre2 = A₁ · W₂ᵀ\nmatmul: (B,n_h)·(n_h,n_out)=(B,n_out)',
+  'b2':   'bias b₂, shape: (n_out,)',
+  'add2': 'Ŷ = Z_pre2 + b₂  (logits/output)\nshape: (B, n_out)',
+  'loss': 'L = MSE(Ŷ, y)\nскаляр',
 };
 const BWD_INFO = {
-  'loss': 'âˆ‚L/âˆ‚Å¶ = 2(Å¶âˆ’y)/B\nÐ¡Ñ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚, shape: (B, n_out)',
-  'add2': 'âˆ‚L/âˆ‚bâ‚‚ = Î£_B âˆ‚L/âˆ‚Å¶\nâˆ‚L/âˆ‚Z_pre2 = âˆ‚L/âˆ‚Å¶ (bias Ð½Ðµ Ð¼ÐµÐ½ÑÐµÑ‚)',
-  'b2':   'âˆ‚L/âˆ‚bâ‚‚ = Î£_B Î´   shape: (n_out,)',
-  'mm2':  'âˆ‚L/âˆ‚Wâ‚‚ = Î´áµ€ Â· Aâ‚   shape: (n_out, n_h)\nâˆ‚L/âˆ‚Aâ‚ = Î´ Â· Wâ‚‚   shape: (B, n_h)',
-  'w2':   'âˆ‚L/âˆ‚Wâ‚‚ = Î´áµ€ Â· Aâ‚',
-  'relu': 'âˆ‚L/âˆ‚Zâ‚ = âˆ‚L/âˆ‚Aâ‚ âŠ™ ðŸ™[Zâ‚>0]\nReLU Ð¼Ð°ÑÐºÐ°: grad=0 Ð³Ð´Ðµ Zâ‚â‰¤0',
-  'add1': 'âˆ‚L/âˆ‚bâ‚ = Î£_B âˆ‚L/âˆ‚Zâ‚',
-  'b1':   'âˆ‚L/âˆ‚bâ‚ = Î£_B Î´',
-  'mm':   'âˆ‚L/âˆ‚Wâ‚ = Î´áµ€ Â· x   shape: (n_h, n_in)\nâˆ‚L/âˆ‚x = Î´ Â· Wâ‚   shape: (B, n_in)',
-  'w1':   'âˆ‚L/âˆ‚Wâ‚ = Î´áµ€ Â· x',
-  'x':    'âˆ‚L/âˆ‚x = Î´ Â· Wâ‚\n(Ð½Ðµ Ð½ÑƒÐ¶ÐµÐ½ ÐµÑÐ»Ð¸ x â€” Ð´Ð°Ð½Ð½Ñ‹Ðµ, Ð½Ð¾ Ð½ÑƒÐ¶ÐµÐ½ Ð´Ð»Ñ Ð¿Ñ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»Ð¾Ñ)',
+  'loss': '∂L/∂Ŷ = 2(Ŷ−y)/B\nСтартовый градиент, shape: (B, n_out)',
+  'add2': '∂L/∂b₂ = Σ_B ∂L/∂Ŷ\n∂L/∂Z_pre2 = ∂L/∂Ŷ (bias не меняет)',
+  'b2':   '∂L/∂b₂ = Σ_B δ   shape: (n_out,)',
+  'mm2':  '∂L/∂W₂ = δᵀ · A₁   shape: (n_out, n_h)\n∂L/∂A₁ = δ · W₂   shape: (B, n_h)',
+  'w2':   '∂L/∂W₂ = δᵀ · A₁',
+  'relu': '∂L/∂Z₁ = ∂L/∂A₁ ⊙ 𝟙[Z₁>0]\nReLU маска: grad=0 где Z₁≤0',
+  'add1': '∂L/∂b₁ = Σ_B ∂L/∂Z₁',
+  'b1':   '∂L/∂b₁ = Σ_B δ',
+  'mm':   '∂L/∂W₁ = δᵀ · x   shape: (n_h, n_in)\n∂L/∂x = δ · W₁   shape: (B, n_in)',
+  'w1':   '∂L/∂W₁ = δᵀ · x',
+  'x':    '∂L/∂x = δ · W₁\n(не нужен если x — данные, но нужен для предыдущего слоя)',
 };
 const FWD_ORDER = ['x','w1','w2','b1','b2','mm','add1','relu','mm2','add2','loss'];
 const BWD_ORDER = ['loss','add2','b2','mm2','w2','relu','add1','b1','mm','w1','x'];
@@ -255,9 +255,9 @@ function setMode(m,btn){
   document.querySelectorAll('.card button[id^=btn]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   drawCG();
-  document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¸Ð¼Ð°Ð¹ Ð½Ð° ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÐ·ÐµÐ» Ð² Ð½Ð°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ð¸ '+(m==='fwd'?'â†’ forward':'â† backward');
+  document.getElementById('cgInfo').textContent='Нажимай на следующий узел в направлении '+(m==='fwd'?'→ forward':'← backward');
 }
-function resetGraph(){cgStep=-1;cgVisited=new Set();drawCG();document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¼Ð¸ ÐºÐ½Ð¾Ð¿ÐºÑƒ forward Ð¸Ð»Ð¸ backward, Ð·Ð°Ñ‚ÐµÐ¼ ÐºÐ»Ð¸ÐºÐ°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹';}
+function resetGraph(){cgStep=-1;cgVisited=new Set();drawCG();document.getElementById('cgInfo').textContent='Нажми кнопку forward или backward, затем кликай на узлы';}
 
 function drawCG(){
   const svg=document.getElementById('cgSvg');
@@ -320,17 +320,17 @@ function drawCG(){
   arrow.setAttribute('x',430);arrow.setAttribute('y',295);
   arrow.setAttribute('text-anchor','middle');arrow.setAttribute('fill','#8b949e');
   arrow.setAttribute('font-size','11');arrow.setAttribute('font-family','system-ui');
-  arrow.textContent=cgMode==='fwd'?'â†’ Forward: x â†’ L':'â† Backward: L â†’ x';
+  arrow.textContent=cgMode==='fwd'?'→ Forward: x → L':'← Backward: L → x';
   svg.appendChild(arrow);
 }
 
 function clickNode(id){
   const order=cgMode==='fwd'?FWD_ORDER:BWD_ORDER;
   const nextIdx=cgStep+1;
-  if(nextIdx>=order.length){document.getElementById('cgInfo').textContent='âœ… Ð“Ð¾Ñ‚Ð¾Ð²Ð¾! ÐÐ°Ð¶Ð¼Ð¸ Â«Ð¡Ð±Ñ€Ð¾ÑÂ» Ð´Ð»Ñ Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð°.';return;}
+  if(nextIdx>=order.length){document.getElementById('cgInfo').textContent='✅ Готово! Нажми «Сброс» для повтора.';return;}
   if(order[nextIdx]!==id){
     const n=CG_NODES.find(n=>n.id===id);
-    document.getElementById('cgInfo').innerHTML=`<span style="color:var(--red)">Ð¡Ð»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ ÑƒÐ·ÐµÐ»: ${order[nextIdx]}. Ð¢Ñ‹ ÐºÐ»Ð¸ÐºÐ½ÑƒÐ»: ${id}</span>`;
+    document.getElementById('cgInfo').innerHTML=`<span style="color:var(--red)">Следующий узел: ${order[nextIdx]}. Ты кликнул: ${id}</span>`;
     return;
   }
   cgStep++;cgVisited.add(id);
@@ -342,23 +342,23 @@ function clickNode(id){
 // ===================== DERIVATIONS =====================
 const DERIVS={
 dW:[
-  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b,  L = scalar', c:'Ð˜Ñ‰ÐµÐ¼: âˆ‚L/âˆ‚W', hl:false},
-  {t:'Ð¨Ð°Ð³ 1: chain rule Ñ‡ÐµÑ€ÐµÐ· Z', c:'âˆ‚L/âˆ‚W = âˆ‚L/âˆ‚Z Â· âˆ‚Z/âˆ‚W', hl:false},
-  {t:'Ð¨Ð°Ð³ 2: âˆ‚Z/âˆ‚W Ð¿Ñ€Ð¸ Z=AÂ·Wáµ€', c:'(Ð²Ð°Ñ€Ð¸Ð°Ñ†Ð¸Ñ Ð¿Ð¾ W Ð¿Ñ€Ð¸ Ñ„Ð¸ÐºÑ. A)\nâˆ‚Z_{ij}/âˆ‚W_{kl} = A_{ik}Â·Î´_{jl}  â† ÑÐºÐ¾Ð±Ð¸Ð°Ð½ 4D Ñ‚ÐµÐ½Ð·Ð¾Ñ€', hl:false},
-  {t:'Ð¨Ð°Ð³ 3: VJP â€” ÑÐ²Ñ‘Ñ€Ñ‚ÐºÐ° Ñ Î´=âˆ‚L/âˆ‚Z', c:'âˆ‚L/âˆ‚W = Î´áµ€ Â· A_prev\n\nshape: (n_out, B) Â· (B, n_in) = (n_out, n_in) âœ“', hl:true},
-  {t:'Ð˜Ð½Ñ‚ÑƒÐ¸Ñ†Ð¸Ñ', c:'âˆ‚L/âˆ‚W[i,j] = Î£_b Î´[b,i] Â· A_prev[b,j]\nÐšÐ°Ð¶Ð´Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ W[i,j] Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÑ‚ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ = ÑÐºÐ°Ð»ÑÑ€Ð½Ð¾Ðµ Ð¿Ñ€Ð¾Ð¸Ð·Ð²ÐµÐ´ÐµÐ½Ð¸Ðµ ÑÐ²Ð¾ÐµÐ¹ "ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð²Ñ…Ð¾Ð´Ð¾Ð²" Ð¸ "ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð´ÐµÐ»ÑŒÑ‚"', hl:false},
+  {t:'Имеем: Z = A_prev · Wᵀ + b,  L = scalar', c:'Ищем: ∂L/∂W', hl:false},
+  {t:'Шаг 1: chain rule через Z', c:'∂L/∂W = ∂L/∂Z · ∂Z/∂W', hl:false},
+  {t:'Шаг 2: ∂Z/∂W при Z=A·Wᵀ', c:'(вариация по W при фикс. A)\n∂Z_{ij}/∂W_{kl} = A_{ik}·δ_{jl}  ← якобиан 4D тензор', hl:false},
+  {t:'Шаг 3: VJP — свёртка с δ=∂L/∂Z', c:'∂L/∂W = δᵀ · A_prev\n\nshape: (n_out, B) · (B, n_in) = (n_out, n_in) ✓', hl:true},
+  {t:'Интуиция', c:'∂L/∂W[i,j] = Σ_b δ[b,i] · A_prev[b,j]\nКаждый элемент W[i,j] получает градиент = скалярное произведение своей "строки входов" и "строки дельт"', hl:false},
 ],
 db:[
-  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b,  b broadcast Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ', c:'âˆ‚Z_{bi,j}/âˆ‚b_k = Î´_{jk}  (b Ð½Ðµ Ð·Ð°Ð²Ð¸ÑÐ¸Ñ‚ Ð¾Ñ‚ b Ð¸Ð½Ð´ÐµÐºÑÐ° Ð±Ð°Ñ‚Ñ‡Ð°)', hl:false},
-  {t:'Ð¨Ð°Ð³ 1: ÑÑƒÐ¼Ð¼Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð¿Ð¾ Ð±Ð°Ñ‚Ñ‡Ñƒ', c:'âˆ‚L/âˆ‚b = Î£_b âˆ‚L/âˆ‚Z[b,:]', hl:false},
-  {t:'Ð¨Ð°Ð³ 2: Ð¸Ñ‚Ð¾Ð³', c:'âˆ‚L/âˆ‚b = sum(Î´, axis=0)\n\nshape: (n_out,) â€” ÑÑƒÐ¼Ð¼Ð¸Ñ€ÑƒÐµÐ¼ Ð¿Ð¾ ÑÑ‚Ñ€Ð¾ÐºÐ°Ð¼ Ð±Ð°Ñ‚Ñ‡Ð°', hl:true},
-  {t:'ÐŸÐ¾Ñ‡ÐµÐ¼Ñƒ sum, Ð° Ð½Ðµ mean?', c:'Bias Ð¾Ð´Ð¸Ð½ Ð½Ð° Ð²ÑÐµÑ… Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð² Ð² Ð±Ð°Ñ‚Ñ‡Ðµ â†’ ÐµÐ³Ð¾ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ = ÑÑƒÐ¼Ð¼Ð° Ð´ÐµÐ»ÑŒÑ‚ Ð¾Ñ‚ Ð²ÑÐµÑ… B Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð¾Ð²', hl:false},
+  {t:'Имеем: Z = A_prev · Wᵀ + b,  b broadcast по батчу', c:'∂Z_{bi,j}/∂b_k = δ_{jk}  (b не зависит от b индекса батча)', hl:false},
+  {t:'Шаг 1: суммирование по батчу', c:'∂L/∂b = Σ_b ∂L/∂Z[b,:]', hl:false},
+  {t:'Шаг 2: итог', c:'∂L/∂b = sum(δ, axis=0)\n\nshape: (n_out,) — суммируем по строкам батча', hl:true},
+  {t:'Почему sum, а не mean?', c:'Bias один на всех примеров в батче → его градиент = сумма дельт от всех B примеров', hl:false},
 ],
 dX:[
-  {t:'Ð˜Ð¼ÐµÐµÐ¼: Z = A_prev Â· Wáµ€ + b', c:'Ð˜Ñ‰ÐµÐ¼: âˆ‚L/âˆ‚A_prev (Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð² ÑÐ»Ð¾Ð¹ l-1)', hl:false},
-  {t:'Ð¨Ð°Ð³ 1: âˆ‚Z/âˆ‚A_prev Ð¿Ñ€Ð¸ Z=A_prevÂ·Wáµ€', c:'âˆ‚Z_{bi,j}/âˆ‚A_prev_{bk,l} = Î´_{bb_k}Â·W_{j,l}\nâ† ÑÐºÐ¾Ð±Ð¸Ð°Ð½ ÑÐ½Ð¾Ð²Ð° 4D', hl:false},
-  {t:'Ð¨Ð°Ð³ 2: VJP', c:'âˆ‚L/âˆ‚A_prev = Î´ Â· W\n\nshape: (B, n_out) Â· (n_out, n_in) = (B, n_in) âœ“', hl:true},
-  {t:'ÐšÐ»ÑŽÑ‡ÐµÐ²Ð¾Ðµ Ð½Ð°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ', c:'Forward:  Z = A Â· Wáµ€\nBackward: Î´_prev = Î´ Â· W\nâ†’ Ñ‚Ñ€Ð°Ð½ÑÐ¿Ð¾Ð½Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¸Ðµ "Ð¾Ñ‚Ð¼ÐµÐ½ÑÐµÑ‚" Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸ÑŽ ÑƒÐ¼Ð½Ð¾Ð¶ÐµÐ½Ð¸Ñ!', hl:false},
+  {t:'Имеем: Z = A_prev · Wᵀ + b', c:'Ищем: ∂L/∂A_prev (чтобы передать градиент в слой l-1)', hl:false},
+  {t:'Шаг 1: ∂Z/∂A_prev при Z=A_prev·Wᵀ', c:'∂Z_{bi,j}/∂A_prev_{bk,l} = δ_{bb_k}·W_{j,l}\n← якобиан снова 4D', hl:false},
+  {t:'Шаг 2: VJP', c:'∂L/∂A_prev = δ · W\n\nshape: (B, n_out) · (n_out, n_in) = (B, n_in) ✓', hl:true},
+  {t:'Ключевое наблюдение', c:'Forward:  Z = A · Wᵀ\nBackward: δ_prev = δ · W\n→ транспонирование "отменяет" операцию умножения!', hl:false},
 ],
 };
 function showDeriv(key,btn){
@@ -392,36 +392,36 @@ function calcNet(){
   const loss=(yhat-y)**2;
 
   // backward
-  const dL_dyhat=2*(yhat-y);        // âˆ‚L/âˆ‚Å·
-  const dL_dz2=[dL_dyhat];           // âˆ‚L/âˆ‚Zâ‚‚ (no activation)
-  const dL_dW2=[dL_dz2[0]*a1[0],dL_dz2[0]*a1[1]]; // âˆ‚L/âˆ‚Wâ‚‚
+  const dL_dyhat=2*(yhat-y);        // ∂L/∂ŷ
+  const dL_dz2=[dL_dyhat];           // ∂L/∂Z₂ (no activation)
+  const dL_dW2=[dL_dz2[0]*a1[0],dL_dz2[0]*a1[1]]; // ∂L/∂W₂
   const dL_db2=[dL_dz2[0]];
-  const dL_da1=[dL_dz2[0]*W2[0][0], dL_dz2[0]*W2[0][1]]; // âˆ‚L/âˆ‚Aâ‚ = Î´Â·Wâ‚‚
+  const dL_da1=[dL_dz2[0]*W2[0][0], dL_dz2[0]*W2[0][1]]; // ∂L/∂A₁ = δ·W₂
   const mask1=[z1[0]>0?1:0, z1[1]>0?1:0];
   const dL_dz1=[dL_da1[0]*mask1[0], dL_da1[1]*mask1[1]]; // ReLU backward
   const dL_dW1=[[dL_dz1[0]*x1,dL_dz1[0]*x2],[dL_dz1[1]*x1,dL_dz1[1]*x2]];
   const dL_db1=[dL_dz1[0],dL_dz1[1]];
 
   document.getElementById('netWeightsDisplay').textContent=
-    `Wâ‚=[[${W1[0].join(',')}],[${W1[1].join(',')}]]  bâ‚=[${b1.join(',')}]\n`+
-    `Wâ‚‚=[[${W2[0].join(',')}]]  bâ‚‚=[${b2.join(',')}]`;
+    `W₁=[[${W1[0].join(',')}],[${W1[1].join(',')}]]  b₁=[${b1.join(',')}]\n`+
+    `W₂=[[${W2[0].join(',')}]]  b₂=[${b2.join(',')}]`;
 
   const f=(v,d=4)=>v.toFixed(d);
   document.getElementById('netSteps').innerHTML=`
     <div class="step blue">FORWARD PASS</div>
-    <div class="step">Zâ‚ = Wâ‚Â·x + bâ‚ = [${f(z1[0])}, ${f(z1[1])}]</div>
-    <div class="step">Aâ‚ = ReLU(Zâ‚) = [${f(a1[0])}, ${f(a1[1])}]  (Ð¼Ð°ÑÐºÐ°: [${mask1}])</div>
-    <div class="step">Zâ‚‚ = Wâ‚‚Â·Aâ‚ + bâ‚‚ = ${f(z2[0])}</div>
-    <div class="step hl">Å· = ${f(yhat)},  y = ${y},  L = (Å·âˆ’y)Â² = ${f(loss)}</div>
+    <div class="step">Z₁ = W₁·x + b₁ = [${f(z1[0])}, ${f(z1[1])}]</div>
+    <div class="step">A₁ = ReLU(Z₁) = [${f(a1[0])}, ${f(a1[1])}]  (маска: [${mask1}])</div>
+    <div class="step">Z₂ = W₂·A₁ + b₂ = ${f(z2[0])}</div>
+    <div class="step hl">ŷ = ${f(yhat)},  y = ${y},  L = (ŷ−y)² = ${f(loss)}</div>
 
     <div class="step blue" style="margin-top:10px;">BACKWARD PASS</div>
-    <div class="step hl">âˆ‚L/âˆ‚Å· = 2(Å·âˆ’y) = ${f(dL_dyhat)}  â† ÑÑ‚Ð°Ñ€Ñ‚Ð¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚</div>
-    <div class="step">âˆ‚L/âˆ‚Wâ‚‚ = Î´Â·Aâ‚ = [${dL_dW2.map(v=>f(v)).join(', ')}]</div>
-    <div class="step">âˆ‚L/âˆ‚bâ‚‚ = Î´ = [${dL_db2.map(v=>f(v)).join(', ')}]</div>
-    <div class="step green">âˆ‚L/âˆ‚Aâ‚ = Î´Â·Wâ‚‚ = [${dL_da1.map(v=>f(v)).join(', ')}]  â† Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ð¼ Ñ‡ÐµÑ€ÐµÐ· ReLU</div>
-    <div class="step">âˆ‚L/âˆ‚Zâ‚ = âˆ‚L/âˆ‚Aâ‚ âŠ™ mask = [${dL_dz1.map(v=>f(v)).join(', ')}]</div>
-    <div class="step">âˆ‚L/âˆ‚Wâ‚ = [[${dL_dW1[0].map(v=>f(v)).join(', ')}],[${dL_dW1[1].map(v=>f(v)).join(', ')}]]</div>
-    <div class="step hl">âˆ‚L/âˆ‚bâ‚ = [${dL_db1.map(v=>f(v)).join(', ')}]</div>
+    <div class="step hl">∂L/∂ŷ = 2(ŷ−y) = ${f(dL_dyhat)}  ← стартовый градиент</div>
+    <div class="step">∂L/∂W₂ = δ·A₁ = [${dL_dW2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">∂L/∂b₂ = δ = [${dL_db2.map(v=>f(v)).join(', ')}]</div>
+    <div class="step green">∂L/∂A₁ = δ·W₂ = [${dL_da1.map(v=>f(v)).join(', ')}]  ← передаём через ReLU</div>
+    <div class="step">∂L/∂Z₁ = ∂L/∂A₁ ⊙ mask = [${dL_dz1.map(v=>f(v)).join(', ')}]</div>
+    <div class="step">∂L/∂W₁ = [[${dL_dW1[0].map(v=>f(v)).join(', ')}],[${dL_dW1[1].map(v=>f(v)).join(', ')}]]</div>
+    <div class="step hl">∂L/∂b₁ = [${dL_db1.map(v=>f(v)).join(', ')}]</div>
   `;
 }
 function randNet(){
@@ -466,17 +466,17 @@ function drawMask(){
     ctx.fillStyle='#8b949e';ctx.font='8px monospace';ctx.textAlign='center';
     ctx.fillText(z,x+bw/2,by+12);
     ctx.fillStyle=active?'#10b981':'#ef4444';
-    ctx.fillText(active?'Î´':'0',x+bw*0.75,by-bh-4);
+    ctx.fillText(active?'δ':'0',x+bw*0.75,by-bh-4);
   });
 
   ctx.strokeStyle='#333';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(0,H*0.7);ctx.lineTo(W,H*0.7);ctx.stroke();
   ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='left';
-  ctx.fillText('Z (Ð½ÐµÐ¹Ñ€Ð¾Ð½)',4,12);ctx.fillText('grad Ñ‡ÐµÑ€ÐµÐ· ReLU',W/2+4,12);
+  ctx.fillText('Z (нейрон)',4,12);ctx.fillText('grad через ReLU',W/2+4,12);
 
   document.getElementById('maskInfo').innerHTML=
-    `Î´_in = ${delta.toFixed(2)}: ${zs.filter(z=>z>0).length} Ð½ÐµÐ¹Ñ€Ð¾Ð½Ð¾Ð² Ð¿Ñ€Ð¾Ð¿ÑƒÑÐºÐ°ÑŽÑ‚ grad, `+
-    `${zs.filter(z=>z<=0).length} Ð±Ð»Ð¾ÐºÐ¸Ñ€ÑƒÑŽÑ‚ (zâ‰¤0)`;
+    `δ_in = ${delta.toFixed(2)}: ${zs.filter(z=>z>0).length} нейронов пропускают grad, `+
+    `${zs.filter(z=>z<=0).length} блокируют (z≤0)`;
 }
 
 // ===================== CODE =====================
@@ -489,14 +489,14 @@ class LinearLayer:
         self.b = np.zeros(n_out)
 
     def forward(self, X):
-        self.X = X                        # ÑÐ¾Ñ…Ñ€Ð°Ð½ÑÐµÐ¼ Ð´Ð»Ñ backward
-        return X @ self.W.T + self.b      # (B, n_in)â†’(B, n_out)
+        self.X = X                        # сохраняем для backward
+        return X @ self.W.T + self.b      # (B, n_in)→(B, n_out)
 
     def backward(self, delta):
-        # delta = âˆ‚L/âˆ‚Z, shape: (B, n_out)
+        # delta = ∂L/∂Z, shape: (B, n_out)
         self.dW = delta.T @ self.X        # (n_out, n_in)
         self.db = delta.sum(axis=0)       # (n_out,)
-        return delta @ self.W             # âˆ‚L/âˆ‚X = Î´Â·W, (B, n_in)
+        return delta @ self.W             # ∂L/∂X = δ·W, (B, n_in)
 
 class ReLULayer:
     def forward(self, Z):
@@ -504,12 +504,12 @@ class ReLULayer:
         return Z * self.mask
 
     def backward(self, delta):
-        return delta * self.mask          # âŠ™ Ð¼Ð°ÑÐºÐ°
+        return delta * self.mask          # ⊙ маска
 
 # MSE loss
 def mse_backward(y_pred, y_true):
     B = y_pred.shape[0]
-    return 2 * (y_pred - y_true) / B    # âˆ‚L/âˆ‚Å·
+    return 2 * (y_pred - y_true) / B    # ∂L/∂ŷ
 
 # Full backprop pass
 X = np.random.randn(32, 784)
@@ -535,7 +535,7 @@ d = l1.backward(d)
 auto:`import torch
 import torch.nn as nn
 
-# PyTorch autograd Ð´ÐµÐ»Ð°ÐµÑ‚ Ð²ÑÑ‘ Ð°Ð²Ñ‚Ð¾Ð¼Ð°Ñ‚Ð¸Ñ‡ÐµÑÐºÐ¸
+# PyTorch autograd делает всё автоматически
 model = nn.Sequential(
     nn.Linear(784, 256),
     nn.ReLU(),
@@ -549,21 +549,21 @@ y = torch.randn(32, 1)
 y_pred = model(X)
 loss = ((y_pred - y) ** 2).mean()
 
-# Backward â€” Ð¾Ð´Ð¸Ð½ Ð²Ñ‹Ð·Ð¾Ð² ÑÑ‚Ñ€Ð¾Ð¸Ñ‚ Ð¸ Ð¿Ñ€Ð¾Ñ…Ð¾Ð´Ð¸Ñ‚ Ð³Ñ€Ð°Ñ„
+# Backward — один вызов строит и проходит граф
 loss.backward()
 
-# Ð“Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ñ‚ÐµÐ¿ÐµÑ€ÑŒ Ð² .grad ÐºÐ°Ð¶Ð´Ð¾Ð³Ð¾ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð°
+# Градиенты теперь в .grad каждого параметра
 for name, param in model.named_parameters():
     print(f"{name}: grad shape={param.grad.shape}, "
           f"norm={param.grad.norm():.4f}")
 
-# Ð’Ð°Ð¶Ð½Ð¾: Ð¾Ñ‡Ð¸Ñ‰Ð°Ñ‚ÑŒ Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚Ñ‹ Ð¿ÐµÑ€ÐµÐ´ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¼ Ð±Ð°Ñ‚Ñ‡ÐµÐ¼!
-optimizer.zero_grad()   # Ð¸Ð»Ð¸ model.zero_grad()`,
+# Важно: очищать градиенты перед следующим батчем!
+optimizer.zero_grad()   # или model.zero_grad()`,
 
 manual:`import torch
 import torch.nn as nn
 
-# ÐšÐ°ÑÑ‚Ð¾Ð¼Ð½Ñ‹Ð¹ backward Ñ‡ÐµÑ€ÐµÐ· Function (Ð´Ð»Ñ Ð¸ÑÑÐ»ÐµÐ´Ð¾Ð²Ð°Ð½Ð¸Ð¹)
+# Кастомный backward через Function (для исследований)
 class SquaredLoss(torch.autograd.Function):
     @staticmethod
     def forward(ctx, y_pred, y_true):
@@ -574,16 +574,16 @@ class SquaredLoss(torch.autograd.Function):
     def backward(ctx, grad_output):
         y_pred, y_true = ctx.saved_tensors
         B = y_pred.shape[0]
-        # âˆ‚L/âˆ‚y_pred = 2(y_predâˆ’y_true)/B
+        # ∂L/∂y_pred = 2(y_pred−y_true)/B
         grad = 2 * (y_pred - y_true) / B * grad_output
-        return grad, None   # None Ð´Ð»Ñ y_true (Ð½Ðµ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€)
+        return grad, None   # None для y_true (не параметр)
 
-# ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° Ñ‡ÐµÑ€ÐµÐ· gradcheck
+# Проверка через gradcheck
 from torch.autograd import gradcheck
 loss_fn = SquaredLoss.apply
 inp = (torch.randn(4,1, dtype=torch.float64, requires_grad=True),
        torch.randn(4,1, dtype=torch.float64))
-print(gradcheck(loss_fn, inp))   # True = Ð³Ñ€Ð°Ð´Ð¸ÐµÐ½Ñ‚ Ð²ÐµÑ€ÐµÐ½`,
+print(gradcheck(loss_fn, inp))   # True = градиент верен`,
 };
 function showCode(key,btn){
   document.querySelectorAll('#codeTabs button').forEach(b=>b.classList.remove('active'));
@@ -593,7 +593,7 @@ function showCode(key,btn){
 
 // INIT
 drawCG();
-document.getElementById('cgInfo').textContent='ÐÐ°Ð¶Ð¼Ð¸ Â«Forward passÂ» Ð¸Ð»Ð¸ Â«Backward passÂ», Ð·Ð°Ñ‚ÐµÐ¼ ÐºÐ»Ð¸ÐºÐ°Ð¹ Ð½Ð° ÑƒÐ·Ð»Ñ‹ Ð¿Ð¾ Ð¿Ð¾Ñ€ÑÐ´ÐºÑƒ';
+document.getElementById('cgInfo').textContent='Нажми «Forward pass» или «Backward pass», затем кликай на узлы по порядку';
 showDeriv('dW',document.querySelector('#derivTabs button'));
 showCode('numpy',document.querySelector('#codeTabs button'));
 calcNet();
