@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.15 Снижение размерности</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="14_clustering.html">2.14 Кластеризация</a>
+        <span class="tag active">2.15 Снижение размерности</span>
+        <span class="tag tag-block">2.16 Ансамбли</span>
+      </div>
+
+      <h1>2.15 Снижение размерности</h1>
+      <p class="muted">
+        PCA intuition, covariance matrix, eigenvectors, explained variance, t-SNE, UMAP и сравнение методов.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Зачем вообще снижать размерность</h2>
+      <p>
+        Во многих задачах данные живут в пространстве с очень большим числом признаков:
+        десятки, сотни, тысячи координат. Но часто оказывается, что полезная структура
+        данных лежит в пространстве меньшей эффективной размерности.
+      </p>
+
+      <div class="formula">Высокая исходная размерность d
+↓
+ищем новое пространство размерности m, где m << d
+↓
+сохраняем как можно больше полезной структуры данных</div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Зачем это делать</h3>
+          <ul>
+            <li>визуализация данных в 2D/3D;</li>
+            <li>убрать шум и избыточность;</li>
+            <li>ускорить обучение моделей;</li>
+            <li>смягчить curse of dimensionality;</li>
+            <li>получить компактные признаки.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="intuition">
+            <strong>Интуиция.</strong> Представь облако точек в 100 измерениях.
+            Формально координат много, но если почти всё облако лежит около некоторой плоскости
+            или кривой, то реальная структура данных намного проще, чем кажется.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Снижение размерности почти всегда что-то теряет.
+        Вопрос не в том, потеряем ли мы информацию, а в том,
+        <strong>что именно теряем и насколько это допустимо для задачи</strong>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Два больших семейства методов</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Семейство</th>
+              <th>Идея</th>
+              <th>Типичные методы</th>
+              <th>Когда используют</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Линейные</td>
+              <td>Ищут линейное подпространство меньшей размерности</td>
+              <td>PCA, Truncated SVD</td>
+              <td>Сжатие, шумоподавление, baseline, preprocessing</td>
+            </tr>
+            <tr>
+              <td>Нелинейные</td>
+              <td>Стараются сохранить сложную локальную геометрию/многообразие</td>
+              <td>t-SNE, UMAP</td>
+              <td>Визуализация сложной структуры, эмбеддинги</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info">
+        Самая важная практическая мысль:
+        <strong>PCA часто используют как рабочий preprocessing-инструмент,</strong>
+        а <strong>t-SNE и UMAP — чаще как инструменты визуализации</strong>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.1 PCA intuition</h2>
+      <p>
+        <strong>PCA</strong> (Principal Component Analysis) ищет такие направления в пространстве,
+        вдоль которых данные меняются сильнее всего. Эти направления называются
+        <strong>главными компонентами</strong>.
+      </p>
+
+      <div class="formula">Главная идея PCA:
+найти ортогональные направления,
+максимизирующие дисперсию проекций данных</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>1.</strong> Ищем направление максимальной вариации данных → первая компонента.</div>
+          <div class="step"><strong>2.</strong> Ищем второе направление максимальной вариации, ортогональное первому.</div>
+          <div class="step"><strong>3.</strong> Продолжаем дальше.</div>
+        </div>
+        <div>
+          <div class="intuition">
+            Если смотреть на вытянутое облако точек, PCA выберет ось вдоль длинной стороны облака,
+            потому что вдоль неё разброс максимален.
+          </div>
+          <div class="success">
+            То есть PCA не ищет “классы”, не ищет “таргет”, не ищет “лучшую модель”.
+            Он просто находит наиболее информативные направления изменения самих данных.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: первая и вторая главные компоненты</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже — синтетическое облако точек. Можно менять угол и степень вытянутости,
+            чтобы увидеть, как меняется первая главная компонента.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Угол облака: <span id="pcaAngleVal" class="hl-amber">35°</span></label>
+              <input id="pcaAngle" type="range" min="-80" max="80" step="1" value="35" />
+            </div>
+            <div class="control">
+              <label>Анизотропия: <span id="pcaStretchVal" class="hl-blue">2.8</span></label>
+              <input id="pcaStretch" type="range" min="1.0" max="5.0" step="0.1" value="2.8" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">PC1 variance</div>
+              <div class="value" id="pc1VarOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">PC2 variance</div>
+              <div class="value" id="pc2VarOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Explained by PC1</div>
+              <div class="value" id="pc1ExpOut">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="pcaCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>данные</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>PC1</span>
+            <span><i class="swatch" style="background:#10b981"></i>PC2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.2 Covariance matrix</h2>
+      <p>
+        Чтобы формально описать совместную изменчивость признаков,
+        PCA работает с <strong>covariance matrix</strong>.
+      </p>
+
+      <div class="formula">Пусть X ∈ R^(n×d) — центрированные данные
+
+Cov(X) = (1 / (n - 1)) XᵀX</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Диагональные элементы covariance matrix —
+            это дисперсии отдельных признаков.
+          </div>
+          <div class="info">
+            Внедиагональные элементы —
+            ковариации между признаками.
+          </div>
+        </div>
+        <div>
+          <div class="intuition">
+            Если два признака сильно меняются вместе,
+            covariance between them будет большой по модулю.
+            PCA использует эту структуру, чтобы находить главные направления.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Если признаки имеют очень разные масштабы,
+        covariance matrix начнёт отражать прежде всего разницу в масштабе.
+        Поэтому на практике перед PCA часто делают <strong>standardization</strong>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: covariance и корреляция</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Можно двигать силу зависимости между двумя признаками и смотреть,
+            как меняется covariance matrix и форма облака.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Связь между x и y: <span id="covCorrVal" class="hl-amber">0.70</span></label>
+              <input id="covCorr" type="range" min="-0.95" max="0.95" step="0.01" value="0.70" />
+            </div>
+          </div>
+
+          <div class="formula" id="covMatrixBox">Cov =
+[[1.00, 0.70],
+ [0.70, 1.00]]</div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="covCanvas" width="400" height="260"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.3 Eigenvectors и principal components</h2>
+      <p>
+        PCA ищет собственные векторы covariance matrix.
+        Именно они задают направления главных компонент,
+        а собственные значения показывают, сколько дисперсии приходится на каждое направление.
+      </p>
+
+      <div class="formula">Если Σ = covariance matrix, то ищем
+
+Σv = λv
+
+где
+v — eigenvector
+λ — eigenvalue</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Eigenvectors</strong> → направления главных компонент.</div>
+          <div class="step"><strong>Eigenvalues</strong> → сколько вариации захватывает это направление.</div>
+        </div>
+        <div>
+          <div class="success">
+            В PCA мы сортируем eigenvalues по убыванию и берём первые компоненты,
+            которые объясняют основную долю дисперсии.
+          </div>
+        </div>
+      </div>
+
+      <div class="intuition">
+        Если первая eigenvalue намного больше остальных,
+        это значит, что почти всё облако данных вытянуто вдоль одного главного направления.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.4 Explained variance</h2>
+      <p>
+        <strong>Explained variance ratio</strong> показывает,
+        какую долю общей дисперсии сохраняет каждая компонента.
+      </p>
+
+      <div class="formula">ExplainedVarianceRatio_j = λ_j / Σ_k λ_k</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Если первые 2–3 компоненты объясняют, например, 95% вариации,
+            это сильный сигнал, что данные можно хорошо сжать.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но “объяснять много дисперсии” не всегда значит “быть лучшим для downstream-задачи”.
+            Иногда компоненты с меньшей дисперсией всё равно несут важную для таргета информацию.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: explained variance curve</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Этот график показывает типичную cumulative explained variance curve.
+            Двигай “структурную сложность”, чтобы видеть, как быстро насыщается информация.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Эффективная сложность данных: <span id="evComplexityVal" class="hl-amber">3</span></label>
+              <input id="evComplexity" type="range" min="1" max="8" step="1" value="3" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">PCs for 90%</div>
+              <div class="value" id="pcs90Out">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">PC1 share</div>
+              <div class="value" id="pc1ShareOut">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="evCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>cumulative explained variance</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>уровень 90%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>PCA как проекция</h2>
+      <p>
+        После того как найдено новое базисное пространство,
+        данные просто проецируются на первые компоненты.
+      </p>
+
+      <div class="formula">Если W_m — матрица из первых m компонент, то
+
+Z = X W_m
+
+где
+X — исходные центрированные данные
+Z — новые координаты в пространстве меньшей размерности</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Это уже и есть reduced representation.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            При желании можно сделать и обратную проекцию
+            и получить приближение исходных данных.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда PCA особенно полезен</h2>
+      <div class="grid-2">
+        <div>
+          <ul>
+            <li>как preprocessing перед линейными моделями или clustering;</li>
+            <li>для сжатия и ускорения;</li>
+            <li>для визуализации умеренно сложной структуры;</li>
+            <li>когда признаки сильно коррелированы;</li>
+            <li>для noise reduction.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="warn">
+            PCA — линейный метод.
+            Если данные лежат на сложном нелинейном многообразии,
+            PCA может не показать реальную структуру достаточно хорошо.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.5 t-SNE</h2>
+      <p>
+        <strong>t-SNE</strong> — нелинейный метод снижения размерности,
+        который особенно популярен для красивой 2D/3D-визуализации эмбеддингов и сложных данных.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="formula">Высокоразмерное пространство:
+сохраняем локальные соседства
+
+Низкоразмерное пространство:
+ищем расположение точек,
+где соседства выглядят похоже</div>
+        </div>
+        <div>
+          <div class="intuition">
+            t-SNE не пытается сохранить глобальные расстояния идеально.
+            Он в первую очередь старается, чтобы “кто рядом с кем” оставалось похожим.
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        Это очень важно:
+        <strong>t-SNE хорош для локальной структуры, но плохо подходит для интерпретации глобальных расстояний между кластерами.</strong>
+      </div>
+
+      <div class="warn">
+        Если на t-SNE два кластера далеко друг от друга, это не обязательно означает,
+        что они “очень далеки” и в исходном пространстве.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Perplexity в t-SNE</h2>
+      <p>
+        Один из самых известных параметров t-SNE — <code>perplexity</code>.
+        Грубо говоря, он контролирует эффективный размер локального соседства.
+      </p>
+
+      <div class="formula">Маленькая perplexity:
+сильный фокус на очень локальные связи
+
+Большая perplexity:
+учитывается более широкое окружение</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Низкая perplexity может дробить данные на мелкие островки.
+          </div>
+          <div class="warn">
+            Слишком высокая perplexity может сглаживать локальную структуру.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            На практике t-SNE требует экспериментов и аккуратной интерпретации.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: t-SNE intuition</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Это не полноценный t-SNE, а визуальная иллюстрация его поведения:
+            как меняется локальность структуры при разных уровнях “perplexity”.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Perplexity-like parameter: <span id="tsnePerpVal" class="hl-amber">25</span></label>
+              <input id="tsnePerp" type="range" min="5" max="60" step="1" value="25" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Local focus</div>
+              <div class="value" id="tsneLocalOut">medium</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Global faithfulness</div>
+              <div class="value" id="tsneGlobalOut">medium</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="tsneCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>embedding view</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>локальные соседи</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.6 UMAP</h2>
+      <p>
+        <strong>UMAP</strong> — ещё один популярный нелинейный метод,
+        часто используемый для визуализации эмбеддингов и сложных структур.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Практически UMAP часто:
+            <ul>
+              <li>быстрее t-SNE;</li>
+              <li>лучше сохраняет часть глобальной структуры;</li>
+              <li>лучше масштабируется;</li>
+              <li>удобен и для визуализации, и иногда для downstream features.</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но UMAP, как и t-SNE, всё равно не стоит интерпретировать слишком буквально
+            как “истинную геометрию мира” в 2D.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Главные интуитивные параметры UMAP:
+n_neighbors  — баланс между локальной и более глобальной структурой
+min_dist     — насколько плотно точки можно упаковать в embedding</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: UMAP intuition</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь схематически показано, как меняются embedding-группы
+            при разных <code>n_neighbors</code> и <code>min_dist</code>.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>n_neighbors: <span id="umapNVal" class="hl-amber">20</span></label>
+              <input id="umapN" type="range" min="5" max="80" step="1" value="20" />
+            </div>
+            <div class="control">
+              <label>min_dist: <span id="umapMinVal" class="hl-blue">0.20</span></label>
+              <input id="umapMin" type="range" min="0.00" max="0.99" step="0.01" value="0.20" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Cluster compactness</div>
+              <div class="value" id="umapCompactOut">high</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Global smoothness</div>
+              <div class="value" id="umapSmoothOut">medium</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="umapCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>группы после UMAP-like embedding</span>
+            <span><i class="swatch" style="background:#a78bfa"></i>межгрупповая структура</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.15.7 PCA vs t-SNE vs UMAP</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Метод</th>
+              <th>Тип</th>
+              <th>Что сохраняет</th>
+              <th>Когда особенно хорош</th>
+              <th>Ограничения</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PCA</td>
+              <td>Линейный</td>
+              <td>Максимум дисперсии в линейном подпространстве</td>
+              <td>Сжатие, preprocessing, baseline, noise reduction</td>
+              <td>Не ловит сложные нелинейные структуры</td>
+            </tr>
+            <tr>
+              <td>t-SNE</td>
+              <td>Нелинейный</td>
+              <td>Локальные соседства</td>
+              <td>2D/3D визуализация сложных эмбеддингов</td>
+              <td>Слабая интерпретация глобальных расстояний, дорогой</td>
+            </tr>
+            <tr>
+              <td>UMAP</td>
+              <td>Нелинейный</td>
+              <td>Локальная структура + часть глобальной</td>
+              <td>Быстрая и сильная визуализация, большие данные</td>
+              <td>Тоже искажает геометрию и зависит от гиперпараметров</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="success">
+        Практическое правило:
+        <strong>PCA — первый рабочий baseline, t-SNE/UMAP — хорошие инструменты для визуального исследования.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда нельзя слишком доверять красивой 2D-картинке</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Красивые “островки” на t-SNE/UMAP не гарантируют существование реальных дискретных классов.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Расстояния между кластерами на картинке могут вводить в заблуждение.
+          </div>
+          <div class="warn">
+            <strong>3.</strong> Гиперпараметры сильно влияют на внешний вид embedding.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>4.</strong> Разные random seed могут слегка менять картину.
+          </div>
+          <div class="warn">
+            <strong>5.</strong> 2D — это очень сильное сжатие. Какая-то часть структуры неизбежно потеряется.
+          </div>
+          <div class="warn">
+            <strong>6.</strong> Визуализация — это инструмент анализа, а не автоматическое доказательство структуры.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практический pipeline снижения размерности</h2>
+      <div class="step"><strong>1.</strong> Подумать, зачем уменьшаем размерность: визуализация, сжатие, шумоподавление, ускорение?</div>
+      <div class="step"><strong>2.</strong> Обычно сначала масштабировать признаки, если метод чувствителен к масштабу.</div>
+      <div class="step"><strong>3.</strong> Начать с PCA как базового линейного варианта.</div>
+      <div class="step"><strong>4.</strong> Если нужна выразительная визуализация эмбеддингов — попробовать t-SNE или UMAP.</div>
+      <div class="step"><strong>5.</strong> Не судить только по красоте графика — проверять downstream-метрики и устойчивость.</div>
+      <div class="step"><strong>6.</strong> Для интерпретации помнить, что разные методы сохраняют разную структуру данных.</div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn / umap</h2>
+
+      <div class="tabs" data-tabs="dimred-code-tabs">
+        <button class="tab-btn active" data-tab="code-pca">PCA</button>
+        <button class="tab-btn" data-tab="code-pca-var">Explained variance</button>
+        <button class="tab-btn" data-tab="code-tsne">t-SNE</button>
+        <button class="tab-btn" data-tab="code-umap">UMAP</button>
+      </div>
+
+      <div id="code-pca" class="tab-panel active">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("pca", PCA(n_components=2, random_state=42))
+])
+
+Z = pipe.fit_transform(X)
+
+print("Projected shape:", Z.shape)
+print("Explained variance ratio:", pipe.named_steps["pca"].explained_variance_ratio_)</div>
+      </div>
+
+      <div id="code-pca-var" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import numpy as np
+
+X_scaled = StandardScaler().fit_transform(X)
+
+pca = PCA().fit(X_scaled)
+cum_var = np.cumsum(pca.explained_variance_ratio_)
+
+n_90 = np.argmax(cum_var >= 0.90) + 1
+n_95 = np.argmax(cum_var >= 0.95) + 1
+
+print("PCs for 90% variance:", n_90)
+print("PCs for 95% variance:", n_95)
+print("Cumulative explained variance:", cum_var)</div>
+      </div>
+
+      <div id="code-tsne" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+from sklearn.manifold import TSNE
+
+X_scaled = StandardScaler().fit_transform(X)
+
+tsne = TSNE(
+    n_components=2,
+    perplexity=30,
+    learning_rate="auto",
+    init="pca",
+    random_state=42
+)
+
+Z_tsne = tsne.fit_transform(X_scaled)
+print(Z_tsne.shape)</div>
+      </div>
+
+      <div id="code-umap" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+import umap.umap_ as umap
+
+X_scaled = StandardScaler().fit_transform(X)
+
+reducer = umap.UMAP(
+    n_components=2,
+    n_neighbors=20,
+    min_dist=0.1,
+    random_state=42
+)
+
+Z_umap = reducer.fit_transform(X_scaled)
+print(Z_umap.shape)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Делать PCA без масштабирования на признаках разных масштабов.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Считать, что высокая explained variance автоматически гарантирует лучший downstream-result.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Интерпретировать расстояния на t-SNE слишком буквально.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Считать красивые кластеры на UMAP доказательством реальных категорий.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Использовать t-SNE как обычный preprocessing для продакшн-модели без понимания последствий.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Не фиксировать random_state при сравнении визуализаций.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить снижение размерности на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Снижение размерности нужно для сжатия, визуализации, шумоподавления и борьбы с избыточностью признаков.</div>
+      <div class="step"><strong>2.</strong> PCA ищет ортогональные направления максимальной дисперсии через eigenvectors covariance matrix.</div>
+      <div class="step"><strong>3.</strong> Explained variance показывает, сколько информации сохраняют первые компоненты.</div>
+      <div class="step"><strong>4.</strong> t-SNE и UMAP — нелинейные методы, лучше подходящие для визуализации сложной локальной структуры.</div>
+      <div class="step"><strong>5.</strong> PCA — чаще инструмент preprocessing, t-SNE/UMAP — чаще инструменты визуализации и исследования.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>PCA</strong> ищет линейные направления максимальной вариации и часто полезен как baseline и preprocessing.</div>
+          <div class="step"><strong>Covariance matrix + eigenvectors</strong> — математическое ядро PCA.</div>
+          <div class="step"><strong>Explained variance</strong> помогает понять, сколько информации сохраняют первые компоненты.</div>
+        </div>
+        <div>
+          <div class="step"><strong>t-SNE</strong> хорошо показывает локальные соседства, но искажает глобальную геометрию.</div>
+          <div class="step"><strong>UMAP</strong> часто быстрее и масштабируемее, при этом тоже требует аккуратной интерпретации.</div>
+          <div class="step">Нужно всегда помнить: <strong>снижение размерности — это компромисс между компактностью и потерей структуры.</strong></div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>PCA = линейная проекция по максимальной дисперсии, t-SNE = локальная визуализация, UMAP = нелинейное компактное embedding-представление.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="14_clustering.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.14 Кластеризация
+      </a>
+      <div class="footer-link" aria-disabled="true">
+        <span class="muted">Следующая тема →</span>
+        2.16 Ансамбли
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    function worldToCanvas(x, y, W, H, minX=-4, maxX=4, minY=-4, maxY=4){
+      return [
+        (x-minX)/(maxX-minX)*W,
+        H-(y-minY)/(maxY-minY)*H
+      ];
+    }
+
+    // -------- PCA intuition canvas --------
+    const pcaCanvas = document.getElementById('pcaCanvas');
+    const pcaCtx = pcaCanvas.getContext('2d');
+    const pcaAngle = document.getElementById('pcaAngle');
+    const pcaStretch = document.getElementById('pcaStretch');
+    const pcaAngleVal = document.getElementById('pcaAngleVal');
+    const pcaStretchVal = document.getElementById('pcaStretchVal');
+    const pc1VarOut = document.getElementById('pc1VarOut');
+    const pc2VarOut = document.getElementById('pc2VarOut');
+    const pc1ExpOut = document.getElementById('pc1ExpOut');
+
+    function drawPCACloud(){
+      const angleDeg = +pcaAngle.value;
+      const stretch = +pcaStretch.value;
+      pcaAngleVal.textContent = angleDeg + '°';
+      pcaStretchVal.textContent = stretch.toFixed(1);
+
+      const theta = angleDeg * Math.PI / 180;
+      const W = pcaCanvas.width, H = pcaCanvas.height;
+      pcaCtx.clearRect(0,0,W,H);
+      pcaCtx.fillStyle = '#0b1016';
+      pcaCtx.fillRect(0,0,W,H);
+
+      const var1 = stretch * stretch;
+      const var2 = 1.0;
+      const exp1 = var1 / (var1 + var2);
+
+      pc1VarOut.textContent = var1.toFixed(2);
+      pc2VarOut.textContent = var2.toFixed(2);
+      pc1ExpOut.textContent = (exp1 * 100).toFixed(1) + '%';
+
+      const pts = [];
+      for(let i=0;i<80;i++){
+        const u = (Math.random()-0.5) * 2.8 * stretch;
+        const v = (Math.random()-0.5) * 2.0;
+        const x = u*Math.cos(theta) - v*Math.sin(theta);
+        const y = u*Math.sin(theta) + v*Math.cos(theta);
+        pts.push([x,y]);
+      }
+
+      pts.forEach(([x,y])=>{
+        const [cx,cy] = worldToCanvas(x,y,W,H);
+        pcaCtx.beginPath();
+        pcaCtx.arc(cx,cy,4,0,Math.PI*2);
+        pcaCtx.fillStyle = '#60a5fa';
+        pcaCtx.fill();
+      });
+
+      function drawAxis(angle, color, length){
+        const x1 = -length*Math.cos(angle), y1 = -length*Math.sin(angle);
+        const x2 = length*Math.cos(angle), y2 = length*Math.sin(angle);
+        const p1 = worldToCanvas(x1,y1,W,H);
+        const p2 = worldToCanvas(x2,y2,W,H);
+        pcaCtx.strokeStyle = color;
+        pcaCtx.lineWidth = 2.8;
+        pcaCtx.beginPath();
+        pcaCtx.moveTo(p1[0],p1[1]);
+        pcaCtx.lineTo(p2[0],p2[1]);
+        pcaCtx.stroke();
+      }
+
+      drawAxis(theta, '#f59e0b', 3.2);
+      drawAxis(theta + Math.PI/2, '#10b981', 2.5);
+    }
+
+    [pcaAngle, pcaStretch].forEach(el=>el.addEventListener('input', drawPCACloud));
+
+    // -------- Covariance canvas --------
+    const covCorr = document.getElementById('covCorr');
+    const covCorrVal = document.getElementById('covCorrVal');
+    const covMatrixBox = document.getElementById('covMatrixBox');
+    const covCanvas = document.getElementById('covCanvas');
+    const covCtx = covCanvas.getContext('2d');
+
+    function drawCovariance(){
+      const rho = +covCorr.value;
+      covCorrVal.textContent = rho.toFixed(2);
+      covMatrixBox.textContent =
+`Cov =
+[[1.00, ${rho.toFixed(2)}],
+ [${rho.toFixed(2)}, 1.00]]`;
+
+      const W = covCanvas.width, H = covCanvas.height;
+      covCtx.clearRect(0,0,W,H);
+      covCtx.fillStyle = '#0b1016';
+      covCtx.fillRect(0,0,W,H);
+
+      const angle = rho >= 0 ? Math.PI/4 : -Math.PI/4;
+      const stretch = 1 + Math.abs(rho)*2.8;
+
+      for(let i=0;i<90;i++){
+        const u = (Math.random()-0.5)*2.0*stretch;
+        const v = (Math.random()-0.5)*1.8;
+        const x = u*Math.cos(angle) - v*Math.sin(angle);
+        const y = u*Math.sin(angle) + v*Math.cos(angle);
+
+        const [cx,cy] = worldToCanvas(x,y,W,H);
+        covCtx.beginPath();
+        covCtx.arc(cx,cy,4,0,Math.PI*2);
+        covCtx.fillStyle = '#60a5fa';
+        covCtx.fill();
+      }
+    }
+
+    covCorr.addEventListener('input', drawCovariance);
+
+    // -------- Explained variance curve --------
+    const evComplexity = document.getElementById('evComplexity');
+    const evComplexityVal = document.getElementById('evComplexityVal');
+    const pcs90Out = document.getElementById('pcs90Out');
+    const pc1ShareOut = document.getElementById('pc1ShareOut');
+    const evCanvas = document.getElementById('evCanvas');
+    const evCtx = evCanvas.getContext('2d');
+
+    function drawExplainedVariance(){
+      const c = +evComplexity.value;
+      evComplexityVal.textContent = c;
+
+      let lambdas = [];
+      let total = 0;
+      for(let i=0;i<10;i++){
+        const val = Math.exp(-i / c);
+        lambdas.push(val);
+        total += val;
+      }
+      const ratios = lambdas.map(v => v / total);
+      const cum = [];
+      ratios.reduce((acc,v,idx)=>{
+        acc += v;
+        cum[idx] = acc;
+        return acc;
+      },0);
+
+      pc1ShareOut.textContent = (ratios[0]*100).toFixed(1) + '%';
+      const pcs90 = cum.findIndex(v => v >= 0.90) + 1;
+      pcs90Out.textContent = pcs90;
+
+      const W = evCanvas.width, H = evCanvas.height;
+      evCtx.clearRect(0,0,W,H);
+      evCtx.fillStyle = '#0b1016';
+      evCtx.fillRect(0,0,W,H);
+
+      const padL=30,padR=10,padT=10,padB=28;
+      function X(i){ return padL + i/9*(W-padL-padR); }
+      function Y(v){ return H-padB - v*(H-padT-padB); }
+
+      evCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=5;i++){
+        const yy = i/5;
+        evCtx.beginPath();
+        evCtx.moveTo(padL,Y(yy));
+        evCtx.lineTo(W-padR,Y(yy));
+        evCtx.stroke();
+      }
+
+      evCtx.strokeStyle = '#f59e0b';
+      evCtx.setLineDash([6,6]);
+      evCtx.beginPath();
+      evCtx.moveTo(padL, Y(0.90));
+      evCtx.lineTo(W-padR, Y(0.90));
+      evCtx.stroke();
+      evCtx.setLineDash([]);
+
+      evCtx.strokeStyle = '#60a5fa';
+      evCtx.lineWidth = 2.3;
+      evCtx.beginPath();
+      cum.forEach((v,i)=>{
+        if(i===0) evCtx.moveTo(X(i),Y(v));
+        else evCtx.lineTo(X(i),Y(v));
+      });
+      evCtx.stroke();
+
+      cum.forEach((v,i)=>{
+        evCtx.beginPath();
+        evCtx.arc(X(i),Y(v), i+1===pcs90 ? 6 : 4, 0, Math.PI*2);
+        evCtx.fillStyle = i+1===pcs90 ? '#f59e0b' : '#60a5fa';
+        evCtx.fill();
+
+        evCtx.fillStyle = '#8b949e';
+        evCtx.font = '11px system-ui';
+        evCtx.fillText(String(i+1), X(i)-3, H-6);
+      });
+    }
+
+    evComplexity.addEventListener('input', drawExplainedVariance);
+
+    // -------- t-SNE intuition --------
+    const tsnePerp = document.getElementById('tsnePerp');
+    const tsnePerpVal = document.getElementById('tsnePerpVal');
+    const tsneLocalOut = document.getElementById('tsneLocalOut');
+    const tsneGlobalOut = document.getElementById('tsneGlobalOut');
+    const tsneCanvas = document.getElementById('tsneCanvas');
+    const tsneCtx = tsneCanvas.getContext('2d');
+
+    function drawTSNE(){
+      const perp = +tsnePerp.value;
+      tsnePerpVal.textContent = perp;
+
+      tsneLocalOut.textContent = perp < 15 ? 'very high' : perp < 35 ? 'medium' : 'lower';
+      tsneGlobalOut.textContent = perp < 15 ? 'low' : perp < 35 ? 'medium' : 'better';
+
+      const W = tsneCanvas.width, H = tsneCanvas.height;
+      tsneCtx.clearRect(0,0,W,H);
+      tsneCtx.fillStyle = '#0b1016';
+      tsneCtx.fillRect(0,0,W,H);
+
+      const groups = [
+        {c:[110,90], color:'#60a5fa'},
+        {c:[260,70], color:'#10b981'},
+        {c:[190,210], color:'#ef4444'}
+      ];
+
+      const spread = perp < 15 ? 18 : perp < 35 ? 26 : 36;
+      const sepBend = perp < 15 ? 40 : perp < 35 ? 20 : 8;
+
+      groups.forEach((g,idx)=>{
+        for(let i=0;i<28;i++){
+          const angle = (i/28)*Math.PI*2;
+          const r = spread*(0.45 + Math.random()*0.75);
+          const x = g.c[0] + Math.cos(angle)*r + (idx===2 ? sepBend : 0);
+          const y = g.c[1] + Math.sin(angle)*r;
+          tsneCtx.beginPath();
+          tsneCtx.arc(x,y,4,0,Math.PI*2);
+          tsneCtx.fillStyle = g.color;
+          tsneCtx.fill();
+        }
+      });
+
+      // highlight local neighbors
+      tsneCtx.strokeStyle = '#f59e0b';
+      tsneCtx.lineWidth = 1.5;
+      tsneCtx.beginPath();
+      tsneCtx.arc(groups[0].c[0], groups[0].c[1], spread*0.95, 0, Math.PI*2);
+      tsneCtx.stroke();
+    }
+
+    tsnePerp.addEventListener('input', drawTSNE);
+
+    // -------- UMAP intuition --------
+    const umapN = document.getElementById('umapN');
+    const umapMin = document.getElementById('umapMin');
+    const umapNVal = document.getElementById('umapNVal');
+    const umapMinVal = document.getElementById('umapMinVal');
+    const umapCompactOut = document.getElementById('umapCompactOut');
+    const umapSmoothOut = document.getElementById('umapSmoothOut');
+    const umapCanvas = document.getElementById('umapCanvas');
+    const umapCtx = umapCanvas.getContext('2d');
+
+    function drawUMAP(){
+      const n = +umapN.value;
+      const minDist = +umapMin.value;
+      umapNVal.textContent = n;
+      umapMinVal.textContent = minDist.toFixed(2);
+
+      umapCompactOut.textContent = minDist < 0.15 ? 'very high' : minDist < 0.45 ? 'high' : 'lower';
+      umapSmoothOut.textContent = n < 15 ? 'local' : n < 40 ? 'medium' : 'more global';
+
+      const W = umapCanvas.width, H = umapCanvas.height;
+      umapCtx.clearRect(0,0,W,H);
+      umapCtx.fillStyle = '#0b1016';
+      umapCtx.fillRect(0,0,W,H);
+
+      const compact = 10 + minDist * 34;
+      const shift = n / 3.6;
+
+      const centers = [
+        [80 + shift, 120],
+        [190, 70 + shift*0.35],
+        [300 - shift*0.4, 170],
+        [180, 220 - shift*0.25]
+      ];
+
+      centers.forEach((c,idx)=>{
+        for(let i=0;i<26;i++){
+          const a = (i/26)*Math.PI*2;
+          const r = compact*(0.4 + Math.random());
+          const x = c[0] + Math.cos(a)*r;
+          const y = c[1] + Math.sin(a)*r;
+          umapCtx.beginPath();
+          umapCtx.arc(x,y,3.8,0,Math.PI*2);
+          umapCtx.fillStyle = idx % 2 === 0 ? '#10b981' : '#a78bfa';
+          umapCtx.fill();
+        }
+      });
+
+      umapCtx.strokeStyle = 'rgba(167,139,250,0.45)';
+      umapCtx.lineWidth = 1.5;
+      umapCtx.beginPath();
+      umapCtx.moveTo(centers[0][0], centers[0][1]);
+      umapCtx.lineTo(centers[1][0], centers[1][1]);
+      umapCtx.lineTo(centers[2][0], centers[2][1]);
+      umapCtx.stroke();
+    }
+
+    [umapN, umapMin].forEach(el=>el.addEventListener('input', drawUMAP));
+
+    // init
+    drawPCACloud();
+    drawCovariance();
+    drawExplainedVariance();
+    drawTSNE();
+    drawUMAP();
+  </script>
+</body>
+</html>

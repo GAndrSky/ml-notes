@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.12 Boosting</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="11_bagging_random_forest.html">2.11 Bagging / Random Forest</a>
+        <span class="tag active">2.12 Boosting</span>
+        <a class="tag tag-block" href="13_support_vector_machines.html">2.13 SVM</a>
+      </div>
+
+      <h1>2.12 Boosting</h1>
+      <p class="muted">
+        AdaBoost, Gradient Boosting, XGBoost, LightGBM, CatBoost и ключевые гиперпараметры boosting-моделей.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Почему boosting — это не просто “много деревьев”</h2>
+      <p>
+        В bagging модели учатся <strong>независимо и параллельно</strong>. В boosting — наоборот:
+        каждая следующая модель строится так, чтобы <strong>исправлять ошибки предыдущих</strong>.
+      </p>
+
+      <div class="formula">Bagging:
+много сильных/нестабильных моделей → усреднение → ниже variance
+
+Boosting:
+последовательность слабых моделей → каждая исправляет residual / ошибки → ниже bias</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Bagging похож на голосование группы независимых экспертов.
+        Boosting похож на репетитора, который после каждой контрольной смотрит,
+        где именно ученик ошибся, и делает следующий разбор именно по слабым местам.
+      </div>
+
+      <div class="warn">
+        Поэтому boosting часто даёт очень сильное качество на табличных данных,
+        но становится чувствительнее к tuning и регуляризации, чем Random Forest.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Общая схема boosting</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Шаг 1.</strong> Строим простую модель <code>f₁(x)</code>.</div>
+          <div class="step"><strong>Шаг 2.</strong> Смотрим, где она ошиблась.</div>
+          <div class="step"><strong>Шаг 3.</strong> Обучаем следующую модель так, чтобы она лучше объясняла оставшуюся ошибку.</div>
+          <div class="step"><strong>Шаг 4.</strong> Добавляем её в ансамбль с весом.</div>
+          <div class="step"><strong>Шаг 5.</strong> Повторяем много раз.</div>
+        </div>
+        <div>
+          <div class="formula">F_M(x) = Σ_{m=1..M} γ_m h_m(x)
+
+где
+h_m(x) — очередной weak learner
+γ_m — его вес
+M — число итераций boosting</div>
+
+          <div class="info">
+            В классическом boosting weak learner обычно — это
+            <strong>небольшое дерево</strong>: shallow tree, stump или дерево ограниченной глубины.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: bagging vs boosting — ментальная картинка</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже можно выбрать режим и увидеть разницу в логике ансамбля.
+            В bagging все модели равноправны, в boosting каждая новая модель строится по ошибкам ансамбля.
+          </p>
+
+          <div class="tabs" id="ensembleModeTabs">
+            <button class="tab-btn active" data-mode="bagging">Bagging</button>
+            <button class="tab-btn" data-mode="boosting">Boosting</button>
+          </div>
+
+          <div class="controls">
+            <div class="control">
+              <label>Количество моделей: <span id="ensCountVal" class="hl-amber">8</span></label>
+              <input id="ensCount" type="range" min="3" max="20" value="8" />
+            </div>
+          </div>
+
+          <div class="info" id="ensembleText">
+            В bagging модели рисуются как параллельные ветви: они обучаются независимо и потом агрегируются.
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="ensembleCanvas" width="400" height="280"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.1 AdaBoost</h2>
+      <p>
+        AdaBoost — один из первых классических boosting-алгоритмов.
+        Его идея: на каждой итерации увеличивать вес объектов, которые были ошибочно классифицированы,
+        и уменьшать вес тех, которые классифицированы правильно.
+      </p>
+
+      <div class="formula">Изначально:
+w_i = 1 / N
+
+На итерации m обучаем weak learner h_m(x)
+
+Ошибка модели:
+err_m = Σ_i w_i [y_i ≠ h_m(x_i)]
+
+Вес модели:
+α_m = 1/2 · ln((1 - err_m) / err_m)
+
+Обновление весов объектов:
+w_i ← w_i · exp(-α_m y_i h_m(x_i))
+затем нормализация</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            Если объект классифицирован неверно, его вес вырастает.
+            Следующий weak learner будет сильнее “замечать” именно такие сложные точки.
+          </div>
+          <div class="warn">
+            AdaBoost чувствителен к шуму и выбросам:
+            если в данных есть странные или ошибочно размеченные точки,
+            алгоритм может слишком зациклиться на них.
+          </div>
+        </div>
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Что усиливает AdaBoost</th>
+                  <th>Что ослабляет</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Неверно классифицированные объекты</td>
+                  <td>Лёгкие, уже хорошо классифицированные объекты</td>
+                </tr>
+                <tr>
+                  <td>Сильные weak learner'ы получают больший вес α</td>
+                  <td>Слабые weak learner'ы получают меньший вес α</td>
+                </tr>
+                <tr>
+                  <td>Сложные участки границы</td>
+                  <td>Уже понятные области пространства</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: как AdaBoost перераспределяет веса</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Представим бинарную классификацию. Доля ошибок weak learner определяет,
+            насколько сильно меняются веса примеров и какой вес получает сама модель.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Ошибка weak learner err: <span id="adaErrVal" class="hl-red">0.20</span></label>
+              <input id="adaErr" type="range" min="0.01" max="0.49" step="0.01" value="0.20" />
+            </div>
+            <div class="control">
+              <label>Доля ошибочных объектов в визуализации: <span id="adaFracVal" class="hl-amber">0.25</span></label>
+              <input id="adaFrac" type="range" min="0.05" max="0.60" step="0.01" value="0.25" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Вес модели α</div>
+              <div class="value" id="adaAlphaOut">0.693</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Рост веса ошибок</div>
+              <div class="value" id="adaBoostOut">2.00×</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="adaCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>правильно классифицировано</span>
+            <span><i class="swatch" style="background:#ef4444"></i>ошибка</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.2 Gradient Boosting</h2>
+      <p>
+        Gradient Boosting — более общий и мощный взгляд на boosting.
+        Вместо прямой работы с весами объектов он рассматривает boosting как
+        <strong>пошаговую оптимизацию функции потерь</strong>.
+      </p>
+
+      <div class="formula">Идея:
+строим ансамбль F_m(x) пошагово
+
+F_m(x) = F_{m-1}(x) + η · h_m(x)
+
+где
+η — learning rate
+h_m(x) — новая модель, аппроксимирующая направление улучшения</div>
+
+      <p>
+        На каждой итерации мы добавляем новую модель так, чтобы она двигала ансамбль
+        в сторону уменьшения loss.
+      </p>
+
+      <div class="formula">Для каждого объекта i считаем pseudo-residual:
+
+r_im = - [∂L(y_i, F(x_i)) / ∂F(x_i)] at F = F_{m-1}
+
+Затем обучаем дерево h_m(x) предсказывать эти residual</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            В регрессии с MSE всё особенно наглядно:
+            residual — это просто <code>y - ŷ</code>.
+            То есть новое дерево учится предсказывать то, что ансамбль ещё не объяснил.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Это ключевой момент:
+            <strong>Gradient Boosting = градиентный спуск в пространстве функций</strong>,
+            а не просто “ещё одно дерево поверх прошлого”.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: boosting как последовательное исправление residual</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Симулятор ниже показывает target-функцию и последовательность слабых “добавок”.
+            Каждая новая модель уменьшает остаточную ошибку.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Число boosting-итераций: <span id="gbIterVal" class="hl-amber">6</span></label>
+              <input id="gbIter" type="range" min="1" max="20" value="6" />
+            </div>
+            <div class="control">
+              <label>Learning rate η: <span id="gbEtaVal" class="hl-green">0.30</span></label>
+              <input id="gbEta" type="range" min="0.05" max="1.00" step="0.05" value="0.30" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Итераций</div>
+              <div class="value" id="gbIterOut">6</div>
+            </div>
+            <div class="kpi">
+              <div class="label">η</div>
+              <div class="value" id="gbEtaOut">0.30</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Ошибка</div>
+              <div class="value" id="gbErrOut">0.000</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="gbCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>target</span>
+            <span><i class="swatch" style="background:#10b981"></i>ensemble</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>новая weak-модель</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.3 XGBoost</h2>
+      <p>
+        <strong>XGBoost</strong> — это индустриально усиленная версия gradient boosting.
+        Главная идея не только в boosting, но и в очень аккуратной регуляризации,
+        эффективной оптимизации и хорошем engineering.
+      </p>
+
+      <div class="formula">Целевая функция XGBoost:
+
+Obj = Σ_i L(y_i, ŷ_i) + Σ_k Ω(f_k)
+
+где регуляризация дерева:
+Ω(f) = γT + (λ/2) Σ_j w_j²
+
+T  — число листьев
+w_j — веса листьев
+γ  — штраф за сложность дерева
+λ  — L2-регуляризация листьев</div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Что делает XGBoost сильным</h3>
+          <ul>
+            <li>регуляризация структуры дерева;</li>
+            <li>работа со 2-м порядком аппроксимации loss;</li>
+            <li>shrinkage (<code>learning_rate</code>);</li>
+            <li>subsampling по объектам и признакам;</li>
+            <li>handling missing values;</li>
+            <li>сильная инженерная оптимизация.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="info">
+            XGBoost долгое время был “дефолтным королём” соревнований по табличным данным
+            и до сих пор остаётся одной из самых сильных базовых библиотек.
+          </div>
+          <div class="warn">
+            Но за качество часто приходится платить большим числом гиперпараметров
+            и более тяжёлым tuning.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.4 LightGBM</h2>
+      <p>
+        <strong>LightGBM</strong> сделан с фокусом на скорость и масштабируемость.
+        Его важная идея — расти дерево не level-wise, а <strong>leaf-wise</strong>.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="formula">Level-wise growth:
+на каждом уровне расщепляем все узлы текущей глубины
+
+Leaf-wise growth:
+каждый раз расщепляем тот лист,
+который даёт наибольшее уменьшение loss</div>
+          <div class="intuition">
+            Leaf-wise рост часто быстрее приводит к сильному дереву,
+            потому что алгоритм тратит ресурс именно туда, где ожидается наибольший выигрыш.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Leaf-wise дерево может переобучаться сильнее, если не ограничивать
+            <code>num_leaves</code>, <code>max_depth</code>, <code>min_data_in_leaf</code>.
+          </div>
+          <div class="success">
+            LightGBM особенно популярен на больших табличных датасетах,
+            когда важны скорость и память.
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Схема роста</th>
+              <th>Плюс</th>
+              <th>Минус</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Level-wise</td>
+              <td>Более контролируемая структура</td>
+              <td>Иногда медленнее выходит на сильное качество</td>
+            </tr>
+            <tr>
+              <td>Leaf-wise</td>
+              <td>Часто эффективнее и сильнее</td>
+              <td>Выше риск overfitting без ограничений</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: level-wise vs leaf-wise</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже показана чисто визуальная логика роста дерева.
+            Level-wise растит дерево слоями, leaf-wise — жадно углубляет самый “выгодный” лист.
+          </p>
+
+          <div class="tabs" id="growTabs">
+            <button class="tab-btn active" data-grow="level">Level-wise</button>
+            <button class="tab-btn" data-grow="leaf">Leaf-wise</button>
+          </div>
+
+          <div class="controls">
+            <div class="control">
+              <label>Число split'ов: <span id="growStepsVal" class="hl-amber">6</span></label>
+              <input id="growSteps" type="range" min="1" max="12" value="6" />
+            </div>
+          </div>
+
+          <div class="info" id="growText">
+            Level-wise делает дерево более симметричным и контролируемым.
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="growCanvas" width="400" height="280"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.5 CatBoost</h2>
+      <p>
+        <strong>CatBoost</strong> особенно известен тем, что очень хорошо работает с
+        <strong>категориальными признаками</strong> и часто требует меньше ручной подготовки данных.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3>Почему CatBoost популярен</h3>
+          <ul>
+            <li>умеет обрабатывать categorical features без грубого one-hot everywhere;</li>
+            <li>снижает target leakage в target-based encoding;</li>
+            <li>часто даёт сильное качество “из коробки”;</li>
+            <li>хорошо работает на смешанных табличных признаках.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="info">
+            CatBoost использует ordered boosting и специальные техники кодирования категориальных признаков,
+            чтобы не подглядывать в target слишком агрессивно.
+          </div>
+          <div class="warn">
+            Это не значит, что preprocessing не нужен вообще.
+            Но на категориальных фичах CatBoost часто снимает большой кусок ручной боли.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Упрощённая идея target-based encoding:
+категории кодируются статистикой target,
+но эта статистика считается аккуратно,
+без использования "будущих" объектов для текущего примера
+
+Иначе легко получить leakage.</div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.6 Как выбирать между XGBoost, LightGBM и CatBoost</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Библиотека</th>
+              <th>Сильные стороны</th>
+              <th>Когда особенно хороша</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>XGBoost</td>
+              <td>Сильная регуляризация, зрелая экосистема, надёжный baseline</td>
+              <td>Когда нужен очень контролируемый классический boosting</td>
+            </tr>
+            <tr>
+              <td>LightGBM</td>
+              <td>Скорость, масштабируемость, leaf-wise рост</td>
+              <td>Большие датасеты, когда важна эффективность</td>
+            </tr>
+            <tr>
+              <td>CatBoost</td>
+              <td>Категориальные фичи, меньше ручного encoding, strong out-of-box</td>
+              <td>Много категориальных признаков, mixed tabular data</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="success">
+        На практике часто разумно:
+        <strong>сначала запустить 2–3 библиотеки и сравнить на валидации</strong>,
+        а не пытаться заранее “угадать идеальную”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.12.7 Hyperparameters boosting-моделей</h2>
+      <p>
+        Boosting очень чувствителен к гиперпараметрам. Это и делает его мощным,
+        и делает его более опасным с точки зрения overfitting.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Параметр</th>
+              <th>Смысл</th>
+              <th>Типичный эффект</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>n_estimators</code></td>
+              <td>Число boosting-итераций</td>
+              <td>Больше итераций — сильнее модель, но выше риск overfitting</td>
+            </tr>
+            <tr>
+              <td><code>learning_rate</code></td>
+              <td>Шаг добавления новой модели</td>
+              <td>Меньше шаг — устойчивее, но нужно больше деревьев</td>
+            </tr>
+            <tr>
+              <td><code>max_depth</code></td>
+              <td>Глубина дерева</td>
+              <td>Глубже — больше сложность и взаимодействия</td>
+            </tr>
+            <tr>
+              <td><code>num_leaves</code></td>
+              <td>Число листьев (LightGBM)</td>
+              <td>Больше leaves — выше выразительность</td>
+            </tr>
+            <tr>
+              <td><code>min_child_weight</code>/<code>min_data_in_leaf</code></td>
+              <td>Минимум данных в узле/листе</td>
+              <td>Сдерживает слишком мелкие шумные split'ы</td>
+            </tr>
+            <tr>
+              <td><code>subsample</code></td>
+              <td>Доля объектов на итерации</td>
+              <td>Снижает variance, добавляет стохастичность</td>
+            </tr>
+            <tr>
+              <td><code>colsample_bytree</code></td>
+              <td>Доля признаков</td>
+              <td>Декоррелирует деревья и уменьшает overfitting</td>
+            </tr>
+            <tr>
+              <td><code>reg_alpha</code>, <code>reg_lambda</code></td>
+              <td>L1/L2 регуляризация</td>
+              <td>Сдерживает сложность модели</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="intuition">
+        Самый классический компромисс в boosting:
+        <strong>маленький learning_rate + больше деревьев</strong>.
+        Это обычно даёт более аккуратную и устойчивую модель, чем большой шаг и мало деревьев.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: learning rate vs n_estimators</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже упрощённая симуляция. Она не отражает конкретную библиотеку один в один,
+            но хорошо показывает компромисс:
+            слишком агрессивные шаги дают быстрый фит и более высокий риск overfitting.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Learning rate: <span id="lrVal" class="hl-green">0.10</span></label>
+              <input id="lrRange" type="range" min="0.01" max="0.50" step="0.01" value="0.10" />
+            </div>
+            <div class="control">
+              <label>n_estimators: <span id="nestVal" class="hl-amber">150</span></label>
+              <input id="nestRange" type="range" min="20" max="500" step="10" value="150" />
+            </div>
+            <div class="control">
+              <label>max_depth: <span id="depthVal" class="hl-blue">4</span></label>
+              <input id="depthRange" type="range" min="1" max="10" step="1" value="4" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Train quality</div>
+              <div class="value" id="trainMetric">0.000</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Valid quality</div>
+              <div class="value" id="validMetric">0.000</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Gap</div>
+              <div class="value" id="gapMetric">0.000</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="curveCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>train</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>validation</span>
+            <span><i class="swatch" style="background:#ef4444"></i>зона overfitting</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практические замечания</h2>
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            <strong>Boosting любит хорошие фичи.</strong>
+            Да, он умеет многое сам, но нормальный baseline, работа с leakage и аккуратная валидация всё равно критичны.
+          </div>
+          <div class="info">
+            <strong>Boosting на табличке очень силён.</strong>
+            Для обычных табличных задач это один из первых кандидатов после простого baseline.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Boosting легко переобучить.</strong>
+            Особенно при большом числе деревьев, большом depth и агрессивном learning rate.
+          </div>
+          <div class="warn">
+            <strong>Не смотри только на train.</strong>
+            На boosting train-качество часто быстро становится почти идеальным, но реальный вопрос — что происходит на validation/test.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Bagging / Random Forest / Boosting — ещё одно сравнение</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Свойство</th>
+              <th>Bagging</th>
+              <th>Random Forest</th>
+              <th>Boosting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Как строятся модели</td>
+              <td>Параллельно</td>
+              <td>Параллельно</td>
+              <td>Последовательно</td>
+            </tr>
+            <tr>
+              <td>Главная цель</td>
+              <td>Снизить variance</td>
+              <td>Снизить variance и корреляцию</td>
+              <td>Снизить bias и последовательно улучшать ансамбль</td>
+            </tr>
+            <tr>
+              <td>Стабильность к overfitting</td>
+              <td>Высокая</td>
+              <td>Высокая</td>
+              <td>Ниже, нужен tuning</td>
+            </tr>
+            <tr>
+              <td>Чувствительность к hyperparams</td>
+              <td>Низкая/средняя</td>
+              <td>Средняя</td>
+              <td>Высокая</td>
+            </tr>
+            <tr>
+              <td>Типичный потенциал качества на табличке</td>
+              <td>Хороший</td>
+              <td>Очень хороший</td>
+              <td>Часто лучший</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Ставить большой <code>learning_rate</code> и большое число деревьев одновременно.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Делать глубокие деревья без контроля leaf/child параметров.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Верить train score в boosting как главному индикатору.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Сравнивать библиотеки без одинаковой валидации и одинакового preprocessing pipeline.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Использовать target encoding неаккуратно и словить leakage.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Не пользоваться early stopping, когда он доступен.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn / xgboost / lightgbm / catboost</h2>
+
+      <div class="tabs" data-tabs="boost-code-tabs">
+        <button class="tab-btn active" data-tab="code-gb">GradientBoostingClassifier</button>
+        <button class="tab-btn" data-tab="code-xgb">XGBoost</button>
+        <button class="tab-btn" data-tab="code-lgbm">LightGBM</button>
+        <button class="tab-btn" data-tab="code-cat">CatBoost</button>
+      </div>
+
+      <div id="code-gb" class="tab-panel active">
+        <div class="code">from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import classification_report, roc_auc_score
+
+gb = GradientBoostingClassifier(
+    n_estimators=200,
+    learning_rate=0.05,
+    max_depth=3,   # через базовый tree estimator в некоторых реализациях
+    random_state=42
+)
+
+gb.fit(X_train, y_train)
+
+pred = gb.predict(X_valid)
+proba = gb.predict_proba(X_valid)[:, 1]
+
+print(classification_report(y_valid, pred))
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+
+      <div id="code-xgb" class="tab-panel">
+        <div class="code">from xgboost import XGBClassifier
+from sklearn.metrics import roc_auc_score
+
+xgb = XGBClassifier(
+    n_estimators=600,
+    learning_rate=0.03,
+    max_depth=5,
+    min_child_weight=3,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    reg_alpha=0.0,
+    reg_lambda=1.0,
+    objective="binary:logistic",
+    eval_metric="auc",
+    random_state=42
+)
+
+xgb.fit(
+    X_train, y_train,
+    eval_set=[(X_valid, y_valid)],
+    verbose=False
+)
+
+proba = xgb.predict_proba(X_valid)[:, 1]
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+
+      <div id="code-lgbm" class="tab-panel">
+        <div class="code">from lightgbm import LGBMClassifier
+from sklearn.metrics import roc_auc_score
+
+lgbm = LGBMClassifier(
+    n_estimators=800,
+    learning_rate=0.03,
+    num_leaves=31,
+    max_depth=-1,
+    min_child_samples=20,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    random_state=42
+)
+
+lgbm.fit(
+    X_train, y_train,
+    eval_set=[(X_valid, y_valid)],
+    eval_metric="auc"
+)
+
+proba = lgbm.predict_proba(X_valid)[:, 1]
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+
+      <div id="code-cat" class="tab-panel">
+        <div class="code">from catboost import CatBoostClassifier
+from sklearn.metrics import roc_auc_score
+
+cat_features = ["city", "device_type", "segment"]
+
+model = CatBoostClassifier(
+    iterations=1000,
+    learning_rate=0.03,
+    depth=6,
+    loss_function="Logloss",
+    eval_metric="AUC",
+    verbose=False,
+    random_seed=42
+)
+
+model.fit(
+    X_train, y_train,
+    cat_features=cat_features,
+    eval_set=(X_valid, y_valid),
+    use_best_model=True
+)
+
+proba = model.predict_proba(X_valid)[:, 1]
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как я бы думал о boosting на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Boosting обучает модели последовательно, каждая следующая исправляет ошибки ансамбля.</div>
+      <div class="step"><strong>2.</strong> AdaBoost усиливает веса трудных объектов; Gradient Boosting идёт через оптимизацию loss и pseudo-residual.</div>
+      <div class="step"><strong>3.</strong> XGBoost, LightGBM и CatBoost — это практические индустриальные реализации с сильной инженерией.</div>
+      <div class="step"><strong>4.</strong> Главные ручки tuning: <code>learning_rate</code>, <code>n_estimators</code>, глубина/листья, subsample, colsample и регуляризация.</div>
+      <div class="step"><strong>5.</strong> Boosting часто даёт топовое качество на табличных данных, но требует аккуратной валидации и контроля overfitting.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>AdaBoost</strong> усиливает веса трудных объектов и строит ансамбль из weak learner'ов с весами.</div>
+          <div class="step"><strong>Gradient Boosting</strong> можно понимать как градиентный спуск в пространстве функций.</div>
+          <div class="step"><strong>XGBoost</strong> усиливает boosting сильной регуляризацией и инженерной оптимизацией.</div>
+        </div>
+        <div>
+          <div class="step"><strong>LightGBM</strong> делает ставку на скорость и leaf-wise growth.</div>
+          <div class="step"><strong>CatBoost</strong> особенно силён на данных с категориальными признаками.</div>
+          <div class="step">Главный практический компромисс: <strong>маленький learning rate + больше деревьев</strong> против более агрессивного, но рискованного обучения.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>Bagging стабилизирует, boosting целенаправленно улучшает.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="11_bagging_random_forest.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.11 Bagging / Random Forest
+      </a>
+      <a class="footer-link" href="13_support_vector_machines.html">
+        <span class="muted">Следующая тема →</span>
+        2.13 SVM
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // Ensemble mode visual
+    const ensembleCanvas = document.getElementById('ensembleCanvas');
+    const ectx = ensembleCanvas.getContext('2d');
+    const ensCount = document.getElementById('ensCount');
+    const ensCountVal = document.getElementById('ensCountVal');
+    const ensembleText = document.getElementById('ensembleText');
+    let ensembleMode = 'bagging';
+
+    document.querySelectorAll('#ensembleModeTabs .tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ensembleModeTabs .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ensembleMode = btn.dataset.mode;
+        drawEnsembleMode();
+      });
+    });
+
+    ensCount.addEventListener('input', drawEnsembleMode);
+
+    function drawEnsembleMode(){
+      const W = ensembleCanvas.width, H = ensembleCanvas.height;
+      ectx.clearRect(0,0,W,H);
+      ectx.fillStyle = '#0b1016';
+      ectx.fillRect(0,0,W,H);
+
+      const n = +ensCount.value;
+      ensCountVal.textContent = n;
+
+      ectx.strokeStyle = '#30363d';
+      ectx.lineWidth = 1.2;
+
+      if(ensembleMode === 'bagging'){
+        ensembleText.innerHTML = 'В <strong>bagging</strong> модели обучаются независимо и потом усредняются/голосуют.';
+        const x0 = 70, x1 = 310;
+        const top = 30, gap = (H - 60) / (n - 1 || 1);
+
+        ectx.fillStyle = '#60a5fa';
+        ectx.beginPath();
+        ectx.arc(x0, H/2, 14, 0, Math.PI * 2);
+        ectx.fill();
+
+        ectx.fillStyle = '#10b981';
+        ectx.beginPath();
+        ectx.arc(x1, H/2, 16, 0, Math.PI * 2);
+        ectx.fill();
+
+        for(let i=0;i<n;i++){
+          const y = top + i*gap;
+          ectx.strokeStyle = '#60a5fa';
+          ectx.beginPath();
+          ectx.moveTo(x0+14, H/2);
+          ectx.lineTo(160, y);
+          ectx.stroke();
+
+          ectx.fillStyle = '#f59e0b';
+          ectx.fillRect(160, y-10, 44, 20);
+
+          ectx.strokeStyle = '#10b981';
+          ectx.beginPath();
+          ectx.moveTo(204, y);
+          ectx.lineTo(x1-16, H/2);
+          ectx.stroke();
+        }
+      } else {
+        ensembleText.innerHTML = 'В <strong>boosting</strong> каждая новая модель строится по ошибкам предыдущего ансамбля.';
+        const startX = 55;
+        const gapX = (W - 110) / Math.max(1, n - 1);
+        const yBase = H/2;
+
+        ectx.fillStyle = '#60a5fa';
+        ectx.beginPath();
+        ectx.arc(startX, yBase, 12, 0, Math.PI * 2);
+        ectx.fill();
+
+        for(let i=0;i<n;i++){
+          const x = startX + i*gapX;
+          const y = yBase + Math.sin(i*0.9)*38;
+
+          if(i>0){
+            const px = startX + (i-1)*gapX;
+            const py = yBase + Math.sin((i-1)*0.9)*38;
+            ectx.strokeStyle = '#f59e0b';
+            ectx.lineWidth = 2;
+            ectx.beginPath();
+            ectx.moveTo(px+12, py);
+            ectx.lineTo(x-22, y);
+            ectx.stroke();
+          }
+
+          ectx.fillStyle = '#f59e0b';
+          ectx.fillRect(x-20, y-11, 40, 22);
+
+          ectx.fillStyle = '#8b949e';
+          ectx.font = '11px system-ui';
+          ectx.textAlign = 'center';
+          ectx.fillText('h' + (i+1), x, y+4);
+        }
+
+        ectx.fillStyle = '#10b981';
+        ectx.beginPath();
+        ectx.arc(W-40, yBase, 15, 0, Math.PI * 2);
+        ectx.fill();
+      }
+    }
+
+    // AdaBoost demo
+    const adaErr = document.getElementById('adaErr');
+    const adaFrac = document.getElementById('adaFrac');
+    const adaErrVal = document.getElementById('adaErrVal');
+    const adaFracVal = document.getElementById('adaFracVal');
+    const adaAlphaOut = document.getElementById('adaAlphaOut');
+    const adaBoostOut = document.getElementById('adaBoostOut');
+    const adaCanvas = document.getElementById('adaCanvas');
+    const actx = adaCanvas.getContext('2d');
+
+    [adaErr, adaFrac].forEach(el => el.addEventListener('input', drawAdaDemo));
+
+    function drawAdaDemo(){
+      const err = +adaErr.value;
+      const frac = +adaFrac.value;
+      adaErrVal.textContent = err.toFixed(2);
+      adaFracVal.textContent = frac.toFixed(2);
+
+      const alpha = 0.5 * Math.log((1 - err) / err);
+      adaAlphaOut.textContent = alpha.toFixed(3);
+      adaBoostOut.textContent = Math.exp(alpha).toFixed(2) + '×';
+
+      const W = adaCanvas.width, H = adaCanvas.height;
+      actx.clearRect(0,0,W,H);
+      actx.fillStyle = '#0b1016';
+      actx.fillRect(0,0,W,H);
+
+      const n = 60;
+      const bad = Math.round(n * frac);
+
+      for(let i=0;i<n;i++){
+        const x = 30 + (i%10)*34;
+        const y = 28 + Math.floor(i/10)*38;
+        const wrong = i < bad;
+        const radius = wrong ? 8 + alpha*2.8 : 6;
+
+        actx.beginPath();
+        actx.arc(x, y, radius, 0, Math.PI*2);
+        actx.fillStyle = wrong ? '#ef4444' : '#10b981';
+        actx.globalAlpha = wrong ? 0.95 : 0.85;
+        actx.fill();
+      }
+      actx.globalAlpha = 1;
+    }
+
+    // Gradient boosting residual demo
+    const gbIter = document.getElementById('gbIter');
+    const gbEta = document.getElementById('gbEta');
+    const gbIterVal = document.getElementById('gbIterVal');
+    const gbEtaVal = document.getElementById('gbEtaVal');
+    const gbIterOut = document.getElementById('gbIterOut');
+    const gbEtaOut = document.getElementById('gbEtaOut');
+    const gbErrOut = document.getElementById('gbErrOut');
+    const gbCanvas = document.getElementById('gbCanvas');
+    const gctx = gbCanvas.getContext('2d');
+
+    [gbIter, gbEta].forEach(el => el.addEventListener('input', drawGBDemo));
+
+    function targetFn(x){
+      return 0.55 + 0.23*Math.sin(2*Math.PI*x) + 0.10*Math.cos(5*Math.PI*x);
+    }
+
+    function weakFn(x, k){
+      return 0.20*Math.sin((k+1)*Math.PI*x + k*0.35);
+    }
+
+    function drawGBDemo(){
+      const M = +gbIter.value;
+      const eta = +gbEta.value;
+
+      gbIterVal.textContent = M;
+      gbEtaVal.textContent = eta.toFixed(2);
+      gbIterOut.textContent = M;
+      gbEtaOut.textContent = eta.toFixed(2);
+
+      const W = gbCanvas.width, H = gbCanvas.height;
+      gctx.clearRect(0,0,W,H);
+      gctx.fillStyle = '#0b1016';
+      gctx.fillRect(0,0,W,H);
+
+      const padL=22,padR=10,padT=12,padB=18;
+      function X(x){ return padL + x*(W-padL-padR); }
+      function Y(y){ return H-padB - y*(H-padT-padB); }
+
+      // target
+      gctx.strokeStyle = '#60a5fa';
+      gctx.lineWidth = 2;
+      gctx.beginPath();
+      for(let i=0;i<=200;i++){
+        const x=i/200;
+        const y=targetFn(x);
+        if(i===0) gctx.moveTo(X(x),Y(y));
+        else gctx.lineTo(X(x),Y(y));
+      }
+      gctx.stroke();
+
+      // build ensemble iteratively
+      const xs = Array.from({length:201}, (_,i)=>i/200);
+      let pred = xs.map(()=>0.5);
+      let lastComponent = xs.map(()=>0);
+
+      for(let m=0;m<M;m++){
+        const residual = xs.map((x,i)=>targetFn(x)-pred[i]);
+        const amp = 0.95 / (m+1);
+        lastComponent = xs.map((x)=> amp * weakFn(x,m));
+        pred = pred.map((p,i)=>p + eta*lastComponent[i]);
+      }
+
+      // last component
+      gctx.strokeStyle = '#f59e0b';
+      gctx.lineWidth = 1.6;
+      gctx.beginPath();
+      xs.forEach((x,i)=>{
+        const y = 0.5 + eta*lastComponent[i];
+        if(i===0) gctx.moveTo(X(x),Y(y));
+        else gctx.lineTo(X(x),Y(y));
+      });
+      gctx.stroke();
+
+      // ensemble
+      gctx.strokeStyle = '#10b981';
+      gctx.lineWidth = 2.4;
+      gctx.beginPath();
+      xs.forEach((x,i)=>{
+        const y = pred[i];
+        if(i===0) gctx.moveTo(X(x),Y(y));
+        else gctx.lineTo(X(x),Y(y));
+      });
+      gctx.stroke();
+
+      let mse = 0;
+      xs.forEach((x,i)=>{
+        const e = targetFn(x)-pred[i];
+        mse += e*e;
+      });
+      mse /= xs.length;
+      gbErrOut.textContent = mse.toFixed(3);
+    }
+
+    // Grow demo
+    const growCanvas = document.getElementById('growCanvas');
+    const growCtx = growCanvas.getContext('2d');
+    const growSteps = document.getElementById('growSteps');
+    const growStepsVal = document.getElementById('growStepsVal');
+    const growText = document.getElementById('growText');
+    let growMode = 'level';
+
+    document.querySelectorAll('#growTabs .tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#growTabs .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        growMode = btn.dataset.grow;
+        drawGrowDemo();
+      });
+    });
+
+    growSteps.addEventListener('input', drawGrowDemo);
+
+    function drawNode(x,y,label,color){
+      growCtx.beginPath();
+      growCtx.arc(x,y,11,0,Math.PI*2);
+      growCtx.fillStyle = color;
+      growCtx.fill();
+      growCtx.fillStyle = '#0d1117';
+      growCtx.font = '10px system-ui';
+      growCtx.textAlign = 'center';
+      growCtx.textBaseline = 'middle';
+      growCtx.fillText(label, x, y+1);
+    }
+
+    function drawGrowDemo(){
+      const steps = +growSteps.value;
+      growStepsVal.textContent = steps;
+      const W = growCanvas.width, H = growCanvas.height;
+      growCtx.clearRect(0,0,W,H);
+      growCtx.fillStyle = '#0b1016';
+      growCtx.fillRect(0,0,W,H);
+
+      if(growMode === 'level'){
+        growText.innerHTML = '<strong>Level-wise</strong> делает дерево более симметричным и контролируемым.';
+        let current = [{x:W/2, y:30, d:0, label:'0'}];
+        let nodes = [...current];
+        let edges = [];
+        let splitCount = 0;
+
+        for(let depth=0; depth<5 && splitCount<steps; depth++){
+          const next = [];
+          current.forEach((node, idx) => {
+            if(splitCount >= steps) return;
+            const dx = 90 / (depth+1);
+            const y2 = node.y + 48;
+            const left = {x:node.x-dx, y:y2, d:depth+1, label:String(nodes.length)};
+            const right = {x:node.x+dx, y:y2, d:depth+1, label:String(nodes.length+1)};
+            edges.push([node,left],[node,right]);
+            nodes.push(left,right);
+            next.push(left,right);
+            splitCount++;
+          });
+          current = next;
+        }
+
+        edges.forEach(([a,b])=>{
+          growCtx.strokeStyle = '#60a5fa';
+          growCtx.lineWidth = 1.5;
+          growCtx.beginPath();
+          growCtx.moveTo(a.x,a.y+10);
+          growCtx.lineTo(b.x,b.y-10);
+          growCtx.stroke();
+        });
+        nodes.forEach(n=>drawNode(n.x,n.y,n.label,'#60a5fa'));
+      } else {
+        growText.innerHTML = '<strong>Leaf-wise</strong> каждый раз углубляет наиболее выгодный лист, поэтому дерево растёт асимметричнее.';
+        const nodes = [{id:0,x:W/2,y:30,parent:null,side:null,depth:0,score:1.0}];
+        const edges = [];
+        let leaves = [nodes[0]];
+        let nextId = 1;
+
+        for(let s=0;s<steps;s++){
+          leaves.sort((a,b)=>b.score-a.score);
+          const leaf = leaves.shift();
+          const dx = Math.max(28, 85 - leaf.depth*10);
+          const y2 = leaf.y + 42;
+
+          const left = {id:nextId++, x:leaf.x-dx, y:y2, parent:leaf.id, side:'L', depth:leaf.depth+1, score:Math.random()*0.8};
+          const right = {id:nextId++, x:leaf.x+dx, y:y2, parent:leaf.id, side:'R', depth:leaf.depth+1, score:Math.random()*0.8 + 0.15};
+          nodes.push(left,right);
+          edges.push([leaf,left],[leaf,right]);
+          leaves.push(left,right);
+        }
+
+        edges.forEach(([a,b])=>{
+          growCtx.strokeStyle = '#10b981';
+          growCtx.lineWidth = 1.5;
+          growCtx.beginPath();
+          growCtx.moveTo(a.x,a.y+10);
+          growCtx.lineTo(b.x,b.y-10);
+          growCtx.stroke();
+        });
+        nodes.forEach(n=>drawNode(n.x,n.y,String(n.id),'#10b981'));
+      }
+    }
+
+    // Learning rate vs estimators demo
+    const lrRange = document.getElementById('lrRange');
+    const nestRange = document.getElementById('nestRange');
+    const depthRange = document.getElementById('depthRange');
+    const lrVal = document.getElementById('lrVal');
+    const nestVal = document.getElementById('nestVal');
+    const depthVal = document.getElementById('depthVal');
+    const trainMetric = document.getElementById('trainMetric');
+    const validMetric = document.getElementById('validMetric');
+    const gapMetric = document.getElementById('gapMetric');
+    const curveCanvas = document.getElementById('curveCanvas');
+    const cctx = curveCanvas.getContext('2d');
+
+    [lrRange, nestRange, depthRange].forEach(el => el.addEventListener('input', drawCurves));
+
+    function drawCurves(){
+      const lr = +lrRange.value;
+      const nest = +nestRange.value;
+      const depth = +depthRange.value;
+
+      lrVal.textContent = lr.toFixed(2);
+      nestVal.textContent = nest;
+      depthVal.textContent = depth;
+
+      const W = curveCanvas.width, H = curveCanvas.height;
+      cctx.clearRect(0,0,W,H);
+      cctx.fillStyle = '#0b1016';
+      cctx.fillRect(0,0,W,H);
+
+      const padL=26,padR=10,padT=12,padB=18;
+      function X(x){ return padL + x*(W-padL-padR); }
+      function Y(y){ return H-padB - y*(H-padT-padB); }
+
+      const xs = Array.from({length:200}, (_,i)=>i/199);
+      const train = [];
+      const valid = [];
+      const capacity = clamp((lr*2.8) + (nest/260) + (depth/8), 0, 3);
+
+      xs.forEach((x)=>{
+        const t = 0.48 + 0.48*(1 - Math.exp(-6*capacity*x));
+        const overfit = Math.max(0, capacity - 1.05) * Math.pow(x, 1.7) * 0.18;
+        const v = Math.min(0.98, t - overfit + 0.015*Math.sin(10*x));
+        train.push(clamp(t,0,1));
+        valid.push(clamp(v,0,1));
+      });
+
+      cctx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        cctx.beginPath();
+        cctx.moveTo(padL,Y(yy));
+        cctx.lineTo(W-padR,Y(yy));
+        cctx.stroke();
+      }
+
+      // overfit area
+      cctx.fillStyle = 'rgba(239,68,68,0.10)';
+      cctx.beginPath();
+      let started = false;
+      xs.forEach((x,i)=>{
+        if(train[i]-valid[i] > 0.05 && !started){
+          cctx.moveTo(X(x), Y(valid[i]));
+          started = true;
+        }
+        if(started){
+          cctx.lineTo(X(x), Y(valid[i]));
+        }
+      });
+      if(started){
+        for(let i=xs.length-1;i>=0;i--){
+          if(train[i]-valid[i] > 0.05){
+            cctx.lineTo(X(xs[i]), Y(train[i]));
+          }
+        }
+      }
+      cctx.closePath();
+      cctx.fill();
+
+      cctx.strokeStyle = '#10b981';
+      cctx.lineWidth = 2.3;
+      cctx.beginPath();
+      xs.forEach((x,i)=>{
+        if(i===0) cctx.moveTo(X(x),Y(train[i]));
+        else cctx.lineTo(X(x),Y(train[i]));
+      });
+      cctx.stroke();
+
+      cctx.strokeStyle = '#60a5fa';
+      cctx.lineWidth = 2.3;
+      cctx.beginPath();
+      xs.forEach((x,i)=>{
+        if(i===0) cctx.moveTo(X(x),Y(valid[i]));
+        else cctx.lineTo(X(x),Y(valid[i]));
+      });
+      cctx.stroke();
+
+      const trainEnd = train[train.length-1];
+      const validBest = Math.max(...valid);
+      const gap = trainEnd - valid[valid.length-1];
+
+      trainMetric.textContent = trainEnd.toFixed(3);
+      validMetric.textContent = validBest.toFixed(3);
+      gapMetric.textContent = gap.toFixed(3);
+    }
+
+    drawEnsembleMode();
+    drawAdaDemo();
+    drawGBDemo();
+    drawGrowDemo();
+    drawCurves();
+  </script>
+</body>
+</html>

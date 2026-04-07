@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.13 SVM</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="12_boosting.html">2.12 Boosting</a>
+        <span class="tag active">2.13 SVM</span>
+        <a class="tag tag-block" href="14_clustering.html">2.14 Кластеризация</a>
+      </div>
+
+      <h1>2.13 SVM</h1>
+      <p class="muted">
+        Maximum margin, hard/soft margin, kernel trick, RBF / polynomial / linear kernels, параметры C и gamma.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Что пытается сделать SVM</h2>
+      <p>
+        <strong>Support Vector Machine</strong> ищет не просто границу между классами,
+        а такую разделяющую гиперплоскость, которая оставляет
+        <strong>максимальный зазор</strong> между классами.
+      </p>
+
+      <div class="formula">Идея SVM:
+из всех разделяющих гиперплоскостей
+выбрать ту, у которой margin максимален</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Если между классами есть несколько возможных прямых,
+        SVM предпочитает не ту, что “едва-едва разделяет”, а ту, которая проходит
+        максимально далеко от ближайших точек обоих классов.
+      </div>
+
+      <div class="info">
+        Это делает решение более устойчивым:
+        небольшие шумы в данных с меньшей вероятностью сдвинут границу.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.1 Maximum margin intuition</h2>
+      <div class="grid-2">
+        <div>
+          <p>
+            Пусть есть разделяющая гиперплоскость:
+          </p>
+          <div class="formula">wᵀx + b = 0</div>
+
+          <p>
+            Тогда две margin-линии:
+          </p>
+          <div class="formula">wᵀx + b = +1
+wᵀx + b = -1</div>
+
+          <p>
+            А ширина margin равна:
+          </p>
+          <div class="formula">margin width = 2 / ||w||</div>
+        </div>
+        <div>
+          <div class="success">
+            Значит, максимизировать margin —
+            это то же самое, что минимизировать <code>||w||</code>.
+          </div>
+          <div class="warn">
+            Важно: решение определяют не все точки выборки,
+            а только ближайшие к границе точки —
+            <strong>support vectors</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: максимальный зазор</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            На графике показаны два класса, разделяющая прямая и две margin-линии.
+            Сдвигай наклон и смещение, чтобы почувствовать, как меняется зазор.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Наклон гиперплоскости: <span id="svmSlopeVal" class="hl-amber">1.00</span></label>
+              <input id="svmSlope" type="range" min="-2.5" max="2.5" step="0.05" value="1.00" />
+            </div>
+            <div class="control">
+              <label>Смещение b: <span id="svmBiasVal" class="hl-blue">0.00</span></label>
+              <input id="svmBias" type="range" min="-2.0" max="2.0" step="0.05" value="0.00" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">||w||</div>
+              <div class="value" id="normOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Margin</div>
+              <div class="value" id="marginOut">0.00</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Support vectors</div>
+              <div class="value" id="supportCount">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="marginCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>класс +1</span>
+            <span><i class="swatch" style="background:#ef4444"></i>класс -1</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>граница</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>support vectors</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.2 Hard margin SVM</h2>
+      <p>
+        В идеальном случае данные линейно разделимы и можно потребовать,
+        чтобы все точки лежали по правильную сторону margin.
+      </p>
+
+      <div class="formula">Оптимизация hard margin SVM:
+
+minimize   (1/2) ||w||²
+
+subject to
+y_i (wᵀx_i + b) ≥ 1   для всех i</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            Эти ограничения говорят:
+            каждая точка не просто должна быть по правильную сторону,
+            а должна лежать не ближе margin-линии.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Hard margin почти бесполезен на реальных noisy-данных:
+            достаточно одного выброса или одной плохо размеченной точки,
+            и строгая линейная разделимость ломается.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.3 Soft margin SVM</h2>
+      <p>
+        В реальных задачах данные часто неидеальны. Поэтому вводят
+        <strong>slack variables</strong> <code>ξ_i</code>, которые позволяют
+        некоторым точкам нарушать margin или даже оказываться не на той стороне.
+      </p>
+
+      <div class="formula">Soft margin SVM:
+
+minimize   (1/2) ||w||² + C Σ_i ξ_i
+
+subject to
+y_i (wᵀx_i + b) ≥ 1 - ξ_i
+ξ_i ≥ 0</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Здесь есть компромисс:
+            <strong>большой margin</strong> против
+            <strong>малого числа нарушений</strong>.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Параметр <code>C</code> управляет тем,
+            насколько сильно мы штрафуем нарушения margin.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Если C большое:
+модель очень не любит ошибки → старается классифицировать почти всё правильно
+→ более жёсткая граница
+→ выше риск overfitting
+
+Если C маленькое:
+модель терпимее к нарушениям
+→ margin шире
+→ выше bias, но больше устойчивость</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: влияние C</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Здесь не решается полная задача SVM, но визуально показан смысл параметра <code>C</code>:
+            чем он выше, тем сильнее модель старается подстроиться под сложные точки и выбросы.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>C: <span id="cVal" class="hl-amber">1.00</span></label>
+              <input id="cRange" type="range" min="0.1" max="20" step="0.1" value="1.0" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Bias</div>
+              <div class="value" id="biasProxy">medium</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Variance</div>
+              <div class="value" id="varProxy">medium</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Margin</div>
+              <div class="value" id="cMarginOut">0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="cCanvas" width="400" height="280"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>граница</span>
+            <span><i class="swatch" style="background:#a78bfa"></i>margin</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>сложная точка / выброс</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Support vectors — почему они называются именно так</h2>
+      <p>
+        В оптимуме не все точки одинаково важны. Большинство точек можно слегка подвигать,
+        и решение почти не изменится. Но есть несколько ключевых точек —
+        ближайших к границе. Именно они “подпирают” optimal hyperplane.
+      </p>
+
+      <div class="formula">Решение SVM в dual form зависит только от support vectors
+
+w = Σ_i α_i y_i x_i
+
+где α_i > 0 только у support vectors</div>
+
+      <div class="intuition">
+        То есть support vectors — это точки, которые реально задают границу.
+        Остальные часто вообще не входят в итоговую формулу с ненулевым весом.
+      </div>
+
+      <div class="info">
+        Это одна из причин, почему SVM концептуально красив:
+        финальное решение строится на критических граничных точках.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.4 Kernel trick</h2>
+      <p>
+        Линейная граница хороша, но что делать, если классы не разделяются прямой?
+        Можно перейти в пространство более высокой размерности,
+        где разделение станет линейным.
+      </p>
+
+      <div class="formula">Явное отображение:
+x → φ(x)
+
+Линейная модель в новом пространстве:
+wᵀ φ(x) + b
+
+Но вместо явного φ(x) можно считать только скалярные произведения:
+K(x_i, x_j) = φ(x_i)ᵀ φ(x_j)</div>
+
+      <div class="success">
+        <strong>Kernel trick</strong> позволяет не строить огромное новое пространство явно,
+        а работать так, будто мы уже туда перешли.
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="intuition">
+            Это похоже на магию:
+            мы не выписываем все новые признаки,
+            но всё равно можем строить нелинейную границу.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Цена этой магии:
+            kernel SVM может быть дорогим по памяти и времени на больших датасетах,
+            потому что работает через pairwise similarities.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.5 Популярные kernels</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kernel</th>
+              <th>Формула</th>
+              <th>Интуиция</th>
+              <th>Когда полезен</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Linear</td>
+              <td><code>K(x,z)=xᵀz</code></td>
+              <td>Обычная линейная граница</td>
+              <td>Много признаков, почти линейная задача</td>
+            </tr>
+            <tr>
+              <td>Polynomial</td>
+              <td><code>K(x,z)=(γxᵀz + r)^d</code></td>
+              <td>Ловит полиномиальные взаимодействия</td>
+              <td>Когда нужны более сложные, но ещё структурные границы</td>
+            </tr>
+            <tr>
+              <td>RBF / Gaussian</td>
+              <td><code>K(x,z)=exp(-γ||x-z||²)</code></td>
+              <td>Локальное влияние точек, гибкая нелинейность</td>
+              <td>Очень частый сильный дефолт</td>
+            </tr>
+            <tr>
+              <td>Sigmoid</td>
+              <td><code>K(x,z)=tanh(γxᵀz+r)</code></td>
+              <td>Исторически связан с нейросетями</td>
+              <td>Используется реже</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.13.6 RBF kernel и параметр gamma</h2>
+      <p>
+        В RBF kernel параметр <code>gamma</code> управляет радиусом влияния отдельной точки.
+      </p>
+
+      <div class="formula">K(x,z) = exp(-γ ||x-z||²)
+
+Если γ маленькое:
+влияние каждой точки широкое
+→ граница более гладкая
+
+Если γ большое:
+влияние точки очень локальное
+→ граница может стать очень извилистой</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            <strong>Маленькое gamma</strong> → более гладкая, глобальная форма границы.
+          </div>
+          <div class="warn">
+            Слишком маленькое gamma может дать underfitting.
+          </div>
+        </div>
+        <div>
+          <div class="info">
+            <strong>Большое gamma</strong> → модель реагирует на локальные детали.
+          </div>
+          <div class="warn">
+            Слишком большое gamma может привести к overfitting:
+            каждая точка начинает “тянуть” границу под себя.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: C и gamma для RBF-SVM</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Это схематический интерактив, который показывает характер границы.
+            <code>C</code> влияет на жёсткость штрафа за ошибки, а <code>gamma</code> —
+            на локальность формы границы.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>C: <span id="rbfCVal" class="hl-amber">1.0</span></label>
+              <input id="rbfCRange" type="range" min="0.1" max="20" step="0.1" value="1.0" />
+            </div>
+            <div class="control">
+              <label>gamma: <span id="rbfGammaVal" class="hl-green">0.8</span></label>
+              <input id="rbfGammaRange" type="range" min="0.1" max="5.0" step="0.1" value="0.8" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Smoothness</div>
+              <div class="value" id="smoothOut">medium</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Overfit risk</div>
+              <div class="value" id="overfitOut">medium</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="rbfCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>положительный класс</span>
+            <span><i class="swatch" style="background:#ef4444"></i>отрицательный класс</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>нелинейная граница</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Linear SVM vs Logistic Regression</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Свойство</th>
+              <th>Linear SVM</th>
+              <th>Logistic Regression</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Основная идея</td>
+              <td>Максимизировать margin</td>
+              <td>Моделировать вероятность класса</td>
+            </tr>
+            <tr>
+              <td>Loss</td>
+              <td>Hinge loss</td>
+              <td>Log loss / cross-entropy</td>
+            </tr>
+            <tr>
+              <td>Выход</td>
+              <td>Score / decision function</td>
+              <td>Probability</td>
+            </tr>
+            <tr>
+              <td>Калиброванные вероятности</td>
+              <td>Не по умолчанию</td>
+              <td>Да</td>
+            </tr>
+            <tr>
+              <td>Когда хороша</td>
+              <td>Геометрически хорошо разделимые данные, high-dimensional spaces</td>
+              <td>Когда важны вероятности и интерпретация коэффициентов</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="intuition">
+        На собеседовании полезно помнить:
+        <strong>SVM больше про геометрию margin, logistic regression — про вероятностную модель.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Hinge loss — связь с оптимизацией SVM</h2>
+      <p>
+        В soft-margin SVM часто удобно думать через hinge loss.
+      </p>
+
+      <div class="formula">Для y ∈ {-1, +1}:
+
+L_hinge = max(0, 1 - y · f(x))
+
+Полная цель:
+(1/2)||w||² + C Σ_i max(0, 1 - y_i f(x_i))</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Если точка классифицирована уверенно и лежит за margin:
+            <code>y f(x) ≥ 1</code>, то loss = 0.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Если точка внутри margin или ошибочно классифицирована,
+            hinge loss становится положительным и штрафует модель.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: hinge loss</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Ниже можно двигать значение <code>y · f(x)</code> и смотреть,
+            как ведёт себя hinge loss.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>y · f(x): <span id="hingeVal" class="hl-amber">0.50</span></label>
+              <input id="hingeRange" type="range" min="-2" max="3" step="0.05" value="0.50" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">hinge loss</div>
+              <div class="value" id="hingeOut">0.50</div>
+            </div>
+            <div class="kpi">
+              <div class="label">status</div>
+              <div class="value" id="hingeStatus">inside margin</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="hingeCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>hinge loss curve</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>текущая точка</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда SVM особенно хорош</h2>
+      <div class="grid-2">
+        <div>
+          <ul>
+            <li>на задачах с <strong>не слишком большим числом объектов</strong>, но большим числом признаков;</li>
+            <li>на текстовых данных с sparse high-dimensional representation;</li>
+            <li>когда линейная или умеренно нелинейная граница реально подходит;</li>
+            <li>когда нужен сильный классификационный baseline.</li>
+          </ul>
+        </div>
+        <div>
+          <ul>
+            <li>Linear SVM особенно хорош в high-dimensional spaces;</li>
+            <li>RBF-SVM часто даёт сильное качество на небольших/средних датасетах;</li>
+            <li>kernel SVM красив и мощен, но плохо масштабируется на очень большие наборы данных.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда SVM неудобен</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Очень большие датасеты: kernel matrix и pairwise similarities становятся дорогими.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Нужны хорошо калиброванные вероятности: у SVM это не базовый output.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>3.</strong> Плохой preprocessing: SVM чувствителен к масштабу признаков.
+          </div>
+          <div class="warn">
+            <strong>4.</strong> Слишком грубый подбор <code>C</code> и <code>gamma</code>:
+            модель легко можно сделать либо слишком жёсткой, либо слишком извилистой.
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        Для SVM масштабирование признаков почти всегда обязательно:
+        <strong>standardization — это не опция, а почти стандартная часть pipeline.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практический pipeline для SVM</h2>
+      <div class="step"><strong>1.</strong> Сделать train / validation / test split.</div>
+      <div class="step"><strong>2.</strong> Масштабировать признаки через <code>StandardScaler</code>.</div>
+      <div class="step"><strong>3.</strong> Начать с linear kernel как базового варианта.</div>
+      <div class="step"><strong>4.</strong> Если линейной границы мало — попробовать RBF.</div>
+      <div class="step"><strong>5.</strong> Подбирать <code>C</code> и <code>gamma</code> через cross-validation.</div>
+      <div class="step"><strong>6.</strong> Оценивать не только accuracy, но нужные метрики задачи.</div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn</h2>
+
+      <div class="tabs" data-tabs="svm-code-tabs">
+        <button class="tab-btn active" data-tab="code-linear-svc">Linear SVM</button>
+        <button class="tab-btn" data-tab="code-svc-rbf">RBF SVM</button>
+        <button class="tab-btn" data-tab="code-grid">GridSearchCV</button>
+        <button class="tab-btn" data-tab="code-proba">Probabilities</button>
+      </div>
+
+      <div id="code-linear-svc" class="tab-panel active">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
+from sklearn.metrics import classification_report
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LinearSVC(C=1.0, random_state=42))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_valid)
+
+print(classification_report(y_valid, pred))</div>
+      </div>
+
+      <div id="code-svc-rbf" class="tab-panel">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", SVC(
+        kernel="rbf",
+        C=1.0,
+        gamma="scale"
+    ))
+])
+
+model.fit(X_train, y_train)
+pred = model.predict(X_valid)
+
+print(classification_report(y_valid, pred))</div>
+      </div>
+
+      <div id="code-grid" class="tab-panel">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svc", SVC(kernel="rbf"))
+])
+
+param_grid = {
+    "svc__C": [0.1, 1, 10, 100],
+    "svc__gamma": ["scale", 0.01, 0.1, 1.0]
+}
+
+grid = GridSearchCV(
+    pipe,
+    param_grid=param_grid,
+    cv=5,
+    scoring="f1_macro",
+    n_jobs=-1
+)
+
+grid.fit(X_train, y_train)
+
+print("Best params:", grid.best_params_)
+print("Best CV score:", grid.best_score_)</div>
+      </div>
+
+      <div id="code-proba" class="tab-panel">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import roc_auc_score
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svc", SVC(
+        kernel="rbf",
+        C=2.0,
+        gamma=0.1,
+        probability=True   # включает probability estimates
+    ))
+])
+
+model.fit(X_train, y_train)
+
+proba = model.predict_proba(X_valid)[:, 1]
+print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Запускать SVM без масштабирования признаков.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Ставить большой <code>C</code> и большой <code>gamma</code> одновременно,
+            получая слишком “ломаную” границу.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Использовать kernel SVM на очень большом датасете и удивляться скорости.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Путать score SVM с вероятностью.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Не различать linear SVM и logistic regression по идее и loss.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Подбирать <code>C</code> и <code>gamma</code> “на глаз” без CV.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить SVM на собеседовании</h2>
+      <div class="step"><strong>1.</strong> SVM ищет гиперплоскость с максимальным margin между классами.</div>
+      <div class="step"><strong>2.</strong> Hard margin требует идеальной разделимости, soft margin допускает нарушения через slack variables.</div>
+      <div class="step"><strong>3.</strong> Параметр <code>C</code> задаёт компромисс между шириной margin и штрафом за ошибки.</div>
+      <div class="step"><strong>4.</strong> Kernel trick позволяет строить нелинейные границы через работу со скалярными произведениями в feature space.</div>
+      <div class="step"><strong>5.</strong> В RBF-SVM параметр <code>gamma</code> контролирует радиус влияния точек и гладкость границы.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>SVM</strong> — это модель про геометрию и margin, а не в первую очередь про вероятности.</div>
+          <div class="step"><strong>Support vectors</strong> — ключевые точки, которые реально определяют границу.</div>
+          <div class="step"><strong>Soft margin</strong> делает SVM применимым к noisy real-world данным.</div>
+        </div>
+        <div>
+          <div class="step"><strong>Kernel trick</strong> позволяет делать нелинейную классификацию без явного перехода в огромное пространство признаков.</div>
+          <div class="step"><strong>C</strong> управляет жёсткостью штрафа за ошибки, <strong>gamma</strong> — локальностью RBF-границы.</div>
+          <div class="step">На практике почти всегда: <strong>scaling + CV + осторожный подбор C/gamma</strong>.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>Linear SVM = максимальный margin, RBF-SVM = максимальный margin в скрытом нелинейном пространстве.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="12_boosting.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.12 Boosting
+      </a>
+      <a class="footer-link" href="14_clustering.html">
+        <span class="muted">Следующая тема →</span>
+        2.14 Кластеризация
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+    // ---------- Margin demo ----------
+    const marginCanvas = document.getElementById('marginCanvas');
+    const mctx = marginCanvas.getContext('2d');
+    const svmSlope = document.getElementById('svmSlope');
+    const svmBias = document.getElementById('svmBias');
+    const svmSlopeVal = document.getElementById('svmSlopeVal');
+    const svmBiasVal = document.getElementById('svmBiasVal');
+    const normOut = document.getElementById('normOut');
+    const marginOut = document.getElementById('marginOut');
+    const supportCount = document.getElementById('supportCount');
+
+    const posPts = [
+      [1.0, 2.1],[1.4,2.7],[2.1,2.4],[2.5,3.1],[3.1,2.7],[2.7,1.9]
+    ];
+    const negPts = [
+      [-1.0,-1.8],[-1.8,-2.4],[-2.4,-1.5],[-2.8,-2.9],[-3.0,-1.9],[-1.6,-1.0]
+    ];
+
+    function toCanvas(x, y, W, H){
+      const minX=-4,maxX=4,minY=-4,maxY=4;
+      const cx = (x-minX)/(maxX-minX)*W;
+      const cy = H - (y-minY)/(maxY-minY)*H;
+      return [cx,cy];
+    }
+
+    function signedDistance(x, y, w1, w2, b){
+      return (w1*x + w2*y + b) / Math.sqrt(w1*w1 + w2*w2);
+    }
+
+    function drawMarginDemo(){
+      const a = +svmSlope.value;
+      const b = +svmBias.value;
+      svmSlopeVal.textContent = a.toFixed(2);
+      svmBiasVal.textContent = b.toFixed(2);
+
+      const W = marginCanvas.width, H = marginCanvas.height;
+      mctx.clearRect(0,0,W,H);
+      mctx.fillStyle = '#0b1016';
+      mctx.fillRect(0,0,W,H);
+
+      // Interpret line as y = a x + b
+      // Convert to w1*x + w2*y + c = 0 => a x - y + b = 0
+      const w1 = a;
+      const w2 = -1;
+      const c = b;
+      const norm = Math.sqrt(w1*w1 + w2*w2);
+      const margin = 2 / norm;
+
+      normOut.textContent = norm.toFixed(2);
+      marginOut.textContent = margin.toFixed(2);
+
+      // grid
+      mctx.strokeStyle = '#1f2832';
+      mctx.lineWidth = 1;
+      for(let i=-4;i<=4;i++){
+        let [x1,y1]=toCanvas(i,-4,W,H), [x2,y2]=toCanvas(i,4,W,H);
+        mctx.beginPath(); mctx.moveTo(x1,y1); mctx.lineTo(x2,y2); mctx.stroke();
+        [x1,y1]=toCanvas(-4,i,W,H); [x2,y2]=toCanvas(4,i,W,H);
+        mctx.beginPath(); mctx.moveTo(x1,y1); mctx.lineTo(x2,y2); mctx.stroke();
+      }
+
+      function drawBoundary(offset, color, dash=[]){
+        const xs = [-4, 4];
+        const pts = xs.map(x => {
+          const y = a*x + b + offset;
+          return toCanvas(x,y,W,H);
+        });
+        mctx.strokeStyle = color;
+        mctx.lineWidth = 2;
+        mctx.setLineDash(dash);
+        mctx.beginPath();
+        mctx.moveTo(pts[0][0], pts[0][1]);
+        mctx.lineTo(pts[1][0], pts[1][1]);
+        mctx.stroke();
+        mctx.setLineDash([]);
+      }
+
+      // distance 1 from hyperplane in original normalized equation means offset in y:
+      // from a*x - y + b = ±1 => y = a*x + b ∓ 1
+      drawBoundary(0, '#60a5fa');
+      drawBoundary(-1, '#a78bfa', [6,6]);
+      drawBoundary(+1, '#a78bfa', [6,6]);
+
+      let sCount = 0;
+
+      function drawClass(points, fill, label){
+        points.forEach(([x,y])=>{
+          const d = Math.abs(signedDistance(x,y,w1,w2,c));
+          const support = d < 1.25;
+          if(support) sCount++;
+          const [cx,cy] = toCanvas(x,y,W,H);
+
+          mctx.beginPath();
+          mctx.arc(cx,cy,support?8:6,0,Math.PI*2);
+          mctx.fillStyle = support ? '#f59e0b' : fill;
+          mctx.fill();
+          mctx.lineWidth = 1.5;
+          mctx.strokeStyle = '#0d1117';
+          mctx.stroke();
+        });
+      }
+
+      drawClass(posPts,'#10b981','+');
+      drawClass(negPts,'#ef4444','-');
+      supportCount.textContent = sCount;
+    }
+
+    [svmSlope, svmBias].forEach(el => el.addEventListener('input', drawMarginDemo));
+
+    // ---------- C demo ----------
+    const cRange = document.getElementById('cRange');
+    const cVal = document.getElementById('cVal');
+    const biasProxy = document.getElementById('biasProxy');
+    const varProxy = document.getElementById('varProxy');
+    const cMarginOut = document.getElementById('cMarginOut');
+    const cCanvas = document.getElementById('cCanvas');
+    const cctx = cCanvas.getContext('2d');
+
+    function drawCDemo(){
+      const C = +cRange.value;
+      cVal.textContent = C.toFixed(2);
+
+      const W = cCanvas.width, H = cCanvas.height;
+      cctx.clearRect(0,0,W,H);
+      cctx.fillStyle = '#0b1016';
+      cctx.fillRect(0,0,W,H);
+
+      const margin = 1.6 / Math.sqrt(C + 0.5);
+      cMarginOut.textContent = margin.toFixed(2);
+
+      biasProxy.textContent = C < 1.2 ? 'high' : (C < 6 ? 'medium' : 'low');
+      varProxy.textContent = C < 1.2 ? 'low' : (C < 6 ? 'medium' : 'high');
+
+      const a = 0.9 + 0.08*Math.log(C+1);
+      const b = -0.25 + 0.12*Math.log(C+1);
+
+      function toC(x, y){
+        const minX=-4,maxX=4,minY=-4,maxY=4;
+        return [(x-minX)/(maxX-minX)*W, H-(y-minY)/(maxY-minY)*H];
+      }
+
+      function drawLine(offset, color, dash=[]){
+        const p1 = toC(-4, a*(-4)+b+offset);
+        const p2 = toC(4, a*(4)+b+offset);
+        cctx.strokeStyle = color;
+        cctx.lineWidth = 2;
+        cctx.setLineDash(dash);
+        cctx.beginPath();
+        cctx.moveTo(p1[0],p1[1]);
+        cctx.lineTo(p2[0],p2[1]);
+        cctx.stroke();
+        cctx.setLineDash([]);
+      }
+
+      drawLine(0,'#60a5fa');
+      drawLine(+margin,'#a78bfa',[6,6]);
+      drawLine(-margin,'#a78bfa',[6,6]);
+
+      const pos = [[1.4,1.8],[1.7,2.2],[2.5,2.4],[2.8,1.7],[1.1,2.7]];
+      const neg = [[-1.2,-1.8],[-1.7,-2.2],[-2.4,-2.0],[-2.7,-1.4],[-1.3,-2.8]];
+      const outlier = [0.4,0.2];
+
+      pos.forEach(([x,y])=>{
+        const [cx,cy]=toC(x,y);
+        cctx.beginPath(); cctx.arc(cx,cy,6,0,Math.PI*2); cctx.fillStyle='#10b981'; cctx.fill();
+      });
+      neg.forEach(([x,y])=>{
+        const [cx,cy]=toC(x,y);
+        cctx.beginPath(); cctx.arc(cx,cy,6,0,Math.PI*2); cctx.fillStyle='#ef4444'; cctx.fill();
+      });
+
+      const [ox,oy] = toC(outlier[0], outlier[1]);
+      cctx.beginPath();
+      cctx.arc(ox,oy,8,0,Math.PI*2);
+      cctx.fillStyle='#f59e0b';
+      cctx.fill();
+
+      // line towards outlier stronger for large C
+      cctx.strokeStyle = 'rgba(245,158,11,' + clamp(C/15,0.15,0.9) + ')';
+      cctx.lineWidth = 2 + clamp(C/5,0,4);
+      cctx.beginPath();
+      const [x1,y1]=toC(0.0, -0.2);
+      cctx.moveTo(x1,y1);
+      cctx.lineTo(ox,oy);
+      cctx.stroke();
+    }
+
+    cRange.addEventListener('input', drawCDemo);
+
+    // ---------- RBF demo ----------
+    const rbfCRange = document.getElementById('rbfCRange');
+    const rbfGammaRange = document.getElementById('rbfGammaRange');
+    const rbfCVal = document.getElementById('rbfCVal');
+    const rbfGammaVal = document.getElementById('rbfGammaVal');
+    const smoothOut = document.getElementById('smoothOut');
+    const overfitOut = document.getElementById('overfitOut');
+    const rbfCanvas = document.getElementById('rbfCanvas');
+    const rctx = rbfCanvas.getContext('2d');
+
+    function drawRBFDemo(){
+      const C = +rbfCRange.value;
+      const gamma = +rbfGammaRange.value;
+
+      rbfCVal.textContent = C.toFixed(1);
+      rbfGammaVal.textContent = gamma.toFixed(1);
+
+      const roughness = gamma * Math.sqrt(C);
+      smoothOut.textContent =
+        roughness < 1.4 ? 'high' :
+        roughness < 3.0 ? 'medium' : 'low';
+
+      overfitOut.textContent =
+        roughness < 1.4 ? 'low' :
+        roughness < 3.0 ? 'medium' : 'high';
+
+      const W = rbfCanvas.width, H = rbfCanvas.height;
+      rctx.clearRect(0,0,W,H);
+      rctx.fillStyle = '#0b1016';
+      rctx.fillRect(0,0,W,H);
+
+      function map(x,y){
+        const minX=-4,maxX=4,minY=-4,maxY=4;
+        return [(x-minX)/(maxX-minX)*W, H-(y-minY)/(maxY-minY)*H];
+      }
+
+      const pos = [[-1.5,1.6],[-0.8,2.2],[0.3,1.8],[1.2,1.2],[0.7,2.7]];
+      const neg = [[-1.9,-1.5],[-0.6,-2.2],[0.6,-1.6],[1.7,-2.1],[2.2,-0.9]];
+
+      // nonlinear boundary curve
+      rctx.strokeStyle = '#60a5fa';
+      rctx.lineWidth = 2.3;
+      rctx.beginPath();
+      for(let i=0;i<=240;i++){
+        const x = -4 + 8*(i/240);
+        const y = 0.30*Math.sin(gamma*0.8*x) + 0.18*Math.sin(gamma*2.2*x)/(1+0.15*C) + 0.15*x;
+        const [cx,cy] = map(x,y);
+        if(i===0) rctx.moveTo(cx,cy);
+        else rctx.lineTo(cx,cy);
+      }
+      rctx.stroke();
+
+      pos.forEach(([x,y])=>{
+        const [cx,cy]=map(x,y);
+        rctx.beginPath();
+        rctx.arc(cx,cy,6,0,Math.PI*2);
+        rctx.fillStyle='#10b981';
+        rctx.fill();
+      });
+
+      neg.forEach(([x,y])=>{
+        const [cx,cy]=map(x,y);
+        rctx.beginPath();
+        rctx.arc(cx,cy,6,0,Math.PI*2);
+        rctx.fillStyle='#ef4444';
+        rctx.fill();
+      });
+    }
+
+    [rbfCRange, rbfGammaRange].forEach(el => el.addEventListener('input', drawRBFDemo));
+
+    // ---------- hinge loss demo ----------
+    const hingeRange = document.getElementById('hingeRange');
+    const hingeVal = document.getElementById('hingeVal');
+    const hingeOut = document.getElementById('hingeOut');
+    const hingeStatus = document.getElementById('hingeStatus');
+    const hingeCanvas = document.getElementById('hingeCanvas');
+    const hctx = hingeCanvas.getContext('2d');
+
+    function hingeLoss(t){
+      return Math.max(0, 1 - t);
+    }
+
+    function drawHingeDemo(){
+      const t = +hingeRange.value;
+      const loss = hingeLoss(t);
+
+      hingeVal.textContent = t.toFixed(2);
+      hingeOut.textContent = loss.toFixed(2);
+
+      if(t < 0) hingeStatus.textContent = 'misclassified';
+      else if(t < 1) hingeStatus.textContent = 'inside margin';
+      else hingeStatus.textContent = 'correct & outside';
+
+      const W = hingeCanvas.width, H = hingeCanvas.height;
+      hctx.clearRect(0,0,W,H);
+      hctx.fillStyle = '#0b1016';
+      hctx.fillRect(0,0,W,H);
+
+      const padL=34,padR=12,padT=14,padB=28;
+      function X(x){ return padL + (x+2)/5*(W-padL-padR); }
+      function Y(y){ return H-padB - (y/3)*(H-padT-padB); }
+
+      hctx.strokeStyle = '#25303b';
+      for(let i=0;i<=3;i++){
+        const yy=i;
+        hctx.beginPath();
+        hctx.moveTo(padL,Y(yy));
+        hctx.lineTo(W-padR,Y(yy));
+        hctx.stroke();
+      }
+
+      hctx.strokeStyle='#60a5fa';
+      hctx.lineWidth=2.5;
+      hctx.beginPath();
+      for(let i=0;i<=200;i++){
+        const x=-2 + 5*(i/200);
+        const y=hingeLoss(x);
+        if(i===0) hctx.moveTo(X(x),Y(y));
+        else hctx.lineTo(X(x),Y(y));
+      }
+      hctx.stroke();
+
+      hctx.strokeStyle='#a78bfa';
+      hctx.setLineDash([6,6]);
+      hctx.beginPath();
+      hctx.moveTo(X(1), padT);
+      hctx.lineTo(X(1), H-padB);
+      hctx.stroke();
+      hctx.setLineDash([]);
+
+      hctx.fillStyle='#f59e0b';
+      hctx.beginPath();
+      hctx.arc(X(t), Y(loss), 6, 0, Math.PI*2);
+      hctx.fill();
+
+      hctx.fillStyle='#8b949e';
+      hctx.font='11px system-ui';
+      hctx.fillText('y·f(x)', W/2, H-6);
+      hctx.save();
+      hctx.translate(12,H/2);
+      hctx.rotate(-Math.PI/2);
+      hctx.fillText('hinge loss',0,0);
+      hctx.restore();
+    }
+
+    hingeRange.addEventListener('input', drawHingeDemo);
+
+    drawMarginDemo();
+    drawCDemo();
+    drawRBFDemo();
+    drawHingeDemo();
+  </script>
+</body>
+</html>

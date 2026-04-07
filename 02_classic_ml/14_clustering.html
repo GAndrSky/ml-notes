@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.14 Кластеризация</title>
+
+  <link rel="stylesheet" href="../shared-nav.css" />
+
+  <style>
+    :root{
+      --bg:#0d1117;
+      --card:#161b22;
+      --border:#30363d;
+      --text:#e6edf3;
+      --muted:#8b949e;
+      --amber:#f59e0b;
+      --green:#10b981;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --purple:#a78bfa;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      line-height:1.6;
+    }
+
+    .page{
+      max-width:920px;
+      margin:0 auto;
+      padding:24px 18px 64px;
+    }
+
+    h1,h2,h3{margin:0 0 12px}
+    h1{
+      font-size:2rem;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+    h2{
+      font-size:1.3rem;
+      color:var(--amber);
+      margin-top:0;
+    }
+    h3{
+      font-size:1rem;
+      color:var(--blue);
+    }
+
+    p{margin:0 0 12px}
+    ul{
+      margin:8px 0 8px 18px;
+      padding:0;
+    }
+    li{margin:5px 0}
+
+    code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95em;
+      color:#c9d1d9;
+    }
+
+    .muted{color:var(--muted)}
+    .small{font-size:.92rem}
+    .center{text-align:center}
+
+    .hero{
+      margin-bottom:18px;
+    }
+
+    .top-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:14px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#11161d;
+      color:var(--muted);
+      font-size:.84rem;
+      line-height:1;
+      white-space:nowrap;
+      text-decoration:none;
+    }
+
+    .tag.active{
+      color:var(--amber);
+      border-color:rgba(245,158,11,.55);
+      background:rgba(245,158,11,.10);
+    }
+
+    .tag.done{
+      color:var(--green);
+      border-color:rgba(16,185,129,.45);
+      background:rgba(16,185,129,.08);
+    }
+
+    .tag-block{
+      color:#c7d2fe;
+      border-color:#374151;
+      background:#111827;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.01) inset;
+    }
+
+    .grid-2,.grid-3{
+      display:grid;
+      gap:14px;
+    }
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .formula{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-left:4px solid var(--amber);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+      overflow:auto;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.95rem;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .intuition,.warn,.info,.success{
+      border-radius:10px;
+      padding:12px 14px;
+      margin:12px 0;
+    }
+    .intuition{
+      background:rgba(16,185,129,.08);
+      border:1px solid rgba(16,185,129,.35);
+    }
+    .warn{
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.35);
+    }
+    .info{
+      background:rgba(96,165,250,.08);
+      border:1px solid rgba(96,165,250,.35);
+    }
+    .success{
+      background:rgba(167,139,250,.08);
+      border:1px solid rgba(167,139,250,.35);
+    }
+
+    .step{
+      padding:10px 12px;
+      border:1px solid #28313b;
+      border-radius:10px;
+      background:#10161d;
+      margin:10px 0;
+    }
+    .step strong{color:var(--amber)}
+
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .tab-btn{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:.92rem;
+    }
+    .tab-btn:hover{border-color:#566070}
+    .tab-btn.active{
+      border-color:rgba(245,158,11,.55);
+      color:var(--amber);
+      background:rgba(245,158,11,.08);
+    }
+
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    .kpi{
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:14px;
+    }
+    .kpi .label{
+      color:var(--muted);
+      font-size:.82rem;
+      margin-bottom:6px;
+    }
+    .kpi .value{
+      font-size:1.45rem;
+      font-weight:700;
+      line-height:1.1;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid var(--border);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:650px;
+      background:#10161d;
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:1px solid #25303b;
+      vertical-align:top;
+      font-size:.93rem;
+    }
+
+    th{
+      color:var(--amber);
+      background:#121922;
+      font-weight:700;
+    }
+
+    tr:last-child td{border-bottom:none}
+
+    .controls{
+      display:grid;
+      gap:10px;
+      margin:12px 0 8px;
+    }
+
+    .control{
+      display:grid;
+      gap:6px;
+    }
+
+    .control label{
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--amber);
+      cursor:pointer;
+    }
+
+    input[type="number"], select{
+      width:100%;
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none;
+    }
+
+    button.action{
+      background:#0f141b;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      font-weight:600;
+    }
+    button.action:hover{
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .code{
+      background:#0b1016;
+      border:1px solid #222b36;
+      border-radius:10px;
+      padding:14px;
+      overflow:auto;
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.89rem;
+      line-height:1.55;
+      color:#dbe6f3;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 14px;
+      margin-top:10px;
+      font-size:.9rem;
+      color:var(--muted);
+    }
+
+    .legend span{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      flex:0 0 auto;
+    }
+
+    .canvas-wrap{
+      border:1px solid var(--border);
+      background:#0b1016;
+      border-radius:12px;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    canvas{
+      width:100%;
+      display:block;
+      background:#0b1016;
+      border-radius:10px;
+    }
+
+    .takeaway{
+      border:1px solid rgba(245,158,11,.35);
+      background:linear-gradient(180deg, rgba(245,158,11,.08), rgba(245,158,11,.03));
+    }
+
+    .footer-nav{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+    }
+
+    .footer-link{
+      flex:1;
+      text-decoration:none;
+      color:var(--text);
+      border:1px solid var(--border);
+      background:#10161d;
+      border-radius:12px;
+      padding:12px 14px;
+      transition:.18s ease;
+    }
+    .footer-link:hover{
+      border-color:var(--amber);
+      transform:translateY(-1px);
+    }
+    .footer-link .muted{display:block}
+
+    .pill{
+      display:inline-block;
+      font-size:.78rem;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-right:6px;
+      margin-bottom:6px;
+      background:#0f141b;
+    }
+
+    .hl-amber{color:var(--amber)}
+    .hl-green{color:var(--green)}
+    .hl-red{color:var(--red)}
+    .hl-blue{color:var(--blue)}
+    .hl-purple{color:var(--purple)}
+
+    @media (max-width: 780px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .page{padding:18px 14px 54px}
+      h1{font-size:1.7rem}
+      .footer-nav{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag done">Блок 2 — Классическое ML</span>
+        <a class="tag tag-block" href="13_support_vector_machines.html">2.13 SVM</a>
+        <span class="tag active">2.14 Кластеризация</span>
+        <a class="tag tag-block" href="15_dimensionality_reduction.html">2.15 Снижение размерности</a>
+      </div>
+
+      <h1>2.14 Кластеризация</h1>
+      <p class="muted">
+        k-means, inertia, elbow method, silhouette score, hierarchical clustering, DBSCAN и ограничения кластеризации.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Что такое кластеризация</h2>
+      <p>
+        <strong>Кластеризация</strong> — это задача <strong>unsupervised learning</strong>, где у нас нет готовых меток классов,
+        и мы пытаемся автоматически разбить объекты на группы так, чтобы внутри группы объекты были более похожими,
+        а между группами — менее похожими.
+      </p>
+
+      <div class="formula">Интуитивная цель:
+within-cluster similarity  ↑
+between-cluster similarity ↓</div>
+
+      <div class="intuition">
+        <strong>Интуиция.</strong> Кластеризация — это попытка найти скрытую структуру в данных.
+        Но важно помнить: алгоритм почти никогда не “открывает истинную природу мира”.
+        Он лишь навязывает данным некоторую структуру в соответствии со своей логикой.
+      </div>
+
+      <div class="warn">
+        Это очень важный момент: кластеры — не всегда “реальные сущности”.
+        Иногда они просто результат выбранной метрики, масштаба признаков и конкретного алгоритма.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Когда кластеризация полезна</h2>
+      <div class="grid-2">
+        <div>
+          <ul>
+            <li>сегментация клиентов;</li>
+            <li>группировка документов или пользователей;</li>
+            <li>поиск похожих объектов;</li>
+            <li>предварительный анализ структуры данных;</li>
+            <li>анализ эмбеддингов;</li>
+            <li>поиск аномалий или шумовых объектов.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="info">
+            Часто кластеризация используется не как финальная “истина”,
+            а как <strong>исследовательский инструмент</strong>:
+            посмотреть, есть ли в данных намёк на структуры, сегменты, плотные области.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.1 k-means</h2>
+      <p>
+        <strong>k-means</strong> — один из самых популярных и базовых алгоритмов кластеризации.
+        Его идея: выбрать <code>k</code> центров кластеров и распределить объекты по ближайшему центру.
+      </p>
+
+      <div class="formula">Цель k-means:
+минимизировать сумму квадратов расстояний
+от точек до центров их кластеров
+
+J = Σ_{j=1..k} Σ_{x_i ∈ C_j} ||x_i - μ_j||²</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Шаг 1.</strong> Инициализируем <code>k</code> центроидов.</div>
+          <div class="step"><strong>Шаг 2.</strong> Каждую точку относим к ближайшему центроиду.</div>
+          <div class="step"><strong>Шаг 3.</strong> Пересчитываем центроиды как среднее по точкам кластера.</div>
+          <div class="step"><strong>Шаг 4.</strong> Повторяем, пока assignment почти не меняется.</div>
+        </div>
+        <div>
+          <div class="intuition">
+            k-means чередует два действия:
+            <strong>assign</strong> и <strong>update</strong>.
+            Сначала “чья это точка?”, потом “где должен стоять центр?”.
+          </div>
+          <div class="warn">
+            Это не глобальная оптимизация. k-means легко застревает в локальном минимуме,
+            поэтому важны <code>n_init</code> и хорошая инициализация, например <code>k-means++</code>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: k-means по шагам</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Этот интерактив показывает механику k-means. Можно выбрать число кластеров
+            и прокручивать итерации алгоритма.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>Число кластеров k: <span id="kmeansKVal" class="hl-amber">3</span></label>
+              <input id="kmeansK" type="range" min="2" max="5" step="1" value="3" />
+            </div>
+            <div class="control">
+              <label>Итерация: <span id="kmeansIterVal" class="hl-blue">0</span></label>
+              <input id="kmeansIter" type="range" min="0" max="8" step="1" value="0" />
+            </div>
+          </div>
+
+          <div class="tabs" id="kmeansTabs">
+            <button class="tab-btn active" data-kinit="random">Random init</button>
+            <button class="tab-btn" data-kinit="smart">K-means++ style</button>
+          </div>
+
+          <button class="action" id="regenKmeans">Сгенерировать заново</button>
+
+          <div class="grid-3" style="margin-top:12px;">
+            <div class="kpi">
+              <div class="label">Iteration</div>
+              <div class="value" id="iterOut">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Inertia</div>
+              <div class="value" id="inertiaOut">0.0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Clusters</div>
+              <div class="value" id="clustersOut">3</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="kmeansCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>кластер 1</span>
+            <span><i class="swatch" style="background:#10b981"></i>кластер 2</span>
+            <span><i class="swatch" style="background:#ef4444"></i>кластер 3</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>центроиды</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.2 Inertia</h2>
+      <p>
+        <strong>Inertia</strong> — это как раз та самая сумма квадратов расстояний точек до своих центроидов.
+        Она всегда уменьшается или не растёт по мере работы k-means.
+      </p>
+
+      <div class="formula">Inertia = Σ_i ||x_i - μ_{c(i)}||²</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            Меньше inertia — точки плотнее “сидят” вокруг центров.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            Но inertia почти всегда уменьшается при росте <code>k</code>.
+            Поэтому сама по себе она не говорит, сколько кластеров “правильно”.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.3 Elbow method</h2>
+      <p>
+        <strong>Elbow method</strong> предлагает попробовать несколько значений <code>k</code>
+        и смотреть, как меняется inertia. Идея в том, что в некоторой точке выигрыш от добавления новых кластеров
+        резко начинает уменьшаться — там и может быть “локоть”.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="formula">k ↑  ⇒  inertia ↓
+
+Ищем точку,
+где падение inertia
+перестаёт быть очень сильным</div>
+
+          <div class="intuition">
+            До elbow новые кластеры дают много пользы.
+            После elbow — уже в основном “дошлифовывают” существующие группы.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            У elbow method нет строгой гарантии. Иногда “локоть” виден ясно,
+            а иногда график плавный и неоднозначный.
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label>Предполагаемая истинная структура: <span id="elbowTrueVal" class="hl-amber">3</span> кластера</label>
+              <input id="elbowTrue" type="range" min="2" max="6" value="3" />
+            </div>
+            <div class="control">
+              <label>Уровень шума: <span id="elbowNoiseVal" class="hl-blue">0.25</span></label>
+              <input id="elbowNoise" type="range" min="0.05" max="0.80" step="0.05" value="0.25" />
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="elbowCanvas" width="400" height="260"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>inertia(k)</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>текущий elbow-кандидат</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.4 Silhouette score</h2>
+      <p>
+        <strong>Silhouette score</strong> оценивает, насколько объект похож на свой кластер
+        по сравнению с соседним кластером.
+      </p>
+
+      <div class="formula">Для точки i:
+
+a(i) = средняя дистанция до точек своего кластера
+b(i) = минимальная средняя дистанция до другого кластера
+
+s(i) = (b(i) - a(i)) / max(a(i), b(i))</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="info">
+            <strong>s(i) ≈ 1</strong> — точка хорошо вписана в свой кластер.<br>
+            <strong>s(i) ≈ 0</strong> — точка на границе между кластерами.<br>
+            <strong>s(i) < 0</strong> — точка, возможно, отнесена не туда.
+          </div>
+        </div>
+        <div>
+          <div class="success">
+            Средний silhouette score часто полезнее inertia,
+            потому что он учитывает и компактность, и разделимость кластеров.
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <div class="controls">
+            <div class="control">
+              <label>a(i): <span id="silAVal" class="hl-green">1.0</span></label>
+              <input id="silA" type="range" min="0.1" max="5.0" step="0.1" value="1.0" />
+            </div>
+            <div class="control">
+              <label>b(i): <span id="silBVal" class="hl-blue">2.5</span></label>
+              <input id="silB" type="range" min="0.1" max="5.0" step="0.1" value="2.5" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="kpi">
+              <div class="label">Silhouette</div>
+              <div class="value" id="silOut">0.60</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Interpretation</div>
+              <div class="value" id="silText">good</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="silCanvas" width="400" height="220"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#60a5fa"></i>silhouette curve</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>текущая точка</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Что k-means любит, а что не любит</h2>
+      <div class="grid-2">
+        <div>
+          <h3>k-means хорошо работает, если</h3>
+          <ul>
+            <li>кластеры примерно шарообразные;</li>
+            <li>размеры кластеров сопоставимы;</li>
+            <li>дисперсии кластеров похожи;</li>
+            <li>метрика Euclidean distance разумна для задачи.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>k-means плохо работает, если</h3>
+          <ul>
+            <li>кластеры вытянутые, серповидные, вложенные;</li>
+            <li>есть сильный шум и выбросы;</li>
+            <li>кластеры очень разных размеров и плотностей;</li>
+            <li>данные не масштабированы.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="warn">
+        k-means очень чувствителен к масштабированию признаков:
+        признак с большим числовым диапазоном начинает доминировать в расстоянии.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.5 Hierarchical clustering</h2>
+      <p>
+        <strong>Иерархическая кластеризация</strong> строит дерево вложенных групп —
+        <strong>dendrogram</strong>. Она не требует сразу фиксировать <code>k</code>,
+        а показывает, как объекты или группы постепенно сливаются.
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Agglomerative clustering</strong>: начинаем с отдельных точек и постепенно сливаем ближайшие группы.</div>
+          <div class="step"><strong>Divisive clustering</strong>: наоборот, начинаем с одной большой группы и делим её.</div>
+        </div>
+        <div>
+          <div class="info">
+            На практике чаще используют agglomerative variant.
+          </div>
+        </div>
+      </div>
+
+      <div class="formula">Ключевой вопрос:
+как определять расстояние между кластерами?
+
+Варианты linkage:
+- single
+- complete
+- average
+- ward</div>
+    </div>
+
+    <div class="card">
+      <h2>Linkage в hierarchical clustering</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Linkage</th>
+              <th>Идея</th>
+              <th>Сильная сторона</th>
+              <th>Слабая сторона</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Single linkage</td>
+              <td>Минимальное расстояние между точками двух кластеров</td>
+              <td>Ловит цепочки и сложные формы</td>
+              <td>Chaining effect, чувствителен к шуму</td>
+            </tr>
+            <tr>
+              <td>Complete linkage</td>
+              <td>Максимальное расстояние между точками</td>
+              <td>Более компактные кластеры</td>
+              <td>Может дробить длинные структуры</td>
+            </tr>
+            <tr>
+              <td>Average linkage</td>
+              <td>Среднее расстояние</td>
+              <td>Компромиссный вариант</td>
+              <td>Не всегда интуитивный на сложных формах</td>
+            </tr>
+            <tr>
+              <td>Ward linkage</td>
+              <td>Минимизирует рост внутрикластерной дисперсии</td>
+              <td>Часто хорошо для “шарообразных” кластеров</td>
+              <td>Ближе по духу к k-means, не ловит произвольные формы</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2" style="margin-top:10px;">
+        <div>
+          <div class="tabs" id="linkageTabs">
+            <button class="tab-btn active" data-linkage="single">Single</button>
+            <button class="tab-btn" data-linkage="complete">Complete</button>
+            <button class="tab-btn" data-linkage="average">Average</button>
+            <button class="tab-btn" data-linkage="ward">Ward</button>
+          </div>
+
+          <div class="info" id="linkageText">
+            Single linkage берёт минимальное расстояние между двумя кластерами и склонен образовывать цепочки.
+          </div>
+        </div>
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="linkageCanvas" width="400" height="240"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.6 DBSCAN</h2>
+      <p>
+        <strong>DBSCAN</strong> — алгоритм плотностной кластеризации.
+        Он ищет области высокой плотности и умеет оставлять точки шума неотнесёнными ни к одному кластеру.
+      </p>
+
+      <div class="formula">Главные параметры DBSCAN:
+eps       — радиус окрестности
+min_samples — минимум соседей для "плотной" точки</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>Core point</strong> — в eps-окрестности достаточно соседей.</div>
+          <div class="step"><strong>Border point</strong> — сама не core, но рядом с core.</div>
+          <div class="step"><strong>Noise point</strong> — не принадлежит плотной области.</div>
+        </div>
+        <div>
+          <div class="success">
+            Главное преимущество DBSCAN:
+            он умеет находить кластеры произвольной формы и отдельно маркировать шум.
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        Главная трудность DBSCAN:
+        подобрать <code>eps</code> и <code>min_samples</code>, особенно если плотность кластеров в разных частях пространства сильно различается.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: DBSCAN — eps и min_samples</h2>
+      <div class="grid-2">
+        <div>
+          <p class="small">
+            Схематический интерактив показывает, как меняется статус точек при разных параметрах.
+          </p>
+
+          <div class="controls">
+            <div class="control">
+              <label>eps: <span id="epsVal" class="hl-amber">0.60</span></label>
+              <input id="epsRange" type="range" min="0.2" max="1.6" step="0.05" value="0.60" />
+            </div>
+            <div class="control">
+              <label>min_samples: <span id="minSamplesVal" class="hl-blue">4</span></label>
+              <input id="minSamplesRange" type="range" min="2" max="8" step="1" value="4" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="kpi">
+              <div class="label">Core</div>
+              <div class="value" id="coreOut">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Border</div>
+              <div class="value" id="borderOut">0</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Noise</div>
+              <div class="value" id="noiseOut">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="canvas-wrap">
+            <canvas id="dbscanCanvas" width="400" height="300"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="swatch" style="background:#10b981"></i>core points</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>border points</span>
+            <span><i class="swatch" style="background:#ef4444"></i>noise</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>k-means vs hierarchical vs DBSCAN</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Свойство</th>
+              <th>k-means</th>
+              <th>Hierarchical</th>
+              <th>DBSCAN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Нужно заранее задавать k</td>
+              <td>Да</td>
+              <td>Не обязательно сразу</td>
+              <td>Нет</td>
+            </tr>
+            <tr>
+              <td>Кластеры произвольной формы</td>
+              <td>Плохо</td>
+              <td>Иногда</td>
+              <td>Да</td>
+            </tr>
+            <tr>
+              <td>Работа с шумом</td>
+              <td>Плохо</td>
+              <td>Слабо</td>
+              <td>Хорошо</td>
+            </tr>
+            <tr>
+              <td>Масштабируемость</td>
+              <td>Хорошая</td>
+              <td>Обычно хуже</td>
+              <td>Средняя</td>
+            </tr>
+            <tr>
+              <td>Интерпретация</td>
+              <td>Простая</td>
+              <td>Очень наглядна через dendrogram</td>
+              <td>Интуитивна через плотность</td>
+            </tr>
+            <tr>
+              <td>Когда часто полезен</td>
+              <td>Быстрый baseline</td>
+              <td>Исследовательский анализ структуры</td>
+              <td>Нелинейные формы + шум</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2.14.7 Ограничения кластеризации</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>1.</strong> Кластеры зависят от выбранной метрики расстояния.
+          </div>
+          <div class="warn">
+            <strong>2.</strong> Кластеры зависят от масштаба признаков.
+          </div>
+          <div class="warn">
+            <strong>3.</strong> Один и тот же датасет разные алгоритмы разобьют по-разному.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>4.</strong> Наличие кластеров на графике не означает, что они семантически meaningful.
+          </div>
+          <div class="warn">
+            <strong>5.</strong> На высоких размерностях расстояния становятся менее информативными.
+          </div>
+          <div class="warn">
+            <strong>6.</strong> Без domain knowledge легко переинтерпретировать результат.
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        Поэтому хорошая практика:
+        <strong>масштабирование + несколько алгоритмов + визуализация + внутренняя метрика + предметная интерпретация.</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Практический pipeline для кластеризации</h2>
+      <div class="step"><strong>1.</strong> Очистить данные и подумать, какие признаки реально важны.</div>
+      <div class="step"><strong>2.</strong> Масштабировать признаки, если расстояния играют ключевую роль.</div>
+      <div class="step"><strong>3.</strong> Попробовать несколько алгоритмов: k-means, hierarchical, DBSCAN.</div>
+      <div class="step"><strong>4.</strong> Сравнить inertia / silhouette / визуализации / устойчивость результата.</div>
+      <div class="step"><strong>5.</strong> Проверить, есть ли предметный смысл у найденных сегментов.</div>
+      <div class="step"><strong>6.</strong> Не забывать, что кластеризация — это исследовательский инструмент, а не доказательство “истинных классов”.</div>
+    </div>
+
+    <div class="card">
+      <h2>Код: sklearn</h2>
+
+      <div class="tabs" data-tabs="cluster-code-tabs">
+        <button class="tab-btn active" data-tab="code-kmeans">KMeans</button>
+        <button class="tab-btn" data-tab="code-elbow">Elbow + silhouette</button>
+        <button class="tab-btn" data-tab="code-hier">Hierarchical</button>
+        <button class="tab-btn" data-tab="code-dbscan">DBSCAN</button>
+      </div>
+
+      <div id="code-kmeans" class="tab-panel active">
+        <div class="code">from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("kmeans", KMeans(
+        n_clusters=3,
+        init="k-means++",
+        n_init=20,
+        random_state=42
+    ))
+])
+
+pipe.fit(X)
+
+labels = pipe.named_steps["kmeans"].labels_
+centers = pipe.named_steps["kmeans"].cluster_centers_
+print("Inertia:", pipe.named_steps["kmeans"].inertia_)</div>
+      </div>
+
+      <div id="code-elbow" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+X_scaled = StandardScaler().fit_transform(X)
+
+inertias = []
+sil_scores = []
+
+for k in range(2, 11):
+    km = KMeans(n_clusters=k, n_init=20, random_state=42)
+    labels = km.fit_predict(X_scaled)
+
+    inertias.append(km.inertia_)
+    sil_scores.append(silhouette_score(X_scaled, labels))
+
+print("Inertias:", inertias)
+print("Silhouette scores:", sil_scores)</div>
+      </div>
+
+      <div id="code-hier" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import AgglomerativeClustering
+
+X_scaled = StandardScaler().fit_transform(X)
+
+model = AgglomerativeClustering(
+    n_clusters=3,
+    linkage="ward"
+)
+
+labels = model.fit_predict(X_scaled)
+print(labels[:20])</div>
+      </div>
+
+      <div id="code-dbscan" class="tab-panel">
+        <div class="code">from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import DBSCAN
+import numpy as np
+
+X_scaled = StandardScaler().fit_transform(X)
+
+db = DBSCAN(
+    eps=0.6,
+    min_samples=5
+)
+
+labels = db.fit_predict(X_scaled)
+
+n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise = np.sum(labels == -1)
+
+print("Clusters:", n_clusters)
+print("Noise points:", n_noise)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Частые ошибки</h2>
+      <div class="grid-2">
+        <div>
+          <div class="warn">
+            <strong>Ошибка 1.</strong> Не масштабировать признаки перед distance-based clustering.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 2.</strong> Воспринимать кластеры как “настоящие классы” без проверки.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 3.</strong> Оценивать качество только inertia.
+          </div>
+        </div>
+        <div>
+          <div class="warn">
+            <strong>Ошибка 4.</strong> Использовать k-means на данных сложной формы и ждать идеального результата.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 5.</strong> Выбирать <code>k</code> только “на глаз” по визуализации.
+          </div>
+          <div class="warn">
+            <strong>Ошибка 6.</strong> Не учитывать выбросы и шум.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как объяснить кластеризацию на собеседовании</h2>
+      <div class="step"><strong>1.</strong> Кластеризация — это unsupervised задача группировки похожих объектов.</div>
+      <div class="step"><strong>2.</strong> k-means минимизирует сумму квадратов расстояний до центроидов и лучше всего работает на компактных “шарообразных” кластерах.</div>
+      <div class="step"><strong>3.</strong> Elbow method и silhouette score помогают оценить разумность выбора числа кластеров, но не дают абсолютной истины.</div>
+      <div class="step"><strong>4.</strong> Hierarchical clustering полезен для исследования структуры и dendrogram.</div>
+      <div class="step"><strong>5.</strong> DBSCAN хорош для плотностных кластеров произвольной формы и умеет отдельно маркировать шум.</div>
+    </div>
+
+    <div class="card takeaway">
+      <h2>Итоговый takeaway</h2>
+      <div class="grid-2">
+        <div>
+          <div class="step"><strong>k-means</strong> — быстрый и сильный baseline, если кластеры компактные и примерно одинаковые по масштабу.</div>
+          <div class="step"><strong>Silhouette</strong> обычно информативнее одной inertia, потому что учитывает и компактность, и разделимость.</div>
+          <div class="step"><strong>Hierarchical clustering</strong> полезен, когда хочется увидеть дерево вложенных групп.</div>
+        </div>
+        <div>
+          <div class="step"><strong>DBSCAN</strong> хорош для плотностных структур и шума, особенно когда кластеры не шарообразные.</div>
+          <div class="step">Выбор алгоритма сильно зависит от формы кластеров, шума, плотности и масштаба признаков.</div>
+          <div class="step">Кластеры — это не готовая истина, а модель структуры данных.</div>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:12px;">
+        Ментальная формула:
+        <strong>k-means = центры, hierarchical = дерево слияний, DBSCAN = плотность.</strong>
+      </div>
+    </div>
+
+    <div class="footer-nav">
+      <a class="footer-link" href="13_support_vector_machines.html">
+        <span class="muted">← Предыдущая тема</span>
+        2.13 SVM
+      </a>
+      <a class="footer-link" href="15_dimensionality_reduction.html">
+        <span class="muted">Следующая тема →</span>
+        2.15 Снижение размерности
+      </a>
+    </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../shared-nav.js"></script>
+  <script>
+    document.querySelectorAll('[data-tabs]').forEach(group => {
+      const buttons = group.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tab;
+          const container = group.parentElement;
+          buttons.forEach(b => b.classList.remove('active'));
+          container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          container.querySelector('#' + tabId).classList.add('active');
+        });
+      });
+    });
+
+    function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+    function dist(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1]); }
+
+    // -------- base helpers --------
+    function worldToCanvas(x, y, W, H, minX=-4, maxX=4, minY=-4, maxY=4){
+      return [
+        (x-minX)/(maxX-minX)*W,
+        H-(y-minY)/(maxY-minY)*H
+      ];
+    }
+
+    // -------- KMeans interactive --------
+    const kmeansCanvas = document.getElementById('kmeansCanvas');
+    const kmCtx = kmeansCanvas.getContext('2d');
+    const kmeansK = document.getElementById('kmeansK');
+    const kmeansIter = document.getElementById('kmeansIter');
+    const kmeansKVal = document.getElementById('kmeansKVal');
+    const kmeansIterVal = document.getElementById('kmeansIterVal');
+    const iterOut = document.getElementById('iterOut');
+    const inertiaOut = document.getElementById('inertiaOut');
+    const clustersOut = document.getElementById('clustersOut');
+    const regenKmeans = document.getElementById('regenKmeans');
+    let kInitMode = 'random';
+
+    const kmColors = ['#60a5fa','#10b981','#ef4444','#a78bfa','#f59e0b'];
+    let kmPoints = [];
+    let kmHistory = [];
+
+    function generateKMeansPoints(){
+      kmPoints = [];
+      const centers = [[-2,1.8],[0.2,-1.7],[2.2,1.9],[2.8,-1.4],[-2.7,-1.8]];
+      centers.forEach((c, idx)=>{
+        for(let i=0;i<18;i++){
+          if(idx<3 || Math.random() > 0.45){
+            kmPoints.push([
+              c[0] + (Math.random()-0.5)*1.2,
+              c[1] + (Math.random()-0.5)*1.2
+            ]);
+          }
+        }
+      });
+    }
+
+    function chooseInitialCenters(points, k, mode){
+      if(mode === 'random'){
+        const shuffled = [...points].sort(()=>Math.random()-0.5);
+        return shuffled.slice(0,k).map(p=>[p[0],p[1]]);
+      }
+      const centers = [];
+      centers.push(points[Math.floor(Math.random()*points.length)]);
+      while(centers.length < k){
+        let bestPoint = null;
+        let bestDist = -1;
+        for(const p of points){
+          let nearest = Infinity;
+          for(const c of centers){
+            nearest = Math.min(nearest, dist(p,c));
+          }
+          if(nearest > bestDist){
+            bestDist = nearest;
+            bestPoint = p;
+          }
+        }
+        centers.push([bestPoint[0], bestPoint[1]]);
+      }
+      return centers.map(c=>[c[0],c[1]]);
+    }
+
+    function runKMeansHistory(){
+      const k = +kmeansK.value;
+      const maxIter = 8;
+      let centers = chooseInitialCenters(kmPoints, k, kInitMode);
+      kmHistory = [];
+
+      for(let t=0;t<=maxIter;t++){
+        const labels = kmPoints.map(p=>{
+          let best = 0;
+          let bestD = Infinity;
+          for(let j=0;j<centers.length;j++){
+            const d = dist(p, centers[j]);
+            if(d < bestD){ bestD = d; best = j; }
+          }
+          return best;
+        });
+
+        let inertia = 0;
+        for(let i=0;i<kmPoints.length;i++){
+          inertia += dist(kmPoints[i], centers[labels[i]])**2;
+        }
+
+        kmHistory.push({
+          centers: centers.map(c=>[c[0],c[1]]),
+          labels: [...labels],
+          inertia
+        });
+
+        const newCenters = Array.from({length:k}, ()=>[0,0,0]);
+        for(let i=0;i<kmPoints.length;i++){
+          const lab = labels[i];
+          newCenters[lab][0] += kmPoints[i][0];
+          newCenters[lab][1] += kmPoints[i][1];
+          newCenters[lab][2] += 1;
+        }
+        centers = newCenters.map((c,j)=> c[2] ? [c[0]/c[2], c[1]/c[2]] : centers[j]);
+      }
+    }
+
+    function drawKMeans(){
+      const W = kmeansCanvas.width, H = kmeansCanvas.height;
+      kmCtx.clearRect(0,0,W,H);
+      kmCtx.fillStyle = '#0b1016';
+      kmCtx.fillRect(0,0,W,H);
+
+      const step = +kmeansIter.value;
+      const state = kmHistory[Math.min(step, kmHistory.length-1)];
+      if(!state) return;
+
+      kmeansKVal.textContent = kmeansK.value;
+      kmeansIterVal.textContent = step;
+      iterOut.textContent = step;
+      inertiaOut.textContent = state.inertia.toFixed(1);
+      clustersOut.textContent = kmeansK.value;
+
+      // Voronoi-ish background
+      for(let gx=0; gx<W; gx+=8){
+        for(let gy=0; gy<H; gy+=8){
+          const x = gx/W*8 - 4;
+          const y = (H-gy)/H*8 - 4;
+          let best = 0;
+          let bestD = Infinity;
+          state.centers.forEach((c,idx)=>{
+            const d = dist([x,y], c);
+            if(d < bestD){ bestD = d; best = idx; }
+          });
+          kmCtx.fillStyle = kmColors[best] + '18';
+          kmCtx.fillRect(gx,gy,8,8);
+        }
+      }
+
+      kmPoints.forEach((p,i)=>{
+        const [cx,cy] = worldToCanvas(p[0],p[1],W,H);
+        const lab = state.labels[i];
+        kmCtx.beginPath();
+        kmCtx.arc(cx,cy,5,0,Math.PI*2);
+        kmCtx.fillStyle = kmColors[lab];
+        kmCtx.fill();
+        kmCtx.lineWidth = 1.2;
+        kmCtx.strokeStyle = '#0d1117';
+        kmCtx.stroke();
+      });
+
+      state.centers.forEach((c,idx)=>{
+        const [cx,cy] = worldToCanvas(c[0],c[1],W,H);
+        kmCtx.strokeStyle = '#f59e0b';
+        kmCtx.lineWidth = 3;
+        kmCtx.beginPath();
+        kmCtx.moveTo(cx-9,cy-9); kmCtx.lineTo(cx+9,cy+9);
+        kmCtx.moveTo(cx+9,cy-9); kmCtx.lineTo(cx-9,cy+9);
+        kmCtx.stroke();
+
+        kmCtx.fillStyle = '#f59e0b';
+        kmCtx.font = '10px system-ui';
+        kmCtx.fillText('μ' + (idx+1), cx+8, cy-8);
+      });
+    }
+
+    document.querySelectorAll('#kmeansTabs .tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#kmeansTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        kInitMode = btn.dataset.kinit;
+        runKMeansHistory();
+        drawKMeans();
+      });
+    });
+
+    [kmeansK, kmeansIter].forEach(el=>el.addEventListener('input', ()=>{
+      runKMeansHistory();
+      drawKMeans();
+    }));
+
+    regenKmeans.addEventListener('click', ()=>{
+      generateKMeansPoints();
+      runKMeansHistory();
+      drawKMeans();
+    });
+
+    // -------- Elbow demo --------
+    const elbowCanvas = document.getElementById('elbowCanvas');
+    const eCtx = elbowCanvas.getContext('2d');
+    const elbowTrue = document.getElementById('elbowTrue');
+    const elbowNoise = document.getElementById('elbowNoise');
+    const elbowTrueVal = document.getElementById('elbowTrueVal');
+    const elbowNoiseVal = document.getElementById('elbowNoiseVal');
+
+    function drawElbow(){
+      const trueK = +elbowTrue.value;
+      const noise = +elbowNoise.value;
+      elbowTrueVal.textContent = trueK;
+      elbowNoiseVal.textContent = noise.toFixed(2);
+
+      const ks = [1,2,3,4,5,6,7,8];
+      const vals = ks.map(k=>{
+        const base = 18 / Math.min(k, trueK);
+        const extra = k > trueK ? (k-trueK)*0.45 : 0;
+        return base + extra + noise * (3.2 + 0.2*k);
+      });
+
+      let elbowCand = 2;
+      let bestScore = -Infinity;
+      for(let i=1;i<vals.length-1;i++){
+        const left = vals[i-1]-vals[i];
+        const right = vals[i]-vals[i+1];
+        const score = left-right;
+        if(score > bestScore){
+          bestScore = score;
+          elbowCand = i+1;
+        }
+      }
+
+      const W = elbowCanvas.width, H = elbowCanvas.height;
+      eCtx.clearRect(0,0,W,H);
+      eCtx.fillStyle = '#0b1016';
+      eCtx.fillRect(0,0,W,H);
+
+      const padL=28,padR=10,padT=12,padB=24;
+      const yMax = Math.max(...vals) * 1.1;
+      function X(i){ return padL + (i/(ks.length-1))*(W-padL-padR); }
+      function Y(v){ return H-padB - (v/yMax)*(H-padT-padB); }
+
+      eCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = yMax * i/4;
+        eCtx.beginPath();
+        eCtx.moveTo(padL, Y(yy));
+        eCtx.lineTo(W-padR, Y(yy));
+        eCtx.stroke();
+      }
+
+      eCtx.strokeStyle = '#60a5fa';
+      eCtx.lineWidth = 2.2;
+      eCtx.beginPath();
+      vals.forEach((v,i)=>{
+        if(i===0) eCtx.moveTo(X(i),Y(v));
+        else eCtx.lineTo(X(i),Y(v));
+      });
+      eCtx.stroke();
+
+      vals.forEach((v,i)=>{
+        eCtx.beginPath();
+        eCtx.arc(X(i),Y(v), i+1===elbowCand?6:4, 0, Math.PI*2);
+        eCtx.fillStyle = i+1===elbowCand ? '#f59e0b' : '#60a5fa';
+        eCtx.fill();
+
+        eCtx.fillStyle = '#8b949e';
+        eCtx.font = '11px system-ui';
+        eCtx.fillText(String(i+1), X(i)-3, H-6);
+      });
+    }
+
+    [elbowTrue, elbowNoise].forEach(el=>el.addEventListener('input', drawElbow));
+
+    // -------- Silhouette demo --------
+    const silA = document.getElementById('silA');
+    const silB = document.getElementById('silB');
+    const silAVal = document.getElementById('silAVal');
+    const silBVal = document.getElementById('silBVal');
+    const silOut = document.getElementById('silOut');
+    const silText = document.getElementById('silText');
+    const silCanvas = document.getElementById('silCanvas');
+    const sCtx = silCanvas.getContext('2d');
+
+    function silScore(a,b){
+      return (b-a)/Math.max(a,b);
+    }
+
+    function drawSil(){
+      const a = +silA.value;
+      const b = +silB.value;
+      silAVal.textContent = a.toFixed(1);
+      silBVal.textContent = b.toFixed(1);
+
+      const s = silScore(a,b);
+      silOut.textContent = s.toFixed(2);
+      silText.textContent = s > 0.5 ? 'good' : s > 0.2 ? 'ok' : s > 0 ? 'weak' : 'bad';
+
+      const W = silCanvas.width, H = silCanvas.height;
+      sCtx.clearRect(0,0,W,H);
+      sCtx.fillStyle = '#0b1016';
+      sCtx.fillRect(0,0,W,H);
+
+      const padL=30,padR=10,padT=14,padB=26;
+      function X(x){ return padL + ((x+1)/2)*(W-padL-padR); }
+      function Y(y){ return H-padB - (y/1.05)*(H-padT-padB); }
+
+      sCtx.strokeStyle = '#25303b';
+      for(let i=0;i<=4;i++){
+        const yy = i/4;
+        sCtx.beginPath();
+        sCtx.moveTo(padL, Y(yy));
+        sCtx.lineTo(W-padR, Y(yy));
+        sCtx.stroke();
+      }
+
+      sCtx.strokeStyle = '#60a5fa';
+      sCtx.lineWidth = 2.2;
+      sCtx.beginPath();
+      for(let i=0;i<=200;i++){
+        const x = -1 + 2*(i/200);
+        const y = Math.max(0, 1 - Math.abs(x-0.65)*1.3);
+        if(i===0) sCtx.moveTo(X(x),Y(y));
+        else sCtx.lineTo(X(x),Y(y));
+      }
+      sCtx.stroke();
+
+      sCtx.beginPath();
+      sCtx.arc(X(clamp(s,-1,1)), Y(Math.max(0,1 - Math.abs(clamp(s,-1,1)-0.65)*1.3)), 6, 0, Math.PI*2);
+      sCtx.fillStyle = '#f59e0b';
+      sCtx.fill();
+
+      sCtx.fillStyle = '#8b949e';
+      sCtx.font = '11px system-ui';
+      sCtx.fillText('silhouette', W/2 - 20, H - 6);
+    }
+
+    [silA, silB].forEach(el=>el.addEventListener('input', drawSil));
+
+    // -------- Linkage demo --------
+    const linkageCanvas = document.getElementById('linkageCanvas');
+    const lCtx = linkageCanvas.getContext('2d');
+    const linkageText = document.getElementById('linkageText');
+    let linkageMode = 'single';
+
+    document.querySelectorAll('#linkageTabs .tab-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('#linkageTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        linkageMode = btn.dataset.linkage;
+        drawLinkage();
+      });
+    });
+
+    function drawLinkage(){
+      const W = linkageCanvas.width, H = linkageCanvas.height;
+      lCtx.clearRect(0,0,W,H);
+      lCtx.fillStyle = '#0b1016';
+      lCtx.fillRect(0,0,W,H);
+
+      const left = [[70,80],[95,130],[125,95]];
+      const right = [[300,85],[320,125],[350,100]];
+
+      const modeText = {
+        single: 'Single linkage берёт минимальное расстояние между двумя кластерами и склонен образовывать цепочки.',
+        complete: 'Complete linkage смотрит на самые дальние точки и предпочитает более компактные кластеры.',
+        average: 'Average linkage использует среднее расстояние между кластерами и часто даёт компромисс.',
+        ward: 'Ward linkage минимизирует рост внутрикластерной дисперсии и хорошо работает для компактных групп.'
+      };
+      linkageText.innerHTML = modeText[linkageMode];
+
+      [...left,...right].forEach((p,idx)=>{
+        lCtx.beginPath();
+        lCtx.arc(p[0],p[1],6,0,Math.PI*2);
+        lCtx.fillStyle = idx < left.length ? '#10b981' : '#ef4444';
+        lCtx.fill();
+      });
+
+      lCtx.strokeStyle = '#30363d';
+      lCtx.setLineDash([5,5]);
+      lCtx.strokeRect(40,55,120,100);
+      lCtx.strokeRect(275,60,95,90);
+      lCtx.setLineDash([]);
+
+      let a = [125,95], b = [300,85];
+      if(linkageMode === 'complete'){ a = [70,80]; b = [350,100]; }
+      if(linkageMode === 'average'){ a = [95,130]; b = [320,125]; }
+      if(linkageMode === 'ward'){ a = [100,100]; b = [322,103]; }
+
+      lCtx.strokeStyle = linkageMode === 'single' ? '#60a5fa' :
+                         linkageMode === 'complete' ? '#ef4444' :
+                         linkageMode === 'average' ? '#f59e0b' : '#a78bfa';
+      lCtx.lineWidth = 2.5;
+      lCtx.beginPath();
+      lCtx.moveTo(a[0],a[1]);
+      lCtx.lineTo(b[0],b[1]);
+      lCtx.stroke();
+    }
+
+    // -------- DBSCAN demo --------
+    const epsRange = document.getElementById('epsRange');
+    const minSamplesRange = document.getElementById('minSamplesRange');
+    const epsVal = document.getElementById('epsVal');
+    const minSamplesVal = document.getElementById('minSamplesVal');
+    const coreOut = document.getElementById('coreOut');
+    const borderOut = document.getElementById('borderOut');
+    const noiseOut = document.getElementById('noiseOut');
+    const dbscanCanvas = document.getElementById('dbscanCanvas');
+    const dCtx = dbscanCanvas.getContext('2d');
+
+    const dbPoints = [
+      [-2.8,1.8],[-2.5,2.0],[-2.2,1.7],[-2.4,1.3],[-1.9,1.6],[-2.1,2.2],
+      [1.2,-0.8],[1.5,-1.1],[1.9,-1.0],[2.1,-1.4],[1.5,-1.7],[2.3,-0.7],
+      [0.0,2.8],[3.0,2.5],[-3.2,-2.5],[0.2,-2.8]
+    ];
+
+    function drawDBSCAN(){
+      const eps = +epsRange.value;
+      const minS = +minSamplesRange.value;
+      epsVal.textContent = eps.toFixed(2);
+      minSamplesVal.textContent = minS;
+
+      const statuses = dbPoints.map((p,i)=>{
+        let count = 0;
+        for(let j=0;j<dbPoints.length;j++){
+          if(dist(p, dbPoints[j]) <= eps) count++;
+        }
+        return count >= minS ? 'core' : 'unknown';
+      });
+
+      for(let i=0;i<dbPoints.length;i++){
+        if(statuses[i] === 'core') continue;
+        let border = false;
+        for(let j=0;j<dbPoints.length;j++){
+          if(statuses[j]==='core' && dist(dbPoints[i], dbPoints[j]) <= eps){
+            border = true; break;
+          }
+        }
+        statuses[i] = border ? 'border' : 'noise';
+      }
+
+      coreOut.textContent = statuses.filter(s=>s==='core').length;
+      borderOut.textContent = statuses.filter(s=>s==='border').length;
+      noiseOut.textContent = statuses.filter(s=>s==='noise').length;
+
+      const W = dbscanCanvas.width, H = dbscanCanvas.height;
+      dCtx.clearRect(0,0,W,H);
+      dCtx.fillStyle = '#0b1016';
+      dCtx.fillRect(0,0,W,H);
+
+      dbPoints.forEach((p,i)=>{
+        const [cx,cy] = worldToCanvas(p[0],p[1],W,H);
+        if(i===0){
+          dCtx.strokeStyle = 'rgba(245,158,11,0.65)';
+          dCtx.lineWidth = 1.5;
+          dCtx.beginPath();
+          dCtx.arc(cx,cy,eps/8*W,0,Math.PI*2);
+          dCtx.stroke();
+        }
+
+        dCtx.beginPath();
+        dCtx.arc(cx,cy, statuses[i]==='core'?7:6, 0, Math.PI*2);
+        dCtx.fillStyle = statuses[i]==='core' ? '#10b981' :
+                         statuses[i]==='border' ? '#60a5fa' : '#ef4444';
+        dCtx.fill();
+        dCtx.lineWidth = 1.2;
+        dCtx.strokeStyle = '#0d1117';
+        dCtx.stroke();
+      });
+    }
+
+    [epsRange, minSamplesRange].forEach(el=>el.addEventListener('input', drawDBSCAN));
+
+    // init
+    generateKMeansPoints();
+    runKMeansHistory();
+    drawKMeans();
+    drawElbow();
+    drawSil();
+    drawLinkage();
+    drawDBSCAN();
+  </script>
+</body>
+</html>
