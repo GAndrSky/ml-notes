@@ -267,8 +267,17 @@
   if (currentPage.sectionId === "classic-ml" && !document.querySelector('script[data-ml-practice-script="1"]')) {
     const practiceScript = document.createElement("script");
     practiceScript.src = new URL("shared-classic-ml-practice.js", rootUrl).href;
+    practiceScript.async = false;
     practiceScript.dataset.mlPracticeScript = "1";
     document.body.appendChild(practiceScript);
+  }
+
+  if (currentPage.sectionId !== "math" && !document.querySelector('script[data-ml-theory-script="1"]')) {
+    const theoryScript = document.createElement("script");
+    theoryScript.src = new URL("shared-theory-notes.js", rootUrl).href;
+    theoryScript.async = false;
+    theoryScript.dataset.mlTheoryScript = "1";
+    document.body.appendChild(theoryScript);
   }
 
   document.body.appendChild(bottomNav);
