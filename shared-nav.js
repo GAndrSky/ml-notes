@@ -286,6 +286,13 @@
     explainerScript.dataset.mlExplainerScript = "1";
     document.body.appendChild(explainerScript);
   }
+  if (currentPage.sectionId !== "math" && !document.querySelector('script[data-ml-formula-explainer-script="1"]')) {
+    const formulaExplainerScript = document.createElement("script");
+    formulaExplainerScript.src = new URL("shared-formula-explainers.js", rootUrl).href;
+    formulaExplainerScript.async = false;
+    formulaExplainerScript.dataset.mlFormulaExplainerScript = "1";
+    document.body.appendChild(formulaExplainerScript);
+  }
 
   document.body.appendChild(bottomNav);
 
