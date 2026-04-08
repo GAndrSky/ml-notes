@@ -279,6 +279,13 @@
     theoryScript.dataset.mlTheoryScript = "1";
     document.body.appendChild(theoryScript);
   }
+  if (currentPage.sectionId !== "math" && !document.querySelector('script[data-ml-explainer-script="1"]')) {
+    const explainerScript = document.createElement("script");
+    explainerScript.src = new URL("shared-explainer-notes.js", rootUrl).href;
+    explainerScript.async = false;
+    explainerScript.dataset.mlExplainerScript = "1";
+    document.body.appendChild(explainerScript);
+  }
 
   document.body.appendChild(bottomNav);
 
