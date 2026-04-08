@@ -112,6 +112,7 @@
 
   const currentPage = pages[currentIndex];
   const currentSection = sections[currentPage.sectionIndex];
+  window.__mlNotesCurrentPagePath = currentPage.path;
   const pageHref = function (page) {
     return new URL(page.path, rootUrl).href;
   };
@@ -262,6 +263,13 @@
     '<a class="ml-page-nav__pager-link" href="' + indexHref + '">К оглавлению</a>' +
     buildActionLink(pages[currentIndex + 1], (pages[currentIndex + 1] ? pages[currentIndex + 1].label : "Далее") + " →", "ml-page-nav__pager-link") +
     "</div>";
+
+  if (currentPage.sectionId === "classic-ml" && !document.querySelector('script[data-ml-practice-script="1"]')) {
+    const practiceScript = document.createElement("script");
+    practiceScript.src = new URL("shared-classic-ml-practice.js", rootUrl).href;
+    practiceScript.dataset.mlPracticeScript = "1";
+    document.body.appendChild(practiceScript);
+  }
 
   document.body.appendChild(bottomNav);
 
