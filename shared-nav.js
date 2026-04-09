@@ -142,6 +142,67 @@
   const pageHref = function (page) {
     return new URL(page.path, rootUrl).href;
   };
+  const ensureCdnConnectionHints = function () {
+    if (document.querySelector('link[data-ml-cdn-hint="jsdelivr-preconnect"]')) {
+      return;
+    }
+
+    const preconnect = document.createElement("link");
+    preconnect.rel = "preconnect";
+    preconnect.href = "https://cdn.jsdelivr.net";
+    preconnect.crossOrigin = "anonymous";
+    preconnect.dataset.mlCdnHint = "jsdelivr-preconnect";
+    document.head.appendChild(preconnect);
+
+    const dnsPrefetch = document.createElement("link");
+    dnsPrefetch.rel = "dns-prefetch";
+    dnsPrefetch.href = "https://cdn.jsdelivr.net";
+    dnsPrefetch.dataset.mlCdnHint = "jsdelivr-dns-prefetch";
+    document.head.appendChild(dnsPrefetch);
+  };
+  const hasMathCandidates = Array.from(
+    document.querySelectorAll(".formula, .inline-math, [data-render-tex]")
+  ).some(function (element) {
+    const source = String(
+      (element.dataset && element.dataset.texSource) || element.textContent || ""
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!source || source.length < 3) {
+      return false;
+    }
+
+    if (element.id && /code|snippet|source/i.test(element.id)) {
+      return false;
+    }
+
+    return !/(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|numpy|function\s*\(|const\s+|let\s+|document\.|addEventListener|ctx\.|return\s+|class\s+\w+)/im.test(
+      source
+    );
+  });
+  const hasPythonCodeCandidates = Array.from(
+    document.querySelectorAll("pre code, .formula")
+  ).some(function (element) {
+    const source = String(element.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!source || source.length < 12) {
+      return false;
+    }
+
+    if (
+      element.classList.contains("language-python") ||
+      element.classList.contains("lang-python")
+    ) {
+      return true;
+    }
+
+    return /(import\s+\w+|from\s+\w+\s+import|def\s+\w+\(|class\s+\w+|print\(|for\s+\w+\s+in|torch\.|np\.|numpy|pandas|sklearn)/im.test(
+      source
+    );
+  });
   const openStorageKey = "ml-notes-nav-open";
   const desktopQuery = window.matchMedia("(min-width: 960px)");
 
@@ -279,6 +340,7 @@
     "</div>";
 
   document.body.insertBefore(topNav, document.body.firstChild);
+  ensureCdnConnectionHints();
 
   const bottomNav = document.createElement("nav");
   bottomNav.className = "ml-page-nav ml-page-nav--bottom";
@@ -326,14 +388,14 @@
     searchScript.dataset.mlSearchScript = "1";
     document.body.appendChild(searchScript);
   }
-  if (!document.querySelector('script[data-ml-katex-script="1"]')) {
+  if (hasMathCandidates && !document.querySelector('script[data-ml-katex-script="1"]')) {
     const katexScript = document.createElement("script");
     katexScript.src = new URL("shared-katex.js", rootUrl).href;
     katexScript.async = false;
     katexScript.dataset.mlKatexScript = "1";
     document.body.appendChild(katexScript);
   }
-  if (!document.querySelector('script[data-ml-code-highlight-script="1"]')) {
+  if (hasPythonCodeCandidates && !document.querySelector('script[data-ml-code-highlight-script="1"]')) {
     const codeHighlightScript = document.createElement("script");
     codeHighlightScript.src = new URL("shared-code-highlight.js", rootUrl).href;
     codeHighlightScript.async = false;

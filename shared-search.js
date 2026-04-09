@@ -7,6 +7,25 @@
   var MIN_QUERY_LENGTH = 2;
   var searchIndexPromise = null;
 
+  function ensureCdnConnectionHints() {
+    if (document.querySelector('link[data-ml-cdn-hint="jsdelivr-preconnect"]')) {
+      return;
+    }
+
+    var preconnect = document.createElement("link");
+    preconnect.rel = "preconnect";
+    preconnect.href = "https://cdn.jsdelivr.net";
+    preconnect.crossOrigin = "anonymous";
+    preconnect.dataset.mlCdnHint = "jsdelivr-preconnect";
+    document.head.appendChild(preconnect);
+
+    var dnsPrefetch = document.createElement("link");
+    dnsPrefetch.rel = "dns-prefetch";
+    dnsPrefetch.href = "https://cdn.jsdelivr.net";
+    dnsPrefetch.dataset.mlCdnHint = "jsdelivr-dns-prefetch";
+    document.head.appendChild(dnsPrefetch);
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, "&amp;")
@@ -278,6 +297,7 @@
   }
 
   function init() {
+    ensureCdnConnectionHints();
     ensureStylesheet(searchCssUrl, "ml-notes-search-stylesheet");
 
     var navPanel = document.querySelector(".ml-page-nav__panel");

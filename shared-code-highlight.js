@@ -2,8 +2,6 @@
   var hljsCssUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
   var hljsJsUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js";
   var pythonJsUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js";
-  var javascriptJsUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js";
-  var scheduled = false;
 
   function ensureStylesheet(href, id) {
     if (document.getElementById(id)) {
@@ -69,10 +67,6 @@
       return "python";
     }
 
-    if (/const\s+|let\s+|function\s*\(|=>|document\.|addEventListener|window\.|Math\./i.test(normalized)) {
-      return "javascript";
-    }
-
     return "";
   }
 
@@ -87,7 +81,25 @@
       return true;
     }
 
-    return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|def\s+\w+\(|for\s+\w+\s+in|print\(|const\s+|let\s+|function\s*\(|=>|document\.|addEventListener|ctx\.|return\s+|class\s+\w+)/i.test(normalized);
+    return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|def\s+\w+\(|for\s+\w+\s+in|print\(|class\s+\w+|sklearn|pandas)/i.test(normalized);
+  }
+
+  function getPythonCandidates() {
+    var codeBlocks = Array.prototype.filter.call(document.querySelectorAll("pre code"), function (element) {
+      var className = element.className || "";
+      if (/language-python|lang-python/i.test(className)) {
+        return true;
+      }
+
+      return detectLanguage(element.textContent || "") === "python";
+    });
+
+    var formulaBlocks = Array.prototype.filter.call(document.querySelectorAll(".formula"), function (element) {
+      var signature = (element.textContent || "").trim();
+      return isCodeBlockText(signature, element) && detectLanguage(signature) === "python";
+    });
+
+    return codeBlocks.concat(formulaBlocks);
   }
 
   function highlightFormula(element) {
@@ -98,17 +110,18 @@
       return;
     }
 
+    if (detectLanguage(signature) !== "python") {
+      return;
+    }
+
     if (element.dataset.codeSignature === signature && element.dataset.codeHighlighted === "1") {
       return;
     }
 
-    var language = detectLanguage(signature);
-    var highlighted = language
-      ? window.hljs.highlight(signature, { language: language, ignoreIllegals: true }).value
-      : window.hljs.highlightAuto(signature).value;
+    var highlighted = window.hljs.highlight(signature, { language: "python", ignoreIllegals: true }).value;
 
     element.classList.add("ml-code-highlight");
-    element.innerHTML = '<code class="hljs language-' + (language || "plaintext") + '">' + highlighted + "</code>";
+    element.innerHTML = '<code class="hljs language-python">' + highlighted + "</code>";
     element.dataset.codeHighlighted = "1";
     element.dataset.codeSignature = signature;
   }
@@ -119,34 +132,45 @@
     }
 
     var language = detectLanguage(element.textContent || "");
-    if (language) {
-      element.classList.add("language-" + language);
+    if (language !== "python" && !/language-python|lang-python/i.test(element.className || "")) {
+      return;
     }
+
+    element.classList.add("language-python");
     window.hljs.highlightElement(element);
     element.dataset.codeHighlighted = "1";
   }
 
   function processAll() {
-    scheduled = false;
-
     if (!window.hljs) {
       return;
     }
 
-    Array.prototype.forEach.call(document.querySelectorAll("pre code"), highlightPreCode);
-    Array.prototype.forEach.call(document.querySelectorAll(".formula"), highlightFormula);
+    getPythonCandidates().forEach(function (element) {
+      if (element.matches && element.matches("pre code")) {
+        highlightPreCode(element);
+      } else {
+        highlightFormula(element);
+      }
+    });
   }
 
-  function scheduleProcess() {
-    if (scheduled) {
+  function scheduleInitialHighlight() {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(function () {
+        processAll();
+      }, { timeout: 700 });
       return;
     }
 
-    scheduled = true;
-    window.setTimeout(processAll, 140);
+    window.setTimeout(processAll, 80);
   }
 
   function init() {
+    if (!getPythonCandidates().length) {
+      return;
+    }
+
     ensureStylesheet(hljsCssUrl, "ml-notes-hljs-css");
     ensureInlineStyles();
 
@@ -155,23 +179,9 @@
         return;
       }
 
-      return Promise.all([
-        ensureScript(pythonJsUrl, null, "ml-notes-hljs-python"),
-        ensureScript(javascriptJsUrl, null, "ml-notes-hljs-javascript")
-      ]).then(function () {
-        processAll();
-        window.setTimeout(processAll, 500);
-        window.addEventListener("load", processAll);
-
-        var observer = new MutationObserver(function () {
-          scheduleProcess();
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
+      return ensureScript(pythonJsUrl, null, "ml-notes-hljs-python").then(function () {
+        scheduleInitialHighlight();
+        window.addEventListener("load", processAll, { once: true });
       });
     });
   }

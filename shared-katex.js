@@ -2,7 +2,6 @@
   var katexCssUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
   var katexJsUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
   var selector = ".formula, .inline-math, [data-render-tex]";
-  var scheduled = false;
 
   var unicodeMap = {
     "α": "\\alpha ",
@@ -194,6 +193,14 @@
     return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|numpy|function\s*\(|const\s+|let\s+|document\.|addEventListener|ctx\.|return\s+|;\s*$|#\s)/im.test(normalized);
   }
 
+  function getMathCandidates() {
+    return Array.prototype.filter.call(document.querySelectorAll(selector), function (element) {
+      var source = element.dataset.texSource || convertNode(element);
+      var signature = normalizeWhitespace(source);
+      return Boolean(signature) && !isCodeLike(signature, element);
+    });
+  }
+
   function convertSuperscripts(text) {
     var result = "";
     var i = 0;
@@ -322,24 +329,29 @@
   }
 
   function processAll() {
-    scheduled = false;
-
     if (!window.katex) {
       return;
     }
 
-    Array.prototype.forEach.call(document.querySelectorAll(selector), renderElement);
+    getMathCandidates().forEach(renderElement);
   }
 
-  function scheduleProcess() {
-    if (scheduled) {
+  function scheduleInitialRender() {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(function () {
+        processAll();
+      }, { timeout: 700 });
       return;
     }
-    scheduled = true;
-    window.setTimeout(processAll, 140);
+
+    window.setTimeout(processAll, 80);
   }
 
   function init() {
+    if (!getMathCandidates().length) {
+      return;
+    }
+
     ensureStylesheet(katexCssUrl, "ml-notes-katex-css");
     ensureInlineStyles();
 
@@ -348,19 +360,8 @@
         return;
       }
 
-      processAll();
-      window.setTimeout(processAll, 500);
-      window.addEventListener("load", processAll);
-
-      var observer = new MutationObserver(function () {
-        scheduleProcess();
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
+      scheduleInitialRender();
+      window.addEventListener("load", processAll, { once: true });
     });
   }
 
