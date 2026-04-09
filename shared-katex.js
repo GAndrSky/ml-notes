@@ -212,14 +212,14 @@
     }
 
     var hasCyrillic = /[А-Яа-яЁё]/.test(normalized);
+    if (hasCyrillic) {
+      return false;
+    }
+
     var strongMathPattern = /(=|\\(?:frac|sum|prod|sqrt|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|partial|nabla|mathbb|cdot|times|odot)|[∂∇ΣΠ√∞ℝℕℤ≤≥≈≠⊤ᵀ]|\b(?:argmax|argmin|softmax|sigmoid|tanh|relu|log|exp|sin|cos|Var|Cov|MSE|BCE|CE|KL)\b|(?:\bP\()|(?:\bN\()|(?:\bE\[)|[A-Za-z0-9)\]}]\s*[/+*=<>-]\s*[A-Za-z0-9({\[]|[A-Za-z]\s*(?:\^|_)\s*[A-Za-z0-9])/i;
 
     if (strongMathPattern.test(normalized)) {
       return true;
-    }
-
-    if (hasCyrillic) {
-      return false;
     }
 
     return /(?:\^|_|\{|\}|\[|\]|\(|\)|\d)/.test(normalized) && /[A-Za-z]/.test(normalized);
