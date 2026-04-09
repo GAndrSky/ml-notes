@@ -149,9 +149,10 @@
     var style = document.createElement("style");
     style.id = "ml-notes-katex-overrides";
     style.textContent =
-      ".formula[data-katex-rendered='1'] .katex-display{margin:0;}" +
-      ".formula[data-katex-rendered='1'] .katex{font-size:1.02em;}" +
-      ".inline-math[data-katex-rendered='1'] .katex{font-size:1em;}";
+      ".formula[data-katex-rendered='1'] .katex-display{margin:0;max-width:100%;}" +
+      ".formula[data-katex-rendered='1'] .katex{font-size:1em;min-width:max-content;}" +
+      ".inline-math[data-katex-rendered='1'] .katex{font-size:1em;}" +
+      "@media (max-width:700px){.formula[data-katex-rendered='1'] .katex{font-size:.92em;}}";
     document.head.appendChild(style);
   }
 
