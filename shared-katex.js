@@ -200,11 +200,36 @@
     return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|numpy|function\s*\(|const\s+|let\s+|document\.|addEventListener|ctx\.|return\s+|;\s*$|#\s)/im.test(normalized);
   }
 
+  function isLikelyMath(text, element) {
+    var normalized = normalizeWhitespace(text);
+
+    if (!normalized) {
+      return false;
+    }
+
+    if (element && element.hasAttribute && element.hasAttribute("data-render-tex")) {
+      return true;
+    }
+
+    var hasCyrillic = /[А-Яа-яЁё]/.test(normalized);
+    var strongMathPattern = /(=|\\(?:frac|sum|prod|sqrt|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|partial|nabla|mathbb|cdot|times|odot)|[∂∇ΣΠ√∞ℝℕℤ≤≥≈≠⊤ᵀ]|\b(?:argmax|argmin|softmax|sigmoid|tanh|relu|log|exp|sin|cos|Var|Cov|MSE|BCE|CE|KL)\b|(?:\bP\()|(?:\bN\()|(?:\bE\[)|[A-Za-z0-9)\]}]\s*[/+*=<>-]\s*[A-Za-z0-9({\[]|[A-Za-z]\s*(?:\^|_)\s*[A-Za-z0-9])/i;
+
+    if (strongMathPattern.test(normalized)) {
+      return true;
+    }
+
+    if (hasCyrillic) {
+      return false;
+    }
+
+    return /(?:\^|_|\{|\}|\[|\]|\(|\)|\d)/.test(normalized) && /[A-Za-z]/.test(normalized);
+  }
+
   function getMathCandidates() {
     return Array.prototype.filter.call(document.querySelectorAll(selector), function (element) {
       var source = element.dataset.texSource || convertNode(element);
       var signature = normalizeWhitespace(source);
-      return Boolean(signature) && !isCodeLike(signature, element);
+      return Boolean(signature) && !isCodeLike(signature, element) && isLikelyMath(signature, element);
     });
   }
 
@@ -308,7 +333,7 @@
     var source = element.dataset.texSource || convertNode(element);
     var signature = normalizeWhitespace(source);
 
-    if (!signature || isCodeLike(signature, element)) {
+    if (!signature || isCodeLike(signature, element) || !isLikelyMath(signature, element)) {
       return;
     }
 
