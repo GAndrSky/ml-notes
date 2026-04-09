@@ -405,6 +405,10 @@
       return;
     }
 
+    if (!element.dataset.texSource) {
+      element.dataset.texSource = source;
+    }
+
     element.innerHTML = renderMath(source);
     element.dataset.texRendered = "1";
   }

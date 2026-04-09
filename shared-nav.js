@@ -102,6 +102,32 @@
     });
   });
 
+  window.__mlNotesCourseData = {
+    rootUrl: rootUrl.href,
+    sections: sections.map(function (section) {
+      return {
+        id: section.id,
+        label: section.label,
+        title: section.title,
+        pages: section.pages.map(function (page) {
+          return {
+            path: page.path,
+            label: page.label
+          };
+        })
+      };
+    }),
+    pages: pages.map(function (page) {
+      return {
+        path: page.path,
+        label: page.label,
+        sectionId: page.sectionId,
+        sectionLabel: page.sectionLabel,
+        sectionTitle: page.sectionTitle
+      };
+    })
+  };
+
   const currentIndex = pages.findIndex(function (page) {
     return new URL(page.path, rootUrl).href === currentHref;
   });
@@ -292,6 +318,27 @@
     formulaExplainerScript.async = false;
     formulaExplainerScript.dataset.mlFormulaExplainerScript = "1";
     document.body.appendChild(formulaExplainerScript);
+  }
+  if (!document.querySelector('script[data-ml-search-script="1"]')) {
+    const searchScript = document.createElement("script");
+    searchScript.src = new URL("shared-search.js", rootUrl).href;
+    searchScript.async = false;
+    searchScript.dataset.mlSearchScript = "1";
+    document.body.appendChild(searchScript);
+  }
+  if (!document.querySelector('script[data-ml-katex-script="1"]')) {
+    const katexScript = document.createElement("script");
+    katexScript.src = new URL("shared-katex.js", rootUrl).href;
+    katexScript.async = false;
+    katexScript.dataset.mlKatexScript = "1";
+    document.body.appendChild(katexScript);
+  }
+  if (!document.querySelector('script[data-ml-code-highlight-script="1"]')) {
+    const codeHighlightScript = document.createElement("script");
+    codeHighlightScript.src = new URL("shared-code-highlight.js", rootUrl).href;
+    codeHighlightScript.async = false;
+    codeHighlightScript.dataset.mlCodeHighlightScript = "1";
+    document.body.appendChild(codeHighlightScript);
   }
 
   document.body.appendChild(bottomNav);
