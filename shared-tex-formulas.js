@@ -400,8 +400,14 @@
     }
 
     var source = (element.textContent || "").trim();
+    var hasExplicitTex = /\\[A-Za-z]+/.test(source) || (element.hasAttribute && element.hasAttribute("data-render-tex"));
+    var hasCyrillic = /[А-Яа-яЁё]/.test(source);
 
     if (!/[\\_^]/.test(source)) {
+      return;
+    }
+
+    if (hasCyrillic && !hasExplicitTex) {
       return;
     }
 
