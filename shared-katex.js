@@ -150,7 +150,7 @@
     style.id = "ml-notes-katex-overrides";
     style.textContent =
       ".formula[data-katex-rendered='1'] .katex-display{margin:0;max-width:100%;}" +
-      ".formula[data-katex-rendered='1'] .katex{font-size:1em;min-width:max-content;}" +
+      ".formula[data-katex-rendered='1'] .katex{font-size:1em;min-width:0;}" +
       ".inline-math[data-katex-rendered='1'] .katex{font-size:1em;}" +
       "@media (max-width:700px){.formula[data-katex-rendered='1'] .katex{font-size:.92em;}}";
     document.head.appendChild(style);
@@ -328,10 +328,43 @@
       });
       element.dataset.katexRendered = "1";
       element.dataset.katexSignature = signature;
+      fitRenderedFormula(element);
     } catch (error) {
       if (element.dataset.katexOriginalHtml) {
         element.innerHTML = element.dataset.katexOriginalHtml;
       }
+    }
+  }
+
+  function fitRenderedFormula(element) {
+    if (!element || !element.classList.contains("formula")) {
+      return;
+    }
+
+    var display = element.querySelector(".katex-display");
+    var katexNode = display && display.querySelector(".katex");
+
+    element.style.removeProperty("--ml-katex-fit-scale");
+
+    if (!display || !katexNode) {
+      return;
+    }
+
+    var availableWidth = Math.max(0, element.clientWidth - 8);
+    var naturalWidth = Math.ceil(katexNode.scrollWidth || 0);
+
+    if (!availableWidth || !naturalWidth || naturalWidth <= availableWidth) {
+      return;
+    }
+
+    var scale = availableWidth / naturalWidth;
+    var minScale = window.innerWidth <= 700 ? 0.72 : 0.8;
+
+    if (scale < 1) {
+      element.style.setProperty(
+        "--ml-katex-fit-scale",
+        Math.max(minScale, Math.min(1, scale)).toFixed(3)
+      );
     }
   }
 
@@ -341,6 +374,13 @@
     }
 
     getMathCandidates().forEach(renderElement);
+  }
+
+  function fitAllRenderedFormulas() {
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".formula[data-katex-rendered='1']"),
+      fitRenderedFormula
+    );
   }
 
   function scheduleInitialRender() {
@@ -369,6 +409,7 @@
 
       scheduleInitialRender();
       window.addEventListener("load", processAll, { once: true });
+      window.addEventListener("resize", fitAllRenderedFormulas);
     });
   }
 
