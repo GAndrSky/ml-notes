@@ -186,10 +186,35 @@
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  function hasPreformattedStyle(element) {
+    if (!element || !element.getAttribute) {
+      return false;
+    }
+
+    return /white-space\s*:\s*pre/i.test(element.getAttribute("style") || "");
+  }
+
+  function markCodeBlock(element) {
+    if (!element || !element.setAttribute) {
+      return;
+    }
+
+    element.setAttribute("data-no-tex", "");
+    element.setAttribute("data-code-block", "");
+  }
+
   function isCodeLike(text, element) {
     var normalized = normalizeWhitespace(text);
 
     if (!normalized || normalized.length < 3) {
+      return true;
+    }
+
+    if (element && element.hasAttribute && element.hasAttribute("data-code-block")) {
+      return true;
+    }
+
+    if (hasPreformattedStyle(element)) {
       return true;
     }
 
@@ -200,10 +225,32 @@
     return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|numpy|function\s*\(|const\s+|let\s+|document\.|addEventListener|ctx\.|return\s+|;\s*$|#\s)/im.test(normalized);
   }
 
+  function isNarrativeLike(text) {
+    var normalized = normalizeWhitespace(text);
+    var words = normalized.match(/[A-Za-z]{2,}/g) || [];
+    var lineCount = (String(text || "").match(/\n/g) || []).length + 1;
+    var hasArrow = /→|<-|->|⇒|⇢/.test(normalized);
+    var hasColon = /:/.test(normalized);
+
+    if (words.length >= 4) {
+      return true;
+    }
+
+    if ((hasArrow || hasColon) && words.length >= 2) {
+      return true;
+    }
+
+    return lineCount > 1 && words.length >= 3;
+  }
+
   function isLikelyMath(text, element) {
     var normalized = normalizeWhitespace(text);
 
     if (!normalized) {
+      return false;
+    }
+
+    if (element && element.hasAttribute && element.hasAttribute("data-no-tex")) {
       return false;
     }
 
@@ -217,8 +264,13 @@
     }
 
     var strongMathPattern = /(=|\\(?:frac|sum|prod|sqrt|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|partial|nabla|mathbb|cdot|times|odot)|[∂∇ΣΠ√∞ℝℕℤ≤≥≈≠⊤ᵀ]|\b(?:argmax|argmin|softmax|sigmoid|tanh|relu|log|exp|sin|cos|Var|Cov|MSE|BCE|CE|KL)\b|(?:\bP\()|(?:\bN\()|(?:\bE\[)|[A-Za-z0-9)\]}]\s*[/+*=<>-]\s*[A-Za-z0-9({\[]|[A-Za-z]\s*(?:\^|_)\s*[A-Za-z0-9])/i;
+    var hasStrongMath = strongMathPattern.test(normalized);
 
-    if (strongMathPattern.test(normalized)) {
+    if (isNarrativeLike(text) && !/\\(?:frac|sum|prod|sqrt|alpha|beta|gamma|delta|theta|lambda|mu|sigma|pi|partial|nabla|mathbb)/i.test(normalized)) {
+      return false;
+    }
+
+    if (hasStrongMath) {
       return true;
     }
 
@@ -229,7 +281,16 @@
     return Array.prototype.filter.call(document.querySelectorAll(selector), function (element) {
       var source = element.dataset.texSource || convertNode(element);
       var signature = normalizeWhitespace(source);
-      return Boolean(signature) && !isCodeLike(signature, element) && isLikelyMath(signature, element);
+      if (!signature) {
+        return false;
+      }
+
+      if (isCodeLike(signature, element)) {
+        markCodeBlock(element);
+        return false;
+      }
+
+      return isLikelyMath(signature, element);
     });
   }
 
@@ -333,7 +394,16 @@
     var source = element.dataset.texSource || convertNode(element);
     var signature = normalizeWhitespace(source);
 
-    if (!signature || isCodeLike(signature, element) || !isLikelyMath(signature, element)) {
+    if (!signature) {
+      return;
+    }
+
+    if (isCodeLike(signature, element)) {
+      markCodeBlock(element);
+      return;
+    }
+
+    if (!isLikelyMath(signature, element)) {
       return;
     }
 

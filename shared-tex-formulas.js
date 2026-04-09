@@ -98,6 +98,49 @@
     return temp.textContent || "";
   }
 
+  function normalizeWhitespace(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function hasPreformattedStyle(element) {
+    if (!element || !element.getAttribute) {
+      return false;
+    }
+
+    return /white-space\s*:\s*pre/i.test(element.getAttribute("style") || "");
+  }
+
+  function isCodeLike(text, element) {
+    var normalized = normalizeWhitespace(text);
+
+    if (!normalized || normalized.length < 3) {
+      return true;
+    }
+
+    if (element && element.hasAttribute && element.hasAttribute("data-code-block")) {
+      return true;
+    }
+
+    if (hasPreformattedStyle(element)) {
+      return true;
+    }
+
+    if (element && element.id && /code|snippet|source/i.test(element.id)) {
+      return true;
+    }
+
+    return /(import\s+\w+|from\s+\w+\s+import|torch\.|np\.|numpy|function\s*\(|const\s+|let\s+|document\.|addEventListener|ctx\.|return\s+|;\s*$|#\s)/im.test(normalized);
+  }
+
+  function markCodeBlock(element) {
+    if (!element || !element.setAttribute) {
+      return;
+    }
+
+    element.setAttribute("data-no-tex", "");
+    element.setAttribute("data-code-block", "");
+  }
+
   function accentText(text, accent) {
     var chars = Array.from((text || "").trim());
     var index = chars.length - 1;
@@ -399,15 +442,18 @@
       return;
     }
 
-    var source = (element.textContent || "").trim();
-    var hasExplicitTex = /\\[A-Za-z]+/.test(source) || (element.hasAttribute && element.hasAttribute("data-render-tex"));
-    var hasCyrillic = /[А-Яа-яЁё]/.test(source);
-
-    if (!/[\\_^]/.test(source)) {
+    if (element.hasAttribute && element.hasAttribute("data-no-tex")) {
       return;
     }
 
-    if (hasCyrillic && !hasExplicitTex) {
+    var source = (element.textContent || "").trim();
+
+    if (isCodeLike(source, element)) {
+      markCodeBlock(element);
+      return;
+    }
+
+    if (!/[\\_^]/.test(source)) {
       return;
     }
 
