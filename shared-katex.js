@@ -1,6 +1,12 @@
 (function () {
-  var katexCssUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css";
-  var katexJsUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js";
+  var rootUrl = new URL(
+    ".",
+    document.currentScript && document.currentScript.src
+      ? document.currentScript.src
+      : window.location.href
+  );
+  var katexCssUrl = new URL("vendor/katex/katex.min.css", rootUrl).href;
+  var katexJsUrl = new URL("vendor/katex/katex.min.js", rootUrl).href;
   var selector = ".formula, .inline-math, [data-render-tex]";
 
   var unicodeMap = {

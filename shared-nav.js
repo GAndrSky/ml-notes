@@ -142,24 +142,6 @@
   const pageHref = function (page) {
     return new URL(page.path, rootUrl).href;
   };
-  const ensureCdnConnectionHints = function () {
-    if (document.querySelector('link[data-ml-cdn-hint="jsdelivr-preconnect"]')) {
-      return;
-    }
-
-    const preconnect = document.createElement("link");
-    preconnect.rel = "preconnect";
-    preconnect.href = "https://cdn.jsdelivr.net";
-    preconnect.crossOrigin = "anonymous";
-    preconnect.dataset.mlCdnHint = "jsdelivr-preconnect";
-    document.head.appendChild(preconnect);
-
-    const dnsPrefetch = document.createElement("link");
-    dnsPrefetch.rel = "dns-prefetch";
-    dnsPrefetch.href = "https://cdn.jsdelivr.net";
-    dnsPrefetch.dataset.mlCdnHint = "jsdelivr-dns-prefetch";
-    document.head.appendChild(dnsPrefetch);
-  };
   const hasMathCandidates = Array.from(
     document.querySelectorAll(".formula, .inline-math, [data-render-tex]")
   ).some(function (element) {
@@ -340,7 +322,6 @@
     "</div>";
 
   document.body.insertBefore(topNav, document.body.firstChild);
-  ensureCdnConnectionHints();
 
   const bottomNav = document.createElement("nav");
   bottomNav.className = "ml-page-nav ml-page-nav--bottom";

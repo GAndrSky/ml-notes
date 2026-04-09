@@ -1,7 +1,13 @@
 (function () {
-  var hljsCssUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css";
-  var hljsJsUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js";
-  var pythonJsUrl = "https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js";
+  var rootUrl = new URL(
+    ".",
+    document.currentScript && document.currentScript.src
+      ? document.currentScript.src
+      : window.location.href
+  );
+  var hljsCssUrl = new URL("vendor/highlightjs/github-dark.min.css", rootUrl).href;
+  var hljsJsUrl = new URL("vendor/highlightjs/highlight.min.js", rootUrl).href;
+  var pythonJsUrl = new URL("vendor/highlightjs/python.min.js", rootUrl).href;
 
   function ensureStylesheet(href, id) {
     if (document.getElementById(id)) {
