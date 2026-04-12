@@ -694,6 +694,8 @@
     }
   );
 
+  var hasFormulaExplainCandidates = document.querySelector(".formula, .fm, .inline-math, [data-render-tex]");
+
   var hasCodeCandidates = Array.prototype.some.call(
     document.querySelectorAll("pre code, .formula[data-code-block], .formula"),
     function (element) {
@@ -712,6 +714,9 @@
   if (currentPage.sectionId !== "math") {
     ensureScript("shared-theory-notes.js", "data-ml-theory-script");
     ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
+  }
+
+  if (hasFormulaExplainCandidates) {
     ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script");
   }
 

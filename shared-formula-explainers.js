@@ -1,268 +1,360 @@
-﻿(function () {
-  const pagePath = window.__mlNotesCurrentPagePath;
+﻿(function(){
+  if(window.__mlNotesFormulaAnatomyInitialized){return;}
+  window.__mlNotesFormulaAnatomyInitialized=true;
+  var page=window.__mlNotesCurrentPagePath;
+  if(!page){return;}
 
-  if (!pagePath || pagePath.indexOf("01_math/") === 0) {
-    return;
+  var UI={
+    header:'Что означают символы',
+    intuition:'Интуиция',
+    analogy:'Аналогия',
+    summary:'🧠 Что это значит на практике'
+  };
+
+  function all(sel,root){return Array.prototype.slice.call((root||document).querySelectorAll(sel));}
+  function norm(v){return String(v||'').replace(/\u00A0/g,' ').replace(/\s+/g,' ').trim();}
+  function compact(v){return norm(v).toLowerCase().replace(/<[^>]+>/g,'').replace(/[‐‑–—−]/g,'-').replace(/\s+/g,'');}
+  function esc(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function src(el){return norm(el.getAttribute('data-tex-source')||el.getAttribute('data-formula-source')||el.textContent||'');}
+  function row(sym,name,desc){return {sym:sym,name:name,desc:desc};}
+  function spec(match,rows,intuition,analogy){return {match:match,rows:rows,intuition:intuition,analogy:analogy};}
+  function includesAll(text,parts){return parts.every(function(part){return text.indexOf(part)!==-1;});}
+  function cleanup(){all('.formula-anatomy[data-ml-generated="1"],details.intuition-block[data-ml-generated="1"]').forEach(function(el){el.remove();});}
+  function codeLike(text,el){
+    if(!text){return true;}
+    if(el.hasAttribute('data-code-block')||el.closest('pre,code,.code-block,.hljs')){return true;}
+    return /(import\s+\w+|from\s+\w+\s+import|def\s+\w+\(|class\s+\w+|return\s+|self\.|torch\.|np\.|numpy\.|plt\.|console\.log|function\s+\w+\(|const\s+|let\s+|=>|for\s*\(|while\s*\(|print\s*\(|optimizer\.|loss\.backward|model\.|nn\.)/i.test(text);
+  }
+  function simpleAssignment(text){return /^\s*[A-Za-zА-Яа-яЁё][A-Za-z0-9_]*(?:\[[^\]]+\])?\s*=\s*[^=]{1,18}\s*$/.test(text);}
+  function nonTrivial(text,el){
+    if(!text||text.length<8||codeLike(text,el)){return false;}
+    var signal=/[=∂∇Σ⊙⊤√α-ωΑ-Ω≤≥λβηθδσφΦ]/.test(text)||/softmax|sigmoid|relu|gelu|tanh|attention|jacobian|hessian|likelihood|posterior|entropy|dropout|conv|gradient|grad|loss|momentum|adam|bayes|kl|mse|bce/i.test(text);
+    if(!signal){return false;}
+    var ops=(text.match(/[=+\-/*^]|[←→·]/g)||[]).length;
+    return !(simpleAssignment(text)&&ops<2&&!/[∂∇Σ⊙⊤√]/.test(text));
+  }
+  function rowsHtml(rows){return rows.map(function(r){return '<div class="formula-anatomy__row"><span class="fa-sym">'+esc(r.sym)+'</span><span class="fa-name">'+esc(r.name)+'</span><span class="fa-desc">'+esc(r.desc)+'</span></div>';}).join('');}
+  function anatomyHtml(data){return '<div class="formula-anatomy" data-ml-generated="1"><div class="formula-anatomy__header">'+UI.header+'</div><div class="formula-anatomy__grid">'+rowsHtml(data.rows)+'</div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>'+UI.intuition+':</strong> '+esc(data.intuition)+'</div><div class="formula-anatomy__analogy"><strong>'+UI.analogy+':</strong> '+esc(data.analogy)+'</div></div>';}
+  function detailsHtml(text){return '<details class="intuition-block" data-ml-generated="1"><summary>'+UI.summary+'</summary><div class="intuition-content">'+esc(text)+'</div></details>';}
+
+  var SPECS={
+    '01_math/02_calculus.html':[
+      spec(['dz/dx','dz/dy','dy/dx'],[
+        row('dz','дифференциал z','Бесконечно малое изменение выхода z.'),
+        row('dx','дифференциал x','Бесконечно малое изменение входа x.'),
+        row('dy','дифференциал y','Изменение промежуточной переменной y.'),
+        row('·','умножение','Производные перемножаются по цепочке.')
+      ],'Скорость изменения z по x равна скорости z по y, умноженной на скорость y по x.','Как пересчитывать валюту через промежуточную валюту.'),
+      spec(['θ←θ','η','∇l'],[
+        row('θ','параметры','Все веса и bias модели, которые мы обновляем.'),
+        row('←','присваивание','Заменяем старое значение параметров новым.'),
+        row('η','learning rate','Размер шага; типично 1e-4..1e-2.'),
+        row('∇L(θ)','градиент loss','Направление роста ошибки по параметрам.'),
+        row('−','минус','Идём против направления роста ошибки.')
+      ],'Формула делает маленький шаг в сторону меньшей ошибки.','Как спускаться с горы, проверяя куда склон уходит вниз.'),
+      spec(['j=∂y/∂x'],[
+        row('J','матрица Якоби','Все частные производные выходов по входам.'),
+        row('∂yᵢ','i-й выход','Одна компонента вектора выхода.'),
+        row('∂xⱼ','j-й вход','Одна компонента входного вектора.'),
+        row('Jᵢⱼ','элемент матрицы','Насколько i-й выход чувствителен к j-му входу.')
+      ],'Это таблица чувствительностей всех выходов ко всем входам.','Как таблица влияния ингредиентов на свойства блюда.')
+    ],
+    '01_math/03_probability_theory.html':[
+      spec(['p(θ|x)=','p(x|θ)','p(θ)','/p(x)'],[
+        row('P(θ|X)','posterior','Вероятность параметров после наблюдения данных.'),
+        row('P(X|θ)','likelihood','Насколько данные согласуются с параметрами.'),
+        row('P(θ)','prior','Наше мнение о параметрах до данных.'),
+        row('P(X)','evidence','Нормировочная константа, чтобы всё сошлось в вероятность.')
+      ],'Формула обновляет наши убеждения о модели после новых наблюдений.','Как врач уточняет диагноз после анализа крови.'),
+      spec(['l(θ)=','logp(x'],[
+        row('L(θ)','log-likelihood','Сумма логарифмов правдоподобия по всем объектам.'),
+        row('Σᵢ','сумма','Собираем вклад каждого примера.'),
+        row('log','логарифм','Превращает произведение вероятностей в сумму и stabilнее считает.'),
+        row('P(xᵢ|θ)','вероятность примера','Насколько модель объясняет конкретный объект xᵢ.')
+      ],'Мы ищем параметры, при которых данные выглядят наиболее правдоподобно.','Как крутить ручку радио, пока сигнал не станет чище.')
+    ],
+    '01_math/04_information_theory.html':[
+      spec(['h(p)=','p(x)logp(x)'],[
+        row('H(p)','энтропия','Мера неопределённости распределения p.'),
+        row('−','минус','Делает итог положительным, потому что log вероятности отрицателен.'),
+        row('p(x)','вероятность события','Числа от 0 до 1, сумма по всем событиям равна 1.'),
+        row('log','логарифм','В log₂ даёт информацию в битах.'),
+        row('Σ','сумма','Учитываем все возможные исходы.')
+      ],'Чем более равномерно распределены события, тем выше неопределённость.','Честная монета удивляет сильнее, чем почти всегда одинаковая.'),
+      spec(['kl(','p(x)/q(x)'],[
+        row('KL','KL-дивергенция','Мера того, насколько q расходится с истинным p.'),
+        row('p(x)','истинное распределение','Как события устроены в реальности.'),
+        row('q(x)','приближение','Как модель аппроксимирует реальность.'),
+        row('log(p/q)','лог отношения','Показывает, где q особенно плохо описывает p.')
+      ],'Формула измеряет цену замены истинного распределения приближённым.','Как сравнивать карту города с реальными улицами.')
+    ],
+    '03_neural_basics/01_perceptron_and_neuron.html':[
+      spec(['z=w⊤x+b'],[
+        row('z','pre-activation','Сырой сигнал нейрона до активации.'),
+        row('w','веса','Важности признаков; обучаемые параметры.'),
+        row('⊤','транспонирование','Нужно, чтобы вычислить скалярное произведение w и x.'),
+        row('x','входной вектор','Признаки объекта или токена.'),
+        row('b','bias','Сдвигает границу решения; тоже обучается.')
+      ],'Нейрон собирает взвешенную сумму признаков и добавляет смещение.','Как финальная оценка складывается из нескольких критериев и личной поправки.')
+    ],
+    '03_neural_basics/02_activation_functions.html':[
+      spec(['relu(z)=max(0,z)'],[
+        row('z','pre-activation','Входное число до нелинейности.'),
+        row('max','максимум','Берём большее из нуля и z.'),
+        row('0','порог','Всё отрицательное обнуляется.')
+      ],'ReLU пропускает положительный сигнал и гасит отрицательный.','Как диод, который пропускает ток только в одну сторону.'),
+      spec(['σ(z)=1/(1+e'],[
+        row('σ','sigmoid','Сжимает любое число в диапазон от 0 до 1.'),
+        row('e','число Эйлера','Основание натурального логарифма.'),
+        row('−z','минус z','При большом z экспонента уходит к нулю и выход стремится к 1.'),
+        row('1+e^{-z}','знаменатель','Нормирует выход функции.')
+      ],'Sigmoid плавно переводит произвольный сигнал в вероятность.','Как диммер света с плавным переходом от тёмного к яркому.'),
+      spec(['gelu','φ(z)'],[
+        row('z','вход','Сырой сигнал нейрона.'),
+        row('Φ(z)','CDF N(0,1)','Вероятность того, что нормальная величина не превысит z.'),
+        row('·','умножение','Масштабируем z на вероятность того, что сигнал стоит пропустить.')
+      ],'GELU не жёстко обрубает отрицательное, а плавно глушит слабый сигнал.','Как ворота, которые открываются пропорционально уверенности в сигнале.')
+    ],
+    '03_neural_basics/04_loss_functions.html':[
+      spec(['mse=','(1/n)','ŷ'],[
+        row('n','число объектов','Размер батча или датасета.'),
+        row('yᵢ','истинное значение','Правильный ответ для i-го примера.'),
+        row('ŷᵢ','предсказание','Выход модели для i-го объекта.'),
+        row('(y−ŷ)²','квадрат ошибки','Сильно штрафует большие промахи.'),
+        row('Σ/n','среднее','Усредняем ошибку по всем объектам.')
+      ],'MSE измеряет средний квадратичный промах модели.','Как считать среднюю силу промаха у стрелка, где крупные ошибки особенно заметны.'),
+      spec(['bce=','logŷ','1−ŷ'],[
+        row('y','истинная метка','В бинарной задаче это 0 или 1.'),
+        row('ŷ','предсказанная вероятность','Число от 0 до 1 после sigmoid.'),
+        row('log ŷ','лог вероятности','Сильно штрафует уверенную ошибку.'),
+        row('1−y','дополнение','Активирует вклад класса 0.'),
+        row('−','общий минус','Делает loss положительным.')
+      ],'BCE наказывает модель за уверенные неправильные вероятности.','Как экзамен, где особенно больно ошибиться, если был полностью уверен.')
+    ],
+    '04_training/01_backpropagation.html':[
+      spec(['δ','∂l/∂a','⊙'],[
+        row('δˡ','локальный градиент','Показывает, как loss меняется от pre-activation слоя l.'),
+        row('∂L/∂Aˡ','сигнал сверху','Градиент, пришедший от следующего слоя.'),
+        row('⊙','поэлементное умножение','Каждый элемент фильтруется отдельно.'),
+        row('f′(Zˡ)','производная активации','Показывает, насколько активация пропускает градиент.')
+      ],'Слой берёт сигнал ошибки сверху и фильтрует его своей производной.','Как испорченный телефон наоборот, где каждый участник либо пропускает, либо глушит сигнал.'),
+      spec(['∂l/∂w','δ','a'],[
+        row('∂L/∂Wˡ','градиент по весам','Обновление для каждого веса слоя.'),
+        row('(δˡ)⊤','транспонированный δ','Нужен для правильной формы матричного произведения.'),
+        row('Aˡ⁻¹','активации предыдущего слоя','Это входы, которые вызвали текущую ошибку.'),
+        row('·','матричное умножение','Собирает вклад каждого входа и каждого выходного нейрона.')
+      ],'Градиент веса тем больше, чем активнее был вход и чем сильнее ошибся выход.','Как делить вину между соединениями по тому, насколько они участвовали в ошибке.')
+    ],
+    '04_training/02_optimizers.html':[
+      spec(['v','β','(1−β)','g'],[
+        row('vₜ','velocity','Накопленный импульс из прошлых градиентов.'),
+        row('β','коэффициент инерции','Сколько памяти оставляем от прошлой скорости; часто 0.9.'),
+        row('vₜ₋₁','прошлая скорость','То, что уже накопили раньше.'),
+        row('(1−β)','доля нового','Какой вклад даём текущему градиенту.'),
+        row('gₜ','текущий градиент','Свежий совет от loss на шаге t.')
+      ],'Momentum сглаживает шум и помогает дольше двигаться в устойчивом направлении.','Как тяжёлый маховик: его трудно резко развернуть, но он хорошо держит курс.')
+    ],
+    '04_training/03_adam_adamw_lion.html':[
+      spec(['m','β₁','g'],[
+        row('mₜ','первый момент','EMA градиентов — среднее направление спуска.'),
+        row('β₁','decay rate','Насколько сильно помним прошлые градиенты; обычно 0.9.'),
+        row('mₜ₋₁','прошлый момент','История направления до текущего шага.'),
+        row('gₜ','текущий градиент','Градиент на шаге t.')
+      ],'Первый момент делает направление спуска более стабильным и менее шумным.','Как рейтинг ресторана, где новые отзывы важнее, но история тоже влияет.'),
+      spec(['v','β₂','g','²'],[
+        row('vₜ','второй момент','EMA квадратов градиентов — мера шумности параметра.'),
+        row('β₂','decay rate','Сколько истории шума мы сохраняем; обычно 0.999.'),
+        row('vₜ₋₁','прошлый второй момент','Накопленная статистика разброса градиента.'),
+        row('gₜ²','квадрат градиента','Большой квадрат означает нестабильный или активный параметр.')
+      ],'Второй момент запоминает, насколько дёрганым был параметр, и помогает адаптировать шаг.','Как страховка для водителя: кто ездит нервнее, тому урезают свободу манёвра.'),
+      spec(['m̂','1−β₁'],[
+        row('m̂ₜ','скорректированный момент','Исправленная оценка среднего направления.'),
+        row('mₜ','сырой момент','В начале обучения он занижен из-за старта с нуля.'),
+        row('β₁ᵗ','степень β₁','Показывает, насколько ещё силён эффект холодного старта.'),
+        row('1−β₁ᵗ','нормировочный делитель','Компенсирует недооценку момента в начале.')
+      ],'Bias correction делает первые шаги Adam честнее и стабильнее.','Как поправка на малую выборку, когда отзывов о новом ресторане ещё слишком мало.'),
+      spec(['θ','η','m̂','√v̂'],[
+        row('θₜ₊₁','новые параметры','Весы модели после шага оптимизатора.'),
+        row('η','learning rate','Базовый размер шага.'),
+        row('m̂ₜ','направление','Куда выгодно двигаться по среднему градиенту.'),
+        row('√v̂ₜ','адаптивный делитель','Урезает шаг для шумных параметров.'),
+        row('ε','эпсилон','Защита от деления на ноль.')
+      ],'Adam идёт туда, куда в среднем полезно, и осторожничает там, где градиент шумный.','Как водитель, который едет быстрее на ровной дороге и замедляется на тряске.')
+    ],
+    '04_training/04_regularization.html':[
+      spec(['l_reg','λ','w'],[
+        row('L_reg','регуляризованный loss','Итоговая функция ошибки, которую минимизируем.'),
+        row('L','исходный loss','Ошибка предсказания без штрафа за сложность.'),
+        row('λ','коэффициент регуляризации','Сила штрафа за большие веса; часто 1e-4..1e-2.'),
+        row('Σ wᵢ²','сумма квадратов весов','Мера сложности модели.')
+      ],'L2 штрафует модель за слишком большие веса и подталкивает к более простым решениям.','Как правило Оккама: из двух объяснений выбираем более простое.'),
+      spec(['ỹ=y/(1−p)'],[
+        row('ỹ','масштабированный выход','Выход после dropout scaling.'),
+        row('y','исходный выход','Сигнал нейрона до масштабирования.'),
+        row('1−p','доля активных нейронов','Сколько нейронов осталось после dropout.'),
+        row('p','вероятность отключения','Часто 0.1..0.5.')
+      ],'После dropout мы масштабируем выход, чтобы средний уровень сигнала не проседал.','Как перераспределить работу в команде, если часть людей сегодня отсутствует.')
+    ],
+    '05_architectures/01_cnn_convolutional_networks.html':[
+      spec(['(f*g)','g[n−k]'],[
+        row('f * g','свёртка','Операция скользящего фильтра.'),
+        row('f[k]','ядро','Обучаемый фильтр, ищущий паттерн.'),
+        row('g[n−k]','кусок входа','Локальный фрагмент изображения или сигнала.'),
+        row('Σₖ','сумма по позициям','Складываем вклад всех позиций внутри окна.'),
+        row('n','позиция выхода','Точка, где считаем текущий отклик фильтра.')
+      ],'Свёртка измеряет, насколько локальный кусок входа похож на шаблон ядра.','Как вести лупу по тексту и в каждой позиции искать знакомый узор.')
+    ],
+    '05_architectures/03_transformer_attention.html':[
+      spec(['attention(q,k,v)','softmax','√d'],[
+        row('Q','Query','Что ищет текущий токен.'),
+        row('K','Key','Как каждый токен описан для сопоставления.'),
+        row('V','Value','Какую информацию токен может вернуть.'),
+        row('QKᵀ','матрица сходства','Насколько каждый запрос похож на каждый ключ.'),
+        row('√dₖ','нормировка','Стабилизирует масштаб scores перед softmax.'),
+        row('softmax','веса внимания','Превращает scores в вероятности по строке.'),
+        row('·V','взвешенная сумма','Собирает смесь полезной информации из value.')
+      ],'Каждый токен оценивает, у кого из остальных стоит взять информацию, и собирает её с соответствующими весами.','Как поисковый запрос, который сравнивается с заголовками страниц и забирает смысл самых подходящих результатов.')
+    ],
+    '05_architectures/02_rnn_lstm.html':[
+      spec(['h','tanh','wₕ','x'],[
+        row('hₜ','hidden state','Текущая память RNN о прошлом.'),
+        row('Wₕ','рекуррентная матрица','Связь памяти с самой собой.'),
+        row('hₜ₋₁','прошлая память','Состояние, пришедшее с предыдущего шага.'),
+        row('Wₓ','матрица входа','Связывает новый вход с памятью.'),
+        row('xₜ','текущий вход','Токен или вектор на шаге t.'),
+        row('tanh','активация','Сжимает сигнал в диапазон от −1 до 1.')
+      ],'Новая память RNN — это смесь прошлого контекста и текущего входа.','Как общее впечатление от книги, которое меняется после каждой новой главы.'),
+      spec(['c','⊙','f','i','c̃'],[
+        row('cₜ','cell state','Долгосрочная память LSTM.'),
+        row('fₜ','forget gate','Решает, что забыть из старой памяти.'),
+        row('⊙','Hadamard product','Поэлементно применяет gate к памяти.'),
+        row('cₜ₋₁','старая память','То, что LSTM несёт из прошлого.'),
+        row('iₜ','input gate','Решает, сколько нового записать.'),
+        row('c̃ₜ','кандидат','Новая информация от текущего входа.')
+      ],'LSTM одновременно стирает ненужное из памяти и дозаписывает новое важное.','Как вести блокнот: что-то зачёркивать, а что-то аккуратно дописывать.')
+    ]
+  };
+
+  var BLOCKS={
+    '03_neural_basics/02_activation_functions.html':[
+      {match:['vanishing gradient'],text:'Vanishing gradient на практике означает, что ранние слои почти перестают учиться, потому что сигнал ошибки затухает на пути назад. Поэтому глубоким сетям так важны ReLU-подобные активации, нормировки и хорошая инициализация. Чем глубже сеть, тем больнее любая функция, которая слишком сильно сжимает производную.'}
+    ],
+    '04_training/03_adam_adamw_lion.html':[
+      {match:['bias correction'],text:'Bias correction нужен потому, что в самом начале EMA ещё не успевает разогреться и систематически занижает момент. Поправка делает первые шаги Adam честнее: без неё оптимизатор был бы слишком осторожным в первые итерации. Это особенно важно, когда обучение чувствительно к старту.'},
+      {match:['adamw','weight decay'],text:'Decoupled weight decay в AdamW отделяет регуляризацию от адаптивного шага. Благодаря этому штраф за большие веса работает одинаково по смыслу для всех параметров, а не искажается из-за локального шума градиента. На практике это даёт более предсказуемую и стабильную регуляризацию.'}
+    ],
+    '04_training/01_backpropagation.html':[
+      {match:['jacobian'],text:'Jacobian и VJP нужны не для красоты записи, а для быстрой передачи сигнала ошибки назад по вычислительному графу. Мы не строим огромные матрицы целиком, а считаем ровно те произведения, которые нужны для обратного хода. За счёт этого backprop остаётся практически применимым даже в очень больших сетях.'}
+    ],
+    '05_architectures/03_transformer_attention.html':[
+      {match:['почему делим на','√d'],text:'Деление на √dₖ не даёт score в attention стать слишком большими по модулю. Без этой нормировки softmax быстро насыщается, веса внимания становятся почти one-hot, и модель теряет гибкость. Нормировка сохраняет полезный диапазон для обучения.'}
+    ],
+    '05_architectures/02_rnn_lstm.html':[
+      {match:['cell state'],text:'Cell state даёт LSTM длинную линию памяти, по которой сигнал может пройти через много шагов почти без потерь. Forget gate вычищает ненужное, input gate дозирует новое, и за счёт этого сеть лучше держит долгий контекст. Именно это и отличает LSTM от простой RNN.'}
+    ]
+  };
+
+  var TOKENS=[
+    {tokens:['θ'],row:row('θ','параметры','Обучаемые веса и другие настраиваемые величины.')},
+    {tokens:['η'],row:row('η','learning rate','Размер шага оптимизации.')},
+    {tokens:['λ'],row:row('λ','коэффициент штрафа','Сила регуляризации или дополнительного ограничения.')},
+    {tokens:['∇','grad'],row:row('∇','градиент','Направление роста функции по параметрам.')},
+    {tokens:['∂'],row:row('∂','частная производная','Показывает чувствительность выхода к одному аргументу.')},
+    {tokens:['Σ','sum'],row:row('Σ','сумма','Собирает вклад многих элементов в один итог.')},
+    {tokens:['⊤'],row:row('⊤','транспонирование','Меняет форму вектора или матрицы для умножения.')},
+    {tokens:['⊙'],row:row('⊙','Hadamard product','Поэлементное умножение без смешивания координат.')},
+    {tokens:['√'],row:row('√','корень','Мягко уменьшает масштаб величины.')},
+    {tokens:['softmax'],row:row('softmax','нормировка в вероятности','Преобразует scores в веса с суммой 1.')},
+    {tokens:['log'],row:row('log','логарифм','Сжимает диапазон и превращает произведения в суммы.')},
+    {tokens:['q'],row:row('Q','Query','Что текущий элемент ищет у других.')},
+    {tokens:['k'],row:row('K','Key','Как элемент описан для сопоставления.')},
+    {tokens:['v'],row:row('V','Value','Какую информацию элемент может передать.')},
+    {tokens:['w'],row:row('w','веса','Важности признаков или связей.')},
+    {tokens:['x'],row:row('x','вход','То, что формула берёт на вход.')},
+    {tokens:['y','ŷ'],row:row('y / ŷ','истина и прогноз','Сравнение правильного ответа и предсказания модели.')},
+    {tokens:['b'],row:row('b','bias','Смещение, меняющее порог или сдвиг решения.')},
+    {tokens:['p('],row:row('P(·)','вероятность','Насколько событие или гипотеза согласуется с данными.')}
+  ];
+
+  function manualSpec(text){
+    var list=SPECS[page]||[];
+    for(var i=0;i<list.length;i+=1){if(includesAll(text,list[i].match)){return list[i];}}
+    return null;
+  }
+  function genericCategory(text){
+    if(/attention|softmax|query|key|value|qk/i.test(text)){return 'attention';}
+    if(/adam|momentum|optimizer|gradient|grad|θ|η|β|ε/i.test(text)){return 'optim';}
+    if(/posterior|prior|likelihood|entropy|kl|bayes|p\(/i.test(text)){return 'prob';}
+    if(/relu|sigmoid|gelu|tanh/i.test(text)){return 'activation';}
+    if(/mse|bce|cross-entropy|loss|triplet|nt-xent/i.test(text)){return 'loss';}
+    if(/conv|kernel|feature map|\*/i.test(text)){return 'cnn';}
+    if(/rnn|lstm|gru|hidden state|cell state|h_t|c_t/i.test(text)){return 'rnn';}
+    if(/jacobian|hessian|matrix|vector|⊤|∂/i.test(text)){return 'linear';}
+    return 'general';
+  }
+  function genericCopy(kind){
+    if(kind==='attention'){return {intuition:'Формула показывает, как элемент выбирает, от кого собрать полезную информацию.',analogy:'Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.'};}
+    if(kind==='optim'){return {intuition:'Формула описывает, как параметры делают шаг в сторону меньшей ошибки.',analogy:'Как спускаться с горы, постоянно корректируя длину и направление шага.'};}
+    if(kind==='prob'){return {intuition:'Формула оценивает, насколько данные согласуются с гипотезой или распределением.',analogy:'Как обновлять мнение о ситуации по новым фактам и наблюдениям.'};}
+    if(kind==='activation'){return {intuition:'Формула решает, какую часть сигнала пропустить дальше, а какую ослабить.',analogy:'Как клапан или фильтр, который пропускает только подходящий поток.'};}
+    if(kind==='loss'){return {intuition:'Формула измеряет, насколько прогноз модели далёк от правильного ответа.',analogy:'Как шкала штрафа за промах, где разные ошибки наказываются по-разному.'};}
+    if(kind==='cnn'){return {intuition:'Формула ищет знакомый локальный паттерн во входе.',analogy:'Как вести лупу по изображению и искать совпадение с маленьким шаблоном.'};}
+    if(kind==='rnn'){return {intuition:'Формула обновляет память о прошлом с учётом нового входа.',analogy:'Как держать в голове сюжет книги и дополнять его новой главой.'};}
+    if(kind==='linear'){return {intuition:'Формула собирает в одной записи влияния входов на итоговый результат.',analogy:'Как таблица влияния, где видно, какой фактор за что отвечает.'};}
+    return {intuition:'Формула связывает несколько величин и показывает, как они влияют друг на друга.',analogy:'Как панель с несколькими ручками, каждая из которых меняет общий результат.'};
+  }
+  function genericRows(text){
+    var low=text.toLowerCase(),rows=[];
+    TOKENS.forEach(function(entry){
+      var hit=entry.tokens.some(function(token){return low.indexOf(String(token).toLowerCase())!==-1;});
+      if(hit&&!rows.some(function(existing){return existing.sym===entry.row.sym;})){rows.push(entry.row);}
+    });
+    if(!rows.length){
+      rows.push(row('=','связь','Показывает, как одна величина выражается через другие.'));
+      rows.push(row('x','вход','То, что формула использует на входе.'));
+      rows.push(row('y','выход','То, что получается на выходе формулы.'));
+    }
+    return rows.slice(0,6);
+  }
+  function genericSpec(text){
+    var copy=genericCopy(genericCategory(text));
+    return {rows:genericRows(text),intuition:copy.intuition,analogy:copy.analogy};
+  }
+  function targetBlock(match){
+    var blocks=all('.card,.tab-content,section,article,.intuition,.warn,.info');
+    for(var i=0;i<blocks.length;i+=1){
+      var text=compact(blocks[i].textContent||'');
+      if(includesAll(text,match.map(function(part){return compact(part);})))return blocks[i];
+    }
+    return null;
+  }
+  function renderFormulas(){
+    all('.formula,.fm,[data-render-tex]').forEach(function(el){
+      if(el.hasAttribute('data-no-formula-anatomy')){return;}
+      if(el.closest('.formula-anatomy')){return;}
+      var text=src(el);
+      if(!nonTrivial(text,el)){return;}
+      var manual=manualSpec(compact(text));
+      var payload=manual||genericSpec(text);
+      el.insertAdjacentHTML('afterend',anatomyHtml(payload));
+    });
+  }
+  function renderIntuitionBlocks(){
+    (BLOCKS[page]||[]).forEach(function(entry){
+      var block=targetBlock(entry.match);
+      if(block){block.insertAdjacentHTML('afterend',detailsHtml(entry.text));}
+    });
   }
 
-  const pageExamples = {
-    "02_classic_ml/03_linear_regression.html": "Например, цена квартиры может складываться из площади, района и возраста дома с разными весами.",
-    "02_classic_ml/05_logistic_regression.html": "Например, спам-фильтр сначала считает score, а потом переводит его в вероятность спама.",
-    "02_classic_ml/08_distance_based_models.html": "Например, новый объект получает ответ от ближайших похожих примеров, а не от общей глобальной формулы.",
-    "02_classic_ml/10_decision_trees.html": "Например, дерево задаёт цепочку вопросов вида 'доход выше порога?' и шаг за шагом сужает решение.",
-    "02_classic_ml/11_bagging_random_forest.html": "Например, forest усредняет решения множества деревьев и сглаживает случайные промахи одного дерева.",
-    "02_classic_ml/12_boosting.html": "Например, boosting шаг за шагом добавляет поправки к ошибкам предыдущей версии модели.",
-    "02_classic_ml/13_support_vector_machines.html": "Например, SVM ищет границу с максимально широким зазором между двумя классами.",
-    "02_classic_ml/14_clustering.html": "Например, точки группируются не по меткам, а по выбранному представлению близости.",
-    "02_classic_ml/15_dimensionality_reduction.html": "Например, PCA пытается описать много признаков несколькими главными направлениями.",
-    "03_neural_basics/01_perceptron_and_neuron.html": "Например, один нейрон может срабатывать, когда несколько входов вместе дают достаточно сильный сигнал.",
-    "03_neural_basics/02_activation_functions.html": "Например, ReLU пропускает положительную часть сигнала и обнуляет отрицательную.",
-    "03_neural_basics/03_forward_pass.html": "Например, каждый следующий слой получает уже преобразованное представление, а не исходные признаки напрямую.",
-    "03_neural_basics/04_loss_functions.html": "Например, loss растёт, когда модель ошибается сильнее или делает это с излишней уверенностью.",
-    "04_training/01_backpropagation.html": "Например, backprop проходит от ошибки назад и вычисляет, как каждый параметр повлиял на итоговый промах.",
-    "04_training/02_optimizers.html": "Например, optimizer решает, насколько большим шагом менять параметры после вычисления градиента.",
-    "04_training/03_adam_adamw_lion.html": "Например, Adam учитывает историю градиентов и потому двигается иначе, чем обычный SGD.",
-    "04_training/04_regularization.html": "Например, регуляризация мешает сети слишком точно подстроиться под шум обучающей выборки.",
-    "05_architectures/01_cnn_convolutional_networks.html": "Например, один и тот же фильтр ищет границы или текстуры по всему изображению.",
-    "05_architectures/02_rnn_lstm.html": "Например, скрытое состояние несёт дальше информацию о предыдущих токенах последовательности.",
-    "05_architectures/03_transformer_attention.html": "Например, токен может смотреть на релевантные ему слова вне зависимости от расстояния до них.",
-    "05_architectures/04_transformer_architecture.html": "Например, блок transformer сначала смешивает токены через attention, а потом перерабатывает каждый токен отдельно.",
-    "05_architectures/05_resnet_normalization.html": "Например, residual-путь позволяет сети доучивать поправку, а не переписывать весь сигнал с нуля."
-  };
+  var queued=false;
+  function run(){queued=false;cleanup();renderFormulas();renderIntuitionBlocks();}
+  function queue(){if(queued){return;}queued=true;window.requestAnimationFrame(run);}
 
-  const escapeHtml = function (value) {
-    return value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  };
-
-  const normalize = function (value) {
-    return value.replace(/\s+/g, " ").trim();
-  };
-
-  const findContextHeading = function (element) {
-    let node = element.previousElementSibling;
-
-    while (node) {
-      if (/^H[123]$/.test(node.tagName)) {
-        return normalize(node.textContent || "");
-      }
-
-      const nestedHeading = node.querySelector && node.querySelector("h2, h3");
-      if (nestedHeading) {
-        return normalize(nestedHeading.textContent || "");
-      }
-
-      node = node.previousElementSibling;
-    }
-
-    return "";
-  };
-
-  const isCodeLike = function (text, element) {
-    if (!text || text.length < 12) {
-      return true;
-    }
-
-    if (element.id && /code|snippet|source/i.test(element.id)) {
-      return true;
-    }
-
-    return /(function\s*\(|const\s+|let\s+|var\s+|document\.|addEventListener|ctx\.|=>|;\s*$)/m.test(text);
-  };
-
-  const detectCategory = function (text) {
-    const lower = text.toLowerCase();
-
-    if (/[∂δ∇]|d[a-z]\/d[a-z]|gradient|jacobian|hessian|backprop|chain rule/.test(lower) || /∂|δ|∇|Jᵀ|J\^T/.test(text)) {
-      return "gradient";
-    }
-
-    if (/sigmoid|softmax|logit|odds|likelihood|bayes|posterior/.test(lower) || /\bp\(|\bP\(/.test(text)) {
-      return "probability";
-    }
-
-    if (/loss|cross-entropy|mse|mae|rmse|hinge|entropy|gini|r²|r\^2/.test(lower) || /^L\s*=|^J\s*=/.test(normalize(text))) {
-      return "loss";
-    }
-
-    if (/attention|query|key|value|qk|softmax\(qk/.test(lower) || /QK|Q·K|QK\^T/.test(text)) {
-      return "attention";
-    }
-
-    if (/lstm|rnn|gate|h_t|c_t/.test(lower) || /hₜ|cₜ/.test(text)) {
-      return "sequence";
-    }
-
-    if (/gini|information gain|split|impurity|tree/.test(lower)) {
-      return "tree";
-    }
-
-    if (/distance|nearest|knn|k-nn/.test(lower) || /‖|sqrt|√/.test(text)) {
-      return "distance";
-    }
-
-    if (/sum|mean|avg|sigma|cov|svd|eigen|principal|variance/.test(lower) || /Σ|μ|σ/.test(text)) {
-      return "statistics";
-    }
-
-    if (/conv|kernel|stride|padding|feature map/.test(lower)) {
-      return "convolution";
-    }
-
-    if (/y_hat|ŷ|w|β|theta|bias|x·w|x @ w|z =|a =/.test(lower) || /ŷ|θ|β/.test(text)) {
-      return "linear";
-    }
-
-    return "generic";
-  };
-
-  const buildExplanation = function (text, heading) {
-    const category = detectCategory(text);
-    const compact = normalize(text);
-    const example = pageExamples[pagePath] || "Смотри на формулу как на способ перевести идею модели в точную вычислимую запись.";
-
-    const readingParts = [];
-    if (compact.indexOf("=") !== -1) {
-      readingParts.push("Слева обычно стоит то, что мы хотим получить или оценить, справа — из каких частей это вычисляется.");
-    }
-    if (/Σ|sum/i.test(text)) {
-      readingParts.push("Знак суммы означает, что итог складывается из нескольких вкладов или по объектам, или по признакам.");
-    }
-    if (/⊙/.test(text)) {
-      readingParts.push("Символ ⊙ читается как поэлементное умножение: значения умножаются покомпонентно, без смешивания координат.");
-    }
-    if (/log/i.test(text)) {
-      readingParts.push("Логарифм здесь обычно либо стабилизирует вычисление, либо превращает произведения вероятностей в суммы.");
-    }
-    if (/max|min|softmax/i.test(text)) {
-      readingParts.push("Здесь есть операция выбора или нормализации: она решает, что усиливать, а что подавлять.");
-    }
-    if (!readingParts.length) {
-      readingParts.push("Читай формулу справа налево как цепочку операций: какие входы берутся, как они преобразуются и что получается на выходе.");
-    }
-
-    const responses = {
-      gradient: {
-        meaning: "Формула описывает чувствительность: как изменение активации, веса или входа повлияет на итоговую ошибку.",
-        code: "В коде это обычно проявляется в `backward()` и в тензорах `.grad`: знак и масштаб говорят, в какую сторону выгодно менять параметр."
-      },
-      probability: {
-        meaning: "Формула переводит score модели в вероятность или связывает наблюдение с вероятностной интерпретацией.",
-        code: "В коде это обычно слой `sigmoid`/`softmax` или вычисление likelihood; затем уже можно читать ответ как confidence модели."
-      },
-      loss: {
-        meaning: "Формула задаёт штраф за ошибку модели: именно это число оптимизатор старается уменьшить во время обучения.",
-        code: "В коде это обычно объект `criterion(pred, target)`, а интерпретировать значение loss полезно вместе с метрикой на validation."
-      },
-      attention: {
-        meaning: "Формула описывает, как элемент входа выбирает, на какие другие элементы ему смотреть и как сильно им доверять.",
-        code: "В коде это обычно матрицы `Q`, `K`, `V`, затем `softmax` по score и взвешенное смешивание контекста."
-      },
-      sequence: {
-        meaning: "Формула описывает обновление скрытого состояния: какая часть прошлого сохраняется и какой новый сигнал добавляется.",
-        code: "В коде это шаг рекуррентного слоя, где состояние переносится между timestep-ами и постепенно собирает контекст."
-      },
-      tree: {
-        meaning: "Формула измеряет качество разбиения: насколько чище или однороднее становятся группы после очередного split-а.",
-        code: "В коде это критерий выбора порога и признака; чем сильнее падение impurity, тем привлекательнее split для дерева."
-      },
-      distance: {
-        meaning: "Формула оценивает близость между объектами, а значит напрямую определяет, кто для модели считается соседом.",
-        code: "В коде это шаг сравнения точек по метрике расстояния; после него уже решается голосование или поиск ближайших примеров."
-      },
-      statistics: {
-        meaning: "Формула агрегирует данные: считает среднее, дисперсию, ковариацию или выделяет главное направление вариации.",
-        code: "В коде это обычно шаг подготовки статистики по данным или преобразование признаков в более компактное представление."
-      },
-      convolution: {
-        meaning: "Формула показывает локальное сканирование входа фильтром: один и тот же шаблон проверяется в разных позициях.",
-        code: "В коде это слой свёртки, где ядро проходит по входу и строит feature map с ответами локальных детекторов."
-      },
-      linear: {
-        meaning: "Формула собирает ответ как взвешенную комбинацию входов с возможным bias и последующей активацией.",
-        code: "В коде это часто одна строка вроде `z = x @ w + b`, после которой может идти нелинейность или вычисление вероятности."
-      },
-      generic: {
-        meaning: heading
-          ? "Формула здесь формализует идею раздела «" + heading + "» и показывает, как словесная логика превращается в точный расчёт."
-          : "Формула здесь фиксирует точный способ вычисления: что именно считается и какие величины для этого нужны.",
-        code: "В коде это обычно отдельная операция или маленький фрагмент pipeline, который затем используется как часть общего расчёта."
-      }
-    };
-
-    return {
-      meaning: responses[category].meaning,
-      reading: readingParts.join(" "),
-      code: responses[category].code + " " + example
-    };
-  };
-
-  const buildCard = function (text, heading, signature) {
-    const explanation = buildExplanation(text, heading);
-    const card = document.createElement("div");
-    card.className = "ml-formula-explainer";
-    card.dataset.formulaSignature = signature;
-    card.innerHTML =
-      '<div class="ml-formula-explainer__label">Разбор формулы</div>' +
-      '<ul class="ml-formula-explainer__list">' +
-      "<li><strong>Смысл:</strong> " + escapeHtml(explanation.meaning) + "</li>" +
-      "<li><strong>Как читать:</strong> " + escapeHtml(explanation.reading) + "</li>" +
-      "<li><strong>Пример и код:</strong> " + escapeHtml(explanation.code) + "</li>" +
-      "</ul>";
-    return card;
-  };
-
-  let scheduled = false;
-
-  const processFormulas = function () {
-    scheduled = false;
-
-    document.querySelectorAll(".formula").forEach(function (formula) {
-      const text = normalize(formula.textContent || "");
-
-      if (isCodeLike(text, formula)) {
-        return;
-      }
-
-      const signature = text.toLowerCase();
-      const next = formula.nextElementSibling;
-      if (next && next.classList.contains("ml-formula-explainer")) {
-        if (next.dataset.formulaSignature === signature) {
-          return;
-        }
-        next.remove();
-      }
-
-      const heading = findContextHeading(formula);
-      const card = buildCard(text, heading, signature);
-      formula.insertAdjacentElement("afterend", card);
-    });
-  };
-
-  const scheduleProcess = function () {
-    if (scheduled) {
-      return;
-    }
-
-    scheduled = true;
-    window.setTimeout(processFormulas, 120);
-  };
-
-  processFormulas();
-  window.setTimeout(processFormulas, 500);
-  window.addEventListener("load", processFormulas);
-
-  const observer = new MutationObserver(function () {
-    scheduleProcess();
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true
-  });
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',queue);}else{queue();}
+  window.addEventListener('load',queue);
+  window.setTimeout(queue,300);
+  window.setTimeout(queue,1200);
+  document.addEventListener('click',function(event){if(event.target.closest('button,.tab,[role="tab"]')){window.setTimeout(queue,50);}});
+  document.addEventListener('change',function(event){if(event.target.closest('select')){window.setTimeout(queue,50);}});
+  window.__mlNotesRefreshFormulaAnatomy=queue;
 })();
