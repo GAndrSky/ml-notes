@@ -8,27 +8,27 @@
   var sections = [
     {
       id: "math",
-      label: "Блок 1",
-      title: "Математика",
+      label: "\u0411\u043b\u043e\u043a 1",
+      title: "\u041c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u043a\u0430",
       pages: [
-        { path: "01_math/01_linear_algebra.html", label: "1.1 Линейная алгебра" },
-        { path: "01_math/02_calculus.html", label: "1.2 Матанализ" },
-        { path: "01_math/03_probability_theory.html", label: "1.3 Теория вероятностей" },
-        { path: "01_math/04_information_theory.html", label: "1.4 Теория информации" }
+        { path: "01_math/01_linear_algebra.html", label: "1.1 \u041b\u0438\u043d\u0435\u0439\u043d\u0430\u044f \u0430\u043b\u0433\u0435\u0431\u0440\u0430" },
+        { path: "01_math/02_calculus.html", label: "1.2 \u041c\u0430\u0442\u0430\u043d\u0430\u043b\u0438\u0437" },
+        { path: "01_math/03_probability_theory.html", label: "1.3 \u0422\u0435\u043e\u0440\u0438\u044f \u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u0435\u0439" },
+        { path: "01_math/04_information_theory.html", label: "1.4 \u0422\u0435\u043e\u0440\u0438\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438" }
       ]
     },
     {
       id: "classic-ml",
-      label: "Блок 2",
-      title: "Классическое ML",
+      label: "\u0411\u043b\u043e\u043a 2",
+      title: "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u043e\u0435 ML",
       pages: [
-        { path: "02_classic_ml/01_intro_to_classical_ml.html", label: "2.1 Классическое ML" },
-        { path: "02_classic_ml/02_data_preprocessing.html", label: "2.2 Предобработка" },
-        { path: "02_classic_ml/03_linear_regression.html", label: "2.3 Линейная регрессия" },
-        { path: "02_classic_ml/04_linear_model_regularization.html", label: "2.4 Регуляризация" },
-        { path: "02_classic_ml/05_logistic_regression.html", label: "2.5 Логистическая регрессия" },
-        { path: "02_classic_ml/06_regression_metrics.html", label: "2.6 Метрики регрессии" },
-        { path: "02_classic_ml/07_classification_metrics.html", label: "2.7 Метрики классификации" },
+        { path: "02_classic_ml/01_intro_to_classical_ml.html", label: "2.1 \u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u043e\u0435 ML" },
+        { path: "02_classic_ml/02_data_preprocessing.html", label: "2.2 \u041f\u0440\u0435\u0434\u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430" },
+        { path: "02_classic_ml/03_linear_regression.html", label: "2.3 \u041b\u0438\u043d\u0435\u0439\u043d\u0430\u044f \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u044f" },
+        { path: "02_classic_ml/04_linear_model_regularization.html", label: "2.4 \u0420\u0435\u0433\u0443\u043b\u044f\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
+        { path: "02_classic_ml/05_logistic_regression.html", label: "2.5 \u041b\u043e\u0433\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u044f" },
+        { path: "02_classic_ml/06_regression_metrics.html", label: "2.6 \u041c\u0435\u0442\u0440\u0438\u043a\u0438 \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u0438" },
+        { path: "02_classic_ml/07_classification_metrics.html", label: "2.7 \u041c\u0435\u0442\u0440\u0438\u043a\u0438 \u043a\u043b\u0430\u0441\u0441\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438" },
         { path: "02_classic_ml/08_distance_based_models.html", label: "2.8 k-NN / Distance" },
         { path: "02_classic_ml/09_naive_bayes.html", label: "2.9 Naive Bayes" },
         { path: "02_classic_ml/10_decision_trees.html", label: "2.10 Decision Trees" },
@@ -38,52 +38,52 @@
         { path: "02_classic_ml/12b_gradient_boosting_in_practice.html", label: "2.12b GBDT Practice" },
         { path: "02_classic_ml/13_support_vector_machines.html", label: "2.13 SVM" },
         { path: "02_classic_ml/13a_kernel_methods_deeper.html", label: "2.13a Kernels" },
-        { path: "02_classic_ml/14_clustering.html", label: "2.14 Кластеризация" },
+        { path: "02_classic_ml/14_clustering.html", label: "2.14 \u041a\u043b\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
         { path: "02_classic_ml/14a_gaussian_mixtures_em.html", label: "2.14a GMM / EM" },
-        { path: "02_classic_ml/15_dimensionality_reduction.html", label: "2.15 Снижение размерности" },
+        { path: "02_classic_ml/15_dimensionality_reduction.html", label: "2.15 \u0421\u043d\u0438\u0436\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u043d\u043e\u0441\u0442\u0438" },
         { path: "02_classic_ml/15a_kernel_pca_ica_autoencoders.html", label: "2.15a KPCA / ICA" },
-        { path: "02_classic_ml/16_ensembles.html", label: "2.16 Ансамбли" },
-        { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 Валидация / HPO" },
-        { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 Несбалансированные классы" },
-        { path: "02_classic_ml/19_model_interpretation.html", label: "2.19 Интерпретация" },
-        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 Практический pipeline" }
+        { path: "02_classic_ml/16_ensembles.html", label: "2.16 \u0410\u043d\u0441\u0430\u043c\u0431\u043b\u0438" },
+        { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 \u0412\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u044f / HPO" },
+        { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 \u041d\u0435\u0441\u0431\u0430\u043b\u0430\u043d\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u043b\u0430\u0441\u0441\u044b" },
+        { path: "02_classic_ml/19_model_interpretation.html", label: "2.19 \u0418\u043d\u0442\u0435\u0440\u043f\u0440\u0435\u0442\u0430\u0446\u0438\u044f" },
+        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 \u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 pipeline" }
       ]
     },
     {
       id: "neural-basics",
-      label: "Блок 3",
-      title: "База нейросетей",
+      label: "\u0411\u043b\u043e\u043a 3",
+      title: "\u0411\u0430\u0437\u0430 \u043d\u0435\u0439\u0440\u043e\u0441\u0435\u0442\u0435\u0439",
       pages: [
-        { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 Нейрон" },
-        { path: "03_neural_basics/02_activation_functions.html", label: "3.2 Активации" },
+        { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 \u041d\u0435\u0439\u0440\u043e\u043d" },
+        { path: "03_neural_basics/02_activation_functions.html", label: "3.2 \u0410\u043a\u0442\u0438\u0432\u0430\u0446\u0438\u0438" },
         { path: "03_neural_basics/03_forward_pass.html", label: "3.3 Forward pass" },
         { path: "03_neural_basics/04_loss_functions.html", label: "3.4 Loss" }
       ]
     },
     {
       id: "training",
-      label: "Блок 4",
-      title: "Обучение",
+      label: "\u0411\u043b\u043e\u043a 4",
+      title: "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
       pages: [
         { path: "04_training/01_backpropagation.html", label: "4.1 Backprop" },
-        { path: "04_training/02_optimizers.html", label: "4.2 Оптимизаторы" },
+        { path: "04_training/02_optimizers.html", label: "4.2 \u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0442\u043e\u0440\u044b" },
         { path: "04_training/03_adam_adamw_lion.html", label: "4.3 Adam / Lion" },
-        { path: "04_training/04_regularization.html", label: "4.4 Регуляризация" },
+        { path: "04_training/04_regularization.html", label: "4.4 \u0420\u0435\u0433\u0443\u043b\u044f\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
         { path: "04_training/05_learning_rate_scheduling.html", label: "4.5 LR Scheduling" },
         { path: "04_training/06_gradient_clipping_and_stability.html", label: "4.6 Clipping / Stability" },
         { path: "04_training/07_mixed_precision_training.html", label: "4.7 Mixed Precision" },
-        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 Инициализация" }
+        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 \u0418\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f" }
       ]
     },
     {
       id: "architectures",
-      label: "Блок 5",
-      title: "Архитектуры",
+      label: "\u0411\u043b\u043e\u043a 5",
+      title: "\u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u044b",
       pages: [
         { path: "05_architectures/01_cnn_convolutional_networks.html", label: "5.1 CNN" },
         { path: "05_architectures/02_rnn_lstm.html", label: "5.2 RNN / LSTM" },
         { path: "05_architectures/03_transformer_attention.html", label: "5.3 Attention" },
-        { path: "05_architectures/04_transformer_architecture.html", label: "5.4 Архитектура" },
+        { path: "05_architectures/04_transformer_architecture.html", label: "5.4 \u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u0430" },
         { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm" },
         { path: "05_architectures/06_positional_encodings.html", label: "5.6 Positional Encodings" },
         { path: "05_architectures/07_efficient_attention.html", label: "5.7 Efficient Attention" },
@@ -92,7 +92,7 @@
     },
     {
       id: "llm",
-      label: "Блок 6",
+      label: "\u0411\u043b\u043e\u043a 6",
       title: "LLM",
       pages: [
         { path: "06_llm/01_tokenization_bpe.html", label: "6.1 Tokenization / BPE" },
@@ -105,7 +105,7 @@
     },
     {
       id: "generative",
-      label: "Блок 7",
+      label: "\u0411\u043b\u043e\u043a 7",
       title: "Generative Models",
       pages: [
         { path: "07_generative_models/01_variational_autoencoders.html", label: "7.1 VAE" },
@@ -115,8 +115,8 @@
     },
     {
       id: "training-practice",
-      label: "Блок 8",
-      title: "Практика обучения",
+      label: "\u0411\u043b\u043e\u043a 8",
+      title: "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
       pages: [
         { path: "08_training_practice/01_distributed_training.html", label: "8.1 DDP / FSDP" },
         { path: "08_training_practice/02_gradient_checkpointing.html", label: "8.2 Checkpointing" },
@@ -137,6 +137,8 @@
     "training-practice": "#97a9d6"
   };
 
+  var visitedStorageKey = "ml_notes_visited";
+  var collapsedStorageKey = "ml_notes_sidebar_collapsed";
   var rootUrl = new URL(
     ".",
     document.currentScript && document.currentScript.src
@@ -174,12 +176,7 @@
         label: section.label,
         title: section.title,
         accent: sectionAccentMap[section.id] || "#7eb8b8",
-        pages: section.pages.map(function (page) {
-          return {
-            path: page.path,
-            label: page.label
-          };
-        })
+        pages: section.pages.slice()
       };
     }),
     pages: pages.map(function (page) {
@@ -194,30 +191,73 @@
     totalLessons: pages.length
   };
 
-  var currentUrl = new URL(window.location.href);
-  currentUrl.search = "";
-  currentUrl.hash = "";
-  var currentHref = currentUrl.href;
+  function readVisitedPaths() {
+    var validPaths = Object.create(null);
+    pages.forEach(function (page) {
+      validPaths[page.path] = true;
+    });
 
-  var currentIndex = pages.findIndex(function (page) {
-    return pageHref(page) === currentHref;
-  });
-
-  if (currentIndex === -1) {
-    return;
+    try {
+      var parsed = JSON.parse(window.localStorage.getItem(visitedStorageKey) || "[]");
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.filter(function (path) {
+        return typeof path === "string" && validPaths[path];
+      });
+    } catch (error) {
+      return [];
+    }
   }
 
-  document.body.classList.add("ml-course-theme");
+  function writeVisitedPaths(paths) {
+    try {
+      window.localStorage.setItem(visitedStorageKey, JSON.stringify(paths));
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
 
-  var currentPage = pages[currentIndex];
-  var currentSection = sections[currentPage.sectionIndex];
-  var currentAccent = sectionAccentMap[currentSection.id] || "#7eb8b8";
-  var visitedStorageKey = "ml_notes_visited";
-  var desktopQuery = window.matchMedia("(min-width: 960px)");
+  function dispatchProgressChanged(paths) {
+    window.dispatchEvent(
+      new window.CustomEvent("ml-notes-progress-changed", {
+        detail: { visitedPaths: paths.slice() }
+      })
+    );
+  }
 
-  document.body.dataset.mlSection = currentSection.id;
-  document.body.style.setProperty("--section-accent", currentAccent);
-  window.__mlNotesCurrentPagePath = currentPage.path;
+  function setVisited(path, shouldVisit) {
+    var paths = readVisitedPaths();
+    var index = paths.indexOf(path);
+
+    if (shouldVisit && index === -1) {
+      paths.push(path);
+    }
+
+    if (!shouldVisit && index !== -1) {
+      paths.splice(index, 1);
+    }
+
+    writeVisitedPaths(paths);
+    dispatchProgressChanged(paths);
+    return paths;
+  }
+
+  function readCollapsedState() {
+    try {
+      return window.localStorage.getItem(collapsedStorageKey) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function writeCollapsedState(value) {
+    try {
+      window.localStorage.setItem(collapsedStorageKey, value ? "1" : "0");
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
 
   function escapeHtml(value) {
     return String(value || "")
@@ -243,59 +283,15 @@
     document.body.appendChild(script);
   }
 
-  function readVisitedPaths() {
-    var validPaths = Object.create(null);
-    pages.forEach(function (page) {
-      validPaths[page.path] = true;
-    });
-
-    try {
-      var parsed = JSON.parse(window.localStorage.getItem(visitedStorageKey) || "[]");
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      return parsed.filter(function (path) {
-        return typeof path === "string" && validPaths[path];
-      });
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function writeVisitedPaths(paths) {
-    try {
-      window.localStorage.setItem(visitedStorageKey, JSON.stringify(paths));
-    } catch (error) {
-      // Ignore storage issues.
-    }
-  }
-
-  function markVisited(path) {
-    var paths = readVisitedPaths();
-    if (paths.indexOf(path) === -1) {
-      paths.push(path);
-      writeVisitedPaths(paths);
-    }
-    return paths;
-  }
-
-  var visitedPaths = markVisited(currentPage.path);
-  var visitedSet = {};
-  visitedPaths.forEach(function (path) {
-    visitedSet[path] = true;
-  });
-  window.__mlNotesVisitedPaths = visitedPaths.slice();
-
-  function upsertMeta(selector, buildElement) {
+  function upsertMeta(selector, builder) {
     var existing = document.head.querySelector(selector);
     if (existing) {
       return existing;
     }
 
-    var created = buildElement();
-    document.head.appendChild(created);
-    return created;
+    var element = builder();
+    document.head.appendChild(element);
+    return element;
   }
 
   function setMetaTag(name, content) {
@@ -317,35 +313,50 @@
   }
 
   function ensureFavicon() {
-    var href = new URL("favicon.png", rootUrl).href;
     var icon = upsertMeta('link[rel="icon"]', function () {
-      var link = document.createElement("link");
-      link.setAttribute("rel", "icon");
-      return link;
+      var element = document.createElement("link");
+      element.setAttribute("rel", "icon");
+      return element;
     });
     icon.setAttribute("type", "image/png");
-    icon.setAttribute("href", href);
+    icon.setAttribute("href", new URL("favicon.png", rootUrl).href);
   }
 
-  function applyMeta() {
-    var pageTitle = currentPage.label + " — ML-конспект";
-    var description = currentPage.label + " — интерактивный ML-конспект по теме \"" + currentSection.title + "\": формулы, визуализации, примеры и код.";
-    var ogUrl = new URL(currentPage.path, siteBaseUrl).href;
+  var currentUrl = new URL(window.location.href);
+  currentUrl.search = "";
+  currentUrl.hash = "";
+  var currentHref = currentUrl.href;
 
-    document.title = pageTitle;
-    setMetaTag("description", description);
-    setOgTag("og:title", pageTitle);
-    setOgTag("og:description", description);
-    setOgTag("og:url", ogUrl);
-    ensureFavicon();
+  var currentIndex = pages.findIndex(function (page) {
+    return pageHref(page) === currentHref;
+  });
+
+  if (currentIndex === -1) {
+    return;
   }
 
-  applyMeta();
+  document.body.classList.add("ml-course-theme");
+
+  var currentPage = pages[currentIndex];
+  var currentSection = sections[currentPage.sectionIndex];
+  var currentAccent = sectionAccentMap[currentSection.id] || "#7eb8b8";
+  var desktopQuery = window.matchMedia("(min-width: 960px)");
+  var mobileOpen = false;
+  var desktopCollapsed = readCollapsedState();
+
+  document.body.dataset.mlSection = currentSection.id;
+  document.body.style.setProperty("--section-accent", currentAccent);
+  window.__mlNotesCurrentPagePath = currentPage.path;
+
+  document.title = currentPage.label + " - ML notes";
+  setMetaTag("description", currentPage.label + " - interactive ML notes with formulas, visualizations, and code.");
+  setOgTag("og:title", currentPage.label + " - ML notes");
+  setOgTag("og:description", currentPage.label + " - interactive ML notes with formulas, visualizations, and code.");
+  setOgTag("og:url", new URL(currentPage.path, siteBaseUrl).href);
+  ensureFavicon();
 
   var previousPage = pages[currentIndex - 1] || null;
   var nextPage = pages[currentIndex + 1] || null;
-  var visitedCount = visitedPaths.length;
-  var progressPercent = pages.length ? Math.round((visitedCount / pages.length) * 100) : 0;
 
   function buildInlineAction(page, text, className) {
     if (!page) {
@@ -355,13 +366,15 @@
     return '<a class="' + className + '" href="' + pageHref(page) + '">' + escapeHtml(text) + "</a>";
   }
 
-  function buildSidebarLink(page) {
+  function buildSidebarLink(page, visitedSet) {
     var isCurrent = page.path === currentPage.path;
     var isVisited = !!visitedSet[page.path];
 
     return (
       '<a class="ml-page-nav__link' +
       (isCurrent ? " is-current" : "") +
+      '" data-path="' +
+      escapeHtml(page.path) +
       '" data-label="' +
       escapeHtml(page.label.toLowerCase()) +
       '" href="' +
@@ -377,7 +390,7 @@
     );
   }
 
-  function buildSectionMarkup(section) {
+  function buildSectionMarkup(section, visitedSet) {
     var sectionPages = pages.filter(function (page) {
       return page.sectionId === section.id;
     });
@@ -403,7 +416,7 @@
       "</span>" +
       "</summary>" +
       '<div class="ml-page-nav__section-links">' +
-      sectionPages.map(buildSidebarLink).join("") +
+      sectionPages.map(function (page) { return buildSidebarLink(page, visitedSet); }).join("") +
       "</div>" +
       "</details>"
     );
@@ -441,12 +454,24 @@
     );
   }
 
+  var initialVisitedPaths = readVisitedPaths();
+  if (initialVisitedPaths.indexOf(currentPage.path) === -1) {
+    initialVisitedPaths.push(currentPage.path);
+    writeVisitedPaths(initialVisitedPaths);
+    dispatchProgressChanged(initialVisitedPaths);
+  }
+
+  var initialVisitedSet = {};
+  initialVisitedPaths.forEach(function (path) {
+    initialVisitedSet[path] = true;
+  });
+
   var navShell = document.createElement("div");
   navShell.className = "ml-page-nav-shell";
   navShell.innerHTML =
-    '<button class="ml-page-nav__mobile-toggle" type="button" aria-expanded="false" aria-controls="ml-course-sidebar" aria-label="Открыть навигацию">☰</button>' +
+    '<button class="ml-page-nav__mobile-toggle" type="button" aria-expanded="false" aria-controls="ml-course-sidebar" aria-label="\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044e">\u2630</button>' +
     '<div class="ml-page-nav__overlay" hidden></div>' +
-    '<aside class="ml-page-nav" id="ml-course-sidebar" aria-label="Навигация по курсу">' +
+    '<aside class="ml-page-nav" id="ml-course-sidebar" aria-label="\u041d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044f \u043f\u043e \u043a\u0443\u0440\u0441\u0443">' +
     '<div class="ml-page-nav__toolbar">' +
     '<div class="ml-page-nav__toolbar-meta">' +
     '<span class="ml-page-nav__current-kicker">' +
@@ -463,35 +488,33 @@
     escapeHtml(currentSection.title) +
     "</span>" +
     "</div>" +
-    '<button class="ml-page-nav__close" type="button" aria-label="Закрыть меню">×</button>' +
+    '<div class="ml-page-nav__toolbar-actions-inline">' +
+    '<button class="ml-page-nav__collapse" type="button" aria-label="\u0421\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0431\u043e\u043a\u043e\u0432\u043e\u0435 \u043c\u0435\u043d\u044e">\u00ab</button>' +
+    '<button class="ml-page-nav__close" type="button" aria-label="\u0417\u0430\u043a\u0440\u044b\u0442\u044c \u043c\u0435\u043d\u044e">\u00d7</button>' +
+    "</div>" +
     "</div>" +
     '<div class="ml-page-nav__panel">' +
     '<div class="ml-page-nav__course-meta">' +
-    '<span class="ml-page-nav__course-kicker">Весь курс</span>' +
+    '<span class="ml-page-nav__course-kicker">\u0412\u0435\u0441\u044c \u043a\u0443\u0440\u0441</span>' +
     '<strong class="ml-page-nav__course-title">' +
     pages.length +
-    " тем в одном конспекте" +
+    " \u0442\u0435\u043c \u0432 \u043e\u0434\u043d\u043e\u043c \u043a\u043e\u043d\u0441\u043f\u0435\u043a\u0442\u0435" +
     "</strong>" +
-    '<span class="ml-page-nav__course-subtitle">Изучено: ' +
-    visitedCount +
-    " из " +
-    pages.length +
-    " · " +
-    progressPercent +
-    "%</span>" +
-    '<div class="ml-page-nav__progress"><span style="width:' +
-    progressPercent +
-    '%"></span></div>' +
+    '<span class="ml-page-nav__course-subtitle ml-page-nav__progress-text"></span>' +
+    '<div class="ml-page-nav__progress"><span></span></div>' +
+    '<div class="ml-page-nav__utility-row">' +
+    '<button class="ml-page-nav__visit-toggle" type="button"></button>' +
+    "</div>" +
     "</div>" +
     '<div class="ml-page-nav__actions">' +
-    buildInlineAction(previousPage, "← Назад", "ml-page-nav__action-link") +
+    buildInlineAction(previousPage, "\u2190 \u041d\u0430\u0437\u0430\u0434", "ml-page-nav__action-link") +
     '<a class="ml-page-nav__action-link" href="' +
     indexHref +
-    '">Главная</a>' +
-    buildInlineAction(nextPage, "Далее →", "ml-page-nav__action-link") +
+    '">\u0413\u043b\u0430\u0432\u043d\u0430\u044f</a>' +
+    buildInlineAction(nextPage, "\u0414\u0430\u043b\u0435\u0435 \u2192", "ml-page-nav__action-link") +
     "</div>" +
     '<div class="ml-page-nav__sections">' +
-    sections.map(buildSectionMarkup).join("") +
+    sections.map(function (section) { return buildSectionMarkup(section, initialVisitedSet); }).join("") +
     "</div>" +
     "</div>" +
     "</aside>";
@@ -500,16 +523,16 @@
 
   var bottomNav = document.createElement("nav");
   bottomNav.className = "ml-page-pager";
-  bottomNav.setAttribute("aria-label", "Переход между страницами");
+  bottomNav.setAttribute("aria-label", "\u041f\u0435\u0440\u0435\u0445\u043e\u0434 \u043c\u0435\u0436\u0434\u0443 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430\u043c\u0438");
   bottomNav.innerHTML =
-    buildPagerCard(previousPage, "← Предыдущая тема", "is-previous", "Нет предыдущей темы") +
+    buildPagerCard(previousPage, "\u2190 \u041f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0430\u044f \u0442\u0435\u043c\u0430", "is-previous", "\u041d\u0435\u0442 \u043f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0435\u0439 \u0442\u0435\u043c\u044b") +
     '<a class="ml-page-pager__card is-home" href="' +
     indexHref +
     '">' +
-    '<span class="ml-page-pager__kicker">Оглавление</span>' +
-    '<strong class="ml-page-pager__title">Вернуться на главную</strong>' +
+    '<span class="ml-page-pager__kicker">\u041e\u0433\u043b\u0430\u0432\u043b\u0435\u043d\u0438\u0435</span>' +
+    '<strong class="ml-page-pager__title">\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u043d\u0430 \u0433\u043b\u0430\u0432\u043d\u0443\u044e</strong>' +
     "</a>" +
-    buildPagerCard(nextPage, "Следующая тема →", "is-next", "Последняя тема блока");
+    buildPagerCard(nextPage, "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u0442\u0435\u043c\u0430 \u2192", "is-next", "\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u044f\u044f \u0442\u0435\u043c\u0430 \u0431\u043b\u043e\u043a\u0430");
 
   var pageContainer = document.querySelector(".page");
   if (pageContainer) {
@@ -519,33 +542,58 @@
   }
 
   var mobileToggle = navShell.querySelector(".ml-page-nav__mobile-toggle");
-  var sidebar = navShell.querySelector(".ml-page-nav");
   var overlay = navShell.querySelector(".ml-page-nav__overlay");
   var closeButton = navShell.querySelector(".ml-page-nav__close");
+  var collapseButton = navShell.querySelector(".ml-page-nav__collapse");
+  var progressText = navShell.querySelector(".ml-page-nav__progress-text");
+  var progressBar = navShell.querySelector(".ml-page-nav__progress span");
+  var visitToggleButton = navShell.querySelector(".ml-page-nav__visit-toggle");
   var sectionNodes = Array.prototype.slice.call(navShell.querySelectorAll(".ml-page-nav__section"));
-  var mobileOpen = false;
 
-  function syncMobileState() {
-    var shouldUseOverlay = !desktopQuery.matches;
-    navShell.classList.toggle("is-open", shouldUseOverlay && mobileOpen);
-    overlay.hidden = !(shouldUseOverlay && mobileOpen);
-    mobileToggle.setAttribute("aria-expanded", shouldUseOverlay && mobileOpen ? "true" : "false");
-    document.body.classList.toggle("ml-sidebar-open", shouldUseOverlay && mobileOpen);
+  function syncSidebarState() {
+    var isDesktop = desktopQuery.matches;
 
-    if (!shouldUseOverlay) {
-      overlay.hidden = true;
-      mobileToggle.setAttribute("aria-expanded", "false");
-    }
+    navShell.classList.toggle("is-open", !isDesktop && mobileOpen);
+    navShell.classList.toggle("is-desktop-collapsed", isDesktop && desktopCollapsed);
+    document.body.classList.toggle("ml-sidebar-open", !isDesktop && mobileOpen);
+    document.body.classList.toggle("ml-sidebar-collapsed", isDesktop && desktopCollapsed);
+
+    overlay.hidden = !(!isDesktop && mobileOpen);
+    mobileToggle.setAttribute("aria-expanded", !isDesktop && mobileOpen ? "true" : "false");
+    collapseButton.textContent = isDesktop && desktopCollapsed ? "\u00bb" : "\u00ab";
+    collapseButton.setAttribute(
+      "aria-label",
+      isDesktop && desktopCollapsed
+        ? "\u0420\u0430\u0437\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0431\u043e\u043a\u043e\u0432\u043e\u0435 \u043c\u0435\u043d\u044e"
+        : "\u0421\u0432\u0435\u0440\u043d\u0443\u0442\u044c \u0431\u043e\u043a\u043e\u0432\u043e\u0435 \u043c\u0435\u043d\u044e"
+    );
   }
 
-  function closeMobileSidebar() {
-    mobileOpen = false;
-    syncMobileState();
-  }
+  function refreshVisitedUi(paths) {
+    var visitedSet = {};
+    paths.forEach(function (path) {
+      visitedSet[path] = true;
+    });
 
-  function openMobileSidebar() {
-    mobileOpen = true;
-    syncMobileState();
+    Array.prototype.slice.call(navShell.querySelectorAll(".ml-page-nav__link")).forEach(function (link) {
+      var path = link.getAttribute("data-path");
+      var check = link.querySelector(".ml-page-nav__link-check");
+      if (!check) {
+        return;
+      }
+      check.classList.toggle("is-visible", !!visitedSet[path]);
+    });
+
+    var visitedCount = paths.length;
+    var progressPercent = pages.length ? Math.round((visitedCount / pages.length) * 100) : 0;
+    var currentVisited = !!visitedSet[currentPage.path];
+
+    progressText.textContent =
+      "\u0418\u0437\u0443\u0447\u0435\u043d\u043e: " + visitedCount + " \u0438\u0437 " + pages.length + " \u00b7 " + progressPercent + "%";
+    progressBar.style.width = progressPercent + "%";
+    visitToggleButton.textContent = currentVisited
+      ? "\u0421\u043d\u044f\u0442\u044c \u0433\u0430\u043b\u043e\u0447\u043a\u0443 \u0441 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0442\u0435\u043c\u044b"
+      : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0442\u0435\u043a\u0443\u0449\u0443\u044e \u0442\u0435\u043c\u0443 \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u0443\u044e";
   }
 
   function applyFilter(value) {
@@ -569,15 +617,38 @@
   }
 
   mobileToggle.addEventListener("click", function () {
-    if (mobileOpen) {
-      closeMobileSidebar();
+    if (desktopQuery.matches) {
+      desktopCollapsed = !desktopCollapsed;
+      writeCollapsedState(desktopCollapsed);
+      syncSidebarState();
       return;
     }
-    openMobileSidebar();
+
+    mobileOpen = !mobileOpen;
+    syncSidebarState();
   });
 
-  overlay.addEventListener("click", closeMobileSidebar);
-  closeButton.addEventListener("click", closeMobileSidebar);
+  closeButton.addEventListener("click", function () {
+    mobileOpen = false;
+    syncSidebarState();
+  });
+
+  collapseButton.addEventListener("click", function () {
+    desktopCollapsed = !desktopCollapsed;
+    writeCollapsedState(desktopCollapsed);
+    syncSidebarState();
+  });
+
+  overlay.addEventListener("click", function () {
+    mobileOpen = false;
+    syncSidebarState();
+  });
+
+  visitToggleButton.addEventListener("click", function () {
+    var currentlyVisited = !!navShell.querySelector('.ml-page-nav__link[data-path="' + currentPage.path + '"] .ml-page-nav__link-check.is-visible');
+    var updated = setVisited(currentPage.path, !currentlyVisited);
+    refreshVisitedUi(updated);
+  });
 
   navShell.addEventListener("click", function (event) {
     var target = event.target;
@@ -586,26 +657,35 @@
     }
 
     if (target.closest(".ml-page-nav__link") && !desktopQuery.matches) {
-      closeMobileSidebar();
+      mobileOpen = false;
+      syncSidebarState();
     }
   });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
-      closeMobileSidebar();
+      mobileOpen = false;
+      syncSidebarState();
     }
   });
 
   desktopQuery.addEventListener("change", function () {
     if (desktopQuery.matches) {
-      closeMobileSidebar();
-    } else {
-      syncMobileState();
+      mobileOpen = false;
     }
+    syncSidebarState();
+  });
+
+  window.addEventListener("ml-notes-progress-changed", function (event) {
+    var paths = event && event.detail && Array.isArray(event.detail.visitedPaths)
+      ? event.detail.visitedPaths
+      : readVisitedPaths();
+    refreshVisitedUi(paths);
   });
 
   applyFilter("");
-  syncMobileState();
+  refreshVisitedUi(readVisitedPaths());
+  syncSidebarState();
 
   var hasMathCandidates = Array.prototype.some.call(
     document.querySelectorAll(".formula, .inline-math, [data-render-tex]"),
@@ -621,8 +701,7 @@
       if (!text) {
         return false;
       }
-
-      return /(import\s+\w+|from\s+\w+\s+import|def\s+\w+\(|class\s+\w+|function\s+\w+\(|const\s+|let\s+|=>|\$\s+\w+|#!\/bin\/bash|torch\.|np\.|numpy|console\.log|echo\s+)/im.test(text);
+      return /(import\s+\w+|from\s+\w+\s+import|def\s+\w+\(|class\s+\w+|function\s+\w+\(|const\s+|let\s+|=>|#!\/bin\/bash|echo\s+|torch\.|np\.|numpy|console\.log)/im.test(text);
     }
   );
 
@@ -999,13 +1078,48 @@
   }
   window.__mlNotesIndexInitialized = true;
 
+  var visitedKey = "ml_notes_visited";
+
   function readVisitedPaths() {
     try {
-      var parsed = JSON.parse(window.localStorage.getItem("ml_notes_visited") || "[]");
+      var parsed = JSON.parse(window.localStorage.getItem(visitedKey) || "[]");
       return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
       return [];
     }
+  }
+
+  function writeVisitedPaths(paths) {
+    try {
+      window.localStorage.setItem(visitedKey, JSON.stringify(paths));
+    } catch (error) {
+      // Ignore storage issues.
+    }
+  }
+
+  function dispatchProgressChanged(paths) {
+    window.dispatchEvent(
+      new window.CustomEvent("ml-notes-progress-changed", {
+        detail: { visitedPaths: paths.slice() }
+      })
+    );
+  }
+
+  function setVisited(path, shouldVisit) {
+    var paths = readVisitedPaths().filter(Boolean);
+    var index = paths.indexOf(path);
+
+    if (shouldVisit && index === -1) {
+      paths.push(path);
+    }
+
+    if (!shouldVisit && index !== -1) {
+      paths.splice(index, 1);
+    }
+
+    writeVisitedPaths(paths);
+    dispatchProgressChanged(paths);
+    return paths;
   }
 
   function init() {
@@ -1016,12 +1130,6 @@
     var courseData = window.__mlNotesCourseData || { sections: [], totalLessons: 0 };
     var sections = Array.prototype.slice.call(document.querySelectorAll(".section"));
     var hero = document.querySelector(".hero");
-    var visited = readVisitedPaths();
-    var visitedSet = {};
-    visited.forEach(function (path) {
-      visitedSet[path] = true;
-    });
-
     var accentMap = {
       1: "#6c8ebf",
       2: "#7eb87e",
@@ -1045,10 +1153,14 @@
           return;
         }
 
-        var path = href.replace(/^\.\//, "");
-        card.dataset.lessonCard = path;
-        if (visitedSet[path]) {
-          card.classList.add("is-visited");
+        card.dataset.lessonCard = href.replace(/^\.\//, "");
+
+        if (!card.querySelector(".index-card-check")) {
+          var checkButton = document.createElement("button");
+          checkButton.type = "button";
+          checkButton.className = "index-card-check";
+          checkButton.setAttribute("aria-label", "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0442\u0435\u043c\u0443 \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u0443\u044e");
+          card.appendChild(checkButton);
         }
       });
     });
@@ -1058,41 +1170,70 @@
     var progressCount = hero && hero.querySelector(".hero-progress__count");
     var progressLabel = hero && hero.querySelector(".hero-progress__label");
     var progressBar = hero && hero.querySelector(".hero-progress__bar span");
-
     var totalLessons = Number(courseData.totalLessons || document.querySelectorAll("[data-lesson-card]").length || 0);
-    var validVisitedCount = visited.filter(function (path) {
-      return !!document.querySelector('[data-lesson-card="' + path + '"]');
-    }).length;
-    var progressPercent = totalLessons ? Math.round((validVisitedCount / totalLessons) * 100) : 0;
 
     if (heroTitle) {
-      heroTitle.textContent = "Интерактивный ML-конспект";
+      heroTitle.textContent = "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 ML-\u043a\u043e\u043d\u0441\u043f\u0435\u043a\u0442";
     }
 
     if (heroSubtitle) {
-      heroSubtitle.textContent = totalLessons + " тем · от линейной алгебры до LLM и diffusion · интерактивные визуализации и код";
+      heroSubtitle.textContent =
+        totalLessons +
+        " \u0442\u0435\u043c \u00b7 \u043e\u0442 \u043b\u0438\u043d\u0435\u0439\u043d\u043e\u0439 \u0430\u043b\u0433\u0435\u0431\u0440\u044b \u0434\u043e LLM \u0438 diffusion \u00b7 \u0438\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u0438 \u0438 \u043a\u043e\u0434";
     }
 
-    if (progressCount) {
-      progressCount.textContent = "Изучено: " + validVisitedCount + " из " + totalLessons;
-    }
+    function refreshUi(paths) {
+      var visitedSet = {};
+      paths.forEach(function (path) {
+        visitedSet[path] = true;
+      });
 
-    if (progressLabel) {
-      progressLabel.textContent = progressPercent + "% курса";
-    }
+      Array.prototype.slice.call(document.querySelectorAll("[data-lesson-card]")).forEach(function (card) {
+        var path = card.dataset.lessonCard;
+        var isVisited = !!visitedSet[path];
+        card.classList.toggle("is-visited", isVisited);
 
-    if (progressBar) {
-      progressBar.style.width = progressPercent + "%";
+        var button = card.querySelector(".index-card-check");
+        if (!button) {
+          return;
+        }
+
+        button.textContent = isVisited ? "\u2713" : "";
+        button.setAttribute(
+          "aria-label",
+          isVisited
+            ? "\u0421\u043d\u044f\u0442\u044c \u043e\u0442\u043c\u0435\u0442\u043a\u0443 \u0441 \u0442\u0435\u043c\u044b"
+            : "\u041e\u0442\u043c\u0435\u0442\u0438\u0442\u044c \u0442\u0435\u043c\u0443 \u043a\u0430\u043a \u043f\u0440\u043e\u0439\u0434\u0435\u043d\u043d\u0443\u044e"
+        );
+      });
+
+      var validVisitedCount = paths.filter(function (path) {
+        return !!document.querySelector('[data-lesson-card="' + path + '"]');
+      }).length;
+      var progressPercent = totalLessons ? Math.round((validVisitedCount / totalLessons) * 100) : 0;
+
+      if (progressCount) {
+        progressCount.textContent =
+          "\u0418\u0437\u0443\u0447\u0435\u043d\u043e: " + validVisitedCount + " \u0438\u0437 " + totalLessons;
+      }
+
+      if (progressLabel) {
+        progressLabel.textContent = progressPercent + "% \u043a\u0443\u0440\u0441\u0430";
+      }
+
+      if (progressBar) {
+        progressBar.style.width = progressPercent + "%";
+      }
     }
 
     var classicMlSection = sections[1];
     var classicGrid = classicMlSection && classicMlSection.querySelector(".grid");
     if (classicGrid && !classicGrid.querySelector(".index-subgroup")) {
       var subgroupMap = {
-        "2.1": "Базовые модели",
-        "2.6": "Метрики",
-        "2.8": "Продвинутые модели",
-        "2.17": "Практика"
+        "2.1": "\u0411\u0430\u0437\u043e\u0432\u044b\u0435 \u043c\u043e\u0434\u0435\u043b\u0438",
+        "2.6": "\u041c\u0435\u0442\u0440\u0438\u043a\u0438",
+        "2.8": "\u041f\u0440\u043e\u0434\u0432\u0438\u043d\u0443\u0442\u044b\u0435 \u043c\u043e\u0434\u0435\u043b\u0438",
+        "2.17": "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0430"
       };
 
       Array.prototype.slice.call(classicGrid.querySelectorAll(".card")).forEach(function (card) {
@@ -1112,17 +1253,34 @@
       });
     }
 
-    var visitedCards = document.querySelectorAll(".card.is-visited");
-    Array.prototype.forEach.call(visitedCards, function (card) {
-      if (card.querySelector(".index-card-check")) {
+    document.addEventListener("click", function (event) {
+      var button = event.target && event.target.closest ? event.target.closest(".index-card-check") : null;
+      if (!button) {
         return;
       }
 
-      var check = document.createElement("span");
-      check.className = "index-card-check";
-      check.textContent = "✓";
-      card.appendChild(check);
+      event.preventDefault();
+      event.stopPropagation();
+
+      var card = button.closest("[data-lesson-card]");
+      if (!card) {
+        return;
+      }
+
+      var path = card.dataset.lessonCard;
+      var shouldVisit = !card.classList.contains("is-visited");
+      var updatedPaths = setVisited(path, shouldVisit);
+      refreshUi(updatedPaths);
     });
+
+    window.addEventListener("ml-notes-progress-changed", function (event) {
+      var paths = event && event.detail && Array.isArray(event.detail.visitedPaths)
+        ? event.detail.visitedPaths
+        : readVisitedPaths();
+      refreshUi(paths);
+    });
+
+    refreshUi(readVisitedPaths());
   }
 
   if (document.readyState === "loading") {
