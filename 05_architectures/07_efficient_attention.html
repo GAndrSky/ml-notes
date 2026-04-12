@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.7 Efficient Attention</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} table{width:100%;border-collapse:collapse;font-size:.92rem} th,td{padding:10px 12px;border-bottom:1px solid #26303a;vertical-align:top} th{color:var(--amber);text-align:left;background:#10161d}
+    .muted{color:var(--muted)}
+    .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px} .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}
+    .info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab-btn{background:#0f141b;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.92rem}.tab-btn.active{border-color:rgba(245,158,11,.55);color:var(--amber);background:rgba(245,158,11,.08)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}table{display:block;overflow:auto}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 5 • Advanced</span>
+        <span class="tag done">✓ 5.6 Positional Encodings</span>
+        <span class="tag active">▶ 5.7 Efficient Attention</span>
+        <span class="tag">5.8 ViT</span>
+      </div>
+      <h1>5.7 Efficient Attention</h1>
+      <p class="muted">Когда последовательность становится длинной, классический attention начинает проигрывать по памяти и пропускной способности. Здесь разбираем, как именно FlashAttention, sparse attention и Longformer-подходи меняют экономику вычислений.</p>
+    </div>
+    <div class="card">
+      <h2>Где узкое место обычного attention</h2>
+      <div class="formula" data-render-tex data-tex-source="\text{Attention}(Q,K,V)=\text{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V">\text{Attention}(Q,K,V)=softmax(QK^T / sqrt(d))V</div>
+      <div class="formula" data-no-tex>Время:  O(n² d)
+Память: O(n²)
+
+Матрица attention weights размера n × n
+становится главным bottleneck при длинном контексте.</div>
+      <div class="warn">Проблема часто не только во FLOPs, а в том, что веса attention приходится materialize в памяти, и GPU начинает упираться в bandwidth и SRAM/HBM traffic.</div>
+    </div>
+    <div class="card">
+      <h2>Три стратегии ускорения</h2>
+      <div class="grid-3">
+        <div class="success"><strong>FlashAttention</strong><br>Не меняет саму математику, а меняет порядок вычислений и memory layout.</div>
+        <div class="info"><strong>Sparse / local</strong><br>Уменьшает число реально считаемых пар токенов.</div>
+        <div class="warn"><strong>Longformer / block patterns</strong><br>Делает контекст структурированным: локальное окно + отдельные глобальные токены.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Почему FlashAttention важен</h2>
+      <p>FlashAttention не “аппроксимирует” softmax-attention. Он вычисляет тот же результат, но по блокам, не сохраняя огромную матрицу attention целиком.</p>
+      <div class="formula" data-no-tex>tile Q, K, V по блокам
+поддерживать running max и running sum для stable softmax
+сразу накапливать output
+не materialize полную attention matrix</div>
+      <div class="info">Это один из лучших примеров, где ускорение пришло не из новой модели, а из лучшей численной и memory-aware реализации.</div>
+    </div>
+    <div class="card">
+      <h2>Интерактив: как растёт цена attention</h2>
+      <div class="control"><span>Длина последовательности</span><input id="seq" type="range" min="512" max="32768" step="512" value="8192" oninput="drawComplexity()" /><strong id="seqVal">8192</strong></div>
+      <canvas id="effCanvas" width="860" height="280"></canvas>
+      <div id="effSummary" class="success"></div>
+    </div>
+    <div class="card">
+      <h2>Сравнение подходов</h2>
+      <table>
+        <thead><tr><th>Подход</th><th>Точность математики</th><th>Где выигрывает</th></tr></thead>
+        <tbody>
+          <tr><td>FlashAttention</td><td>Точный exact attention</td><td>Когда bottleneck — память и throughput</td></tr>
+          <tr><td>Sparse attention</td><td>Аппроксимирует full connectivity</td><td>Очень длинные последовательности, где не все токены обязаны видеть всех</td></tr>
+          <tr><td>Longformer / sliding window</td><td>Структурное ограничение связей</td><td>Документы, где локальный контекст особенно важен</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Кодовые ориентиры</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('flash', this)">FlashAttention</button>
+        <button class="tab-btn" onclick="showTab('window', this)">Sliding window</button>
+      </div>
+      <div id="flash" class="tab-panel active"><div class="formula" data-no-tex data-code-block># PyTorch 2.x / scaled dot product attention
+out = F.scaled_dot_product_attention(
+    q, k, v,
+    attn_mask=None,
+    dropout_p=0.0,
+    is_causal=True
+)</div></div>
+      <div id="window" class="tab-panel"><div class="formula" data-no-tex data-code-block># Псевдоидея window attention
+for token in sequence:
+    attend only to neighbors in [i-w, i+w]
+    plus optional global tokens</div></div>
+    </div>
+  </div>
+  <script>
+    function showTab(id, button) {
+      document.querySelectorAll(".tab-panel").forEach(function (node) { node.classList.remove("active"); });
+      document.querySelectorAll(".tab-btn").forEach(function (node) { node.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+      button.classList.add("active");
+    }
+    function drawComplexity() {
+      const seq = Number(document.getElementById("seq").value);
+      document.getElementById("seqVal").textContent = String(seq);
+      const canvas = document.getElementById("effCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 42;
+      ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad, 18); ctx.lineTo(pad, h - pad); ctx.lineTo(w - 18, h - pad); ctx.stroke();
+      const x = seq / 32768;
+      const full = x * x;
+      const flash = x * x * 0.42;
+      const sparse = x * 0.22;
+      const bars = [{label:"Full", val:full, color:"#ef4444"}, {label:"Flash", val:flash, color:"#10b981"}, {label:"Sparse", val:sparse, color:"#60a5fa"}];
+      bars.forEach(function (bar, idx) {
+        const bw = 120, gap = 80, bx = pad + 70 + idx * (bw + gap), bh = Math.max(12, bar.val * 190), by = h - pad - bh;
+        ctx.fillStyle = bar.color; ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = "#c9d1d9"; ctx.font = "13px system-ui"; ctx.fillText(bar.label, bx + 34, h - 16);
+      });
+      let text = "На такой длине даже exact attention уже начинает быть дорогим по памяти.";
+      if (seq >= 16384) text = "Длинный контекст: без memory-aware attention или sparsity стоимость растёт очень быстро.";
+      if (seq >= 24576) text = "Очень длинный режим: оптимизация attention становится уже архитектурным требованием, а не просто приятным бонусом.";
+      document.getElementById("effSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
+    }
+    drawComplexity();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

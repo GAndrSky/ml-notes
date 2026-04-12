@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.15a Kernel PCA, ICA и Autoencoders</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} table{width:100%;border-collapse:collapse;font-size:.92rem} th,td{padding:10px 12px;border-bottom:1px solid #26303a;vertical-align:top} th{color:var(--amber);text-align:left;background:#10161d}
+    .muted{color:var(--muted)}
+    .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px} .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}
+    .info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab-btn{background:#0f141b;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.92rem}.tab-btn.active{border-color:rgba(245,158,11,.55);color:var(--amber);background:rgba(245,158,11,.08)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control select{flex:1;background:#0b1016;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}table{display:block;overflow:auto}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 2 • Advanced</span>
+        <span class="tag done">✓ 2.15 Снижение размерности</span>
+        <span class="tag active">▶ 2.15a Kernel PCA / ICA / AE</span>
+      </div>
+      <h1>2.15a Kernel PCA, ICA и Autoencoders</h1>
+      <p class="muted">После обычного PCA логично задать вопрос: что делать, если структура данных нелинейна, если источники смешаны или если мы хотим учить представление прямо из данных? Здесь как раз встречаются Kernel PCA, ICA и autoencoders.</p>
+    </div>
+    <div class="card">
+      <h2>Три разных цели, которые часто путают</h2>
+      <table>
+        <thead><tr><th>Метод</th><th>Что ищет</th><th>Главная интуиция</th></tr></thead>
+        <tbody>
+          <tr><td>PCA / Kernel PCA</td><td>Оси с максимальной дисперсией</td><td>Хорошее низкоразмерное представление для структуры данных</td></tr>
+          <tr><td>ICA</td><td>Независимые скрытые источники</td><td>Разделение смешанных сигналов</td></tr>
+          <tr><td>Autoencoder</td><td>Код, из которого можно восстановить вход</td><td>Учить представление end-to-end через реконструкцию</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Kernel PCA</h2>
+      <div class="formula" data-render-tex data-tex-source="\tilde{K} = K - \mathbf{1}K - K\mathbf{1} + \mathbf{1}K\mathbf{1}">\tilde{K} = K - 1K - K1 + 1K1</div>
+      <p>Обычный PCA ищет главные компоненты в исходном пространстве. Kernel PCA сначала строит similarity matrix, центрирует её и делает eigendecomposition уже в kernel space. Это позволяет развернуть нелинейные многообразия.</p>
+      <div class="info">Если данные похожи на “кольца”, “спирали” или “дуги”, а линейный PCA теряет структуру, kernel PCA часто помогает увидеть полезную нелинейную геометрию.</div>
+    </div>
+    <div class="card">
+      <h2>ICA</h2>
+      <div class="formula" data-no-tex>x = A s
+наблюдение = смесь скрытых источников
+
+ICA ищет W такое, что:
+s_hat = W x
+компоненты s_hat максимально независимы</div>
+      <p>ICA не пытается поймать дисперсию как PCA. Оно ищет представление, где компоненты статистически независимы и как можно менее гауссовы. Это важно для blind source separation.</p>
+      <div class="warn">Если источники гауссовы или плохо различаются по higher-order statistics, ICA теряет почву под ногами. Это не универсальная замена PCA.</div>
+    </div>
+    <div class="card">
+      <h2>Autoencoder</h2>
+      <div class="formula" data-render-tex data-tex-source="z = f_\theta(x), \qquad \hat{x} = g_\phi(z), \qquad \min \|x - \hat{x}\|^2">z = f_θ(x),   x_hat = g_φ(z),   min ||x - x_hat||²</div>
+      <p>Если encoder и decoder достаточно гибкие, autoencoder может учить более сложное нелинейное сжатие, чем PCA. Линейный autoencoder с MSE и без лишних трюков, кстати, тесно связан с PCA.</p>
+      <div class="success">Важный мост к deep learning: autoencoder — это уже не просто метод уменьшения размерности, а полноценная обучаемая архитектура представлений.</div>
+    </div>
+    <div class="card">
+      <h2>Интерактив: какой метод уместнее</h2>
+      <div class="control">
+        <span>Ситуация</span>
+        <select id="scenario" onchange="explainScenario()">
+          <option value="nonlinear">Нелинейное многообразие и визуализация</option>
+          <option value="sources">Разделение смешанных источников</option>
+          <option value="repr">Нужно обучаемое представление</option>
+          <option value="baseline">Нужен простой baseline для табличных данных</option>
+        </select>
+      </div>
+      <div id="scenarioBox" class="info"></div>
+    </div>
+    <div class="card">
+      <h2>Практическое сравнение</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Kernel PCA</strong><br>Хорош для нелинейной структуры, но хуже масштабируется и зависит от ядра.</div>
+        <div class="info"><strong>ICA</strong><br>Отлично для сигналов и источников, но не всегда полезно как универсальный embedding.</div>
+        <div class="warn"><strong>Autoencoder</strong><br>Гибкий и мощный, но требует нормальной настройки, данных и контроля overfit.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Кодовые заготовки</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('kpca', this)">Kernel PCA</button>
+        <button class="tab-btn" onclick="showTab('ica', this)">ICA</button>
+        <button class="tab-btn" onclick="showTab('ae', this)">Autoencoder</button>
+      </div>
+      <div id="kpca" class="tab-panel active"><div class="formula" data-no-tex data-code-block>from sklearn.decomposition import KernelPCA
+
+model = KernelPCA(
+    n_components=2,
+    kernel="rbf",
+    gamma=0.1
+)
+Z = model.fit_transform(X)</div></div>
+      <div id="ica" class="tab-panel"><div class="formula" data-no-tex data-code-block>from sklearn.decomposition import FastICA
+
+model = FastICA(
+    n_components=5,
+    whiten="unit-variance",
+    random_state=42
+)
+S = model.fit_transform(X)</div></div>
+      <div id="ae" class="tab-panel"><div class="formula" data-no-tex data-code-block>z = encoder(x)
+x_hat = decoder(z)
+loss = F.mse_loss(x_hat, x)
+loss.backward()
+optimizer.step()</div></div>
+    </div>
+  </div>
+  <script>
+    function showTab(id, button) {
+      document.querySelectorAll(".tab-panel").forEach(function (node) { node.classList.remove("active"); });
+      document.querySelectorAll(".tab-btn").forEach(function (node) { node.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+      button.classList.add("active");
+    }
+    function explainScenario() {
+      const value = document.getElementById("scenario").value;
+      const box = document.getElementById("scenarioBox");
+      const mapping = {
+        nonlinear: "<strong>Лучший первый кандидат: Kernel PCA.</strong> Тебе важна нелинейная геометрия, а не обязательно интерпретируемость источников.",
+        sources: "<strong>Лучший первый кандидат: ICA.</strong> Здесь цель не “сжать данные”, а разлепить независимые генераторы сигнала.",
+        repr: "<strong>Лучший первый кандидат: Autoencoder.</strong> Нужен обучаемый encoder, который можно потом использовать как representation learner.",
+        baseline: "<strong>Лучший первый кандидат: обычный PCA.</strong> Если задача табличная и нужен спокойный baseline, не стоит сразу тащить сложный нелинейный метод."
+      };
+      box.innerHTML = mapping[value];
+    }
+    explainScenario();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

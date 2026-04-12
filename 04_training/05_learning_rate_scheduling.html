@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.hl-amber{color:var(--amber);font-weight:600;}.hl-green{color:var(--green);font-weight:600;}
+.hl-red{color:var(--red);font-weight:600;}.hl-blue{color:var(--blue);font-weight:600;}
+.hl-purple{color:var(--purple);font-weight:600;}.hl-pink{color:var(--pink);font-weight:600;}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}
+h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+input[type=number],select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;}
+input[type=number]{width:88px;text-align:center;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+canvas{border-radius:8px;display:block;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}
+.step.blue{border-left-color:var(--blue);background:#0d1426;}
+.mini{font-size:.84em;color:var(--muted);}
+body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;line-height:1.6;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.page{max-width:920px;margin:0 auto;padding:24px 18px 64px;}
+.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2);}
+.hero p{color:var(--muted);max-width:760px}
+.top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.top-tags .tag{margin-right:0}
+@media (max-width: 900px){.grid-3{grid-template-columns:1fr}}
+@media (max-width: 780px){.page{padding:18px 14px 54px}.grid-2{grid-template-columns:1fr}h1{font-size:1.7rem}}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-done">✓ 4.1 Backprop</span>
+        <span class="tag tag-done">✓ 4.2 Оптимизаторы</span>
+        <span class="tag tag-done">✓ 4.3 Adam / AdamW / Lion</span>
+        <span class="tag tag-done">✓ 4.4 Регуляризация</span>
+        <span class="tag tag-active">▶ 4.5 LR Scheduling</span>
+        <span class="tag tag-next">4.6 Gradient clipping</span>
+        <span class="tag tag-next">4.7 Mixed Precision</span>
+        <span class="tag tag-next">4.8 Инициализация</span>
+      </div>
+      <h1>4.5 Learning Rate Scheduling</h1>
+      <p class="muted">Warmup, cosine annealing, OneCycleLR и почему график learning rate часто влияет не меньше, чем выбор оптимизатора</p>
+    </div>
+
+<div class="card">
+  <h2>🎯 Почему одного фиксированного lr часто недостаточно</h2>
+  <p>Learning rate задаёт не только скорость обучения, но и <strong>режим движения</strong> по loss surface. На старте модели нужен один режим, в середине другой, а ближе к концу — третий.</p>
+  <div class="formula" data-render-tex data-tex-source="\theta_{t+1} = \theta_t - \eta_t g_t">θ_{t+1} = θ_t - η_t g_t</div>
+  <div class="grid-3">
+    <div class="info">
+      <h3>Старт</h3>
+      <p>Слишком большой lr ломает ранние шаги: активации скачут, Adam ещё не стабилизировал моменты, loss может взорваться.</p>
+    </div>
+    <div class="info">
+      <h3>Середина</h3>
+      <p>Нужен достаточно большой шаг, чтобы не ползти по плато и не застрять в плохом бассейне слишком рано.</p>
+    </div>
+    <div class="info">
+      <h3>Финиш</h3>
+      <p>Нужен маленький lr, чтобы не прыгать вокруг хорошего минимума и донастроить веса аккуратно.</p>
+    </div>
+  </div>
+  <div class="intuition">
+    💡 Хороший scheduler — это способ менять <strong>характер оптимизации во времени</strong>: сначала осторожно разогнаться, потом активно искать, потом мягко стабилизироваться.
+  </div>
+</div>
+
+<div class="card">
+  <h2>📈 Интерактив: сравнение графиков lr</h2>
+  <p class="muted">Меняй scheduler и параметры — график справа сразу покажет, как будет выглядеть обучение по шагам.</p>
+  <br>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+    <div>
+      <div class="mini">Scheduler</div>
+      <select id="schedType" onchange="drawSchedule()">
+        <option value="warmup_cosine">Warmup + Cosine</option>
+        <option value="cosine">Cosine annealing</option>
+        <option value="step">Step decay</option>
+        <option value="onecycle">OneCycleLR</option>
+      </select>
+    </div>
+    <div>
+      <div class="mini">Шагов</div>
+      <input id="totalSteps" type="number" value="1000" min="100" max="10000" step="100" oninput="drawSchedule()">
+    </div>
+    <div>
+      <div class="mini">Warmup</div>
+      <input id="warmupSteps" type="number" value="100" min="0" max="3000" step="10" oninput="drawSchedule()">
+    </div>
+    <div>
+      <div class="mini">lr max</div>
+      <input id="lrMax" type="number" value="0.001" min="0.00001" max="0.1" step="0.0001" oninput="drawSchedule()">
+    </div>
+    <div>
+      <div class="mini">lr min</div>
+      <input id="lrMin" type="number" value="0.00001" min="0" max="0.01" step="0.00001" oninput="drawSchedule()">
+    </div>
+  </div>
+  <canvas id="scheduleCanvas" width="880" height="300" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;"></canvas>
+  <div id="scheduleFormula" class="formula" data-no-tex></div>
+  <div id="scheduleNotes" class="step blue"></div>
+</div>
+
+<div class="card">
+  <h2>🧭 Основные scheduler-стратегии</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Warmup</h3>
+      <div class="formula" data-render-tex data-tex-source="\eta_t = \eta_{\max}\cdot \frac{t}{T_{\text{warmup}}}">η_t = η_max · t / T_warmup</div>
+      <p>Особенно важен для Transformer и больших batch. Убирает слишком резкий старт, пока статистики оптимизатора ещё сырые.</p>
+    </div>
+    <div>
+      <h3>Cosine annealing</h3>
+      <div class="formula" data-render-tex data-tex-source="\eta_t = \eta_{\min} + \frac{1}{2}(\eta_{\max}-\eta_{\min})(1+\cos(\pi t/T))">η_t = η_min + 0.5(η_max - η_min)(1 + cos(πt / T))</div>
+      <p>Даёт мягкое затухание без резких скачков. Хорошо работает как стандартный “безопасный” scheduler.</p>
+    </div>
+    <div>
+      <h3>Step decay</h3>
+      <div class="formula" data-render-tex data-tex-source="\eta_t = \eta_0 \gamma^{\lfloor t / s \rfloor}">η_t = η₀ · γ^(⌊t / s⌋)</div>
+      <p>Простой и понятный. Хорош в классических CNN-режимах, но грубее, чем cosine.</p>
+    </div>
+    <div>
+      <h3>OneCycleLR</h3>
+      <div class="formula" data-no-tex>Фаза 1: lr быстро растёт до lr_max
+Фаза 2: lr плавно спадает ниже стартового
+Иногда вместе с этим momentum идёт в противофазе</div>
+      <p>Помогает сначала aggressively explore, а потом резко перейти в fine-tuning режим.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🧠 Почему warmup особенно важен в современных моделях</h2>
+  <div class="grid-2">
+    <div>
+      <div class="warn">
+        Без warmup ранние градиенты могут быть шумными и плохо масштабированными. Это особенно заметно в Transformer, где в начале обучения ещё не устоялись attention-логиты, нормализация и статистики Adam.
+      </div>
+      <div class="formula" data-no-tex>На старте:
+m_t и v_t ещё неустойчивы
+логиты attention могут быть резкими
+большой lr + шумные градиенты → loss spikes / divergence</div>
+    </div>
+    <div>
+      <div class="intuition">
+        💡 Warmup — это не “магическая традиция”, а способ временно ограничить агрессию оптимизатора, пока сеть не вошла в рабочий режим.
+      </div>
+      <div class="info">
+        Практически это особенно важно при:
+        большом batch size, AdamW, Pre-LN Transformer, mixed precision и обучении с нуля без хорошей инициализации чекпоинтом.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🧪 Что смотреть на практике</h2>
+  <div class="step hl">Если train loss в самом начале резко взлетает или появляется NaN — первым делом смотри на lr и наличие warmup.</div>
+  <div class="step green">Если обучение идёт слишком вяло и plateaus слишком рано — scheduler может быть слишком консервативным.</div>
+  <div class="step blue">Если ближе к концу модель шумит и не доходит до хорошего минимума — возможно, tail lr слишком большой.</div>
+  <div class="formula" data-no-tex>Хороший сигнал:
+ранний этап — loss быстро, но стабильно падает
+середина — model explores и выбирает basin
+конец — lr маленький, метрики “дошлифовываются”</div>
+</div>
+
+<div class="card">
+  <h2>💻 PyTorch: scheduler в коде</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('cosine',this)">Cosine</button>
+    <button onclick="showCode('warmup',this)">Warmup + cosine</button>
+    <button onclick="showCode('onecycle',this)">OneCycleLR</button>
+  </div>
+  <div id="codeContent" class="formula" data-no-tex data-code-block style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+const CODES = {
+  cosine: `optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer,
+    T_max=num_training_steps,
+    eta_min=1e-5
+)
+
+for step, batch in enumerate(loader):
+    loss = step_fn(batch)
+    loss.backward()
+    optimizer.step()
+    scheduler.step()
+    optimizer.zero_grad()`,
+  warmup: `optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+
+def lr_lambda(step):
+    if step < warmup_steps:
+        return step / max(1, warmup_steps)
+    progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+    return min_ratio + 0.5 * (1 - min_ratio) * (1 + math.cos(math.pi * progress))
+
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)`,
+  onecycle: `optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    optimizer,
+    max_lr=3e-3,
+    total_steps=len(loader) * epochs,
+    pct_start=0.1,
+    anneal_strategy="cos",
+    div_factor=10.0,
+    final_div_factor=100.0
+)`
+};
+
+function getScheduleValue(type, step, total, warmup, lrMin, lrMax){
+  if(type === 'step'){
+    const gamma = 0.2;
+    const s = Math.max(1, Math.floor(total / 3));
+    return lrMax * Math.pow(gamma, Math.floor(step / s));
+  }
+  if(type === 'cosine'){
+    const ratio = step / Math.max(1, total - 1);
+    return lrMin + 0.5 * (lrMax - lrMin) * (1 + Math.cos(Math.PI * ratio));
+  }
+  if(type === 'onecycle'){
+    const rise = Math.max(1, Math.floor(total * 0.12));
+    if(step <= rise){
+      return lrMin + (lrMax - lrMin) * (step / rise);
+    }
+    const ratio = (step - rise) / Math.max(1, total - rise - 1);
+    return lrMin * 0.1 + 0.5 * (lrMax - lrMin * 0.1) * (1 + Math.cos(Math.PI * ratio));
+  }
+  if(step < warmup){
+    return lrMax * (step / Math.max(1, warmup));
+  }
+  const ratio = (step - warmup) / Math.max(1, total - warmup - 1);
+  return lrMin + 0.5 * (lrMax - lrMin) * (1 + Math.cos(Math.PI * ratio));
+}
+
+function drawSchedule(){
+  const type = document.getElementById('schedType').value;
+  const total = Math.max(50, Number(document.getElementById('totalSteps').value) || 1000);
+  const warmup = Math.min(total - 1, Math.max(0, Number(document.getElementById('warmupSteps').value) || 0));
+  const lrMax = Math.max(1e-7, Number(document.getElementById('lrMax').value) || 1e-3);
+  const lrMin = Math.max(0, Number(document.getElementById('lrMin').value) || 1e-5);
+  const c = document.getElementById('scheduleCanvas');
+  const ctx = c.getContext('2d');
+  const values = [];
+  for(let i=0;i<total;i++) values.push(getScheduleValue(type, i, total, warmup, lrMin, lrMax));
+  const maxV = Math.max(...values);
+  const minV = Math.min(...values);
+
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#0a0d14';
+  ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = '#1f2937';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=5;i++){
+    const y = 24 + i * ((c.height - 48) / 5);
+    ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(c.width - 20,y); ctx.stroke();
+  }
+  ctx.strokeStyle = '#334155';
+  ctx.beginPath(); ctx.moveTo(50,20); ctx.lineTo(50,c.height-26); ctx.lineTo(c.width-20,c.height-26); ctx.stroke();
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  values.forEach((v, idx) => {
+    const x = 50 + idx / Math.max(1, total - 1) * (c.width - 70);
+    const y = c.height - 26 - ((v - minV) / Math.max(1e-12, maxV - minV || 1)) * (c.height - 52);
+    if(idx === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  if(type === 'warmup_cosine' && warmup > 0){
+    const xWarm = 50 + warmup / Math.max(1, total - 1) * (c.width - 70);
+    ctx.strokeStyle = '#60a5fa';
+    ctx.setLineDash([7,5]);
+    ctx.beginPath(); ctx.moveTo(xWarm,20); ctx.lineTo(xWarm,c.height-26); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px system-ui';
+  ctx.fillText('lr', 18, 18);
+  ctx.fillText('0', 42, c.height - 8);
+  ctx.fillText(String(total), c.width - 42, c.height - 8);
+  ctx.fillText(maxV.toExponential(1), 8, 34);
+  ctx.fillText(minV.toExponential(1), 8, c.height - 30);
+
+  const formula = document.getElementById('scheduleFormula');
+  const notes = document.getElementById('scheduleNotes');
+  const templates = {
+    warmup_cosine: `Warmup + Cosine\n0 → ${warmup} шаг: линейный разгон до ${lrMax}\nпосле ${warmup}: cosine decay до ${lrMin}`,
+    cosine: `Cosine annealing\nстарт: ${lrMax}\nфиниш: ${lrMin}\nмягкое затухание без резких ступеней`,
+    step: `Step decay\nкаждый крупный interval learning rate резко падает\nпростая схема, но менее гладкая`,
+    onecycle: `OneCycleLR\nсначала lr растёт до ${lrMax}\nпотом падает ниже стартового уровня\nчасто хорошо работает с Momentum/SGD`
+  };
+  formula.textContent = templates[type];
+  notes.textContent = ({
+    warmup_cosine: 'Хороший дефолт для Transformer и больших моделей: безопасный старт + плавное затухание.',
+    cosine: 'Универсальный scheduler, когда нужен спокойный и предсказуемый decay.',
+    step: 'Подходит для классических режимов обучения, но ступени могут давать грубые скачки в динамике loss.',
+    onecycle: 'Часто хорош для быстрого обучения: сначала aggressive exploration, потом сильное сжатие шага.'
+  })[type];
+}
+
+function showCode(key, btn){
+  document.querySelectorAll('#codeTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent = CODES[key];
+}
+
+drawSchedule();
+showCode('cosine', document.querySelector('#codeTabs button'));
+</script>
+  </div>
+
+<script src="../shared-nav.js"></script>
+</body>
+</html>

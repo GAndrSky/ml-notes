@@ -28,9 +28,14 @@
         { path: "02_classic_ml/10_decision_trees.html", label: "2.10 Decision Trees" },
         { path: "02_classic_ml/11_bagging_random_forest.html", label: "2.11 Random Forest" },
         { path: "02_classic_ml/12_boosting.html", label: "2.12 Boosting" },
+        { path: "02_classic_ml/12a_gradient_boosting_theory.html", label: "2.12a GB Theory" },
+        { path: "02_classic_ml/12b_gradient_boosting_in_practice.html", label: "2.12b GBDT Practice" },
         { path: "02_classic_ml/13_support_vector_machines.html", label: "2.13 SVM" },
+        { path: "02_classic_ml/13a_kernel_methods_deeper.html", label: "2.13a Kernels" },
         { path: "02_classic_ml/14_clustering.html", label: "2.14 Кластеризация" },
+        { path: "02_classic_ml/14a_gaussian_mixtures_em.html", label: "2.14a GMM / EM" },
         { path: "02_classic_ml/15_dimensionality_reduction.html", label: "2.15 Снижение размерности" },
+        { path: "02_classic_ml/15a_kernel_pca_ica_autoencoders.html", label: "2.15a KPCA / ICA" },
         { path: "02_classic_ml/16_ensembles.html", label: "2.16 Ансамбли" },
         { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 Валидация / HPO" },
         { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 Несбалансированные классы" },
@@ -57,7 +62,11 @@
         { path: "04_training/01_backpropagation.html", label: "4.1 Backprop" },
         { path: "04_training/02_optimizers.html", label: "4.2 Оптимизаторы" },
         { path: "04_training/03_adam_adamw_lion.html", label: "4.3 Adam / Lion" },
-        { path: "04_training/04_regularization.html", label: "4.4 Регуляризация" }
+        { path: "04_training/04_regularization.html", label: "4.4 Регуляризация" },
+        { path: "04_training/05_learning_rate_scheduling.html", label: "4.5 LR Scheduling" },
+        { path: "04_training/06_gradient_clipping_and_stability.html", label: "4.6 Clipping / Stability" },
+        { path: "04_training/07_mixed_precision_training.html", label: "4.7 Mixed Precision" },
+        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 Инициализация" }
       ]
     },
     {
@@ -69,7 +78,44 @@
         { path: "05_architectures/02_rnn_lstm.html", label: "5.2 RNN / LSTM" },
         { path: "05_architectures/03_transformer_attention.html", label: "5.3 Attention" },
         { path: "05_architectures/04_transformer_architecture.html", label: "5.4 Архитектура" },
-        { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm" }
+        { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm" },
+        { path: "05_architectures/06_positional_encodings.html", label: "5.6 Positional Encodings" },
+        { path: "05_architectures/07_efficient_attention.html", label: "5.7 Efficient Attention" },
+        { path: "05_architectures/08_vision_transformer.html", label: "5.8 ViT" }
+      ]
+    },
+    {
+      id: "llm",
+      label: "Блок 6",
+      title: "LLM",
+      pages: [
+        { path: "06_llm/01_tokenization_bpe.html", label: "6.1 Tokenization / BPE" },
+        { path: "06_llm/02_pretraining_objectives.html", label: "6.2 Pre-training" },
+        { path: "06_llm/03_instruction_tuning.html", label: "6.3 Instruction tuning" },
+        { path: "06_llm/04_rlhf.html", label: "6.4 RLHF" },
+        { path: "06_llm/05_lora_qlora.html", label: "6.5 LoRA / QLoRA" },
+        { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws" }
+      ]
+    },
+    {
+      id: "generative",
+      label: "Блок 7",
+      title: "Generative Models",
+      pages: [
+        { path: "07_generative_models/01_variational_autoencoders.html", label: "7.1 VAE" },
+        { path: "07_generative_models/02_generative_adversarial_networks.html", label: "7.2 GAN" },
+        { path: "07_generative_models/03_diffusion_models.html", label: "7.3 Diffusion" }
+      ]
+    },
+    {
+      id: "training-practice",
+      label: "Блок 8",
+      title: "Практика обучения",
+      pages: [
+        { path: "08_training_practice/01_distributed_training.html", label: "8.1 DDP / FSDP" },
+        { path: "08_training_practice/02_gradient_checkpointing.html", label: "8.2 Checkpointing" },
+        { path: "08_training_practice/03_profiling_and_performance.html", label: "8.3 Profiling" },
+        { path: "08_training_practice/04_debugging_loss_spikes.html", label: "8.4 Loss spikes" }
       ]
     }
   ];

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}.step.blue{border-left-color:var(--blue);background:#0d1426;}.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+input[type=range],select{width:100%;accent-color:var(--green);cursor:pointer;}
+select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;width:auto;}
+canvas{border-radius:8px;display:block;}
+body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;line-height:1.6;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.page{max-width:920px;margin:0 auto;padding:24px 18px 64px;}
+.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2);}
+.hero p{color:var(--muted);max-width:760px}
+.top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}.top-tags .tag{margin-right:0}
+@media (max-width:900px){.grid-3{grid-template-columns:1fr}}
+@media (max-width:780px){.page{padding:18px 14px 54px}.grid-2{grid-template-columns:1fr}h1{font-size:1.7rem}}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-done">✓ 4.1 Backprop</span>
+        <span class="tag tag-done">✓ 4.2 Оптимизаторы</span>
+        <span class="tag tag-done">✓ 4.3 Adam / AdamW / Lion</span>
+        <span class="tag tag-done">✓ 4.4 Регуляризация</span>
+        <span class="tag tag-done">✓ 4.5 LR Scheduling</span>
+        <span class="tag tag-done">✓ 4.6 Gradient clipping</span>
+        <span class="tag tag-done">✓ 4.7 Mixed Precision</span>
+        <span class="tag tag-active">▶ 4.8 Инициализация</span>
+      </div>
+      <h1>4.8 Инициализация весов глубже</h1>
+      <p class="muted">Почему плохой init убивает сигнал, откуда берутся Xavier и He, и как variance propagation объясняет устойчивость глубоких сетей</p>
+    </div>
+
+<div class="card">
+  <h2>🌱 Почему инициализация так критична</h2>
+  <p>На старте обучения сеть ещё ничего не знает. Если веса слишком маленькие, сигнал быстро затухает. Если слишком большие — активации и градиенты взрываются. Хорошая инициализация пытается сохранить разумный масштаб сигнала по глубине.</p>
+  <div class="grid-2">
+    <div>
+      <div class="formula" data-render-tex data-tex-source="\operatorname{Var}(z_l) \approx n_{\text{in}} \operatorname{Var}(W_l)\operatorname{Var}(a_{l-1})">Var(z_l) ≈ n_in · Var(W_l) · Var(a_{l-1})</div>
+      <p>Если этот множитель систематически меньше 1, сигнал затухает. Если больше 1 — растёт от слоя к слою.</p>
+    </div>
+    <div>
+      <div class="formula" data-render-tex data-tex-source="\operatorname{Var}\left(\frac{\partial L}{\partial a_{l-1}}\right) \approx n_{\text{out}}\operatorname{Var}(W_l)\operatorname{Var}\left(\frac{\partial L}{\partial z_l}\right)">Var(∂L/∂a_{l-1}) ≈ n_out · Var(W_l) · Var(∂L/∂z_l)</div>
+      <p>Инициализация должна заботиться не только о forward-потоке, но и о том, чтобы backward не умер уже на первых шагах.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📐 Откуда берётся Xavier / Glorot</h2>
+  <div class="grid-2">
+    <div>
+      <p>Для симметричных активаций вроде tanh удобно сохранить variance примерно одинаковой и во forward, и в backward. Это приводит к компромиссу между <code>fan_in</code> и <code>fan_out</code>.</p>
+      <div class="formula" data-render-tex data-tex-source="\operatorname{Var}(W) \approx \frac{2}{n_{\text{in}} + n_{\text{out}}}">Var(W) ≈ 2 / (n_in + n_out)</div>
+    </div>
+    <div>
+      <div class="info">Xavier особенно хорош там, где активация не обрезает половину сигнала. Поэтому он исторически хорошо сочетается с tanh и линейными слоями.</div>
+      <div class="formula" data-no-tex>Glorot uniform:
+W ~ U[-a, a]
+a = sqrt(6 / (fan_in + fan_out))</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔥 Почему He / Kaiming лучше для ReLU</h2>
+  <div class="grid-2">
+    <div>
+      <p>ReLU в среднем “выключает” примерно половину активаций. Значит, effective variance после нелинейности падает примерно в 2 раза, и это нужно компенсировать уже на инициализации весов.</p>
+      <div class="formula" data-render-tex data-tex-source="\operatorname{Var}(W) \approx \frac{2}{n_{\text{in}}}">Var(W) ≈ 2 / n_in</div>
+    </div>
+    <div>
+      <div class="intuition">💡 Xavier предполагает более “симметричный” поток сигнала. ReLU ломает эту симметрию, поэтому He init добавляет больше дисперсии в веса, чтобы после отсечения половины нейронов сигнал не схлопнулся.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📉 Интерактив: как variance ведёт себя по глубине</h2>
+  <p class="muted">Это простая модель variance propagation. Она не заменяет полную теорию, но очень наглядно показывает, почему плохой init убивает обучение ещё до первого optimizer.step().</p>
+  <br>
+  <div class="grid-2">
+    <div>
+      <div class="muted" style="margin-bottom:4px;">Число слоёв: <span id="depthVal" style="color:var(--green);font-weight:600;">24</span></div>
+      <input id="depthRange" type="range" min="4" max="80" step="1" value="24" oninput="drawInit()">
+      <div class="muted" style="margin:10px 0 4px;">Режим</div>
+      <select id="initMode" onchange="drawInit()">
+        <option value="xavier_tanh">Xavier + tanh/linear</option>
+        <option value="he_relu">He + ReLU</option>
+        <option value="too_small">Слишком маленький init</option>
+        <option value="too_large">Слишком большой init</option>
+      </select>
+    </div>
+    <div>
+      <canvas id="initCanvas" width="420" height="250" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:420px;"></canvas>
+      <div id="initSummary" class="formula" data-no-tex></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🧠 Практические следствия</h2>
+  <div class="step hl">Если сеть глубокая и уже на старте выдаёт почти нули или бесконечности — первым делом проверь init.</div>
+  <div class="step blue">Residual connections и normalization снижают чувствительность к init, но не отменяют её полностью.</div>
+  <div class="step green">Для Transformer важны не только init самих весов, но и scale attention-логитов, residual path и нормализация.</div>
+  <div class="step blue">Orthogonal init, scaled residual init и специальные схемы для very deep nets — следующий уровень после Xavier/He.</div>
+</div>
+
+<div class="card">
+  <h2>💻 PyTorch: инициализация в коде</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('xavier',this)">Xavier</button>
+    <button onclick="showCode('he',this)">He / Kaiming</button>
+    <button onclick="showCode('custom',this)">Custom init</button>
+  </div>
+  <div id="codeContent" class="formula" data-no-tex data-code-block style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+const CODES = {
+  xavier: `for module in model.modules():
+    if isinstance(module, nn.Linear):
+        nn.init.xavier_uniform_(module.weight)
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)`,
+  he: `for module in model.modules():
+    if isinstance(module, (nn.Linear, nn.Conv2d)):
+        nn.init.kaiming_normal_(module.weight, mode='fan_in', nonlinearity='relu')
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)`,
+  custom: `def init_transformer(module):
+    if isinstance(module, nn.Linear):
+        nn.init.normal_(module.weight, mean=0.0, std=0.02)
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)
+    elif isinstance(module, nn.Embedding):
+        nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+model.apply(init_transformer)`
+};
+
+function drawInit(){
+  const depth = Number(document.getElementById('depthRange').value);
+  const mode = document.getElementById('initMode').value;
+  document.getElementById('depthVal').textContent = String(depth);
+  let factor = 1, title = '';
+  if(mode === 'xavier_tanh'){ factor = 1.0; title = 'variance примерно сохраняется'; }
+  if(mode === 'he_relu'){ factor = 1.0; title = 'после ReLU variance стабилизируется'; }
+  if(mode === 'too_small'){ factor = 0.72; title = 'сигнал затухает'; }
+  if(mode === 'too_large'){ factor = 1.28; title = 'сигнал разгоняется'; }
+  const vals = [1];
+  for(let i=1;i<depth;i++) vals.push(vals[vals.length - 1] * factor);
+  const maxV = Math.max(...vals, 1);
+  const c = document.getElementById('initCanvas'), ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle = '#0a0d14'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = '#334155'; ctx.beginPath(); ctx.moveTo(40, 18); ctx.lineTo(40, c.height - 26); ctx.lineTo(c.width - 18, c.height - 26); ctx.stroke();
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2.5; ctx.beginPath();
+  vals.forEach((v, i) => { const x = 40 + i / Math.max(1, depth - 1) * (c.width - 58); const y = c.height - 26 - (Math.min(v, maxV) / maxV) * (c.height - 46); if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  ctx.stroke();
+  ctx.fillStyle = '#8b949e'; ctx.font = '12px system-ui'; ctx.fillText('layer depth', c.width - 74, c.height - 6); ctx.fillText('variance', 8, 18);
+  document.getElementById('initSummary').textContent =
+    `режим: ${mode}\nприближённая динамика: ${title}\nvariance на последнем слое ≈ ${vals[vals.length - 1].toFixed(4)}\nидея: хороший init держит масштаб сигнала около O(1), а не даёт ему экспоненциально схлопнуться или взорваться`;
+}
+
+function showCode(key, btn){
+  document.querySelectorAll('#codeTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent = CODES[key];
+}
+
+drawInit();
+showCode('xavier', document.querySelector('#codeTabs button'));
+</script>
+  </div>
+
+<script src="../shared-nav.js"></script>
+</body>
+</html>

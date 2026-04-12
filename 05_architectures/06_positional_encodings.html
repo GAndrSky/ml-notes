@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.6 Positional Encodings глубже</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444;--purple:#a78bfa}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} table{width:100%;border-collapse:collapse;font-size:.92rem} th,td{padding:10px 12px;border-bottom:1px solid #26303a;vertical-align:top} th{color:var(--amber);text-align:left;background:#10161d}
+    .muted{color:var(--muted)}
+    .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px} .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}
+    .info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)} .control select{flex:1;background:#0b1016;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px}
+    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab-btn{background:#0f141b;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.92rem}.tab-btn.active{border-color:rgba(245,158,11,.55);color:var(--amber);background:rgba(245,158,11,.08)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}table{display:block;overflow:auto}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 5 • Advanced</span>
+        <span class="tag done">✓ 5.3 Attention</span>
+        <span class="tag done">✓ 5.4 Архитектура</span>
+        <span class="tag done">✓ 5.5 ResNet / Norm</span>
+        <span class="tag active">▶ 5.6 Positional Encodings</span>
+        <span class="tag">5.7 Efficient Attention</span>
+      </div>
+      <h1>5.6 Positional Encodings глубже</h1>
+      <p class="muted">Почему attention сам по себе не знает порядок, чем learned PE отличаются от sinusoidal, и почему RoPE и ALiBi так хорошо легли в современные LLM.</p>
+    </div>
+    <div class="card">
+      <h2>Откуда вообще берётся проблема позиции</h2>
+      <p>Self-attention видит набор токенов и их попарные сходства, но без дополнительного сигнала перестановка токенов не меняет операцию принципиально. Значит, информацию о порядке нужно добавить явно или встроить в механизм attention.</p>
+      <div class="info">Именно поэтому PE — не косметика, а обязательный источник информации о последовательности.</div>
+    </div>
+    <div class="card">
+      <h2>Три больших семейства</h2>
+      <table>
+        <thead><tr><th>Подход</th><th>Что кодирует</th><th>Сильная сторона</th></tr></thead>
+        <tbody>
+          <tr><td>Sinusoidal / learned absolute</td><td>Абсолютную позицию токена</td><td>Просто добавить к embedding</td></tr>
+          <tr><td>RoPE</td><td>Относительную позицию через вращение Q/K</td><td>Хорошо переносится на длинные контексты</td></tr>
+          <tr><td>ALiBi</td><td>Линейный bias по расстоянию</td><td>Дешево, просто и стабильно для extrapolation</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Формулы</h2>
+      <div class="formula" data-render-tex data-tex-source="PE(pos, 2i) = \sin\left(\frac{pos}{10000^{2i/d}}\right), \qquad PE(pos, 2i+1) = \cos\left(\frac{pos}{10000^{2i/d}}\right)">PE(pos, 2i) = sin(pos / 10000^(2i/d)),   PE(pos, 2i+1) = cos(pos / 10000^(2i/d))</div>
+      <div class="formula" data-no-tex>RoPE:
+Q, K разбиваются на пары координат
+каждая пара поворачивается на угол, зависящий от позиции
+attention score начинает зависеть от относительного смещения</div>
+      <div class="formula" data-no-tex>ALiBi:
+score_ij = q_i · k_j / sqrt(d)  -  m_h · |i - j|
+где m_h — свой slope для каждой головы</div>
+    </div>
+    <div class="card">
+      <h2>Интерактив: как ведут себя методы на расстоянии</h2>
+      <div class="control"><span>Метод</span><select id="peType" onchange="drawPE()"><option value="sin">Sinusoidal</option><option value="rope">RoPE</option><option value="alibi">ALiBi</option></select></div>
+      <div class="control"><span>Макс. расстояние</span><input id="distance" type="range" min="16" max="256" step="16" value="128" oninput="drawPE()" /><strong id="distanceVal">128</strong></div>
+      <canvas id="peCanvas" width="860" height="260"></canvas>
+      <div id="peSummary" class="success"></div>
+    </div>
+    <div class="card">
+      <h2>Когда что выбирать</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Learned PE</strong><br>Хорошо, если длины фиксированные и тебе важнее гибкость внутри обучаемого окна.</div>
+        <div class="info"><strong>RoPE</strong><br>Часто лучший современный выбор для decoder-only LLM и long-context scaling.</div>
+        <div class="warn"><strong>ALiBi</strong><br>Очень прост и стабилен, но не всегда выигрывает по общему качеству на коротких окнах.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Кодовые идеи</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('sin', this)">Sinusoidal</button>
+        <button class="tab-btn" onclick="showTab('rope', this)">RoPE</button>
+      </div>
+      <div id="sin" class="tab-panel active"><div class="formula" data-no-tex data-code-block>position = torch.arange(seq_len)[:, None]
+div_term = torch.exp(
+    torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+)
+pe[:, 0::2] = torch.sin(position * div_term)
+pe[:, 1::2] = torch.cos(position * div_term)</div></div>
+      <div id="rope" class="tab-panel"><div class="formula" data-no-tex data-code-block># q, k: [batch, heads, seq, dim]
+# rotate_half swaps pairs with sign change
+q_rot = q * cos + rotate_half(q) * sin
+k_rot = k * cos + rotate_half(k) * sin</div></div>
+    </div>
+  </div>
+  <script>
+    function showTab(id, button) {
+      document.querySelectorAll(".tab-panel").forEach(function (node) { node.classList.remove("active"); });
+      document.querySelectorAll(".tab-btn").forEach(function (node) { node.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+      button.classList.add("active");
+    }
+    function drawPE() {
+      const type = document.getElementById("peType").value;
+      const maxD = Number(document.getElementById("distance").value);
+      document.getElementById("distanceVal").textContent = String(maxD);
+      const canvas = document.getElementById("peCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 42;
+      ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad, 18); ctx.lineTo(pad, h - pad); ctx.lineTo(w - 18, h - pad); ctx.stroke();
+      ctx.beginPath(); ctx.lineWidth = 2.5;
+      let color = "#60a5fa", summary = "Sinusoidal PE даёт гладкий и периодический сигнал абсолютной позиции.";
+      for (let i = 0; i <= 150; i += 1) {
+        const d = i / 150 * maxD;
+        let yNorm;
+        if (type === "sin") yNorm = 0.5 + 0.35 * Math.sin(d / 10);
+        else if (type === "rope") { color = "#10b981"; yNorm = 0.52 + 0.28 * Math.cos(d / 14) * Math.exp(-d / (maxD * 1.1)); summary = "RoPE сохраняет фазовую структуру и хорошо переносит относительные расстояния."; }
+        else { color = "#f59e0b"; yNorm = Math.max(0.08, 0.9 - d / maxD * 0.72); summary = "ALiBi просто и монотонно штрафует далёкие токены через bias в logits attention."; }
+        const x = pad + i / 150 * (w - pad - 24), y = 20 + (1 - yNorm) * (h - pad - 28);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color; ctx.stroke();
+      document.getElementById("peSummary").innerHTML = "<strong>Интерпретация.</strong> " + summary;
+    }
+    drawPE();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

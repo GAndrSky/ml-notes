@@ -2,10 +2,12 @@
   var script = document.currentScript;
   var rootUrl = new URL(".", script && script.src ? script.src : window.location.href);
   var indexScriptUrl = new URL("shared-search-index.js", rootUrl).href;
+  var extraIndexScriptUrl = new URL("shared-search-extra-index.js", rootUrl).href;
   var searchCssUrl = new URL("shared-search.css", rootUrl).href;
   var fuseUrl = new URL("vendor/fuse.min.js", rootUrl).href;
   var MIN_QUERY_LENGTH = 2;
   var searchIndexPromise = null;
+  var searchExtraIndexPromise = null;
 
   function escapeHtml(value) {
     return String(value)
@@ -75,6 +77,41 @@
     }
 
     return searchIndexPromise;
+  }
+
+  function ensureExtraSearchIndex() {
+    if (window.__mlNotesSearchExtraIndex) {
+      return Promise.resolve(window.__mlNotesSearchExtraIndex);
+    }
+
+    if (!searchExtraIndexPromise) {
+      searchExtraIndexPromise = ensureScript(extraIndexScriptUrl, "__mlNotesSearchExtraIndex", "ml-notes-search-extra-index-script")
+        .then(function () {
+          return window.__mlNotesSearchExtraIndex || [];
+        })
+        .catch(function () {
+          return [];
+        });
+    }
+
+    return searchExtraIndexPromise;
+  }
+
+  function mergeSearchRecords(baseRecords, extraRecords) {
+    var merged = [];
+    var seen = Object.create(null);
+
+    [baseRecords || [], extraRecords || []].forEach(function (records) {
+      records.forEach(function (record) {
+        if (!record || !record.path || seen[record.path]) {
+          return;
+        }
+        seen[record.path] = true;
+        merged.push(record);
+      });
+    });
+
+    return merged;
   }
 
   function buildSnippet(record, query) {
@@ -223,9 +260,10 @@
 
       return Promise.all([
         ensureSearchIndex(),
+        ensureExtraSearchIndex(),
         ensureScript(fuseUrl, "Fuse", "ml-notes-fuse-script")
       ]).then(function (payload) {
-        docs = payload[0] || [];
+        docs = mergeSearchRecords(payload[0], payload[1]);
 
         if (window.Fuse && docs.length) {
           fuse = new window.Fuse(docs, {
@@ -247,7 +285,7 @@
         return { docs: docs, fuse: fuse };
       }).catch(function () {
         isLoading = false;
-        docs = window.__mlNotesSearchIndex || [];
+        docs = mergeSearchRecords(window.__mlNotesSearchIndex || [], window.__mlNotesSearchExtraIndex || []);
         return { docs: docs, fuse: null };
       });
     }

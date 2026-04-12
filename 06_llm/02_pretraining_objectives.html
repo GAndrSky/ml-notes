@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.2 LLM Pre-training</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} ul{margin:8px 0 8px 18px;padding:0} li{margin:5px 0}
+    .muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 6 • LLM</span>
+        <span class="tag done">✓ 6.1 Tokenization</span>
+        <span class="tag active">▶ 6.2 Pre-training</span>
+        <span class="tag">6.3 Instruction tuning</span>
+        <span class="tag">6.4 RLHF</span>
+      </div>
+      <h1>6.2 LLM Pre-training</h1>
+      <p class="muted">Pre-training — это фаза, где модель учится языковой статистике, фактам, шаблонам рассуждения и формату текста ещё до всякого “полезного поведения” в чате. Без неё instruction tuning просто не на что накладывать.</p>
+    </div>
+
+    <div class="card">
+      <h2>Базовая цель decoder-only LLM</h2>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L} = - \sum_{t=1}^{T} \log p_\theta(x_t \mid x_{<t})">L = - Σ log p_θ(x_t | x_&lt;t)</div>
+      <p>Модель последовательно предсказывает следующий токен. Это простая цель, но из неё вырастает многое: грамматика, факты, код, стиль, локальные и частично глобальные зависимости.</p>
+      <div class="info">Важно не путать: pre-training не учит модель “быть ассистентом”. Он учит её хорошо моделировать распределение текста.</div>
+    </div>
+
+    <div class="card">
+      <h2>Почему next-token prediction вообще работает</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Плотный сигнал</strong><br>Почти каждый токен даёт supervised-ошибку.</div>
+        <div class="info"><strong>Широкое покрытие</strong><br>Одна цель покрывает факты, стиль, синтаксис и частично reasoning traces.</div>
+        <div class="warn"><strong>Но не всё</strong><br>Чистое language modeling не гарантирует полезность, честность и alignment.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data mixture важнее, чем кажется</h2>
+      <p>Данные для pre-training — не просто “побольше интернета”. Смесь документов определяет стиль, устойчивость, качество на коде, математике, диалогах и даже склонность к hallucination.</p>
+      <div class="formula" data-no-tex>Корпус обычно включает:
+- web text
+- books
+- code
+- academic / reference sources
+- filtered conversational data</div>
+      <div class="warn">Плохой pretraining corpus потом очень трудно “дочинить” только RLHF или instruction tuning. Если базовая статистика грязная, верхние слои alignment исправляют это ограниченно.</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: что происходит при росте токенов</h2>
+      <div class="control"><span>Токенов обучения (млрд)</span><input id="tokens" type="range" min="50" max="3000" step="50" value="500" oninput="drawPretrain()" /><strong id="tokensVal">500B</strong></div>
+      <canvas id="pretrainCanvas" width="860" height="280"></canvas>
+      <div id="pretrainSummary" class="success"></div>
+    </div>
+
+    <div class="card">
+      <h2>Что реально учится в pre-training</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Низкий уровень</h3>
+          <p>Токены, орфография, форматирование, простые шаблоны, локальная грамматика.</p>
+        </div>
+        <div>
+          <h3>Высокий уровень</h3>
+          <p>Фактические ассоциации, длинные шаблоны, кодовые идиомы, статистика reasoning-like traces.</p>
+        </div>
+      </div>
+      <div class="info">Поэтому современные LLM уже на фазе pre-training получают много “сырой когнитивной мощности”, а последующие этапы в основном перенаправляют её в нужное поведение.</div>
+    </div>
+
+    <div class="card">
+      <h2>Где главные риски</h2>
+      <div class="formula" data-no-tex>Риски pre-training:
+- data contamination
+- garbage-in garbage-out
+- duplication и переобучение на частых документах
+- токсичность и bias корпуса
+- плохой баланс code / math / prose</div>
+      <p>Иногда улучшение модели происходит не из-за “умнее архитектуры”, а просто из-за лучшего data curation и фильтрации.</p>
+    </div>
+  </div>
+  <script>
+    function drawPretrain() {
+      const tokens = Number(document.getElementById("tokens").value);
+      document.getElementById("tokensVal").textContent = tokens + "B";
+      const canvas = document.getElementById("pretrainCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 44;
+      ctx.clearRect(0,0,w,h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad,18); ctx.lineTo(pad,h-pad); ctx.lineTo(w-18,h-pad); ctx.stroke();
+      ctx.beginPath(); ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2.5;
+      for(let i=0;i<=140;i++){ const t=i/140; const x=pad+t*(w-pad-26); const yNorm=0.12+0.88*Math.exp(-Math.log(1+tokens/40)*t*1.2); const y=20+yNorm*(h-pad-28); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      ctx.stroke();
+      let text = "Loss ещё быстро падает: модель явно выигрывает от новых токенов.";
+      if(tokens > 1200) text = "Улучшения продолжаются, но каждый новый кусок данных уже даёт более умеренный прирост.";
+      if(tokens > 2400) text = "Зона diminishing returns: качество ещё растёт, но без хорошего scaling по модели и compute одних данных уже мало.";
+      document.getElementById("pretrainSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
+    }
+    drawPretrain();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

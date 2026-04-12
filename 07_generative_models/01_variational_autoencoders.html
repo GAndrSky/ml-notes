@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7.1 Variational Autoencoders</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 7 • Generative Models</span>
+        <span class="tag active">▶ 7.1 VAE</span>
+        <span class="tag">7.2 GAN</span>
+        <span class="tag">7.3 Diffusion</span>
+      </div>
+      <h1>7.1 Variational Autoencoders</h1>
+      <p class="muted">VAE — это уже не просто autoencoder для реконструкции, а вероятностная генеративная модель с латентной переменной. Главная идея: учить не одну точку в latent space, а распределение, из которого потом можно сэмплировать новые объекты.</p>
+    </div>
+    <div class="card">
+      <h2>Генеративная постановка</h2>
+      <div class="formula" data-render-tex data-tex-source="p_\theta(x, z) = p(z)\, p_\theta(x \mid z)">p_θ(x, z) = p(z) p_θ(x | z)</div>
+      <p>Мы предполагаем простой prior на латентную переменную <code>z</code> и учим decoder, который генерирует объект <code>x</code> из этой скрытой причины.</p>
+    </div>
+    <div class="card">
+      <h2>Почему нужен ELBO</h2>
+      <div class="formula" data-render-tex data-tex-source="\log p_\theta(x) \ge \mathbb{E}_{q_\phi(z \mid x)}[\log p_\theta(x \mid z)] - D_{KL}(q_\phi(z \mid x)\,\|\,p(z))">\log p_θ(x) ≥ E_q[log p_θ(x|z)] - KL(q_φ(z|x) || p(z))</div>
+      <p>Истинный posterior <code>p(z|x)</code> обычно неудобен. Поэтому мы вводим приближающий encoder <code>q_φ(z|x)</code> и оптимизируем нижнюю оценку правдоподобия — ELBO.</p>
+      <div class="grid-2">
+        <div class="success"><strong>Reconstruction term</strong><br>Заставляет латентный код хранить информацию, нужную для восстановления входа.</div>
+        <div class="info"><strong>KL term</strong><br>Держит latent space похожим на prior, чтобы из него можно было сэмплировать новые точки.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Reparameterization trick</h2>
+      <div class="formula" data-render-tex data-tex-source="z = \mu_\phi(x) + \sigma_\phi(x)\odot \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I)">z = μ_φ(x) + σ_φ(x) ⊙ ε,   ε ~ N(0, I)</div>
+      <p>Сэмплирование внутри сети мешает обычному backprop. Reparameterization переносит случайность в отдельную переменную <code>ε</code>, а encoder начинает выдавать детерминированные параметры распределения.</p>
+    </div>
+    <div class="card">
+      <h2>Что VAE даёт в сравнении с обычным AE</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Сэмплирование</strong><br>Можно генерировать новые объекты из prior.</div>
+        <div class="info"><strong>Гладкий latent space</strong><br>Интерполяции между точками становятся осмысленнее.</div>
+        <div class="warn"><strong>Цена</strong><br>Часто генерация менее резкая, чем у GAN и diffusion.</div>
+      </div>
+    </div>
+  </div>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

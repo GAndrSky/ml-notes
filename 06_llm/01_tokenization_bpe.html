@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.1 Tokenization и BPE</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} ul{margin:8px 0 8px 18px;padding:0} li{margin:5px 0}
+    .muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab-btn{background:#0f141b;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.92rem}.tab-btn.active{border-color:rgba(245,158,11,.55);color:var(--amber);background:rgba(245,158,11,.08)} .tab-panel{display:none}.tab-panel.active{display:block}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 6 • LLM</span>
+        <span class="tag active">▶ 6.1 Tokenization / BPE</span>
+        <span class="tag">6.2 Pre-training</span>
+        <span class="tag">6.3 Instruction tuning</span>
+      </div>
+      <h1>6.1 Tokenization и BPE</h1>
+      <p class="muted">LLM не видит “слова” напрямую. Он работает с токенами, а значит до всякого pre-training нам нужно решить, как разбить текст на кусочки так, чтобы и словарь был разумным, и редкие слова не убивали модель.</p>
+    </div>
+
+    <div class="card">
+      <h2>Почему tokenization вообще отдельная тема</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Слишком мелко</strong><br>Посимвольная модель универсальна, но последовательности становятся длинными.</div>
+        <div class="info"><strong>Слишком крупно</strong><br>Словарь по словам быстро взрывается по размеру и плохо работает с редкими формами.</div>
+        <div class="warn"><strong>Хороший компромисс</strong><br>Subword tokenization даёт гибкость и контролирует размер vocabulary.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Идея BPE</h2>
+      <p>Byte Pair Encoding начинает с маленьких единиц и постепенно склеивает самые частые соседние пары. Так словарь растёт из данных, а не задаётся вручную.</p>
+      <div class="formula" data-no-tex>Начало:
+l o w
+l o w e r
+n e w e s t
+w i d e s t
+
+Частые пары объединяются:
+e+s -> es
+es+t -> est
+l+o -> lo
+lo+w -> low</div>
+      <div class="info">BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
+    </div>
+
+    <div class="card">
+      <h2>Формальный взгляд</h2>
+      <div class="formula" data-no-tex>На каждом шаге:
+1. считаем частоты всех соседних токен-пар
+2. выбираем самую частую пару (a, b)
+3. добавляем новый токен ab в словарь
+4. заменяем все вхождения a b на ab</div>
+      <div class="warn">Важный практический момент: BPE оптимизирует компромисс между длиной последовательности и размером словаря, а не семантическую “красоту” токенов.</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: шаги BPE</h2>
+      <p class="muted">Смотри, как словарь постепенно учится частым кускам слова.</p>
+      <div class="control"><span>Шаг merges</span><input id="mergeStep" type="range" min="0" max="5" step="1" value="0" oninput="renderBPE()" /><strong id="mergeVal">0</strong></div>
+      <div id="bpeState" class="formula" data-no-tex></div>
+      <div id="bpeSummary" class="success"></div>
+    </div>
+
+    <div class="card">
+      <h2>BPE vs WordPiece vs Unigram</h2>
+      <div class="grid-2">
+        <div>
+          <h3>BPE</h3>
+          <p>Жадно строит merges по частоте. Очень распространён в GPT-подобных системах.</p>
+        </div>
+        <div>
+          <h3>WordPiece / Unigram</h3>
+          <p>Оптимизируют сегментацию более вероятностно. На практике границы между ними важны, но идея subword-компромисса остаётся общей.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Byte-level токенизация</h2>
+      <p>Современные LLM часто идут ещё глубже и начинают не с символов языка, а с байтов. Это делает tokenizer почти универсальным: любой Unicode-текст можно выразить без “unknown token”.</p>
+      <div class="success">Именно поэтому современные модели устойчивее к редким словам, опечаткам, смешанным языкам и кодовым фрагментам.</div>
+    </div>
+
+    <div class="card">
+      <h2>Практические эффекты на модель</h2>
+      <div class="formula" data-no-tex>Хорошая tokenization влияет на:
+- длину context window в токенах
+- скорость инференса и стоимость обучения
+- качество на редких словах, именах, коде, multilingual данных</div>
+      <p>Если один и тот же текст распадается на 25 токенов у одного tokenizer и на 40 у другого, это влияет не только на цену, но и на то, сколько полезного контекста модель успеет увидеть.</p>
+    </div>
+
+    <div class="card">
+      <h2>Мини-шпаргалка</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tradeoff', this)">Trade-off</button>
+        <button class="tab-btn" onclick="showTab('code', this)">Псевдокод</button>
+      </div>
+      <div id="tradeoff" class="tab-panel active">
+        <div class="formula" data-no-tex>Меньше словарь  -> длиннее последовательности
+Больше словарь  -> короче последовательности, но тяжелее embeddings
+Subword regime  -> рабочий компромисс</div>
+      </div>
+      <div id="code" class="tab-panel">
+        <div class="formula" data-no-tex data-code-block>vocab = initial_symbols(corpus)
+for step in range(num_merges):
+    pairs = count_adjacent_pairs(corpus_tokens)
+    best_pair = argmax_frequency(pairs)
+    vocab.add(merge(best_pair))
+    corpus_tokens = apply_merge(corpus_tokens, best_pair)</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const BPE_STATES = [
+      { text: "l o w\nl o w e r\nn e w e s t\nw i d e s t", summary: "Стартуем с очень мелких единиц. Последовательности длинные, но покрытие полное." },
+      { text: "lo w\nlo w e r\nn e w e s t\nw i d e s t", summary: "Частая пара l+o стала токеном lo. Модель уже экономит один шаг на частом куске." },
+      { text: "low\nlow e r\nn e w e s t\nw i d e s t", summary: "Следующее частое слияние даёт low — уже почти цельный кусок слова." },
+      { text: "low\nlow e r\nn e w est\nw i d est", summary: "Появляется суффикс est как частый фрагмент сравнительных форм." },
+      { text: "low\nlower\nn e w est\nw i d est", summary: "Слово lower теперь собирается короче: общие куски переиспользуются." },
+      { text: "low\nlower\nnew est\nwid est", summary: "Дальше tokenizer продолжает компрессировать частые шаблоны. Это и есть рост subword vocabulary из статистики корпуса." }
+    ];
+    function showTab(id, button) {
+      document.querySelectorAll(".tab-panel").forEach(function (node) { node.classList.remove("active"); });
+      document.querySelectorAll(".tab-btn").forEach(function (node) { node.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+      button.classList.add("active");
+    }
+    function renderBPE() {
+      const step = Number(document.getElementById("mergeStep").value);
+      document.getElementById("mergeVal").textContent = String(step);
+      document.getElementById("bpeState").textContent = BPE_STATES[step].text;
+      document.getElementById("bpeSummary").innerHTML = "<strong>Что произошло.</strong> " + BPE_STATES[step].summary;
+    }
+    renderBPE();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8.2 Gradient Checkpointing</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    @media (max-width:780px){.page{padding:18px 14px 54px}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 8 • Практика обучения</span>
+        <span class="tag done">✓ 8.1 DDP / FSDP</span>
+        <span class="tag active">▶ 8.2 Checkpointing</span>
+        <span class="tag">8.3 Profiling</span>
+        <span class="tag">8.4 Loss spikes</span>
+      </div>
+      <h1>8.2 Gradient Checkpointing</h1>
+      <p class="muted">Checkpointing меняет баланс “память против вычислений”: мы сохраняем не все промежуточные активации, а потом пересчитываем часть forward заново во время backward.</p>
+    </div>
+    <div class="card">
+      <h2>Идея</h2>
+      <div class="formula" data-no-tex>Без checkpointing:
+храним activations всех слоёв
+
+С checkpointing:
+храним только часть узлов
+остальное пересчитываем при backward</div>
+      <div class="success">Если память — главный bottleneck, checkpointing часто самый дешёвый способ влезть в больший batch или контекст без смены архитектуры.</div>
+    </div>
+    <div class="card">
+      <h2>Цена</h2>
+      <div class="warn">Памяти становится меньше, но шаг обучения дольше. Ты меняешь memory wall на extra compute.</div>
+      <p>Поэтому checkpointing особенно полезен, когда ты уже упёрся в память, а не когда тебе просто хочется “немного оптимизировать всё подряд”.</p>
+    </div>
+  </div>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

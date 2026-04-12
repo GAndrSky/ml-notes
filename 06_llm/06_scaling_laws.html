@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.6 Scaling Laws</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 6 • LLM</span>
+        <span class="tag done">✓ 6.5 LoRA / QLoRA</span>
+        <span class="tag active">▶ 6.6 Scaling Laws</span>
+      </div>
+      <h1>6.6 Scaling Laws</h1>
+      <p class="muted">Scaling laws отвечают на вопрос, который для LLM критичнее многих архитектурных деталей: как именно loss улучшается при росте параметров, данных и compute, и где модель начинает быть недообученной или переразмеренной относительно корпуса.</p>
+    </div>
+    <div class="card">
+      <h2>Базовая идея</h2>
+      <div class="formula" data-render-tex data-tex-source="L(N) \approx A N^{-\alpha} + B">L(N) ≈ A N^-α + B</div>
+      <p>Многие метрики качества при увеличении масштаба следуют примерно степенным законам. Это значит, что улучшения предсказуемы и не хаотичны, пока мы находимся в рабочем scaling regime.</p>
+    </div>
+    <div class="card">
+      <h2>Три оси</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Параметры</strong><br>Сколько мощности может вместить модель.</div>
+        <div class="info"><strong>Данные</strong><br>Сколько статистической информации реально доступно модели.</div>
+        <div class="warn"><strong>Compute</strong><br>Сколько шагов и FLOPs можно потратить на обучение.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Почему Chinchilla стал важным</h2>
+      <p>Ранние large models часто были слишком большими относительно числа токенов. Chinchilla-подход напомнил, что при фиксированном compute нужно балансировать параметры и данные, а не просто бездумно раздувать модель.</p>
+      <div class="info">Идея “compute-optimal model” изменила практику: лучше не просто огромная сеть, а сеть, которой дали достаточно данных, чтобы она не оставалась недообученной.</div>
+    </div>
+    <div class="card">
+      <h2>Интерактив: ощущение компромисса</h2>
+      <div class="control"><span>Параметры (млрд)</span><input id="params" type="range" min="1" max="200" step="1" value="20" oninput="drawScaling()" /><strong id="paramsVal">20B</strong></div>
+      <div class="control"><span>Токены (млрд)</span><input id="data" type="range" min="20" max="4000" step="20" value="400" oninput="drawScaling()" /><strong id="dataVal">400B</strong></div>
+      <canvas id="scaleCanvas" width="860" height="280"></canvas>
+      <div id="scaleSummary" class="success"></div>
+    </div>
+    <div class="card">
+      <h2>Практический смысл</h2>
+      <div class="formula" data-no-tex>Если параметров слишком много, а данных мало:
+модель недообучена.
+
+Если данных много, а модель слишком мала:
+упираемся в capacity ceiling.
+
+Если баланс хороший:
+получаем лучший compute return.</div>
+      <p>Scaling laws важны не как красивая кривая в статье, а как инженерный инструмент планирования бюджета обучения.</p>
+    </div>
+  </div>
+  <script>
+    function drawScaling() {
+      const p = Number(document.getElementById("params").value);
+      const d = Number(document.getElementById("data").value);
+      document.getElementById("paramsVal").textContent = p + "B";
+      document.getElementById("dataVal").textContent = d + "B";
+      const canvas = document.getElementById("scaleCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 42;
+      ctx.clearRect(0,0,w,h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad,18); ctx.lineTo(pad,h-pad); ctx.lineTo(w-18,h-pad); ctx.stroke();
+      const ratio = d / Math.max(1, p);
+      const fit = Math.min(1, Math.log(1 + p) / Math.log(201) * 0.45 + Math.log(1 + d) / Math.log(4001) * 0.55);
+      const y = 20 + (1 - fit) * (h - pad - 26);
+      ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(pad, h - pad - 10); ctx.lineTo(w - 40, y); ctx.stroke();
+      let text = "Режим ближе к сбалансированному scaling.";
+      if (ratio < 12) text = "Похоже на data-starved режим: параметров уже много относительно числа токенов.";
+      else if (ratio > 60) text = "Похоже на regime, где модель можно было бы сделать больше и всё ещё окупить данными.";
+      document.getElementById("scaleSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
+    }
+    drawScaling();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

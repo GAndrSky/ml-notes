@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}.step.blue{border-left-color:var(--blue);background:#0d1426;}.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th{background:#101827;color:var(--amber);padding:8px 10px;text-align:left;font-size:.86em;}
+td{padding:8px 10px;border-top:1px solid var(--border);font-size:.88em;}
+body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;line-height:1.6;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.page{max-width:920px;margin:0 auto;padding:24px 18px 64px;}
+.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2);}
+.hero p{color:var(--muted);max-width:760px}
+.top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}.top-tags .tag{margin-right:0}
+@media (max-width:900px){.grid-3{grid-template-columns:1fr}}
+@media (max-width:780px){.page{padding:18px 14px 54px}.grid-2{grid-template-columns:1fr}h1{font-size:1.7rem}}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-done">✓ 4.1 Backprop</span>
+        <span class="tag tag-done">✓ 4.2 Оптимизаторы</span>
+        <span class="tag tag-done">✓ 4.3 Adam / AdamW / Lion</span>
+        <span class="tag tag-done">✓ 4.4 Регуляризация</span>
+        <span class="tag tag-done">✓ 4.5 LR Scheduling</span>
+        <span class="tag tag-done">✓ 4.6 Gradient clipping</span>
+        <span class="tag tag-active">▶ 4.7 Mixed Precision</span>
+        <span class="tag tag-next">4.8 Инициализация</span>
+      </div>
+      <h1>4.7 Mixed Precision Training</h1>
+      <p class="muted">FP16, BF16, autocast, loss scaling и почему ускорение почти никогда не бывает “просто включил и забыл”</p>
+    </div>
+
+<div class="card">
+  <h2>⚡ Зачем вообще mixed precision</h2>
+  <p>Главная идея проста: значительная часть операций в тренировке может выполняться в более дешёвом формате, чем FP32. Это уменьшает память, ускоряет matmul/convolution и позволяет увеличить batch size.</p>
+  <div class="grid-3">
+    <div class="info"><h3>Память</h3><p>FP16 и BF16 занимают 2 байта вместо 4. Это сразу уменьшает размер activation и временных буферов.</p></div>
+    <div class="info"><h3>Скорость</h3><p>На современных GPU Tensor Cores особенно хорошо оптимизированы под half precision режимы.</p></div>
+    <div class="warn"><h3>Риск</h3><p>Узкий диапазон чисел приводит к underflow/overflow, поэтому training loop должен быть аккуратнее, чем в чистом FP32.</p></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>📊 FP16 vs BF16 vs FP32</h2>
+  <table>
+    <tr><th>Формат</th><th>Биты</th><th>Exponent</th><th>Особенность</th></tr>
+    <tr><td>FP32</td><td>32</td><td>8</td><td>Базовый стабильный формат для master weights и части reductions</td></tr>
+    <tr><td>FP16</td><td>16</td><td>5</td><td>Хорошая скорость, но маленький диапазон — нужен loss scaling</td></tr>
+    <tr><td>BF16</td><td>16</td><td>8</td><td>Exponent как у FP32, поэтому underflow/overflow гораздо реже</td></tr>
+  </table>
+  <div class="formula" data-no-tex>Практический вывод:
+FP16 = быстрее, но капризнее
+BF16 = почти та же скорость, но заметно безопаснее
+FP32 = надёжный baseline и master copy параметров</div>
+</div>
+
+<div class="card">
+  <h2>🧮 Интерактив: зачем нужен loss scaling</h2>
+  <p class="muted">Покрути градиент и scale factor — увидишь, когда маленькое число “теряется” в FP16.</p>
+  <br>
+  <div class="grid-2">
+    <div>
+      <div class="muted" style="margin-bottom:4px;">Градиент до scaling: <span id="gradVal" style="color:var(--green);font-weight:600;">1.0e-7</span></div>
+      <input id="gradMag" type="range" min="-10" max="-2" step="0.1" value="-7" oninput="calcMP()">
+      <div class="muted" style="margin:10px 0 4px;">Scale factor: <span id="scaleVal" style="color:var(--blue);font-weight:600;">1024</span></div>
+      <input id="scalePow" type="range" min="0" max="16" step="1" value="10" oninput="calcMP()">
+    </div>
+    <div>
+      <div id="mpBox" class="formula" data-no-tex></div>
+      <div class="intuition">💡 Идея loss scaling: временно умножить loss, чтобы backward прошёл по более крупным числам, а потом уже разделить градиенты обратно перед optimizer.step().</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔬 Как это выглядит в training loop</h2>
+  <div class="formula" data-no-tex>forward под autocast → часть ops идёт в half precision
+backward по scaled loss → маленькие градиенты не пропадают
+unscale gradients → возвращаем реальный масштаб
+clip / optimizer.step() → обновляем master weights</div>
+  <div class="grid-2">
+    <div><h3>Когда scaling нужен</h3><p>В основном в FP16. Для BF16 он часто не нужен, потому что exponent гораздо шире.</p></div>
+    <div><h3>Что всё равно оставляют в более стабильном формате</h3><p>master weights, optimizer states, часть reductions, softmax / norm / logits-sensitive места в зависимости от фреймворка.</p></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🚨 Где mixed precision чаще всего ломается</h2>
+  <div class="step hl">Очень маленькие градиенты → underflow в FP16</div>
+  <div class="step blue">Очень большие logits / activations → overflow и Inf</div>
+  <div class="step green">Нестабильный scheduler + большой lr → loss scaling уже не спасает</div>
+  <div class="step blue">Clipping до unscale — частая техническая ошибка</div>
+  <div class="warn">Если видишь NaN только в AMP-режиме, а в FP32 всё стабильно, сначала проверь: scaling, порядок `unscale_ -> clip -> step`, слишком резкие logits, и нет ли операций, которые стоит исключить из autocast.</div>
+</div>
+
+<div class="card">
+  <h2>💻 PyTorch AMP в коде</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('fp16',this)">FP16 + GradScaler</button>
+    <button onclick="showCode('bf16',this)">BF16</button>
+    <button onclick="showCode('tips',this)">Checklist</button>
+  </div>
+  <div id="codeContent" class="formula" data-no-tex data-code-block style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+const CODES = {
+  fp16: `scaler = torch.cuda.amp.GradScaler()
+
+for batch in loader:
+    optimizer.zero_grad()
+    with torch.autocast(device_type='cuda', dtype=torch.float16):
+        loss = model_step(batch)
+
+    scaler.scale(loss).backward()
+    scaler.unscale_(optimizer)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+    scaler.step(optimizer)
+    scaler.update()`,
+  bf16: `for batch in loader:
+    optimizer.zero_grad()
+    with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+        loss = model_step(batch)
+
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+    optimizer.step()`,
+  tips: `1. Сначала убедись, что training стабилен в FP32.
+2. Для FP16 почти всегда используй GradScaler.
+3. Делай clipping только после scaler.unscale_(optimizer).
+4. Следи за NaN/Inf в loss, grads и logits.
+5. Если есть выбор, BF16 обычно безопаснее FP16.`
+};
+
+function calcMP(){
+  const gradExp = Number(document.getElementById('gradMag').value);
+  const grad = Math.pow(10, gradExp);
+  const scale = Math.pow(2, Number(document.getElementById('scalePow').value));
+  const scaled = grad * scale;
+  const fp16MinNormal = 6.10e-5;
+  const fp16MinSubnormal = 5.96e-8;
+  document.getElementById('gradVal').textContent = grad.toExponential(1);
+  document.getElementById('scaleVal').textContent = String(scale);
+  document.getElementById('mpBox').textContent =
+    `grad = ${grad.toExponential(3)}\nscaled grad = ${scaled.toExponential(3)}\nFP16 min normal ≈ ${fp16MinNormal.toExponential(2)}\nFP16 min subnormal ≈ ${fp16MinSubnormal.toExponential(2)}\nstatus: ${scaled < fp16MinSubnormal ? 'слишком мало даже после scaling' : scaled < fp16MinNormal ? 'в зоне subnormal — уже лучше, но всё ещё рискованно' : 'безопаснее для FP16 backward'}`;
+}
+
+function showCode(key, btn){
+  document.querySelectorAll('#codeTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent = CODES[key];
+}
+
+calcMP();
+showCode('fp16', document.querySelector('#codeTabs button'));
+</script>
+  </div>
+
+<script src="../shared-nav.js"></script>
+</body>
+</html>

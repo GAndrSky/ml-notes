@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.12a Теория Gradient Boosting</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444;--purple:#a78bfa}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px} ul{margin:8px 0 8px 18px;padding:0} li{margin:5px 0}
+    .muted{color:var(--muted)} .small{font-size:.92rem}
+    .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px} .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .intuition,.warn,.info,.success{border-radius:10px;padding:12px 14px;margin:12px 0}
+    .intuition{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .success{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.35)}
+    .step{padding:10px 12px;border:1px solid #28313b;border-radius:10px;background:#10161d;margin:10px 0} .step strong{color:var(--amber)}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .tab-btn{background:#0f141b;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.92rem}
+    .tab-btn.active{border-color:rgba(245,158,11,.55);color:var(--amber);background:rgba(245,158,11,.08)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    .kpi{border:1px solid var(--border);background:#10161d;border-radius:12px;padding:14px}
+    .kpi .label{color:var(--muted);font-size:.82rem;margin-bottom:6px}.kpi .value{font-size:1.35rem;font-weight:700}
+    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 2 • Advanced</span>
+        <span class="tag done">✓ 2.12 Boosting</span>
+        <span class="tag active">▶ 2.12a Теория GBDT</span>
+        <span class="tag">2.12b Практика</span>
+        <span class="tag">2.13a Kernels</span>
+      </div>
+      <h1>2.12a Теория Gradient Boosting</h1>
+      <p class="muted">Не просто “много деревьев подряд”, а stage-wise функциональная оптимизация: как boosting учится приближать антиградиент функции потерь и почему маленькие деревья оказываются таким сильным базовым семейством.</p>
+    </div>
+
+    <div class="card">
+      <h2>Ключевая идея</h2>
+      <p>Boosting строит модель <strong>поэтапно</strong>. На каждом шаге мы не переучиваем всё с нуля, а добавляем маленькую функцию, которая лучше всего исправляет текущую ошибку ансамбля.</p>
+      <div class="formula" data-render-tex data-tex-source="F_M(x) = \sum_{m=0}^{M} \nu \rho_m h_m(x)">F_M(x) = Σ ν ρ_m h_m(x)</div>
+      <div class="info">Вместо оптимизации параметров одной большой модели boosting оптимизирует <strong>саму функцию предсказания</strong> в пространстве функций. Это и есть взгляд “functional gradient descent”.</div>
+      <div class="grid-3">
+        <div class="kpi"><div class="label">Что добавляем</div><div class="value">слабый learner</div></div>
+        <div class="kpi"><div class="label">К чему подгоняем</div><div class="value">антиградиент</div></div>
+        <div class="kpi"><div class="label">Что делает ν</div><div class="value">shrinkage</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как выводится шаг boosting</h2>
+      <div class="formula" data-render-tex data-tex-source="r_i^{(m)} = -\left.\frac{\partial \ell(y_i, F(x_i))}{\partial F(x_i)}\right|_{F = F_{m-1}}">r_i^(m) = - ∂ℓ(y_i, F(x_i)) / ∂F(x_i) | F = F_{m-1}</div>
+      <div class="step"><strong>1.</strong> Считаем псевдорезидуалы: для каждой точки спрашиваем, в какую сторону надо сдвинуть текущее предсказание, чтобы loss уменьшился быстрее всего.</div>
+      <div class="step"><strong>2.</strong> Обучаем слабую модель <code>h_m(x)</code> приближать эти псевдорезидуалы.</div>
+      <div class="step"><strong>3.</strong> Находим шаг вдоль нового weak learner.</div>
+      <div class="formula" data-render-tex data-tex-source="F_m(x) = F_{m-1}(x) + \nu \rho_m h_m(x)">F_m(x) = F_{m-1}(x) + ν ρ_m h_m(x)</div>
+      <div class="intuition">В MSE boosting буквально подгоняет <strong>остатки</strong>. В logloss или exponential loss он подгоняет уже не остатки по значению, а направление, в котором нужно менять логиты модели.</div>
+    </div>
+
+    <div class="card">
+      <h2>Почему деревья так хорошо подходят</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Локальная адаптивность</h3>
+          <p>Маленькое дерево умеет делать кусочно-постоянную поправку только там, где текущая модель ошибается. Оно не обязано быть глобально линейным.</p>
+          <div class="formula" data-no-tex>Один лист = один локальный сдвиг предсказания
+несколько листьев = несколько разных режимов поправки</div>
+        </div>
+        <div>
+          <h3>Нелинейность без тяжёлой оптимизации</h3>
+          <p>Дерево быстро находит полезные пороги и взаимодействия признаков, но само по себе остаётся слабым. Поэтому ансамбль получает выразительность без слишком большой variance на каждом шаге.</p>
+        </div>
+      </div>
+      <div class="warn">Если отдельное дерево сделать слишком мощным, boosting начинает не “аккуратно исправлять ошибку”, а агрессивно подгонять шум. Поэтому depth 3–8 часто работает лучше, чем глубокие деревья.</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: bias-variance режим boosting</h2>
+      <p class="muted small">Это не точный симулятор библиотеки, а учебная модель: она показывает, как число итераций, learning rate и глубина меняют характер ансамбля.</p>
+      <div class="control"><span>Итераций</span><input id="stages" type="range" min="10" max="400" step="10" value="120" oninput="drawBoosting()" /><strong id="stagesVal">120</strong></div>
+      <div class="control"><span>Learning rate</span><input id="eta" type="range" min="1" max="30" value="8" oninput="drawBoosting()" /><strong id="etaVal">0.08</strong></div>
+      <div class="control"><span>Глубина деревьев</span><input id="depth" type="range" min="1" max="10" value="3" oninput="drawBoosting()" /><strong id="depthVal">3</strong></div>
+      <canvas id="boostCanvas" width="860" height="280"></canvas>
+      <div id="boostSummary" class="success"></div>
+    </div>
+
+    <div class="card">
+      <h2>Что реально управляет качеством</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Shrinkage</h3>
+          <div class="formula" data-render-tex data-tex-source="\nu \downarrow \Rightarrow \text{медленнее, но устойчивее}">\nu ↓ ⇒ медленнее, но устойчивее</div>
+          <p>Маленький <code>learning_rate</code> делает каждый шаг менее агрессивным. Обычно это повышает качество, но требует больше деревьев.</p>
+        </div>
+        <div>
+          <h3>Stage-wise контроль сложности</h3>
+          <div class="formula" data-no-tex>depth ↑  → сильнее базовый learner
+M ↑      → дольше оптимизация
+subsample ↓ → больше stochasticity и меньше correlation</div>
+          <p>Boosting — это баланс не одного гиперпараметра, а целого режима обучения: насколько сильна каждая поправка и сколько таких поправок ты разрешаешь.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Псевдокод и связь с практикой</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('pseudo', this)">Псевдокод</button>
+        <button class="tab-btn" onclick="showTab('mse', this)">MSE case</button>
+        <button class="tab-btn" onclick="showTab('cls', this)">Classification</button>
+      </div>
+      <div id="pseudo" class="tab-panel active"><div class="formula" data-no-tex data-code-block>F_0(x) = argmin_c Σ ℓ(y_i, c)
+for m in 1..M:
+    r_i = - ∂ℓ(y_i, F(x_i)) / ∂F(x_i)
+    fit weak learner h_m(x) to {x_i, r_i}
+    ρ_m = argmin_ρ Σ ℓ(y_i, F(x_i) + ρ h_m(x_i))
+    F(x) = F(x) + ν ρ_m h_m(x)</div></div>
+      <div id="mse" class="tab-panel"><div class="formula" data-no-tex>Для MSE:
+ℓ(y, F) = (y - F)^2 / 2
+r_i = y_i - F_{m-1}(x_i)
+
+То есть boosting буквально обучает дерево предсказывать остатки.</div></div>
+      <div id="cls" class="tab-panel"><div class="formula" data-no-tex>Для логистической классификации:
+F(x) = logit
+p(x) = σ(F(x))
+r_i = y_i - p_i
+
+Деревья учатся поправлять логиты так, чтобы вероятность шла в сторону истинного класса.</div></div>
+      <div class="info">Следующая страница `2.12b` уже отвечает на инженерный вопрос: как этот теоретический механизм превращается в разные режимы <strong>XGBoost / LightGBM / CatBoost</strong>.</div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id, button) {
+      document.querySelectorAll(".tab-panel").forEach(function (node) { node.classList.remove("active"); });
+      document.querySelectorAll(".tab-btn").forEach(function (node) { node.classList.remove("active"); });
+      document.getElementById(id).classList.add("active");
+      button.classList.add("active");
+    }
+    function drawBoosting() {
+      const stages = Number(document.getElementById("stages").value);
+      const eta = Number(document.getElementById("eta").value) / 100;
+      const depth = Number(document.getElementById("depth").value);
+      document.getElementById("stagesVal").textContent = stages;
+      document.getElementById("etaVal").textContent = eta.toFixed(2);
+      document.getElementById("depthVal").textContent = depth;
+      const canvas = document.getElementById("boostCanvas");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width, h = canvas.height, pad = 46;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b1016"; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad, 18); ctx.lineTo(pad, h - pad); ctx.lineTo(w - 18, h - pad); ctx.stroke();
+      const trainEnd = Math.max(0.06, Math.exp(-stages * eta * (0.05 + depth * 0.018)));
+      const overfit = Math.max(0, (stages * eta * depth - 32) / 90);
+      function line(color, fn) {
+        ctx.beginPath(); ctx.lineWidth = 2.4; ctx.strokeStyle = color;
+        for (let i = 0; i <= 120; i += 1) {
+          const t = i / 120, x = pad + t * (w - pad - 26), yNorm = fn(t), y = 24 + yNorm * (h - pad - 30);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      line("#10b981", function (t) { return 0.1 + 0.9 * Math.exp(-t * stages * eta * (0.035 + depth * 0.01)); });
+      line("#60a5fa", function (t) {
+        const base = 0.12 + 0.88 * Math.exp(-t * stages * eta * 0.028);
+        const penalty = Math.max(0, t - 0.58) * overfit * 1.8;
+        return Math.min(1, base + penalty);
+      });
+      ctx.fillStyle = "#8b949e"; ctx.font = "12px system-ui"; ctx.fillText("loss", 14, 28); ctx.fillText("итерации boosting", w - 122, h - 12);
+      ctx.fillStyle = "#10b981"; ctx.fillText("train", w - 120, 28); ctx.fillStyle = "#60a5fa"; ctx.fillText("validation", w - 70, 28);
+      let regime = "Устойчивый режим: шаги маленькие, модель учится постепенно и обычно переносится лучше.";
+      if (overfit > 0.35) regime = "Режим переобучения: weak learner слишком силён или шаги слишком агрессивные. Добавь shrinkage, subsample или раннюю остановку.";
+      else if (trainEnd > 0.28) regime = "Недообучение: ансамбль пока не успевает выучить полезные поправки. Либо мало итераций, либо слишком маленький learning rate.";
+      document.getElementById("boostSummary").innerHTML = "<strong>Интерпретация.</strong> " + regime;
+    }
+    drawBoosting();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

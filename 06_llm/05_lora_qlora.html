@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.5 LoRA и QLoRA</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
+    .kpi{border:1px solid var(--border);background:#10161d;border-radius:12px;padding:14px}.kpi .label{color:var(--muted);font-size:.82rem;margin-bottom:6px}.kpi .value{font-size:1.28rem;font-weight:700}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 6 • LLM</span>
+        <span class="tag done">✓ 6.4 RLHF</span>
+        <span class="tag active">▶ 6.5 LoRA / QLoRA</span>
+        <span class="tag">6.6 Scaling laws</span>
+      </div>
+      <h1>6.5 LoRA и QLoRA</h1>
+      <p class="muted">Полный fine-tuning больших моделей дорог. LoRA и QLoRA появились как способ адаптировать LLM через маленькое число дополнительных параметров, не трогая большую часть исходных весов.</p>
+    </div>
+    <div class="card">
+      <h2>LoRA в одной формуле</h2>
+      <div class="formula" data-render-tex data-tex-source="W' = W + \Delta W, \qquad \Delta W = BA, \qquad \mathrm{rank}(BA)=r">W' = W + ΔW,   ΔW = BA,   rank(BA)=r</div>
+      <p>Мы не обновляем всю матрицу веса, а учим низкоранговую поправку. Если нужное изменение действительно живёт в маленьком подпространстве, это даёт почти то же поведение за гораздо меньшую цену.</p>
+    </div>
+    <div class="card">
+      <h2>Почему это экономит память</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Frozen base</strong><br>Основные веса модели не получают градиенты.</div>
+        <div class="info"><strong>Маленькие adapters</strong><br>Обучаются только A и B низкого ранга.</div>
+        <div class="warn"><strong>Ограничение</strong><br>Если задача требует очень сильной перестройки модели, rank может не хватить.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>QLoRA</h2>
+      <p>QLoRA идёт дальше: базовая модель хранится в квантизованном виде, а обучение всё равно идёт через LoRA-адаптеры. Это даёт возможность дообучать очень крупные модели на более скромном железе.</p>
+      <div class="formula" data-no-tex>QLoRA = quantized base model
+      + low-rank adapters
+      + аккуратное восстановление для backward pass</div>
+      <div class="info">Смысл не в том, что модель “думает в 4 битах”, а в том, что веса хранятся компактнее, а вычисления для обучения организованы умно.</div>
+    </div>
+    <div class="card">
+      <h2>Интерактив: сколько параметров реально учится</h2>
+      <div class="control"><span>Hidden size</span><input id="d" type="range" min="512" max="8192" step="512" value="4096" oninput="calcLoRA()" /><strong id="dVal">4096</strong></div>
+      <div class="control"><span>Rank r</span><input id="r" type="range" min="2" max="128" step="2" value="16" oninput="calcLoRA()" /><strong id="rVal">16</strong></div>
+      <div class="grid-2">
+        <div class="kpi"><div class="label">Полная матрица d×d</div><div id="fullParams" class="value">0</div></div>
+        <div class="kpi"><div class="label">LoRA-параметры</div><div id="loraParams" class="value">0</div></div>
+      </div>
+      <div id="loraSummary" class="success"></div>
+    </div>
+    <div class="card">
+      <h2>Когда LoRA особенно хорош</h2>
+      <div class="formula" data-no-tex>Подходит, когда нужно:
+- дообучить под домен
+- собрать несколько task-specific адаптеров
+- экспериментировать дешево
+- не трогать базовую модель полностью</div>
+      <div class="warn">Если задача требует очень глубокой перестройки поведения, полный fine-tuning или более богатый adapter stack может быть сильнее.</div>
+    </div>
+  </div>
+  <script>
+    function calcLoRA() {
+      const d = Number(document.getElementById("d").value);
+      const r = Number(document.getElementById("r").value);
+      const full = d * d;
+      const lora = 2 * d * r;
+      document.getElementById("dVal").textContent = String(d);
+      document.getElementById("rVal").textContent = String(r);
+      document.getElementById("fullParams").textContent = full.toLocaleString();
+      document.getElementById("loraParams").textContent = lora.toLocaleString();
+      const ratio = (lora / full * 100).toFixed(2);
+      document.getElementById("loraSummary").innerHTML = "<strong>Экономия.</strong> В этом примере LoRA учит примерно " + ratio + "% параметров от полной матрицы.";
+    }
+    calcLoRA();
+  </script>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>

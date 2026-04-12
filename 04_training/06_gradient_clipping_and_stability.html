@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../shared-nav.css">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#60a5fa;--text:#e6edf3;--muted:#8b949e;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;max-width:960px;margin:0 auto;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;}
+.formula{font-family:'Courier New',monospace;font-size:.93em;background:#0d1117;padding:11px 15px;border-radius:8px;border-left:3px solid var(--amber);margin:9px 0;white-space:pre;}
+.muted{color:var(--muted);font-size:.88em;}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.8em;font-weight:600;margin-right:5px;}
+.tag-done{background:#1f2d1a;border:1px solid var(--green);color:var(--green);}
+.tag-active{background:#2d1f06;border:1px solid var(--amber);color:var(--amber);}
+.tag-next{background:#1c2333;border:1px solid var(--border);color:var(--muted);}
+h1{font-size:1.5em;margin-bottom:6px;}h2{font-size:1.2em;color:var(--amber);margin:18px 0 8px;}h3{font-size:1em;color:var(--green);margin:12px 0 5px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.intuition{background:#0f1f1a;border:1px solid var(--green);border-radius:8px;padding:13px 15px;margin:10px 0;font-size:.9em;}
+.warn{background:#1a0f0f;border:1px solid var(--red);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.info{background:#0d1426;border:1px solid var(--blue);border-radius:8px;padding:12px 15px;margin:10px 0;font-size:.9em;}
+.step{padding:7px 12px;border-left:2px solid var(--border);margin:4px 0;font-family:monospace;font-size:.88em;}
+.step.green{border-left-color:var(--green);background:#0f1f1a;}.step.blue{border-left-color:var(--blue);background:#0d1426;}.step.hl{border-left-color:var(--amber);background:#1a1506;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.88em;transition:all .2s;}
+button:hover,button.active{border-color:var(--amber);color:var(--amber);}
+input[type=number],select{background:#0d1117;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;}
+input[type=number]{width:84px;text-align:center;}
+canvas{border-radius:8px;display:block;}
+body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;line-height:1.6;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+.page{max-width:920px;margin:0 auto;padding:24px 18px 64px;}
+.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2);}
+.hero p{color:var(--muted);max-width:760px}
+.top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}.top-tags .tag{margin-right:0}
+@media (max-width:900px){.grid-3{grid-template-columns:1fr}}
+@media (max-width:780px){.page{padding:18px 14px 54px}.grid-2{grid-template-columns:1fr}h1{font-size:1.7rem}}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-done">✓ 4.1 Backprop</span>
+        <span class="tag tag-done">✓ 4.2 Оптимизаторы</span>
+        <span class="tag tag-done">✓ 4.3 Adam / AdamW / Lion</span>
+        <span class="tag tag-done">✓ 4.4 Регуляризация</span>
+        <span class="tag tag-done">✓ 4.5 LR Scheduling</span>
+        <span class="tag tag-active">▶ 4.6 Gradient clipping</span>
+        <span class="tag tag-next">4.7 Mixed Precision</span>
+        <span class="tag tag-next">4.8 Инициализация</span>
+      </div>
+      <h1>4.6 Gradient Clipping и численная стабильность</h1>
+      <p class="muted">Почему градиенты взрываются, как работает clip by value / norm и какие приёмы реально спасают обучение от NaN и loss spikes</p>
+    </div>
+
+<div class="card">
+  <h2>💥 Откуда берутся exploding gradients</h2>
+  <p>Если backward-путь содержит много последовательных матриц и производных нелинейностей, норма градиента может расти экспоненциально. Это особенно заметно в RNN, глубоких сетях и нестабильных режимах обучения с большим lr.</p>
+  <div class="formula" data-render-tex data-tex-source="\left\|\frac{\partial L}{\partial h_1}\right\| \approx \left\|\frac{\partial L}{\partial h_T}\prod_{t=2}^{T}\frac{\partial h_t}{\partial h_{t-1}}\right\|">||∂L/∂h₁|| ≈ ||∂L/∂h_T · Π ∂h_t/∂h_{t-1}||</div>
+  <div class="grid-3">
+    <div class="warn"><h3>Симптомы</h3><p>loss резко взлетает, веса становятся огромными, появляются NaN/Inf, а optimizer перестаёт восстанавливаться.</p></div>
+    <div class="info"><h3>Где заметнее всего</h3><p>RNN, длинные sequence-модели, обучение “с нуля” на большом lr, плохая инициализация, mixed precision без контроля.</p></div>
+    <div class="info"><h3>Что делает clipping</h3><p>Не “лечит архитектуру”, а ограничивает размер слишком агрессивного шага, чтобы optimizer не улетел с траектории.</p></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>✂️ Два основных вида clipping</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Clip by value</h3>
+      <div class="formula" data-render-tex data-tex-source="g_i \leftarrow \operatorname{clip}(g_i, -c, c)">g_i ← clip(g_i, -c, c)</div>
+      <p>Ограничивает каждый компонент градиента отдельно. Просто и дёшево, но сильно искажает направление вектора.</p>
+    </div>
+    <div>
+      <h3>Clip by norm</h3>
+      <div class="formula" data-render-tex data-tex-source="g \leftarrow g \cdot \min\left(1, \frac{c}{\lVert g \rVert_2}\right)">g ← g · min(1, c / ||g||₂)</div>
+      <p>Сохраняет направление и только масштабирует длину. В DL это обычно более предпочтительный вариант.</p>
+    </div>
+  </div>
+  <div class="intuition">💡 Норм-clipping лучше согласуется с геометрией оптимизации: если градиент уже смотрит в “правильную” сторону, мы хотим уменьшить шаг, а не перекроить весь вектор по координатам.</div>
+</div>
+
+<div class="card">
+  <h2>🎮 Интерактив: как clipping меняет градиент</h2>
+  <p class="muted">Двигай компоненты градиента и threshold — увидишь исходный и обрезанный векторы.</p>
+  <br>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+    <div><div class="muted" style="font-size:.82em;">Режим</div><select id="clipMode" onchange="drawClip()"><option value="norm">clip by norm</option><option value="value">clip by value</option></select></div>
+    <div><div class="muted" style="font-size:.82em;">g₁</div><input id="gradX" type="number" value="9" step="0.5" oninput="drawClip()"></div>
+    <div><div class="muted" style="font-size:.82em;">g₂</div><input id="gradY" type="number" value="6" step="0.5" oninput="drawClip()"></div>
+    <div><div class="muted" style="font-size:.82em;">threshold c</div><input id="clipC" type="number" value="5" step="0.5" min="0.5" oninput="drawClip()"></div>
+  </div>
+  <canvas id="clipCanvas" width="880" height="320" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;"></canvas>
+  <div id="clipStats" class="formula" data-no-tex></div>
+</div>
+
+<div class="card">
+  <h2>🧯 Clipping — только часть общей устойчивости</h2>
+  <div class="grid-2">
+    <div>
+      <div class="step hl">log-sum-exp trick для softmax и cross-entropy</div>
+      <div class="step blue">ε в denominator: Adam, BatchNorm, LayerNorm, RMSNorm</div>
+      <div class="step green">Проверки на NaN / Inf в logits, gradients и loss</div>
+      <div class="step blue">Gradient accumulation + clipping после accumulation, а не до</div>
+      <div class="step hl">Нормальный warmup и разумный max lr</div>
+    </div>
+    <div>
+      <div class="formula" data-no-tex>Если loss взорвался:
+1. уменьшить lr
+2. включить / ужесточить clipping
+3. проверить mixed precision
+4. посмотреть на logits и градиенты до optimizer.step()</div>
+      <div class="warn">Частая ошибка: считать, что clipping сам по себе решает плохую инициализацию, слишком большой lr или неправильную формулу loss. Он помогает, но не заменяет диагностику.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>💻 PyTorch: clipping в коде</h2>
+  <div class="tabs" id="codeTabs">
+    <button class="active" onclick="showCode('norm',this)">clip_grad_norm_</button>
+    <button onclick="showCode('value',this)">clip_grad_value_</button>
+    <button onclick="showCode('amp',this)">AMP + clipping</button>
+  </div>
+  <div id="codeContent" class="formula" data-no-tex data-code-block style="font-size:.82em;white-space:pre;overflow-x:auto;"></div>
+</div>
+
+<script>
+const CODES = {
+  norm: `loss.backward()
+grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()
+optimizer.zero_grad()
+
+print('clipped grad norm =', float(grad_norm))`,
+  value: `loss.backward()
+torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=0.5)
+optimizer.step()
+optimizer.zero_grad()`,
+  amp: `with torch.autocast(device_type='cuda', dtype=torch.float16):
+    loss = model_step(batch)
+
+scaler.scale(loss).backward()
+scaler.unscale_(optimizer)
+torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+scaler.step(optimizer)
+scaler.update()
+optimizer.zero_grad()`
+};
+
+function drawArrow(ctx, x0, y0, x1, y1, color){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  const angle = Math.atan2(y1 - y0, x1 - x0), size = 10;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - size*Math.cos(angle - Math.PI/6), y1 - size*Math.sin(angle - Math.PI/6));
+  ctx.lineTo(x1 - size*Math.cos(angle + Math.PI/6), y1 - size*Math.sin(angle + Math.PI/6));
+  ctx.closePath(); ctx.fill();
+}
+
+function drawClip(){
+  const mode = document.getElementById('clipMode').value;
+  const gx = Number(document.getElementById('gradX').value) || 0;
+  const gy = Number(document.getElementById('gradY').value) || 0;
+  const c = Math.max(0.01, Number(document.getElementById('clipC').value) || 1);
+  const norm = Math.sqrt(gx*gx + gy*gy);
+  let cgx = gx, cgy = gy;
+  if(mode === 'value'){ cgx = Math.max(-c, Math.min(c, gx)); cgy = Math.max(-c, Math.min(c, gy)); }
+  else if(norm > c){ const scale = c / norm; cgx = gx * scale; cgy = gy * scale; }
+  const clippedNorm = Math.sqrt(cgx*cgx + cgy*cgy);
+  const cEl = document.getElementById('clipCanvas'), ctx = cEl.getContext('2d');
+  ctx.clearRect(0,0,cEl.width,cEl.height); ctx.fillStyle = '#0a0d14'; ctx.fillRect(0,0,cEl.width,cEl.height);
+  const cx = cEl.width / 2, cy = cEl.height / 2;
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, cy); ctx.lineTo(cEl.width - 40, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 24); ctx.lineTo(cx, cEl.height - 24); ctx.stroke();
+  ctx.strokeStyle = '#1f2937'; ctx.beginPath(); ctx.arc(cx, cy, c * 18, 0, Math.PI * 2); ctx.stroke();
+  drawArrow(ctx, cx, cy, cx + gx * 18, cy - gy * 18, '#ef4444');
+  drawArrow(ctx, cx, cy, cx + cgx * 18, cy - cgy * 18, '#10b981');
+  ctx.fillStyle = '#8b949e'; ctx.font = '13px system-ui';
+  ctx.fillText('красный = исходный градиент', 24, 24); ctx.fillText('зелёный = после clipping', 24, 44);
+  document.getElementById('clipStats').textContent =
+    `режим: ${mode}\nисходный grad = [${gx.toFixed(2)}, ${gy.toFixed(2)}], ||g|| = ${norm.toFixed(3)}\nпосле clipping = [${cgx.toFixed(2)}, ${cgy.toFixed(2)}], ||g'|| = ${clippedNorm.toFixed(3)}\nthreshold c = ${c.toFixed(2)}`;
+}
+
+function showCode(key, btn){
+  document.querySelectorAll('#codeTabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('codeContent').textContent = CODES[key];
+}
+
+drawClip();
+showCode('norm', document.querySelector('#codeTabs button'));
+</script>
+  </div>
+
+<script src="../shared-nav.js"></script>
+</body>
+</html>

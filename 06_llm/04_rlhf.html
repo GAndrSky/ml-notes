@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.4 RLHF</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 6 • LLM</span>
+        <span class="tag done">✓ 6.3 Instruction tuning</span>
+        <span class="tag active">▶ 6.4 RLHF</span>
+        <span class="tag">6.5 LoRA / QLoRA</span>
+        <span class="tag">6.6 Scaling laws</span>
+      </div>
+      <h1>6.4 RLHF</h1>
+      <p class="muted">RLHF нужен, когда одного supervised fine-tuning уже мало: нужно оптимизировать ответы не просто под “один правильный target”, а под человеческие предпочтения — полезность, безвредность, честность и стиль.</p>
+    </div>
+    <div class="card">
+      <h2>Трёхшаговая схема</h2>
+      <div class="formula" data-no-tex>1. SFT-модель
+2. Reward model по human preferences
+3. Policy optimization (часто PPO) с KL-контролем</div>
+      <p>Идея в том, что человек не всегда пишет идеальный ответ, но часто способен выбрать лучший из нескольких. RLHF превращает эти сравнения в сигнал предпочтений.</p>
+    </div>
+    <div class="card">
+      <h2>Reward model</h2>
+      <div class="formula" data-no-tex>Дано:
+x  — промпт
+y_w — более предпочтительный ответ
+y_l — менее предпочтительный ответ
+
+обучаем r_φ(x, y) так, чтобы:
+r_φ(x, y_w) > r_φ(x, y_l)</div>
+      <div class="info">Reward model — это уже не “истина”, а learned proxy человеческих предпочтений. И именно поэтому reward hacking остаётся реальной проблемой.</div>
+    </div>
+    <div class="card">
+      <h2>PPO-интуиция</h2>
+      <div class="formula" data-render-tex data-tex-source="\max_\theta \; \mathbb{E}[r_\phi(x,y)] - \beta \, \mathrm{KL}(\pi_\theta \,\|\, \pi_{\text{ref}})">max E[r_φ(x,y)] - β KL(π_θ || π_ref)</div>
+      <p>Нам не нужно, чтобы модель просто “максимизировала reward любой ценой”. Поэтому её удерживают рядом с reference policy, чтобы она не улетала слишком далеко от pre-trained / SFT поведения.</p>
+      <div class="warn">Без KL-штрафа модель может найти странные, нестабильные способы получать высокий reward, которые человеку уже не понравятся.</div>
+    </div>
+    <div class="card">
+      <h2>Что RLHF реально улучшает</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Формат</strong><br>Ответы становятся более удобными и “человеко-ориентированными”.</div>
+        <div class="info"><strong>Предпочтения</strong><br>Модель лучше угадывает, какой из корректных ответов пользователь сочтёт полезнее.</div>
+        <div class="warn"><strong>Не магия</strong><br>RLHF не создаёт базовые знания из воздуха и не заменяет хороший pre-training.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Где RLHF ломается</h2>
+      <div class="formula" data-no-tex>Проблемы:
+- reward hacking
+- over-optimization under proxy reward
+- style over substance
+- loss of calibration
+- preference model bias</div>
+      <p>Если reward model предпочитает “уверенно звучащий” ответ, policy может стать более гладкой по форме, но менее надёжной по содержанию.</p>
+      <div class="success">Именно поэтому современные пайплайны часто комбинируют SFT, RLHF и более простые preference-методы вроде DPO.</div>
+    </div>
+  </div>
+  <script src="../shared-nav.js"></script>
+</body>
+</html>
