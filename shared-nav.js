@@ -126,6 +126,14 @@
       ? document.currentScript.src
       : window.location.href
   );
+  if (!document.querySelector('link[data-ml-theme-link="1"]')) {
+    const themeLink = document.createElement("link");
+    themeLink.rel = "stylesheet";
+    themeLink.href = new URL("shared-theme.css", rootUrl).href;
+    themeLink.dataset.mlThemeLink = "1";
+    document.head.appendChild(themeLink);
+  }
+  document.body.classList.add("ml-course-theme");
   const indexHref = new URL("index.html", rootUrl).href;
   const currentUrl = new URL(window.location.href);
   currentUrl.search = "";
@@ -350,7 +358,7 @@
     '<div class="ml-page-nav__panel-head">' +
     '<div class="ml-page-nav__course-meta">' +
     '<span class="ml-page-nav__course-kicker">Весь курс</span>' +
-    '<strong class="ml-page-nav__course-title">37 тем с общим меню из любого файла</strong>' +
+    '<strong class="ml-page-nav__course-title">' + pages.length + ' темы с единой навигацией</strong>' +
     '<span class="ml-page-nav__course-subtitle">' +
     currentSection.label +
     ": " +
