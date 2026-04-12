@@ -1,4 +1,8 @@
 (function () {
+  if (window.__mlNotesKatexInitialized) {
+    return;
+  }
+  window.__mlNotesKatexInitialized = true;
   var rootUrl = new URL(
     ".",
     document.currentScript && document.currentScript.src
@@ -149,10 +153,10 @@
     var style = document.createElement("style");
     style.id = "ml-notes-katex-overrides";
     style.textContent =
-      ".formula[data-katex-rendered='1'] .katex-display{margin:0;max-width:100%;}" +
-      ".formula[data-katex-rendered='1'] .katex{font-size:1em;min-width:0;}" +
-      ".inline-math[data-katex-rendered='1'] .katex{font-size:1em;}" +
-      "@media (max-width:700px){.formula[data-katex-rendered='1'] .katex{font-size:.92em;}}";
+      ".formula[data-katex-rendered='1'] .katex-display{margin:0;max-width:100%;overflow-x:auto;overflow-y:hidden;}" +
+      ".formula[data-katex-rendered='1'] .katex{font-size:1.05em;min-width:0;}" +
+      ".inline-math[data-katex-rendered='1'] .katex{font-size:1.05em;}" +
+      "@media (max-width:700px){.formula[data-katex-rendered='1'] .katex{font-size:.98em;}}";
     document.head.appendChild(style);
   }
 
@@ -478,17 +482,6 @@
     );
   }
 
-  function scheduleInitialRender() {
-    if ("requestIdleCallback" in window) {
-      window.requestIdleCallback(function () {
-        processAll();
-      }, { timeout: 700 });
-      return;
-    }
-
-    window.setTimeout(processAll, 80);
-  }
-
   function init() {
     if (!getMathCandidates().length) {
       return;
@@ -502,8 +495,7 @@
         return;
       }
 
-      scheduleInitialRender();
-      window.addEventListener("load", processAll, { once: true });
+      processAll();
       window.addEventListener("resize", fitAllRenderedFormulas);
     });
   }

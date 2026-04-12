@@ -1,4 +1,8 @@
 (function () {
+  if (window.__mlNotesSearchInitialized) {
+    return;
+  }
+  window.__mlNotesSearchInitialized = true;
   var script = document.currentScript;
   var rootUrl = new URL(".", script && script.src ? script.src : window.location.href);
   var indexScriptUrl = new URL("shared-search-index.js", rootUrl).href;

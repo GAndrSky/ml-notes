@@ -66,12 +66,24 @@ function Test-SharedAssets {
     $fullPath = Join-Path $repoRoot $relativePath
     $content = Get-Content -Raw -LiteralPath $fullPath
 
-    if ($content -notmatch 'shared-nav\.js') {
-      Add-Issue "Missing shared-nav.js in $relativePath"
+    if ($content -notmatch 'bundle\.js') {
+      Add-Issue "Missing bundle.js in $relativePath"
     }
 
     if ($content -notmatch 'shared-nav\.css') {
       Add-Issue "Missing shared-nav.css in $relativePath"
+    }
+
+    if ($content -notmatch 'shared-theme\.css') {
+      Add-Issue "Missing shared-theme.css in $relativePath"
+    }
+  }
+
+  $indexPath = Join-Path $repoRoot "index.html"
+  if (Test-Path -LiteralPath $indexPath) {
+    $indexContent = Get-Content -Raw -LiteralPath $indexPath
+    if ($indexContent -notmatch 'bundle\.js') {
+      Add-Issue "Missing bundle.js in index.html"
     }
   }
 }
