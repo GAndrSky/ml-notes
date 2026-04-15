@@ -1468,6 +1468,37 @@ print("best score :", search.best_score_)</div>
   <script src="../shared-tex-formulas.js"></script>
   <script src="../bundle.js" defer></script>
 
+    <div class="card">
+      <h2>Почему greedy split вообще работает</h2>
+      <p>Decision tree не ищет лучшую структуру дерева глобально — это было бы слишком дорого. Он действует жадно: на каждом узле выбирает split, который сильнее всего уменьшает impurity прямо сейчас. Это не гарантирует глобальный оптимум, но даёт surprisingly сильную эвристику, особенно когда признаки уже неплохо отражают структуру задачи.</p>
+      <div class="formula" data-render-tex data-tex-source="\text{Gain} = I(\text{parent}) - \sum_k \frac{n_k}{n} I(\text{child}_k)">Gain = I(parent) - Σ (n_k / n) I(child_k)</div>
+      <div class="info">Важно понимать: дерево всегда принимает локальные решения. Поэтому оно очень чувствительно к ранним split-ам — ошибка в верхней части дерева потом влияет на всю геометрию ниже.</div>
+    </div>
+
+    <div class="card">
+      <h2>CART vs ID3 vs C4.5 — в чём смысл различий</h2>
+      <div class="grid-3">
+        <div class="success"><strong>ID3</strong><br>Классический вариант с information gain и упором на категориальные признаки.</div>
+        <div class="info"><strong>C4.5</strong><br>Развивает ID3: лучше работает с непрерывными признаками, missing values и использует более аккуратные критерии split-а.</div>
+        <div class="warn"><strong>CART</strong><br>Практически важный стандарт: бинарные split-ы, Gini для классификации, variance/MSE для регрессии и хорошая инженерная совместимость с ансамблями.</div>
+      </div>
+      <p>В современном ML чаще всего важен именно CART-стиль мышления, потому что на нём стоят random forest, gradient boosting и большая часть production-библиотек.</p>
+    </div>
+
+    <div class="card">
+      <h2>Почему деревья такие мощные и такие нестабильные одновременно</h2>
+      <p>Сила дерева в том, что оно естественно выражает нелинейность, interactions и piecewise-constant правила. Слабость — в очень высокой variance: небольшое изменение данных может изменить верхний split, а значит и всю дальнейшую структуру. Отсюда рождается вся логика bagging и random forest.</p>
+      <div class="formula" data-no-tex>Дерево хорошо:
+- ловит пороги
+- ловит interactions
+- не требует scaling
+
+Дерево плохо:
+- нестабильно к шуму
+- легко переобучается
+- даёт рваную decision surface</div>
+      <div class="warn">Именно поэтому важно не думать о дереве как о финальной “умной модели по умолчанию”. Одиночное дерево — часто промежуточный объект, из которого потом строят более устойчивый ансамбль.</div>
+    </div>
   <script>
     // ---------- Tabs ----------
     const tabButtons = document.querySelectorAll('.tab-btn');

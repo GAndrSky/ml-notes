@@ -1246,6 +1246,44 @@ print("Best CV score:", search.best_score_)</div>
 
   <script src="../shared-tex-formulas.js"></script>
   <script src="../bundle.js" defer></script>
+    <div class="card">
+      <h2>Почему validation — это часть модели, а не сервисная процедура</h2>
+      <p>Очень важная мысль: выбор split-а и протокола оценки влияет на итоговую модель так же сильно, как и выбор алгоритма. Если validation настроена плохо, ты оптимизируешь не качество решения задачи, а способность понравиться конкретной дырявой схеме проверки.</p>
+      <div class="formula" data-no-tex>Model performance =
+algorithm
++ features
++ hyperparameters
++ evaluation protocol
+
+Если evaluation протекает,
+всё остальное становится недостоверным</div>
+      <div class="warn">Именно поэтому leakage — одна из самых дорогих ошибок в applied ML: он создаёт иллюзию сильной модели там, где на самом деле сломан сам способ измерения.</div>
+    </div>
+
+    <div class="card">
+      <h2>Bias-variance trade-off у самой оценки</h2>
+      <p>Validation можно читать как задачу оценки неизвестного качества модели. У hold-out больше variance: один неудачный split может сильно исказить картину. У k-fold оценка обычно стабильнее, но дороже по compute. То есть даже выбор способа проверки — это trade-off между шумом оценки и ценой эксперимента.</p>
+      <div class="grid-3">
+        <div class="success"><strong>Hold-out</strong><br>Быстрый и дешёвый, хорош для ранних итераций и больших датасетов.</div>
+        <div class="info"><strong>K-fold</strong><br>Даёт более устойчивую оценку, особенно когда данных не так много и один split слишком шумный.</div>
+        <div class="warn"><strong>Nested CV</strong><br>Нужен, когда хочется честно оценить ещё и сам этап подбора hyperparameters, а не только итоговый fit.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Как на самом деле выбирать HPO-стратегию</h2>
+      <p>Hyperparameter search — это не соревнование “кто переберёт больше комбинаций”. Его задача — как можно дешевле найти полезную область пространства параметров. Поэтому grid search хорош только тогда, когда пространство маленькое и осмысленно дискретизировано. Во многих реальных задачах random search уже выигрывает, потому что не тратит одинаково много попыток на неважные измерения.</p>
+      <div class="formula" data-no-tex>Если параметров мало и сетка осмысленна:
+grid search ок
+
+Если параметров больше и важность неравномерна:
+random search почти всегда разумнее
+
+Если эксперименты дорогие:
+важны adaptive / sequential методы,
+а не brute-force покрытие</div>
+      <div class="info">Главная инженерная интуиция тут такая: HPO — это поиск хорошей области, а не доказательство, что ты исследовал всё пространство одинаково тщательно.</div>
+    </div>
   <script>
     document.querySelectorAll('[data-tabs]').forEach(group => {
       const buttons = group.querySelectorAll('.tab-btn');

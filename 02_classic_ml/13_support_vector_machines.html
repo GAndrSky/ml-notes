@@ -1177,6 +1177,30 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 
   <script src="../shared-tex-formulas.js"></script>
   <script src="../bundle.js" defer></script>
+    <div class="card">
+      <h2>Почему maximum margin связан с generalization</h2>
+      <p>Главная интуиция SVM не в том, что он просто проводит разделяющую линию, а в том, что он выбирает среди всех таких линий самую “осторожную”. Большой margin означает, что небольшие колебания данных с меньшей вероятностью переведут объект через границу. Это делает решение более устойчивым к шуму и переобучению.</p>
+      <div class="formula" data-render-tex data-tex-source="\text{margin} = \frac{2}{\|w\|}">margin = 2 / ||w||</div>
+      <div class="info">Именно поэтому в жёстком линейном случае SVM можно читать как задачу: разделить данные и одновременно минимизировать норму весов. Геометрическая устойчивость и регуляризация здесь оказываются одной и той же идеей, только записанной разными языками.</div>
+    </div>
+
+    <div class="card">
+      <h2>Kernel trick математически</h2>
+      <p>Самая сильная идея kernel methods в том, что нам не нужно явно строить огромное нелинейное feature space. Достаточно уметь быстро считать скалярное произведение в этом скрытом пространстве. Тогда алгоритм ведёт себя так, будто он работает в гораздо более богатом представлении, хотя в коде мы видим только kernel-функцию между исходными объектами.</p>
+      <div class="formula" data-render-tex data-tex-source="K(x_i, x_j) = \langle \phi(x_i), \phi(x_j) \rangle">K(x_i, x_j) = ⟨φ(x_i), φ(x_j)⟩</div>
+      <div class="formula" data-render-tex data-tex-source="K_{\mathrm{RBF}}(x_i, x_j) = \exp\!\left(-\gamma \|x_i - x_j\|^2\right)">K_RBF(x_i, x_j) = exp(-γ ||x_i - x_j||²)</div>
+      <p>Это и есть kernel trick: вместо явного <code>φ(x)</code> мы напрямую считаем сходство, которое соответствует скалярному произведению в скрытом пространстве. RBF особенно силён, потому что задаёт гладкую локальную “область влияния” вокруг каждого обучающего примера.</p>
+    </div>
+
+    <div class="card">
+      <h2>Как читать C и gamma вместе</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Большой C</strong><br>Модель меньше прощает ошибки на train и сильнее пытается подогнаться под каждый проблемный объект.</div>
+        <div class="info"><strong>Большой gamma</strong><br>RBF-ядро делает influence radius очень маленьким, и граница становится более локальной и изогнутой.</div>
+        <div class="warn"><strong>Опасная пара</strong><br>Большой <code>C</code> и большой <code>gamma</code> часто дают очень гибкую, но переобученную границу.</div>
+      </div>
+      <p>Полезная инженерная интуиция такая: <code>C</code> контролирует, насколько сильно мы наказываем ошибки, а <code>gamma</code> — насколько локальной будет сама геометрия решения. Поэтому их почти всегда надо читать вместе, а не как независимые ручки.</p>
+    </div>
   <script>
     document.querySelectorAll('[data-tabs]').forEach(group => {
       const buttons = group.querySelectorAll('.tab-btn');

@@ -1521,6 +1521,30 @@ proba = multi_model.predict_proba(X_val)</div>
   <script src="../shared-tex-formulas.js"></script>
   <script src="../bundle.js" defer></script>
 
+    <div class="card">
+      <h2>Вероятностная интерпретация logistic regression</h2>
+      <p>Логистическая регрессия важна не только как “линейная модель для классификации”, а как вероятностная модель Бернулли. Мы не предсказываем класс напрямую. Мы моделируем вероятность положительного исхода и обучаем параметры так, чтобы наблюдаемые метки были максимально правдоподобны.</p>
+      <div class="formula" data-render-tex data-tex-source="p(y=1\mid x) = \sigma(w^\top x + b)">p(y=1|x) = σ(w^T x + b)</div>
+      <div class="formula" data-render-tex data-tex-source="-\log p(y \mid x) \Rightarrow \text{BCE loss}">-log p(y|x) ⇒ BCE loss</div>
+      <div class="info">Это делает логистическую регрессию мостом между classic ML и нейросетями: та же бинарная cross-entropy позже станет базовой loss-функцией для целого класса нейросетевых задач.</div>
+    </div>
+
+    <div class="card">
+      <h2>Почему граница линейная, а вероятность нелинейная</h2>
+      <p>Очень полезная интуиция: logistic regression одновременно линейна и нелинейна, просто в разных пространствах. В пространстве log-odds модель линейна. В пространстве вероятностей она проходит через sigmoid и становится нелинейной по значению вероятности, но decision boundary остаётся гиперплоскостью.</p>
+      <div class="formula" data-render-tex data-tex-source="\log \frac{p}{1-p} = w^\top x + b">\log (p / (1-p)) = w^T x + b</div>
+      <p>Это и объясняет, почему модель так хорошо интерпретируется: каждый коэффициент линейно влияет на log-odds, а не на саму вероятность. Вероятность меняется по sigmoid-закону, поэтому одинаковый прирост logit не означает одинаковый прирост вероятности в разных точках.</p>
+    </div>
+
+    <div class="card">
+      <h2>Где logistic regression сильна, а где уже начинается потолок</h2>
+      <div class="grid-3">
+        <div class="success"><strong>Сильна</strong><br>Когда задача почти линейно разделима, важна интерпретируемость и нужны адекватные вероятности при хорошем feature space.</div>
+        <div class="info"><strong>Нормальна</strong><br>Когда нелинейность можно частично вынести в признаки: полиномиальные terms, interactions, embeddings или hand-crafted features.</div>
+        <div class="warn"><strong>Слаба</strong><br>Когда классам нужна по-настоящему нелинейная граница, сложная иерархия признаков или сильные локальные шаблоны.</div>
+      </div>
+      <p>Частая ошибка — ругать logistic regression за “слабость”, когда на самом деле проблема в представлении признаков. Линейная модель часто проигрывает не потому, что она плоха, а потому, что useful geometry ещё не вынесена в feature space.</p>
+    </div>
   <script>
     // ---------- Tabs ----------
     const tabButtons = document.querySelectorAll('.tab-btn');
