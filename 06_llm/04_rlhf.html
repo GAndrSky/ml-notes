@@ -57,10 +57,22 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
       <div class="info">Reward model — это уже не “истина”, а learned proxy человеческих предпочтений. И именно поэтому reward hacking остаётся реальной проблемой.</div>
     </div>
     <div class="card">
+      <h2>Как обучают reward model</h2>
+      <p>На практике reward model почти никогда не учат выставлять абсолютную “оценку пользы”. Ей гораздо проще и надёжнее учиться на парных сравнениях: какой из двух ответов на один и тот же промпт предпочёл человек.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{RM} = - \log \sigma\left(r_\phi(x, y_w) - r_\phi(x, y_l)\right)">L_RM = -log σ(r_φ(x, y_w) - r_φ(x, y_l))</div>
+      <p>Это удобно, потому что человек хорошо чувствует относительное качество, даже если ему сложно дать точный числовой score. Но именно здесь появляется важный сдвиг: reward model учит не истину, а статистику предпочтений в конкретном наборе сравнений.</p>
+    </div>
+    <div class="card">
       <h2>PPO-интуиция</h2>
       <div class="formula" data-render-tex data-tex-source="\max_\theta \; \mathbb{E}[r_\phi(x,y)] - \beta \, \mathrm{KL}(\pi_\theta \,\|\, \pi_{\text{ref}})">max E[r_φ(x,y)] - β KL(π_θ || π_ref)</div>
       <p>Нам не нужно, чтобы модель просто “максимизировала reward любой ценой”. Поэтому её удерживают рядом с reference policy, чтобы она не улетала слишком далеко от pre-trained / SFT поведения.</p>
       <div class="warn">Без KL-штрафа модель может найти странные, нестабильные способы получать высокий reward, которые человеку уже не понравятся.</div>
+    </div>
+    <div class="card">
+      <h2>PPO в контексте LLM</h2>
+      <p>В классическом RL агент много раз действует в среде и получает reward по траектории. В LLM этот язык немного ломается: “средой” становится процесс генерации текста, а reward часто приходит только после полного ответа. PPO здесь важен не как красивая формула, а как осторожный способ улучшать policy без слишком больших скачков.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{PPO} = \mathbb{E}\left[\min\left(r_t(\theta)\hat{A}_t,\; \mathrm{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\hat{A}_t\right)\right]">L_PPO = E[min(r_t(θ)Â_t, clip(r_t(θ), 1-ε, 1+ε)Â_t)]</div>
+      <p>Clipping нужен затем, чтобы policy не менялась слишком резко от одного noisy сигнала. Для LLM это критично: иначе reward model быстро начинает толкать ответы в слишком узкий стиль, а сама модель теряет естественность и калибровку.</p>
     </div>
     <div class="card">
       <h2>Что RLHF реально улучшает</h2>
@@ -80,6 +92,15 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
 - preference model bias</div>
       <p>Если reward model предпочитает “уверенно звучащий” ответ, policy может стать более гладкой по форме, но менее надёжной по содержанию.</p>
       <div class="success">Именно поэтому современные пайплайны часто комбинируют SFT, RLHF и более простые preference-методы вроде DPO.</div>
+    </div>
+    <div class="card">
+      <h2>Почему RLHF сложно делать хорошо</h2>
+      <div class="grid-3">
+        <div class="warn"><strong>Proxy problem</strong><br>Reward model измеряет не истину, а удобный суррогат предпочтений. Чем агрессивнее policy оптимизирует этот proxy, тем легче оторваться от реального качества.</div>
+        <div class="info"><strong>Distribution shift</strong><br>После нескольких шагов RL policy начинает писать тексты, которых почти не было в preference dataset, и reward model экстраполирует вне своей надёжной зоны.</div>
+        <div class="success"><strong>Credit assignment</strong><br>Нужно понять, какие именно токены внутри длинного ответа действительно улучшили reward, а какие просто случайно сопровождали хороший итог.</div>
+      </div>
+      <p>Именно поэтому RLHF на практике — это не “запустили PPO и получили aligned model”. Это careful pipeline: фильтрация ответов, контроль KL, мониторинг reward hacking, ограничение rollout distribution и постоянная ручная sanity-check проверка.</p>
     </div>
   </div>
   <script src="../bundle.js" defer></script>

@@ -52,9 +52,29 @@
       </div>
     </div>
     <div class="card">
+      <h2>ELBO от начала: откуда он берётся</h2>
+      <p>Самая важная мысль такая: мы хотим максимизировать <code>log p_θ(x)</code>, но прямо посчитать этот логарифм трудно, потому что нужно интегрировать по всем возможным латентным переменным <code>z</code>. Поэтому мы вставляем приближающий posterior <code>q_φ(z|x)</code> и раскладываем лог-правдоподобие на две части.</p>
+      <div class="formula" data-render-tex data-tex-source="\log p_\theta(x) = \mathcal{L}_{ELBO}(x) + D_{KL}\!\left(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)\right)">log p_θ(x) = L_ELBO(x) + KL(q_φ(z|x) || p_θ(z|x))</div>
+      <p>Так как KL-дивергенция неотрицательна, ELBO автоматически становится нижней оценкой истинного лог-правдоподобия. Получается очень удобная стратегия: вместо недоступного <code>log p_θ(x)</code> мы максимизируем то, что можем вычислить и через что можем пропустить градиент.</p>
+    </div>
+    <div class="card">
       <h2>Reparameterization trick</h2>
       <div class="formula" data-render-tex data-tex-source="z = \mu_\phi(x) + \sigma_\phi(x)\odot \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I)">z = μ_φ(x) + σ_φ(x) ⊙ ε,   ε ~ N(0, I)</div>
       <p>Сэмплирование внутри сети мешает обычному backprop. Reparameterization переносит случайность в отдельную переменную <code>ε</code>, а encoder начинает выдавать детерминированные параметры распределения.</p>
+    </div>
+    <div class="card">
+      <h2>Почему reparameterization вообще нужен</h2>
+      <p>Если бы мы писали просто <code>z ~ q_φ(z|x)</code>, случайный сэмпл стоял бы прямо посреди графа вычислений, и градиент по параметрам encoder-а <code>φ</code> проходил бы плохо. Reparameterization trick переписывает случайную величину как детерминированную функцию параметров и внешнего шума.</p>
+      <div class="formula" data-no-tex>Без trick:
+z ~ q_φ(z|x)
+градиент по φ проходит плохо
+
+С trick:
+ε ~ N(0, I)
+z = μ_φ(x) + σ_φ(x) ⊙ ε
+случайность вынесена наружу,
+а μ и σ дифференцируемы</div>
+      <div class="info">Это одна из самых красивых идей VAE: мы не убираем случайность, а меняем место, где она входит в модель, чтобы сохранить возможность обычного backpropagation.</div>
     </div>
     <div class="card">
       <h2>Что VAE даёт в сравнении с обычным AE</h2>
@@ -63,6 +83,11 @@
         <div class="info"><strong>Гладкий latent space</strong><br>Интерполяции между точками становятся осмысленнее.</div>
         <div class="warn"><strong>Цена</strong><br>Часто генерация менее резкая, чем у GAN и diffusion.</div>
       </div>
+    </div>
+    <div class="card">
+      <h2>Как читать две части ELBO на практике</h2>
+      <p><strong>Reconstruction term</strong> отвечает за то, чтобы latent-представление реально несло полезную информацию о входе. <strong>KL term</strong> отвечает за геометрию latent space: он не даёт каждому объекту “убежать” в свой отдельный угол пространства. Сила VAE как раз в этом напряжении между точностью реконструкции и регулярностью распределения.</p>
+      <div class="warn">Если слишком задавить KL-часть, получится почти обычный autoencoder с плохой генерацией. Если слишком сильно давить KL, можно получить posterior collapse, где latent-переменная почти перестаёт использоваться.</div>
     </div>
   </div>
   <script src="../bundle.js" defer></script>

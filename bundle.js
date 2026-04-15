@@ -72,7 +72,8 @@
         { path: "04_training/05_learning_rate_scheduling.html", label: "4.5 LR Scheduling" },
         { path: "04_training/06_gradient_clipping_and_stability.html", label: "4.6 Clipping / Stability" },
         { path: "04_training/07_mixed_precision_training.html", label: "4.7 Mixed Precision" },
-        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 \u0418\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f" }
+        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 \u0418\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f" },
+        { path: "04_training/09_numerical_stability.html", label: "4.9 Numerical Stability" }
       ]
     },
     {
@@ -716,6 +717,8 @@
   if (currentPage.sectionId !== "math") {
     ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
   }
+
+  ensureScript("shared-endcap-notes.js", "data-ml-endcap-script");
 
   if (hasFormulaExplainCandidates) {
     ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script");

@@ -198,5 +198,13 @@ window.__mlNotesSearchExtraIndex = [
     summary: "Чек-лист для loss spikes, NaN и unstable training.",
     headings: "8.4 Debugging Loss Spikes | NaN | Grad Norm | Unstable Training",
     content: "loss spikes nan grad norm unstable training optimizer state debugging training"
+  },
+  {
+    path: "04_training/09_numerical_stability.html",
+    title: "4.9 Numerical Stability",
+    section: "Блок 4. Обучение",
+    summary: "FP16, BF16, overflow, underflow, log-sum-exp, stable softmax и debugging NaN.",
+    headings: "4.9 Numerical Stability | Stable Softmax | Log-Sum-Exp | Overflow | Underflow | FP16 | BF16",
+    content: "numerical stability fp16 bf16 overflow underflow stable softmax log-sum-exp nan inf mixed precision loss scaling"
   }
 ];

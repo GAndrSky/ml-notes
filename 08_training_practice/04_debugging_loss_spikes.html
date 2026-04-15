@@ -45,10 +45,59 @@
 6. сравнить train и eval paths</div>
       <div class="success">Лучший дебаг здесь — не “покрутить всё понемногу”, а быстро локализовать: это один плохой batch, системная нестабильность оптимизации или инфраструктурный баг.</div>
     </div>
+
+    <div class="card">
+      <h2>Почему spikes так неприятны</h2>
+      <p>Loss spike — это не диагноз, а симптом. Он может означать и временный выход в плохой режим, и момент, когда optimizer state уже физически портится настолько, что модель потом не возвращается. Главное различие здесь между “шумным, но обратимым” и “разрушительным” spike.</p>
+      <div class="formula" data-no-tex>Короткий spike:
+loss вырос
+но модель быстро восстановилась
+
+Разрушительный spike:
+loss вырос
+gradients / optimizer state испортились
+дальше кривая уже не возвращается в прежний режим</div>
+      <div class="warn">Именно поэтому важно смотреть не только на один скачок loss, но и на то, что произошло со step time, grad norm, scaler и validation после него.</div>
+    </div>
     <div class="card">
       <h2>Типовые причины</h2>
       <div class="info">Слишком большой learning rate, пропущенный gradient clipping, overflow в FP16, нестабильная loss-функция, грязные данные, рассыпающийся scheduler, неверная маска или неправильное label shift в LM.</div>
       <div class="warn">Если spikes редкие и короткие, это ещё не всегда катастрофа. Но если после них модель не восстанавливается, значит причина уже бьёт по самим параметрам или optimizer state.</div>
+    </div>
+
+    <div class="card">
+      <h2>Как быстро разделить причины по типам</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Данные</h3>
+          <div class="formula" data-no-tex>- один плохой batch
+- сломанные targets
+- outlier lengths
+- неверная маска
+- испорченный preprocessing</div>
+        </div>
+        <div>
+          <h3>Оптимизация / числа</h3>
+          <div class="formula" data-no-tex>- learning rate слишком высокий
+- scheduler дал резкий jump
+- grad clipping отсутствует
+- FP16 overflow
+- unstable loss term</div>
+        </div>
+      </div>
+      <p>Такое разделение полезно не ради красоты. Оно помогает сократить пространство поиска: если spike воспроизводится только на одном batch, почти наверняка проблема в данных. Если он приходит после конкретного scheduler event, причина уже ближе к optimizer stack.</p>
+    </div>
+
+    <div class="card">
+      <h2>Что логировать, чтобы не дебажить вслепую</h2>
+      <div class="formula" data-no-tex>- global grad norm
+- max / min logits
+- отдельные компоненты loss
+- scaler state в AMP
+- learning rate по шагам
+- identifier batch-а
+- first layer with NaN / Inf</div>
+      <div class="success">Самый полезный практический приём: сохранить контекст первого плохого шага. Один batch-id и один снимок grad/logit stats часто дают больше пользы, чем час случайного тюнинга hyperparameters.</div>
     </div>
   </div>
   <script src="../bundle.js" defer></script>

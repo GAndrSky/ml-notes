@@ -44,6 +44,19 @@
 после backward градиенты синхронизируются all-reduce</div>
       <div class="success">DDP — обычно первый выбор: простая ментальная модель, хороший throughput и меньше шансов сломать тренировку сложной инфраструктурой.</div>
     </div>
+
+    <div class="card">
+      <h2>Что на самом деле ограничивает DDP</h2>
+      <p>DDP выглядит просто, пока модель помещается на одну GPU. Как только память упирается в параметры, optimizer state или activations, data parallel уже не решает проблему. Он масштабирует throughput, но почти не помогает, если сама модель физически не влезает на один девайс.</p>
+      <div class="formula" data-no-tex>DDP ускоряет:
+throughput = больше batch за шаг
+
+DDP не решает:
+параметры не помещаются
+optimizer state не помещается
+длинный context не помещается</div>
+      <div class="warn">Это важная инженерная граница: DDP хорош, когда bottleneck — время, но не когда bottleneck — память одного устройства.</div>
+    </div>
     <div class="card">
       <h2>FSDP</h2>
       <div class="formula" data-no-tex>Параметры, градиенты и optimizer state
@@ -53,6 +66,16 @@
 только там, где это нужно для compute</div>
       <div class="info">FSDP снижает memory footprint, но платит большей сложностью: больше communication, чувствительность к wrapping policy и checkpoint handling.</div>
     </div>
+
+    <div class="card">
+      <h2>Почему FSDP выигрывает память, но усложняет жизнь</h2>
+      <p>FSDP шардирует не только параметры, но и градиенты с optimizer state. Это резко уменьшает memory footprint на каждом отдельном устройстве. Но выигрыш приходит ценой более сложной orchestration: нужно вовремя собрать куски модели для вычисления, а потом снова разложить их по устройствам.</p>
+      <div class="grid-3">
+        <div class="success"><strong>Память</strong><br>Сильнее всего выигрывает крупная модель, у которой параметры и optimizer state уже сами по себе давят на VRAM.</div>
+        <div class="info"><strong>Communication</strong><br>Появляется больше collectives и чувствительность к interconnect между GPU.</div>
+        <div class="warn"><strong>Complexity</strong><br>Нужно аккуратно выбирать wrapping policy, checkpoint format и порядок materialization параметров.</div>
+      </div>
+    </div>
     <div class="card">
       <h2>Когда что выбирать</h2>
       <div class="grid-2">
@@ -60,6 +83,22 @@
         <div><h3>FSDP</h3><p>Если модель уже не помещается целиком или хочется поднять batch/context, не меняя железо.</p></div>
       </div>
       <div class="warn">Частая ошибка: слишком рано идти в сложный sharding. Если DDP ещё работает, он обычно дешевле по времени команды и стабильнее по отладке.</div>
+    </div>
+
+    <div class="card">
+      <h2>Как принимать решение на практике</h2>
+      <div class="formula" data-no-tex>Если модель помещается на одну GPU:
+начинай с DDP
+
+Если модель почти помещается:
+сначала попробуй AMP + checkpointing + smaller optimizer state
+
+Если всё ещё не помещается:
+иди в FSDP / sharding
+
+Если bottleneck уже communication:
+оптимизируй topology и overlap, а не только шардирование</div>
+      <p>Лучший практический порядок почти всегда такой: сначала выжать простой стек до понятного предела, и только потом добавлять распределённую сложность. Это уменьшает число мест, где может сломаться обучение, и ускоряет отладку реальной причины bottleneck.</p>
     </div>
   </div>
   <script src="../bundle.js" defer></script>

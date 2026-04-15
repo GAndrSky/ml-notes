@@ -46,10 +46,43 @@
 - communication time</div>
       <div class="info">Главный принцип: сначала ищем bottleneck, потом оптимизируем. Иначе можно потратить день на AMP, когда проблема была в dataloader.</div>
     </div>
+
+    <div class="card">
+      <h2>Почему profiling — это не “тюнинг в конце”</h2>
+      <p>У больших моделей compute-путь настолько сложный, что интуиция очень часто врёт. Кажется, что bottleneck в attention, а оказывается — в data loader. Кажется, что проблема в GPU memory, а реально step time съедает синхронизация между устройствами. Profiling важен именно потому, что он возвращает разработку из догадок в измерения.</p>
+      <div class="formula" data-no-tex>Step time =
+data loading
++ host overhead
++ kernel launches
++ forward/backward compute
++ communication
++ sync / idle gaps</div>
+      <div class="warn">Если ты не разложил шаг на части, то “оптимизация производительности” почти всегда превращается в случайный набор изменений с непредсказуемым эффектом.</div>
+    </div>
     <div class="card">
       <h2>Типичные bottleneck-и</h2>
       <div class="success">Input pipeline, маленькие матрицы, частые sync points, неоптимальные precision settings, плохой overlap compute и communication.</div>
       <div class="warn">Очень частая ошибка — смотреть только на GPU memory и думать, что “если память забита, значит всё оптимально”. Это не так: модель может стоять полупустая по utilization.</div>
+    </div>
+
+    <div class="card">
+      <h2>Как читать bottleneck-и по симптомам</h2>
+      <div class="grid-3">
+        <div class="info"><strong>Низкий GPU utilization</strong><br>Часто намекает на input bottleneck, маленький batch, слишком частые sync points или слишком мелкие kernels.</div>
+        <div class="success"><strong>Высокая память, но медленно</strong><br>Память может быть заполнена activations и параметрами, но compute всё равно простаивает. Полная VRAM не равна хорошему throughput.</div>
+        <div class="warn"><strong>Хороший одиночный GPU, плохой multi-GPU</strong><br>Часто признак того, что communication или sharding overhead уже начали съедать выигрыш от масштаба.</div>
+      </div>
+      <p>Хороший profiling почти всегда начинается не с “как ускорить”, а с вопроса “что именно сейчас доминирует в step time и почему”.</p>
+    </div>
+
+    <div class="card">
+      <h2>Практический порядок оптимизации</h2>
+      <div class="formula" data-no-tex>1. Зафиксировать baseline step time
+2. Разбить его на data / compute / communication
+3. Найти самый крупный кусок
+4. Менять только одну гипотезу за раз
+5. Повторно измерять после каждого изменения</div>
+      <p>Это скучнее, чем “сразу включить все оптимизации”, но именно так команды не теряют недели на ложные ускорения. У performance всегда есть локальный главный bottleneck — задача profiling в том, чтобы его назвать, а не просто чувствовать.</p>
     </div>
   </div>
   <script src="../bundle.js" defer></script>

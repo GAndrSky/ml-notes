@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4.9 Numerical Stability</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
+    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}
+    .hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)}
+    .hero p{color:var(--muted);max-width:760px}
+    h1,h2,h3{margin:0 0 12px}
+    h1{font-size:2rem;line-height:1.15}
+    h2{font-size:1.28rem;color:var(--amber)}
+    h3{font-size:1rem;color:var(--blue)}
+    p{margin:0 0 12px}
+    .muted{color:var(--muted)}
+    .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}
+    .tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)}
+    .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)}
+    .tag-block{color:#e9d5ff;border-color:#4b5563;background:#111827}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
+    .grid-2,.grid-3{display:grid;gap:14px}
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
+    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}
+    .info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)}
+    .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)}
+    .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
+    .control{display:flex;align-items:center;gap:10px;margin:8px 0}
+    .control input[type=range]{flex:1;accent-color:var(--green)}
+    .kpi{border:1px solid var(--border);background:#10161d;border-radius:12px;padding:14px}
+    .kpi .label{color:var(--muted);font-size:.82rem;margin-bottom:6px}
+    .kpi .value{font-size:1.2rem;font-weight:700}
+    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
+  </style>
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="4.9 Numerical Stability — fp16, bf16, overflow, underflow, log-sum-exp и практические причины, почему обучение ломается." />
+  <meta property="og:title" content="4.9 Numerical Stability — ML notes" />
+  <meta property="og:description" content="Численная устойчивость в обучении моделей: log-sum-exp, stable softmax, mixed precision, overflow, underflow и debugging NaN." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/09_numerical_stability.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 4 • Обучение</span>
+        <span class="tag done">✓ 4.7 Mixed Precision</span>
+        <span class="tag done">✓ 4.8 Инициализация</span>
+        <span class="tag active">▶ 4.9 Numerical Stability</span>
+        <span class="tag">5.1 CNN</span>
+      </div>
+      <h1>4.9 Numerical Stability</h1>
+      <p class="muted">Одна из самых практичных тем во всём курсе: почему модели внезапно получают NaN, как overflow и underflow ломают обучение, зачем нужен log-sum-exp, и почему fp16 / bf16 меняют не только скорость, но и режим ошибок.</p>
+    </div>
+
+    <div class="card">
+      <h2>Почему это отдельная тема</h2>
+      <p>Модель может быть математически правильной и архитектурно хорошей, но всё равно ломаться из-за ограничений чисел в памяти и арифметике GPU. Численная устойчивость — это место, где встречаются теория, аппаратные ограничения и реальный training loop.</p>
+      <div class="grid-3">
+        <div class="warn"><strong>Overflow</strong><br>Число становится слишком большим и уходит в <code>Inf</code>. Дальше любая арифметика с ним быстро заражает граф вычислений.</div>
+        <div class="info"><strong>Underflow</strong><br>Очень маленькое число округляется к нулю. Это особенно опасно для вероятностей, softmax и градиентов в low precision.</div>
+        <div class="success"><strong>Cancellation</strong><br>Вычитание двух почти равных больших чисел теряет точность и делает градиент шумным или бессмысленным.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>FP32, FP16 и BF16: почему форматы ведут себя по-разному</h2>
+      <div class="grid-3">
+        <div class="kpi">
+          <div class="label">FP32</div>
+          <div class="value">больше точность</div>
+          <p class="muted">Надёжный базовый режим. Меньше сюрпризов, но дороже по памяти и throughput.</p>
+        </div>
+        <div class="kpi">
+          <div class="label">FP16</div>
+          <div class="value">меньше диапазон</div>
+          <p class="muted">Очень выгоден по скорости, но легче ловит overflow/underflow и часто требует loss scaling.</p>
+        </div>
+        <div class="kpi">
+          <div class="label">BF16</div>
+          <div class="value">шире диапазон</div>
+          <p class="muted">Обычно устойчивее FP16 именно из-за диапазона, хотя мантисса у него грубее.</p>
+        </div>
+      </div>
+      <div class="info">Практическая интуиция такая: FP16 чаще ломается не потому, что “плохой”, а потому что слишком узкий диапазон быстрее упирается в экстремальные значения активаций и градиентов.</div>
+    </div>
+
+    <div class="card">
+      <h2>Где численная нестабильность появляется чаще всего</h2>
+      <div class="formula" data-no-tex>Опасные места:
+- exp(large number)
+- log(very small probability)
+- softmax по большим logits
+- деление на почти ноль
+- нормализация с маленькой variance
+- accumulation градиентов в low precision</div>
+      <p>Во многих случаях проблема не в том, что формула неверна, а в том, что она записана в наивной форме. Математически эквивалентная запись может вести себя на компьютере radically лучше.</p>
+    </div>
+
+    <div class="card">
+      <h2>Stable softmax и log-sum-exp trick</h2>
+      <div class="formula" data-render-tex data-tex-source="\mathrm{softmax}(x_i)=\frac{e^{x_i}}{\sum_j e^{x_j}}">\mathrm{softmax}(x_i)= e^{x_i} / \sum_j e^{x_j}</div>
+      <p>Наивная версия softmax опасна, если logits большие: экспоненты быстро взрываются. Поэтому перед экспонентой обычно вычитают максимум по вектору logits.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathrm{softmax}(x_i)=\frac{e^{x_i - \max(x)}}{\sum_j e^{x_j - \max(x)}}">\mathrm{softmax}(x_i)= e^{x_i-\max(x)} / \sum_j e^{x_j-\max(x)}</div>
+      <div class="success">Это не меняет результат mathematically, но резко улучшает численную устойчивость, потому что теперь самый большой logit становится нулём, а все остальные — неположительными.</div>
+    </div>
+
+    <div class="card">
+      <h2>Интерактив: наивный softmax vs stable softmax</h2>
+      <div class="control"><span>Scale logits</span><input id="logitScale" type="range" min="1" max="850" step="1" value="20" oninput="renderSoftmax()" /><strong id="logitScaleVal">20</strong></div>
+      <div class="grid-2">
+        <div class="kpi">
+          <div class="label">Naive softmax</div>
+          <div id="naiveState" class="value">ok</div>
+          <p id="naiveText" class="muted"></p>
+        </div>
+        <div class="kpi">
+          <div class="label">Stable softmax</div>
+          <div id="stableState" class="value">ok</div>
+          <p id="stableText" class="muted"></p>
+        </div>
+      </div>
+      <div id="softmaxSummary" class="info"></div>
+    </div>
+
+    <div class="card">
+      <h2>Loss scaling и mixed precision</h2>
+      <p>Когда градиенты слишком малы для FP16, они могут схлопнуться в ноль. Поэтому в AMP-режиме loss часто временно умножают на большой коэффициент, а потом градиенты делят обратно на тот же коэффициент перед шагом optimizer-а.</p>
+      <div class="formula" data-no-tex>scaled loss = s · L
+backward(s · L)
+gradients = gradients / s
+
+Идея:
+сделать маленькие градиенты видимыми для low precision,
+не меняя итоговый update</div>
+      <div class="warn">Если scale слишком высокий, можно получить overflow уже в градиентах. Если слишком низкий, мелкие значения всё ещё будут пропадать. Поэтому автоматический GradScaler важен не как удобство, а как real-time защита от двух крайностей сразу.</div>
+    </div>
+
+    <div class="card">
+      <h2>Почему модели “взрываются” на практике</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Математические причины</h3>
+          <div class="formula" data-no-tex>- слишком большой learning rate
+- плохой init
+- слишком большой grad norm
+- нестабильная нормализация
+- агрессивные экспоненты и логарифмы</div>
+        </div>
+        <div>
+          <h3>Системные причины</h3>
+          <div class="formula" data-no-tex>- неподходящий precision regime
+- отключённый/сломанный GradScaler
+- неправильный порядок zero_grad / step
+- bad batch с экстремальными значениями
+- broken data preprocessing</div>
+        </div>
+      </div>
+      <p>Самое неприятное в instability то, что один и тот же симптом — например NaN в loss — может приходить из очень разных слоёв системы. Поэтому важно не гадать, а строить короткий диагностический маршрут.</p>
+    </div>
+
+    <div class="card">
+      <h2>Чек-лист отладки NaN и loss spikes</h2>
+      <div class="formula" data-no-tex>1. Посмотри grad norm перед optimizer.step()
+2. Проверь learning rate и schedule
+3. Логируй min/max logits, activations, loss components
+4. Временно отключи mixed precision
+5. Проверь входные данные и target range
+6. Локализуй первый слой, где появляется Inf / NaN
+7. Замени наивные exp/log/division на stable variants</div>
+      <div class="success">Очень часто “численная проблема” оказывается первым видимым симптомом другой ошибки: слишком агрессивного lr, неверного preprocessing или badly scaled loss term. Поэтому здесь всегда полезно смотреть и на числа, и на training recipe целиком.</div>
+    </div>
+  </div>
+
+  <script>
+    function safeSoftmax(logits) {
+      const maxLogit = Math.max.apply(null, logits);
+      const exps = logits.map(function (value) { return Math.exp(value - maxLogit); });
+      const sum = exps.reduce(function (acc, value) { return acc + value; }, 0);
+      return exps.map(function (value) { return value / sum; });
+    }
+
+    function naiveSoftmax(logits) {
+      const exps = logits.map(function (value) { return Math.exp(value); });
+      const sum = exps.reduce(function (acc, value) { return acc + value; }, 0);
+      return exps.map(function (value) { return value / sum; });
+    }
+
+    function formatVector(values) {
+      return "[" + values.map(function (value) {
+        if (!Number.isFinite(value)) return "Inf";
+        return value.toFixed(4);
+      }).join(", ") + "]";
+    }
+
+    function renderSoftmax() {
+      const scale = Number(document.getElementById("logitScale").value);
+      document.getElementById("logitScaleVal").textContent = String(scale);
+
+      const logits = [scale, scale - 2, scale - 4];
+      const naive = naiveSoftmax(logits);
+      const stable = safeSoftmax(logits);
+      const naiveOk = naive.every(Number.isFinite);
+
+      document.getElementById("naiveState").textContent = naiveOk ? "ok" : "overflow";
+      document.getElementById("naiveState").style.color = naiveOk ? "#10b981" : "#ef4444";
+      document.getElementById("stableState").textContent = "stable";
+      document.getElementById("stableState").style.color = "#60a5fa";
+
+      document.getElementById("naiveText").textContent = "logits = " + formatVector(logits) + " → " + formatVector(naive);
+      document.getElementById("stableText").textContent = "logits = " + formatVector(logits) + " → " + formatVector(stable);
+
+      let text = "Пока logits умеренные, обе формулы дают похожий ответ.";
+      if (!naiveOk) {
+        text = "Наивный softmax уже сломался из-за exp(large logit), а stable-версия остаётся корректной, потому что сначала вычитает максимум.";
+      } else if (scale > 150) {
+        text = "Даже до overflow видно, что задача становится опасной: exp растёт экспоненциально, и запас до численной катастрофы быстро исчезает.";
+      }
+      document.getElementById("softmaxSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
+    }
+
+    renderSoftmax();
+  </script>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>
