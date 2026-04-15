@@ -711,8 +711,9 @@
     ensureScript("shared-classic-ml-practice.js", "data-ml-practice-script");
   }
 
+  ensureScript("shared-theory-notes.js", "data-ml-theory-script");
+
   if (currentPage.sectionId !== "math") {
-    ensureScript("shared-theory-notes.js", "data-ml-theory-script");
     ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
   }
 
