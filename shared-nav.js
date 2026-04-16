@@ -717,6 +717,15 @@
     ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
   }
 
+  if (
+    currentPage.sectionId === "math" ||
+    currentPage.sectionId === "neural-basics" ||
+    currentPage.sectionId === "classic-ml" ||
+    currentPage.sectionId === "architectures"
+  ) {
+    ensureScript("shared-advanced-notes.js", "data-ml-advanced-script");
+  }
+
   ensureScript("shared-endcap-notes.js", "data-ml-endcap-script");
 
   if (hasFormulaExplainCandidates) {

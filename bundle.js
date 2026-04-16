@@ -718,6 +718,15 @@
     ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
   }
 
+  if (
+    currentPage.sectionId === "math" ||
+    currentPage.sectionId === "neural-basics" ||
+    currentPage.sectionId === "classic-ml" ||
+    currentPage.sectionId === "architectures"
+  ) {
+    ensureScript("shared-advanced-notes.js", "data-ml-advanced-script");
+  }
+
   ensureScript("shared-endcap-notes.js", "data-ml-endcap-script");
 
   if (hasFormulaExplainCandidates) {
@@ -1188,7 +1197,7 @@
     if (heroSubtitle) {
       heroSubtitle.textContent =
         totalLessons +
-        " \u0442\u0435\u043c \u00b7 \u043e\u0442 \u043b\u0438\u043d\u0435\u0439\u043d\u043e\u0439 \u0430\u043b\u0433\u0435\u0431\u0440\u044b \u0434\u043e LLM \u0438 diffusion \u00b7 \u0438\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u0438 \u0438 \u043a\u043e\u0434";
+        " \u0442\u0435\u043c \u00b7 \u043e\u0442 \u043c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u043a\u0438 \u0434\u043e LLM \u0438 generative models \u00b7 \u043a\u043e\u043d\u0441\u043f\u0435\u043a\u0442\u044b, \u043a\u043e\u0434 \u0438 \u0442\u0435\u043e\u0440\u0438\u044f";
     }
 
     function refreshUi(paths) {
