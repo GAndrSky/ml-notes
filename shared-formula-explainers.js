@@ -8,6 +8,7 @@
     header:'Что означают символы',
     intuition:'Интуиция',
     analogy:'Аналогия',
+    example:'Числовой пример',
     summary:'🧠 Что это значит на практике'
   };
 
@@ -17,7 +18,7 @@
   function esc(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
   function src(el){return norm(el.getAttribute('data-tex-source')||el.getAttribute('data-formula-source')||el.textContent||'');}
   function row(sym,name,desc){return {sym:sym,name:name,desc:desc};}
-  function spec(match,rows,intuition,analogy){return {match:match,rows:rows,intuition:intuition,analogy:analogy};}
+  function spec(match,rows,intuition,analogy,example){return {match:match,rows:rows,intuition:intuition,analogy:analogy,example:example};}
   function includesAll(text,parts){return parts.every(function(part){return text.indexOf(part)!==-1;});}
   function cleanup(){all('.formula-anatomy[data-ml-generated="1"],details.intuition-block[data-ml-generated="1"]').forEach(function(el){el.remove();});}
   function codeLike(text,el){
@@ -27,14 +28,16 @@
   }
   function simpleAssignment(text){return /^\s*[A-Za-zА-Яа-яЁё][A-Za-z0-9_]*(?:\[[^\]]+\])?\s*=\s*[^=]{1,18}\s*$/.test(text);}
   function nonTrivial(text,el){
-    if(!text||text.length<8||codeLike(text,el)){return false;}
-    var signal=/[=∂∇Σ⊙⊤√α-ωΑ-Ω≤≥λβηθδσφΦ]/.test(text)||/softmax|sigmoid|relu|gelu|tanh|attention|jacobian|hessian|likelihood|posterior|entropy|dropout|conv|gradient|grad|loss|momentum|adam|bayes|kl|mse|bce/i.test(text);
-    if(!signal){return false;}
-    var ops=(text.match(/[=+\-/*^]|[←→·]/g)||[]).length;
-    return !(simpleAssignment(text)&&ops<2&&!/[∂∇Σ⊙⊤√]/.test(text));
+    if(!text||text.length<3||codeLike(text,el)){return false;}
+    if(el.hasAttribute('data-no-tex')&&text.length<12){return false;}
+    if(/^(шаг|сбросить|reset|step)$/i.test(text)){return false;}
+    return true;
   }
   function rowsHtml(rows){return rows.map(function(r){return '<div class="formula-anatomy__row"><span class="fa-sym">'+esc(r.sym)+'</span><span class="fa-name">'+esc(r.name)+'</span><span class="fa-desc">'+esc(r.desc)+'</span></div>';}).join('');}
-  function anatomyHtml(data){return '<div class="formula-anatomy" data-ml-generated="1"><div class="formula-anatomy__header">'+UI.header+'</div><div class="formula-anatomy__grid">'+rowsHtml(data.rows)+'</div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>'+UI.intuition+':</strong> '+esc(data.intuition)+'</div><div class="formula-anatomy__analogy"><strong>'+UI.analogy+':</strong> '+esc(data.analogy)+'</div></div>';}
+  function anatomyHtml(data){
+    var example=data.example?'<div class="formula-anatomy__example"><strong>'+UI.example+':</strong> '+esc(data.example)+'</div>':'';
+    return '<div class="formula-anatomy" data-ml-generated="1"><div class="formula-anatomy__header">'+UI.header+'</div><div class="formula-anatomy__grid">'+rowsHtml(data.rows)+'</div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>'+UI.intuition+':</strong> '+esc(data.intuition)+'</div><div class="formula-anatomy__analogy"><strong>'+UI.analogy+':</strong> '+esc(data.analogy)+'</div>'+example+'</div>';
+  }
   function detailsHtml(text){return '<details class="intuition-block" data-ml-generated="1"><summary>'+UI.summary+'</summary><div class="intuition-content">'+esc(text)+'</div></details>';}
 
   var SPECS={
@@ -293,15 +296,15 @@
     return 'general';
   }
   function genericCopy(kind){
-    if(kind==='attention'){return {intuition:'Формула показывает, как элемент выбирает, от кого собрать полезную информацию.',analogy:'Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.'};}
-    if(kind==='optim'){return {intuition:'Формула описывает, как параметры делают шаг в сторону меньшей ошибки.',analogy:'Как спускаться с горы, постоянно корректируя длину и направление шага.'};}
-    if(kind==='prob'){return {intuition:'Формула оценивает, насколько данные согласуются с гипотезой или распределением.',analogy:'Как обновлять мнение о ситуации по новым фактам и наблюдениям.'};}
-    if(kind==='activation'){return {intuition:'Формула решает, какую часть сигнала пропустить дальше, а какую ослабить.',analogy:'Как клапан или фильтр, который пропускает только подходящий поток.'};}
-    if(kind==='loss'){return {intuition:'Формула измеряет, насколько прогноз модели далёк от правильного ответа.',analogy:'Как шкала штрафа за промах, где разные ошибки наказываются по-разному.'};}
-    if(kind==='cnn'){return {intuition:'Формула ищет знакомый локальный паттерн во входе.',analogy:'Как вести лупу по изображению и искать совпадение с маленьким шаблоном.'};}
-    if(kind==='rnn'){return {intuition:'Формула обновляет память о прошлом с учётом нового входа.',analogy:'Как держать в голове сюжет книги и дополнять его новой главой.'};}
-    if(kind==='linear'){return {intuition:'Формула собирает в одной записи влияния входов на итоговый результат.',analogy:'Как таблица влияния, где видно, какой фактор за что отвечает.'};}
-    return {intuition:'Формула связывает несколько величин и показывает, как они влияют друг на друга.',analogy:'Как панель с несколькими ручками, каждая из которых меняет общий результат.'};
+    if(kind==='attention'){return {intuition:'Формула показывает, как элемент выбирает, от кого собрать полезную информацию.',analogy:'Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.',example:'Если один score равен 2, а другой 1, softmax даст примерно 0.73 и 0.27: первый источник внесёт около 73% итоговой информации.'};}
+    if(kind==='optim'){return {intuition:'Формула описывает, как параметры делают шаг в сторону меньшей ошибки.',analogy:'Как спускаться с горы, постоянно корректируя длину и направление шага.',example:'Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1·3 = 0.7.'};}
+    if(kind==='prob'){return {intuition:'Формула оценивает, насколько данные согласуются с гипотезой или распределением.',analogy:'Как обновлять мнение о ситуации по новым фактам и наблюдениям.',example:'Если модель даёт P=0.8, это можно читать так: среди 10 похожих случаев она ожидает около 8 успешных исходов.'};}
+    if(kind==='activation'){return {intuition:'Формула решает, какую часть сигнала пропустить дальше, а какую ослабить.',analogy:'Как клапан или фильтр, который пропускает только подходящий поток.',example:'Для ReLU: вход −2 превращается в 0, а вход 3 остаётся 3. Отрицательный сигнал гасится, положительный проходит.'};}
+    if(kind==='loss'){return {intuition:'Формула измеряет, насколько прогноз модели далёк от правильного ответа.',analogy:'Как шкала штрафа за промах, где разные ошибки наказываются по-разному.',example:'Если правильный класс y=1, то прогноз ŷ=0.9 даёт небольшой штраф, а ŷ=0.1 — большой, потому что модель была уверена не туда.'};}
+    if(kind==='cnn'){return {intuition:'Формула ищет знакомый локальный паттерн во входе.',analogy:'Как вести лупу по изображению и искать совпадение с маленьким шаблоном.',example:'Фильтр [1, −1] на фрагменте [5, 2] даёт 1·5 + (−1)·2 = 3: сильный отклик на перепад.'};}
+    if(kind==='rnn'){return {intuition:'Формула обновляет память о прошлом с учётом нового входа.',analogy:'Как держать в голове сюжет книги и дополнять его новой главой.',example:'Если старая память 0.7, новый сигнал 0.2, а gate пропускает 50%, итоговая память будет смесью старого и нового, а не полной заменой.'};}
+    if(kind==='linear'){return {intuition:'Формула собирает в одной записи влияния входов на итоговый результат.',analogy:'Как таблица влияния, где видно, какой фактор за что отвечает.',example:'Если вес признака 2, значение признака 3 и bias 1, вклад будет 2·3+1=7.'};}
+    return {intuition:'Формула связывает несколько величин и показывает, как они влияют друг на друга.',analogy:'Как панель с несколькими ручками, каждая из которых меняет общий результат.',example:'Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.'};
   }
   function genericRows(text){
     var low=text.toLowerCase(),rows=[];
@@ -318,7 +321,7 @@
   }
   function genericSpec(text){
     var copy=genericCopy(genericCategory(text));
-    return {rows:genericRows(text),intuition:copy.intuition,analogy:copy.analogy};
+    return {rows:genericRows(text),intuition:copy.intuition,analogy:copy.analogy,example:copy.example};
   }
   function targetBlock(match){
     var blocks=all('.card,.tab-content,section,article,.intuition,.warn,.info');
@@ -332,10 +335,12 @@
     all('.formula,.fm,[data-render-tex]').forEach(function(el){
       if(el.hasAttribute('data-no-formula-anatomy')){return;}
       if(el.closest('.formula-anatomy')){return;}
+      if(el.nextElementSibling&&el.nextElementSibling.classList&&el.nextElementSibling.classList.contains('formula-anatomy')){return;}
       var text=src(el);
       if(!nonTrivial(text,el)){return;}
       var manual=manualSpec(compact(text));
       var payload=manual||genericSpec(text);
+      if(!payload.example){payload.example=genericCopy(genericCategory(text)).example;}
       el.insertAdjacentHTML('afterend',anatomyHtml(payload));
     });
   }
