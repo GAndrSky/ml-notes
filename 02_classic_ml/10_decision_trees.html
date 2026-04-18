@@ -648,21 +648,27 @@
       \text{if } x_j \le t \Rightarrow \text{left branch}, \qquad
       \text{else } \Rightarrow \text{right branch}
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Конкретный признак объекта, по которому дерево проверяет условие.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">индекс признака</span><span class="fa-desc">Номер признака, выбранного для текущего split.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог split</span><span class="fa-desc">Граница, относительно которой объект отправляется в левую или правую ветку.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">left/right</span><span class="fa-name">ветви дерева</span><span class="fa-desc">Два направления после проверки условия: одна ветка для true, другая для false.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">значение признака</span><span class="fa-desc">Значение j-го признака у конкретного объекта: возраст, доход, длина текста, цена и т.д.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">номер признака</span><span class="fa-desc">Какую колонку таблицы дерево сейчас проверяет.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">threshold</span><span class="fa-desc">Порог, который делит объекты на две группы: слева условие истинно, справа ложно.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">≤</span><span class="fa-name">условие split</span><span class="fa-desc">Проверка, проходит ли объект в левую ветку.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">left</span><span class="fa-name">левая ветвь</span><span class="fa-desc">Группа объектов, для которых x_j меньше или равен порогу.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">right</span><span class="fa-name">правая ветвь</span><span class="fa-desc">Группа объектов, для которых x_j больше порога.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Один вопрос превращает смешанную таблицу в две более однородные подтаблицы.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сортировка писем: всё, что пришло до даты t, кладём в одну папку, всё после — в другую.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если split — <code>age ≤ 30</code>, то объект с age=24 идёт влево, а объект с age=41 — вправо.</div>
+    </div>
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Как это работает словами</div>
+      <h3>Split — это локальный вопрос, а не глобальная формула</h3>
+      <p>Линейная модель пытается сразу провести одну границу через всё пространство. Дерево действует иначе: оно задаёт маленький вопрос в текущем узле и больше не сравнивает объекты из левой ветки с объектами из правой ветки.</p>
+      <p><strong>Мини-пример.</strong> Пусть в узле 10 клиентов: 6 одобрены, 4 отказаны. Split <code>income ≤ 2000</code> может отправить влево группу с 1 одобрением и 4 отказами, а вправо — группу с 5 одобрениями и 0 отказами. Даже один вопрос уже сделал обе стороны понятнее.</p>
+      <p><strong>Как интерпретировать.</strong> Каждый путь от root до leaf — это набор условий через AND: <code>income &gt; 2000</code> и <code>age &gt; 30</code> и <code>debt_ratio ≤ 0.5</code>. Поэтому дерево удобно читать как rule list.</p>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -815,20 +821,27 @@
     <div class="formula">
       Gini = 1 - \sum_{k=1}^{K} p_k^2
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">Gini</span><span class="fa-name">индекс Джини</span><span class="fa-desc">Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Вероятность или частота класса k внутри текущего узла дерева.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">индекс класса</span><span class="fa-desc">Номер класса, по которому идёт суммирование.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько классов учитывается в сумме: k идёт от 1 до K.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+    <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Вероятность или частота класса k внутри текущего узла дерева.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">индекс класса</span><span class="fa-desc">Номер класса, по которому идёт суммирование.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько классов учитывается в сумме: k идёт от 1 до K.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в узле два класса 50/50, то Gini = 1 − (0.5&#178; + 0.5&#178;) = 0.5. Если узел чистый 100/0, то Gini = 0.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в узле два класса 50/50, то Gini = 1 − (0.5&#178; + 0.5&#178;) = 0.5. Если узел чистый 100/0, то Gini = 0.</div>
+    </div>
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Устный разбор</div>
+      <h3>Gini отвечает на вопрос: “насколько опасно назвать класс наугад?”</h3>
+      <p>Если в узле почти все объекты одного класса, дерево может уверенно выдать этот класс. Если классы перемешаны, leaf-предсказание становится рискованным: объект из такого узла может оказаться любым из нескольких классов.</p>
+      <p><strong>Мини-пример.</strong> Узел содержит 7 объектов класса A и 3 объекта класса B. Тогда <code>p_A=0.7</code>, <code>p_B=0.3</code>, <code>Gini = 1 - (0.7^2 + 0.3^2) = 0.42</code>. Узел не чистый, но лучше, чем 50/50.</p>
+      <p><strong>Как интерпретировать.</strong> При сравнении split-ов дерево выбирает тот, после которого взвешенная нечистота дочерних узлов меньше. Сам Gini одного узла важен, но решение принимается по тому, насколько split уменьшил Gini относительно parent.</p>
     </div>
     <p>
       Где <code>p_k</code> — доля класса <code>k</code> в узле.
@@ -840,19 +853,17 @@
         <div class="formula">
           p_1 = 1,\; p_{others}=0 \Rightarrow Gini = 0
         </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gini</span><span class="fa-name">индекс Джини</span><span class="fa-desc">Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">left/right</span><span class="fa-name">ветви дерева</span><span class="fa-desc">Два направления после проверки условия: одна ветка для true, другая для false.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">p_1</span><span class="fa-name">доля единственного класса</span><span class="fa-desc">В чистом узле все объекты относятся к одному классу, поэтому его доля равна 1.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">p_others</span><span class="fa-name">доли остальных классов</span><span class="fa-desc">Для остальных классов объектов нет, поэтому их доли равны 0.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Gini = 0</span><span class="fa-name">нулевая нечистота</span><span class="fa-desc">Узел полностью однородный: дерево не рискует перепутать класс внутри этого листа.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в узле два класса 50/50, то Gini = 1 − (0.5&#178; + 0.5&#178;) = 0.5. Если узел чистый 100/0, то Gini = 0.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Если в узле все ответы одинаковые, дальнейший split для классификации уже не нужен.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Коробка только с красными шариками: какой шарик ни достань, цвет известен заранее.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В листе 8 объектов класса A и 0 объектов других классов: <code>Gini = 1 - 1^2 = 0</code>.</div>
     </div>
     </div>
       <div>
@@ -860,16 +871,17 @@
         <div class="formula">
           Gini = 1 - (0.5^2 + 0.5^2) = 0.5
         </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gini</span><span class="fa-name">индекс Джини</span><span class="fa-desc">Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">0.5</span><span class="fa-name">доля каждого класса</span><span class="fa-desc">В бинарном узле 50/50 оба класса встречаются одинаково часто.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">p^2</span><span class="fa-name">квадрат доли</span><span class="fa-desc">Вероятность два раза подряд случайно попасть в этот же класс по распределению узла.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">0.5</span><span class="fa-name">максимум для 2 классов</span><span class="fa-desc">Для бинарной классификации Gini достигает максимума, когда классы смешаны поровну.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в узле два класса 50/50, то Gini = 1 − (0.5&#178; + 0.5&#178;) = 0.5. Если узел чистый 100/0, то Gini = 0.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> 50/50 — самый неопределённый бинарный узел: один объект не говорит, чего ждать от следующего.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Честная монетка: до броска нельзя предпочесть орёл или решку.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В узле 5 объектов класса 0 и 5 класса 1: <code>Gini = 1 - (0.25 + 0.25) = 0.5</code>.</div>
     </div>
     </div>
     </div>
@@ -932,20 +944,20 @@
     <div class="formula">
       H = -\sum_{k=1}^{K} p_k \log_2 p_k
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Вероятность или частота класса k внутри текущего узла дерева.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">индекс класса</span><span class="fa-desc">Номер класса, по которому идёт суммирование.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько классов учитывается в сумме: k идёт от 1 до K.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает диапазон и превращает произведения вероятностей в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy узла</span><span class="fa-desc">Количество неопределённости в распределении классов внутри текущего узла.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса k в узле: число объектов класса k делённое на размер узла.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">log₂ p_k</span><span class="fa-name">информационный штраф</span><span class="fa-desc">Редкие события дают больший “сюрприз”; основание 2 измеряет entropy в битах.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">−</span><span class="fa-name">смена знака</span><span class="fa-desc">Логарифм вероятности от 0 до 1 отрицательный, минус делает entropy положительной.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько разных labels может встретиться в узле.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по классам</span><span class="fa-desc">Складывает вклад неопределённости от каждого класса.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Entropy измеряет, сколько вопросов в среднем нужно, чтобы угадать класс объекта из узла.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Если в мешке шарики одного цвета, вопрос “какой цвет?” ничего не стоит; если цветов много и они равны, нужно больше информации.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для 50/50 в бинарном узле: <code>H = -0.5log₂0.5 - 0.5log₂0.5 = 1</code> бит.</div>
     </div>
     <p>
       Для бинарного случая:
@@ -954,18 +966,18 @@
     <div class="formula">
       H(p) = -p\log_2 p - (1-p)\log_2(1-p)
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">энтропия</span><span class="fa-desc">Мера неопределённости или смешанности распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает диапазон и превращает произведения вероятностей в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(&#183;)</span><span class="fa-name">вероятность</span><span class="fa-desc">Насколько событие или гипотеза согласуется с данными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">p</span><span class="fa-name">доля класса 1</span><span class="fa-desc">Вероятность положительного класса в бинарном узле.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">1-p</span><span class="fa-name">доля класса 0</span><span class="fa-desc">Оставшаяся часть объектов, относящаяся ко второму классу.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">-p log₂ p</span><span class="fa-name">вклад класса 1</span><span class="fa-desc">Сколько неопределённости добавляет положительный класс.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">-(1-p)log₂(1-p)</span><span class="fa-name">вклад класса 0</span><span class="fa-desc">Сколько неопределённости добавляет отрицательный класс.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В бинарном узле entropy максимальна при p=0.5 и падает к нулю при p→0 или p→1.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Честная монета даёт максимум неопределённости; монета, которая почти всегда падает орлом, почти не удивляет.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если <code>p=0.8</code>, то <code>H≈0.72</code> бита: неопределённость есть, но меньше чем при 50/50.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -973,15 +985,16 @@
         <div class="formula">
           H = 0
         </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость класса внутри узла.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нет неопределённости</span><span class="fa-desc">Все объекты одного класса, поэтому ответ известен без дополнительных вопросов.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Чистый узел не содержит информационной неопределённости.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Если все карточки в стопке красные, цвет следующей карточки известен заранее.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В узле 12 объектов класса A и 0 класса B: entropy равна 0.</div>
     </div>
     </div>
       <div>
@@ -989,15 +1002,16 @@
         <div class="formula">
           H = 1
         </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость класса внутри узла.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">1</span><span class="fa-name">один бит</span><span class="fa-desc">Для двух равновероятных классов нужен один бинарный вопрос, чтобы узнать ответ.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Узел 50/50 даёт максимум неопределённости в бинарной задаче.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Подбрасывание честной монеты: до броска оба исхода одинаково возможны.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В узле 6 объектов класса A и 6 класса B: <code>H=1</code> бит.</div>
     </div>
     </div>
     </div>
@@ -1010,19 +1024,26 @@
     <div class="formula">
       IG = H(parent) - \sum_{children} w_j H(child_j)
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">энтропия</span><span class="fa-desc">Мера неопределённости или смешанности распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">IG</span><span class="fa-name">information gain</span><span class="fa-desc">Сколько entropy убрал split по сравнению с родительским узлом.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">H(parent)</span><span class="fa-name">entropy до split</span><span class="fa-desc">Неопределённость в исходном узле до разбиения.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">child_j</span><span class="fa-name">j-й дочерний узел</span><span class="fa-desc">Одна из групп, получившихся после split-а.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">вес дочернего узла</span><span class="fa-desc">Доля объектов, попавших в child_j: <code>n_j / n_parent</code>.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по детям</span><span class="fa-desc">Собирает взвешенную entropy всех дочерних узлов.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Хороший split сильно уменьшает неопределённость; плохой split почти ничего не меняет.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> До вопроса коробка смешанная; после хорошего вопроса шарики разложены по двум почти одноцветным коробкам.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если <code>H(parent)=1.0</code>, а после split weighted entropy равна <code>0.35</code>, то <code>IG=0.65</code>.</div>
+    </div>
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Как дерево выбирает вопрос</div>
+      <h3>Information Gain сравнивает “до” и “после”</h3>
+      <p>Дерево не выбирает split потому, что левый или правый узел выглядит красиво отдельно. Оно считает суммарную картину: насколько impurity родителя уменьшилась после разбиения, с учётом размеров дочерних узлов.</p>
+      <p><strong>Мини-пример.</strong> Parent содержит 20 объектов с entropy 1.0. Split дал левый узел из 5 объектов с entropy 0.0 и правый из 15 объектов с entropy 0.72. Weighted entropy после split: <code>5/20·0 + 15/20·0.72 = 0.54</code>. Значит <code>IG = 1.0 - 0.54 = 0.46</code>.</p>
+      <p><strong>Как интерпретировать.</strong> Маленький идеально чистый узел не всегда делает split хорошим. Если он отделил 1 объект из 100, weighted gain может быть маленьким.</p>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1119,18 +1140,18 @@
     <div class="formula">
       x_j \le t \quad \text{vs} \quad x_j > t
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Конкретный признак объекта, по которому дерево проверяет условие.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">индекс признака</span><span class="fa-desc">Номер признака, выбранного для текущего split.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог split</span><span class="fa-desc">Граница, относительно которой объект отправляется в левую или правую ветку.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">значение признака</span><span class="fa-desc">Конкретная колонка объекта, по которой дерево делает проверку.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Число, найденное перебором кандидатов между отсортированными значениями признака.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">x_j ≤ t</span><span class="fa-name">левая группа</span><span class="fa-desc">Все объекты, которые удовлетворяют условию.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">x_j &gt; t</span><span class="fa-name">правая группа</span><span class="fa-desc">Все объекты, которые не прошли условие.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Порог превращает непрерывный признак в бинарный вопрос.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Турникет: рост до 120 см — детский билет, выше 120 см — взрослый.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> При <code>income ≤ 2500</code> клиент с income=1800 идёт влево, а с income=4100 — вправо.</div>
     </div>
     <p>
       Алгоритм перебирает кандидаты и выбирает тот порог,
@@ -1199,17 +1220,17 @@
     <div class="formula">
       \hat{y}_{leaf} = \text{mean target in leaf}
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ŷ_leaf</span><span class="fa-name">прогноз листа</span><span class="fa-desc">Одно число, которое дерево выдаёт для всех объектов, попавших в этот лист.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">mean target</span><span class="fa-name">средний target</span><span class="fa-desc">Среднее значение y среди train-объектов внутри листа.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">leaf</span><span class="fa-name">лист дерева</span><span class="fa-desc">Финальная область признакового пространства после цепочки split-ов.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Regression tree не строит гладкую линию; он выдаёт константу внутри каждой области.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Для района города предсказываем цену квартиры как среднюю цену похожих квартир в этом районе.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в листе targets <code>10, 12, 14</code>, то прогноз листа равен <code>12</code>.</div>
     </div>
     <p>
       А качество split'а оценивают через суммарную квадратичную ошибку:
@@ -1220,20 +1241,26 @@
       \sum_{left}(y_i - \bar{y}_{left})^2 +
       \sum_{right}(y_i - \bar{y}_{right})^2
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">left/right</span><span class="fa-name">ветви дерева</span><span class="fa-desc">Два направления после проверки условия: одна ветка для true, другая для false.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный target</span><span class="fa-desc">Реальное числовое значение i-го объекта внутри левой или правой группы.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">ȳ_left</span><span class="fa-name">среднее слева</span><span class="fa-desc">Прогноз левого листа: средний target объектов, попавших влево.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">ȳ_right</span><span class="fa-name">среднее справа</span><span class="fa-desc">Прогноз правого листа: средний target объектов, попавших вправо.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">(y_i - ȳ)^2</span><span class="fa-name">квадрат остатка</span><span class="fa-desc">Штраф за то, насколько объект отличается от среднего своего листа.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Σ_left + Σ_right</span><span class="fa-name">ошибка split-а</span><span class="fa-desc">Суммарная неоднородность target после разбиения.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько прогноз модели далёк от правильного ответа.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как шкала штрафа за промах, где разные ошибки наказываются по-разному.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если правильный класс y=1, то прогноз ŷ=0.9 даёт небольшой штраф, а ŷ=0.1 — большой, потому что модель была уверена не туда.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Хороший regression split делает targets внутри каждого листа похожими друг на друга.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Разделить учеников на группы так, чтобы внутри каждой группы рост был похож, и средний рост группы хорошо описывал каждого ученика.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если слева targets <code>2, 3, 3</code>, среднее <code>2.67</code> и SSE маленькая; если смешать <code>2, 3, 9</code>, SSE резко вырастет.</div>
+    </div>
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Регрессия словами</div>
+      <h3>Regression tree ищет не чистые классы, а маленький разброс target</h3>
+      <p>В классификации “хороший лист” содержит один доминирующий класс. В регрессии “хороший лист” содержит объекты с похожими числовыми ответами, потому что всем им будет выдано одно среднее значение.</p>
+      <p><strong>Мини-пример.</strong> Split A даёт листья <code>[10, 11, 12]</code> и <code>[30, 31]</code>. Split B даёт <code>[10, 30]</code> и <code>[11, 12, 31]</code>. Даже без вычислений видно, что Split A лучше: внутри листьев значения компактнее.</p>
+      <p><strong>Как интерпретировать.</strong> Если дерево регрессии слишком глубокое, оно создаёт маленькие листья и среднее начинает описывать шум отдельных объектов, а не устойчивую закономерность.</p>
     </div>
     <div class="grid-2">
       <div>
@@ -1355,17 +1382,18 @@
       \text{cost-complexity objective} =
       \text{tree loss} + \alpha \cdot \text{number of leaves}
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">tree loss</span><span class="fa-name">ошибка дерева</span><span class="fa-desc">Насколько дерево плохо предсказывает target на обучающих данных.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">сила pruning</span><span class="fa-desc">Гиперпараметр: чем больше α, тем дороже каждый лист и тем проще итоговое дерево.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">number of leaves</span><span class="fa-name">число листьев</span><span class="fa-desc">Размер дерева как мера сложности: больше листьев — больше правил.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">+</span><span class="fa-name">штраф сложности</span><span class="fa-desc">К ошибке добавляется цена за сложность, чтобы дерево не росло бесконтрольно.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько прогноз модели далёк от правильного ответа.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как шкала штрафа за промах, где разные ошибки наказываются по-разному.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если правильный класс y=1, то прогноз ŷ=0.9 даёт небольшой штраф, а ŷ=0.1 — большой, потому что модель была уверена не туда.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Pruning разрешает оставить ветку только если выигрыш в качестве оправдывает дополнительную сложность.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Конспект можно расписать на 100 страниц, но если 80 страниц почти ничего не добавляют, их лучше сократить.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если новая ветка уменьшила loss на 0.01, но добавила 3 листа при <code>α=0.01</code>, штраф <code>0.03</code> больше пользы — ветку выгоднее убрать.</div>
     </div>
     <div class="info">
       Pruning — это способ явно контролировать trade-off
@@ -1477,6 +1505,38 @@
   </div>
 
   <div class="card">
+    <h2>Когда использовать Decision Tree</h2>
+
+    <div class="grid-2">
+      <div class="success">
+        <h3>Хороший выбор</h3>
+        <ul>
+          <li>нужен понятный baseline на табличных данных,</li>
+          <li>важно объяснить решение как цепочку правил,</li>
+          <li>есть нелинейные пороги и feature interactions,</li>
+          <li>нужно быстро проверить, есть ли в признаках полезный сигнал.</li>
+        </ul>
+      </div>
+      <div class="warn">
+        <h3>Плохой выбор</h3>
+        <ul>
+          <li>нужна гладкая decision boundary без “лесенки”,</li>
+          <li>данных мало и много шума,</li>
+          <li>качество важнее интерпретируемости одиночной модели,</li>
+          <li>validation сильно проседает относительно train.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Дерево решений на практике</div>
+      <h3>Используй дерево как диагностический инструмент</h3>
+      <p>Одиночное дерево хорошо показывает, какие простые правила вообще существуют в данных. Но если цель — максимальная точность на табличных данных, дерево чаще становится ступенью к Random Forest, Gradient Boosting, XGBoost, LightGBM или CatBoost.</p>
+      <p><strong>Практическое правило.</strong> Если дерево стало точным только при большой глубине, это часто не “сложная закономерность”, а подгонка под train. Сначала проверь validation curve по <code>max_depth</code> и <code>min_samples_leaf</code>.</p>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Короткая геометрическая интуиция</h2>
 
     <p>
@@ -1487,17 +1547,17 @@
     <div class="formula">
       \text{Decision regions} = \text{axis-aligned rectangles / boxes}
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Decision regions</span><span class="fa-name">области решений</span><span class="fa-desc">Куски пространства признаков, внутри которых дерево выдаёт один и тот же ответ.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">axis-aligned</span><span class="fa-name">параллельно осям</span><span class="fa-desc">Каждый split проверяет один признак, поэтому границы идут вертикально или горизонтально относительно осей признаков.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">rectangles / boxes</span><span class="fa-name">прямоугольники / боксы</span><span class="fa-desc">В 2D дерево создаёт прямоугольники; в многомерном пространстве — гиперпрямоугольники.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дерево приближает сложную границу лестницей из простых прямоугольных кусков.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разметить карту города кварталами: границы удобные и читаемые, но не всегда совпадают с реальной кривой дорогой.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Два split-а <code>x₁ ≤ 3</code> и <code>x₂ ≤ 5</code> уже задают прямоугольную область: все точки левее 3 и ниже 5.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1592,6 +1652,41 @@ search.fit(X_train, y_train)
 print("best params:", search.best_params_)
 print("best score :", search.best_score_)</div>
     </div>
+
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Где теория живёт в коде</div>
+      <h3>Главные ручки DecisionTreeClassifier</h3>
+      <ul>
+        <li><strong>criterion</strong> выбирает impurity: <code>gini</code>, <code>entropy</code> или <code>log_loss</code>.</li>
+        <li><strong>max_depth</strong> ограничивает число последовательных вопросов от root до leaf.</li>
+        <li><strong>min_samples_leaf</strong> запрещает листья, которые держатся на слишком малом числе объектов.</li>
+        <li><strong>ccp_alpha</strong> включает cost-complexity pruning: дерево платит штраф за лишние листья.</li>
+      </ul>
+      <p><strong>Как интерпретировать результат.</strong> Если лучший <code>max_depth</code> маленький, задача хорошо описывается простыми правилами. Если GridSearch выбирает глубокое дерево, обязательно сравни train и validation: возможно, модель покупает качество ценой переобучения.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Диагностика: что пошло не так</h2>
+
+    <div class="grid-2">
+      <div class="step green">
+        <strong>Train высокий, validation низкий.</strong>
+        Дерево слишком глубокое или листья слишком маленькие. Увеличь <code>min_samples_leaf</code>, ограничь <code>max_depth</code>, попробуй pruning.
+      </div>
+      <div class="step blue">
+        <strong>Train и validation оба низкие.</strong>
+        Модель недообучается: дерево слишком ограничено, признаки слабые или target плохо связан с X.
+      </div>
+      <div class="step highlight">
+        <strong>Метрика сильно меняется от split к split.</strong>
+        Данных мало, дерево нестабильно или есть шумные признаки. Проверь cross-validation и переходи к ансамблям.
+      </div>
+      <div class="step">
+        <strong>Feature importance выглядит странно.</strong>
+        Признаки коррелируют или один признак имеет много возможных порогов. Проверь permutation importance и SHAP в теме интерпретации.
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -1656,27 +1751,24 @@ print("best score :", search.best_score_)</div>
       <span class="hl-green">дерево решений — это не просто набор правил, а базовый строительный блок почти всех сильнейших tree-based ансамблей, которые мы будем разбирать дальше</span>.
     </p>
   </div>
-  </div>
-
-  <script src="../shared-tex-formulas.js"></script>
-  <script src="../bundle.js" defer></script>
 
     <div class="card">
       <h2>Почему greedy split вообще работает</h2>
       <p>Decision tree не ищет лучшую структуру дерева глобально — это было бы слишком дорого. Он действует жадно: на каждом узле выбирает split, который сильнее всего уменьшает impurity прямо сейчас. Это не гарантирует глобальный оптимум, но даёт surprisingly сильную эвристику, особенно когда признаки уже неплохо отражают структуру задачи.</p>
       <div class="formula" data-render-tex data-tex-source="\text{Gain} = I(\text{parent}) - \sum_k \frac{n_k}{n} I(\text{child}_k)">Gain = I(parent) - Σ (n_k / n) I(child_k)</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy" data-formula-anatomy="manual">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">Насколько split уменьшает impurity по сравнению с родительским узлом.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">индекс класса</span><span class="fa-desc">Номер класса, по которому идёт суммирование.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Собирает вклад многих элементов в один итог.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
+        <div class="formula-anatomy__row"><span class="fa-sym">I(parent)</span><span class="fa-name">impurity родителя</span><span class="fa-desc">Gini, entropy или MSE-like ошибка до split-а.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">child_k</span><span class="fa-name">k-й дочерний узел</span><span class="fa-desc">Одна из групп после разбиения; для CART обычно две группы.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">n_k / n</span><span class="fa-name">доля дочернего узла</span><span class="fa-desc">Вес impurity дочернего узла: большой child влияет сильнее маленького.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">I(child_k)</span><span class="fa-name">impurity ребёнка</span><span class="fa-desc">Насколько смешанной или неоднородной осталась k-я группа после split-а.</span></div>
+    <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш split-а</span><span class="fa-desc">Сколько неопределённости или ошибки исчезло благодаря вопросу.</span></div>
+    </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если в узле два класса 50/50, то Gini = 1 − (0.5&#178; + 0.5&#178;) = 0.5. Если узел чистый 100/0, то Gini = 0.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Split полезен, если после него большая часть объектов попадает в более понятные узлы.</div>
+    <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Хороший вопрос в анкете сразу отделяет разные группы людей; плохой вопрос делит их случайно.</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если parent impurity 0.5, а два child имеют impurity 0.1 и 0.2 с весами 0.6 и 0.4, то <code>Gain = 0.5 - (0.6·0.1 + 0.4·0.2) = 0.36</code>.</div>
     </div>
     <div class="info">Важно понимать: дерево всегда принимает локальные решения. Поэтому оно очень чувствительно к ранним split-ам — ошибка в верхней части дерева потом влияет на всю геометрию ниже.</div>
     </div>
@@ -1703,18 +1795,19 @@ print("best score :", search.best_score_)</div>
 - нестабильно к шуму
 - легко переобучается
 - даёт рваную decision surface</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог split</span><span class="fa-desc">Граница, относительно которой объект отправляется в левую или правую ветку.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
+    <div class="concept-walkthrough">
+      <div class="concept-walkthrough__kicker">Практическое чтение</div>
+      <h3>Одиночное дерево — понятный baseline, но редко финальная модель</h3>
+      <p>Если дерево даёт хороший train score и заметно худший validation score, это не “почти готовая модель”, а сигнал высокой variance. В такой ситуации обычно сначала ограничивают дерево, а потом переходят к Random Forest или Boosting.</p>
+      <p><strong>Мини-пример.</strong> Train accuracy 0.99 и validation accuracy 0.74 при <code>max_depth=None</code> означает, что дерево запомнило детали train. Если при <code>max_depth=4</code> train падает до 0.86, а validation растёт до 0.82, простая модель лучше обобщает.</p>
     </div>
     <div class="warn">Именно поэтому важно не думать о дереве как о финальной “умной модели по умолчанию”. Одиночное дерево — часто промежуточный объект, из которого потом строят более устойчивый ансамбль.</div>
     </div>
+  </div>
+
+  <script src="../shared-tex-formulas.js"></script>
+  <script src="../bundle.js" defer></script>
+
   <script>
     // ---------- Tabs ----------
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -2097,6 +2190,8 @@ print("best score :", search.best_score_)</div>
   </script>
 </body>
 </html>
+
+
 
 
 
