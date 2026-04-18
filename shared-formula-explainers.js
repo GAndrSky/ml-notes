@@ -269,9 +269,9 @@
     {tokens:['√'],row:row('√','корень','Мягко уменьшает масштаб величины.')},
     {tokens:['softmax'],row:row('softmax','нормировка в вероятности','Преобразует scores в веса с суммой 1.')},
     {tokens:['log'],row:row('log','логарифм','Сжимает диапазон и превращает произведения в суммы.')},
-    {tokens:['q'],row:row('Q','Query','Что текущий элемент ищет у других.')},
-    {tokens:['k'],row:row('K','Key','Как элемент описан для сопоставления.')},
-    {tokens:['v'],row:row('V','Value','Какую информацию элемент может передать.')},
+    {tokens:['query'],row:row('Q','Query','Что текущий элемент ищет у других.')},
+    {tokens:['key'],row:row('K','Key','Как элемент описан для сопоставления.')},
+    {tokens:['value'],row:row('V','Value','Какую информацию элемент может передать.')},
     {tokens:['w'],row:row('w','веса','Важности признаков или связей.')},
     {tokens:['x'],row:row('x','вход','То, что формула берёт на вход.')},
     {tokens:['y','ŷ'],row:row('y / ŷ','истина и прогноз','Сравнение правильного ответа и предсказания модели.')},
@@ -285,6 +285,7 @@
     return null;
   }
   function genericCategory(text){
+    if(/gini|impurity|information gain|\bgain\b/i.test(text)){return 'impurity';}
     if(/attention|softmax|query|key|value|qk/i.test(text)){return 'attention';}
     if(/adam|momentum|optimizer|gradient|grad|θ|η|β|ε/i.test(text)){return 'optim';}
     if(/posterior|prior|likelihood|entropy|kl|bayes|p\(/i.test(text)){return 'prob';}
@@ -296,6 +297,7 @@
     return 'general';
   }
   function genericCopy(kind){
+    if(kind==='impurity'){return {intuition:'Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.',analogy:'Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.',example:'Если в узле два класса 50/50, то Gini = 1 − (0.5² + 0.5²) = 0.5. Если узел чистый 100/0, то Gini = 0.'};}
     if(kind==='attention'){return {intuition:'Формула показывает, как элемент выбирает, от кого собрать полезную информацию.',analogy:'Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.',example:'Если один score равен 2, а другой 1, softmax даст примерно 0.73 и 0.27: первый источник внесёт около 73% итоговой информации.'};}
     if(kind==='optim'){return {intuition:'Формула описывает, как параметры делают шаг в сторону меньшей ошибки.',analogy:'Как спускаться с горы, постоянно корректируя длину и направление шага.',example:'Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1·3 = 0.7.'};}
     if(kind==='prob'){return {intuition:'Формула оценивает, насколько данные согласуются с гипотезой или распределением.',analogy:'Как обновлять мнение о ситуации по новым фактам и наблюдениям.',example:'Если модель даёт P=0.8, это можно читать так: среди 10 похожих случаев она ожидает около 8 успешных исходов.'};}
@@ -307,17 +309,28 @@
     return {intuition:'Формула связывает несколько величин и показывает, как они влияют друг на друга.',analogy:'Как панель с несколькими ручками, каждая из которых меняет общий результат.',example:'Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.'};
   }
   function genericRows(text){
-    var low=text.toLowerCase(),rows=[];
+    var low=text.toLowerCase(),rows=[],kind=genericCategory(text);
+    function add(r){if(!rows.some(function(existing){return existing.sym===r.sym;})){rows.push(r);}}
+    if(/gini/i.test(text)){add(row('Gini','индекс Джини','Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.'));}
+    if(/entropy|\bh\(/i.test(text)){add(row('H','энтропия','Мера неопределённости или смешанности распределения.'));}
+    if(/information gain|\bgain\b|ig/i.test(text)){add(row('Gain','выигрыш разбиения','Насколько split уменьшает impurity по сравнению с родительским узлом.'));}
+    if(/p[_\s]?\{?k\}?|p_k|pₖ/i.test(text)){add(row('p_k','доля класса k','Вероятность или частота класса k внутри текущего узла дерева.'));}
+    if(/\bk\s*=|_\{?k|p_k|pₖ/i.test(text)){add(row('k','индекс класса','Номер класса, по которому идёт суммирование.'));}
+    if(/\bK\b/.test(text)){add(kind==='attention'?row('K','Key','Как элемент описан для сопоставления с query.'):row('K','число классов','Сколько классов учитывается в сумме: k идёт от 1 до K.'));}
+    if(/x[_\s]?\{?j\}?|x_j/i.test(text)){add(row('x_j','j-й признак','Конкретный признак объекта, по которому дерево проверяет условие.'));}
+    if(/\bj\b|x_j/i.test(text)){add(row('j','индекс признака','Номер признака, выбранного для текущего split.'));}
+    if(/\bt\b|threshold|порог/i.test(text)){add(row('t','порог split','Граница, относительно которой объект отправляется в левую или правую ветку.'));}
+    if(/left|right|branch|вет/i.test(text)){add(row('left/right','ветви дерева','Два направления после проверки условия: одна ветка для true, другая для false.'));}
     TOKENS.forEach(function(entry){
       var hit=entry.tokens.some(function(token){return low.indexOf(String(token).toLowerCase())!==-1;});
-      if(hit&&!rows.some(function(existing){return existing.sym===entry.row.sym;})){rows.push(entry.row);}
+      if(hit){add(entry.row);}
     });
     if(!rows.length){
       rows.push(row('=','связь','Показывает, как одна величина выражается через другие.'));
       rows.push(row('x','вход','То, что формула использует на входе.'));
       rows.push(row('y','выход','То, что получается на выходе формулы.'));
     }
-    return rows.slice(0,6);
+    return rows.slice(0,8);
   }
   function genericSpec(text){
     var copy=genericCopy(genericCategory(text));

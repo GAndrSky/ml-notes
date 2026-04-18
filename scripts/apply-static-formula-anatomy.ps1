@@ -21,8 +21,45 @@ function Test-CodeLike {
   return $Text -match '(?i)\b(import|from\s+\w+\s+import|def\s+\w+\(|class\s+\w+|return\s+|torch\.|np\.|numpy\.|plt\.|console\.log|function\s+\w+\(|const\s+|let\s+|=>|for\s*\(|while\s*\(|print\s*\(|optimizer\.|loss\.backward|model\.|nn\.)'
 }
 
+function Remove-StaticFormulaAnatomy {
+  param([string]$Html)
+  $marker = '<div class="formula-anatomy" data-static-formula-anatomy="1">'
+  $builder = [System.Text.StringBuilder]::new()
+  $pos = 0
+
+  while ($true) {
+    $start = $Html.IndexOf($marker, $pos, [System.StringComparison]::OrdinalIgnoreCase)
+    if ($start -lt 0) { break }
+
+    [void]$builder.Append($Html.Substring($pos, $start - $pos))
+    $tagRegex = [regex]::new('(?is)<div\b[^>]*>|</div>')
+    $matches = $tagRegex.Matches($Html, $start)
+    $depth = 0
+    $end = $start
+
+    foreach ($tag in $matches) {
+      if ($tag.Value -match '^<div\b') { $depth += 1 } else { $depth -= 1 }
+      if ($depth -eq 0) {
+        $end = $tag.Index + $tag.Length
+        break
+      }
+    }
+
+    if ($end -le $start) {
+      $pos = $start + $marker.Length
+    } else {
+      $pos = $end
+      while ($pos -lt $Html.Length -and [char]::IsWhiteSpace($Html[$pos])) { $pos += 1 }
+    }
+  }
+
+  [void]$builder.Append($Html.Substring($pos))
+  return $builder.ToString()
+}
+
 function Get-FormulaKind {
   param([string]$Text)
+  if ($Text -match '(?i)gini|impurity|information gain|\bgain\b') { return "impurity" }
   if ($Text -match '(?i)attention|softmax|query|key|value|qk') { return "attention" }
   if ($Text -match '(?i)adam|momentum|optimizer|gradient|grad|θ|eta|η|beta|β|epsilon|ε') { return "optim" }
   if ($Text -match '(?i)posterior|prior|likelihood|entropy|kl|bayes|p\(') { return "prob" }
@@ -37,6 +74,7 @@ function Get-FormulaKind {
 function Get-Copy {
   param([string]$Kind)
   switch ($Kind) {
+    "impurity" { return @("Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.", "Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.", "Если в узле два класса 50/50, то Gini = 1 − (0.5² + 0.5²) = 0.5. Если узел чистый 100/0, то Gini = 0.") }
     "attention" { return @("Формула показывает, как элемент выбирает, от кого собрать полезную информацию.", "Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.", "Если один score равен 2, а другой 1, softmax даст примерно 0.73 и 0.27: первый источник внесёт около 73% итоговой информации.") }
     "optim" { return @("Формула описывает, как параметры делают шаг в сторону меньшей ошибки.", "Как спускаться с горы, постоянно корректируя длину и направление шага.", "Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1·3 = 0.7.") }
     "prob" { return @("Формула оценивает, насколько данные согласуются с гипотезой или распределением.", "Как обновлять мнение о ситуации по новым фактам и наблюдениям.", "Если модель даёт P=0.8, это можно читать так: среди 10 похожих случаев она ожидает около 8 успешных исходов.") }
@@ -55,15 +93,31 @@ function New-Row {
 }
 
 function Get-Rows {
-  param([string]$Text)
+  param([string]$Text, [string]$Kind)
   $rows = New-Object System.Collections.Generic.List[string]
   $add = {
     param($symbol, $name, $description)
-    if (-not ($rows | Where-Object { $_ -like "*>$([System.Net.WebUtility]::HtmlEncode($symbol))<*" })) {
+    if (-not ($rows | Where-Object { $_ -clike "*>$([System.Net.WebUtility]::HtmlEncode($symbol))<*" })) {
       [void]$rows.Add((New-Row $symbol $name $description))
     }
   }
 
+  if ($Text -match '(?i)\bGini\b') { & $add 'Gini' 'индекс Джини' 'Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.' }
+  if ($Text -match '(?i)entropy|\bH\(') { & $add 'H' 'энтропия' 'Мера неопределённости или смешанности распределения классов.' }
+  if ($Text -match '(?i)gain|IG') { & $add 'Gain' 'выигрыш разбиения' 'Насколько split уменьшает impurity по сравнению с родительским узлом.' }
+  if ($Text -match 'p[_\s]?\{?k\}?|p_k|pₖ') { & $add 'p_k' 'доля класса k' 'Вероятность или частота класса k внутри текущего узла дерева.' }
+  if ($Text -match '\bk\s*=|_\{?k|p_k|pₖ') { & $add 'k' 'индекс класса' 'Номер класса, по которому идёт суммирование.' }
+  if ($Text -match '\bK\b') {
+    if ($Kind -eq 'attention') {
+      & $add 'K' 'Key' 'Как каждый элемент описан для сопоставления с query.'
+    } else {
+      & $add 'K' 'число классов' 'Сколько классов учитывается в сумме: k идёт от 1 до K.'
+    }
+  }
+  if ($Text -match 'x[_\s]?\{?j\}?|x_j') { & $add 'x_j' 'j-й признак' 'Конкретный признак объекта, по которому дерево проверяет условие.' }
+  if ($Text -match '\bj\b|x_j') { & $add 'j' 'индекс признака' 'Номер признака, выбранного для текущего split.' }
+  if ($Text -match '\bt\b|threshold|порог') { & $add 't' 'порог split' 'Граница, относительно которой объект отправляется в левую или правую ветку.' }
+  if ($Text -match 'left|right|branch|вет') { & $add 'left/right' 'ветви дерева' 'Два направления после проверки условия: одна ветка для true, другая для false.' }
   if ($Text -match 'θ') { & $add 'θ' 'параметры' 'Обучаемые веса и другие настраиваемые величины модели.' }
   if ($Text -match 'η') { & $add 'η' 'learning rate' 'Размер шага оптимизации: чем больше, тем резче обновление.' }
   if ($Text -match 'λ') { & $add 'λ' 'коэффициент штрафа' 'Сила регуляризации или дополнительного ограничения.' }
@@ -76,13 +130,12 @@ function Get-Rows {
   if ($Text -match '(?i)softmax') { & $add 'softmax' 'нормировка в веса' 'Преобразует scores в вероятности или доли с суммой 1.' }
   if ($Text -match '(?i)log') { & $add 'log' 'логарифм' 'Сжимает диапазон и превращает произведения вероятностей в суммы.' }
   if ($Text -match '\bQ\b|Query') { & $add 'Q' 'Query' 'Что текущий элемент ищет у других элементов.' }
-  if ($Text -match '\bK\b|Key') { & $add 'K' 'Key' 'Как каждый элемент описан для сопоставления с query.' }
   if ($Text -match '\bV\b|Value') { & $add 'V' 'Value' 'Информация, которую элемент отдаёт после выбора attention-весов.' }
   if ($Text -match '\bw\b|W|weights|вес') { & $add 'w / W' 'веса' 'Обучаемые важности признаков или связей между слоями.' }
   if ($Text -match '\bx\b|X') { & $add 'x / X' 'вход' 'Данные или признаки, которые формула обрабатывает.' }
   if ($Text -match 'y|ŷ|hat') { & $add 'y / ŷ' 'истина и прогноз' 'Сравнение правильного ответа и предсказания модели.' }
   if ($Text -match '\bb\b|bias') { & $add 'b' 'bias' 'Смещение, которое двигает порог или базовый уровень ответа.' }
-  if ($Text -match 'P\(|prob') { & $add 'P(·)' 'вероятность' 'Насколько событие или гипотеза согласуется с данными.' }
+  if ($Text -match 'P\(|prob|\bp\b') { & $add 'P(·)' 'вероятность' 'Насколько событие или гипотеза согласуется с данными.' }
   if ($Text -match '=') { & $add '=' 'связь' 'Показывает, как левая величина выражается через правую часть.' }
 
   if ($rows.Count -eq 0) {
@@ -91,14 +144,14 @@ function Get-Rows {
     [void]$rows.Add((New-Row '=' 'связь' 'Показывает зависимость одной величины от другой.'))
   }
 
-  return ($rows | Select-Object -First 6) -join "`r`n"
+  return ($rows | Select-Object -First 8) -join "`r`n"
 }
 
 function New-Anatomy {
   param([string]$Text)
   $kind = Get-FormulaKind $Text
   $copy = Get-Copy $kind
-  $rows = Get-Rows $Text
+  $rows = Get-Rows $Text $kind
   return @"
 
     <div class="formula-anatomy" data-static-formula-anatomy="1">
@@ -124,6 +177,7 @@ $totalInserted = 0
 
 foreach ($file in $files) {
   $html = Get-Content -LiteralPath $file.FullName -Raw
+  $html = Remove-StaticFormulaAnatomy $html
   $matches = $pattern.Matches($html)
   if ($matches.Count -eq 0) { continue }
 
