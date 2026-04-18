@@ -1032,49 +1032,98 @@
     { title: "Оптимизационный смысл", items: optimizationByTopic() }
   ];
 
-  const section = document.createElement("section");
-  section.className = "card ml-theory-section";
-  section.innerHTML =
-    '<div class="ml-theory-header">' +
-    "<h2>Теоретическое углубление</h2>" +
-    '<p class="muted">Блок для чтения темы на уровне «почему»: какую задачу метод решает, где у него рабочие границы, как его понимать геометрически, вероятностно и с точки зрения оптимизации.</p>' +
-    "</div>" +
-    '<div class="ml-theory-grid">' +
-    blocks.map(function (block) {
-      return (
-        '<div class="ml-theory-card">' +
-        "<h3>" + escapeHtml(block.title) + "</h3>" +
-        buildList(block.items) +
-        "</div>"
-      );
-    }).join("") +
-    "</div>" +
-    '<div class="ml-theory-prose">' +
-    '<div class="ml-theory-prose-card">' +
-    "<h3>Как об этом думать</h3>" +
-    buildParagraphs(prose.mental) +
-    "</div>" +
-    '<div class="ml-theory-prose-card">' +
-    "<h3>Почему это важно дальше</h3>" +
-    buildParagraphs(prose.importance) +
-    "</div>" +
-    '<div class="ml-theory-prose-card">' +
-    "<h3>На что смотреть в сложных случаях</h3>" +
-    buildParagraphs(prose.edge) +
-    "</div>";
+  const anchors = Array.prototype.slice.call(
+    pageShell.querySelectorAll(".card, section, article")
+  ).filter(function (item) {
+    return !item.classList.contains("hero") &&
+      !item.classList.contains("ml-practice-section") &&
+      !item.classList.contains("ml-theory-section") &&
+      !item.classList.contains("ml-explainer-section") &&
+      !item.classList.contains("ml-advanced-section") &&
+      !item.classList.contains("ml-endcap-section");
+  });
 
-  const practiceSection = pageShell.querySelector(".ml-practice-section");
-  const hero = pageShell.querySelector(".hero");
+  const formulaAnchor = anchors.find(function (item) {
+    return item.querySelector(".formula, .formula-anatomy, [data-render-tex]");
+  });
+  const interactiveAnchor = anchors.find(function (item) {
+    return item.querySelector("canvas, input[type='range'], select, .control, .controls");
+  });
 
-  if (practiceSection) {
-    practiceSection.insertAdjacentElement("afterend", section);
-    return;
-  }
+  const makeBlock = function (title, subtitle, selectedBlocks, extraHtml) {
+    const section = document.createElement("section");
+    section.className = "card ml-theory-section ml-context-note";
+    section.innerHTML =
+      '<div class="ml-theory-header">' +
+      "<h2>" + escapeHtml(title) + "</h2>" +
+      '<p class="muted">' + escapeHtml(subtitle) + "</p>" +
+      "</div>" +
+      '<div class="ml-theory-grid">' +
+      selectedBlocks.map(function (block) {
+        return (
+          '<div class="ml-theory-card">' +
+          "<h3>" + escapeHtml(block.title) + "</h3>" +
+          buildList(block.items) +
+          "</div>"
+        );
+      }).join("") +
+      "</div>" +
+      (extraHtml || "");
+    return section;
+  };
 
-  if (hero) {
-    hero.insertAdjacentElement("afterend", section);
-    return;
-  }
+  const makeProseBlock = function () {
+    const section = document.createElement("section");
+    section.className = "card ml-theory-section ml-context-note";
+    section.innerHTML =
+      '<div class="ml-theory-header">' +
+      "<h2>Развёрнутое объяснение</h2>" +
+      '<p class="muted">Эта часть закрепляет идею после того, как уже появились формулы, визуализации и первые примеры.</p>' +
+      "</div>" +
+      '<div class="ml-theory-prose">' +
+      '<div class="ml-theory-prose-card">' +
+      "<h3>Как об этом думать</h3>" +
+      buildParagraphs(prose.mental) +
+      "</div>" +
+      '<div class="ml-theory-prose-card">' +
+      "<h3>Почему это важно дальше</h3>" +
+      buildParagraphs(prose.importance) +
+      "</div>" +
+      '<div class="ml-theory-prose-card">' +
+      "<h3>На что смотреть в сложных случаях</h3>" +
+      buildParagraphs(prose.edge) +
+      "</div>" +
+      "</div>";
+    return section;
+  };
 
-  pageShell.insertBefore(section, pageShell.firstChild);
+  const placeAfter = function (anchor, section) {
+    if (anchor && anchor.parentNode) {
+      anchor.insertAdjacentElement("afterend", section);
+      return;
+    }
+    pageShell.appendChild(section);
+  };
+
+  const firstAnchor = anchors[0] || pageShell.querySelector(".hero");
+  const secondAnchor = anchors[Math.min(2, anchors.length - 1)] || firstAnchor;
+  const midAnchor = anchors[Math.max(0, Math.floor(anchors.length / 2))] || secondAnchor;
+  const lateAnchor = anchors[Math.max(0, anchors.length - 2)] || midAnchor;
+
+  placeAfter(firstAnchor, makeBlock(
+    "Зачем этот блок нужен именно здесь",
+    "Короткая теоретическая рамка сразу после первых определений, чтобы дальше формулы читались как ответы на конкретную задачу.",
+    blocks.slice(0, 2)
+  ));
+  placeAfter(formulaAnchor || secondAnchor, makeBlock(
+    "Как читать формулы и ограничения",
+    "Эта вставка стоит рядом с математикой темы: она связывает предпосылки, failure modes и смысл символов в формулах.",
+    blocks.slice(2, 4)
+  ));
+  placeAfter(interactiveAnchor || midAnchor, makeBlock(
+    "Интерпретации результата",
+    "После визуализации полезно отдельно проговорить геометрию, вероятностный смысл и оптимизационный взгляд.",
+    blocks.slice(4, 8)
+  ));
+  placeAfter(lateAnchor, makeProseBlock());
 })();

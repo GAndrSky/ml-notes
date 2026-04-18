@@ -721,6 +721,7 @@
   ensureScript("shared-advanced-notes.js", "data-ml-advanced-script");
 
   ensureScript("shared-endcap-notes.js", "data-ml-endcap-script");
+  ensureScript("shared-interactive-guides.js", "data-ml-interactive-guides-script");
 
   if (hasFormulaExplainCandidates) {
     ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script");

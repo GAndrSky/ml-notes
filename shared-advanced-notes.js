@@ -35,44 +35,54 @@
   }
 
   function mountSection(data) {
-    var section = document.createElement("section");
-    section.className = "card ml-advanced-section";
-    section.innerHTML =
-      '<div class="ml-theory-header">' +
-        "<h2>" + escapeHtml(data.title) + "</h2>" +
-        '<p class="muted">' + escapeHtml(data.intro) + "</p>" +
-      "</div>" +
-      '<div class="ml-advanced-grid">' +
-        data.cards.map(function (currentCard) {
-          return (
-            '<div class="ml-advanced-card">' +
-              "<h3>" + escapeHtml(currentCard.title) + "</h3>" +
-              buildParagraphs(currentCard.paragraphs) +
-            "</div>"
-          );
-        }).join("") +
-      "</div>";
+    var anchors = Array.prototype.slice.call(
+      pageShell.querySelectorAll(".card, section, article")
+    ).filter(function (item) {
+      return !item.classList.contains("hero") &&
+        !item.classList.contains("ml-practice-section") &&
+        !item.classList.contains("ml-theory-section") &&
+        !item.classList.contains("ml-explainer-section") &&
+        !item.classList.contains("ml-advanced-section") &&
+        !item.classList.contains("ml-endcap-section");
+    });
 
-    var explainerSection = pageShell.querySelector(".ml-explainer-section");
-    var theorySection = pageShell.querySelector(".ml-theory-section");
-    var hero = pageShell.querySelector(".hero");
-
-    if (explainerSection) {
-      explainerSection.insertAdjacentElement("afterend", section);
-      return;
+    function makeSection(currentCard, index) {
+      var section = document.createElement("section");
+      section.className = "card ml-advanced-section ml-context-note";
+      section.innerHTML =
+        '<div class="ml-theory-header">' +
+          "<h2>" + escapeHtml(index === 0 ? data.title : "Углубление по месту") + "</h2>" +
+          '<p class="muted">' + escapeHtml(index === 0 ? data.intro : "Этот блок стоит рядом с соответствующей частью конспекта, чтобы теория читалась вместе с примерами, формулами и визуализациями.") + "</p>" +
+        "</div>" +
+        '<div class="ml-advanced-grid">' +
+          '<div class="ml-advanced-card">' +
+            "<h3>" + escapeHtml(currentCard.title) + "</h3>" +
+            buildParagraphs(currentCard.paragraphs) +
+          "</div>" +
+        "</div>";
+      return section;
     }
 
-    if (theorySection) {
-      theorySection.insertAdjacentElement("afterend", section);
-      return;
+    function placeAfter(anchor, section) {
+      if (anchor && anchor.parentNode) {
+        anchor.insertAdjacentElement("afterend", section);
+        return;
+      }
+      pageShell.appendChild(section);
     }
 
-    if (hero) {
-      hero.insertAdjacentElement("afterend", section);
-      return;
-    }
+    var formulaAnchors = anchors.filter(function (item) {
+      return item.querySelector(".formula, .formula-anatomy, [data-render-tex]");
+    });
+    var interactiveAnchors = anchors.filter(function (item) {
+      return item.querySelector("canvas, input[type='range'], select, .control, .controls");
+    });
+    var pool = formulaAnchors.concat(interactiveAnchors).concat(anchors);
 
-    pageShell.insertBefore(section, pageShell.firstChild);
+    data.cards.forEach(function (currentCard, index) {
+      var anchor = pool[Math.min(index * 2, pool.length - 1)] || anchors[Math.min(index, anchors.length - 1)] || pageShell.querySelector(".hero");
+      placeAfter(anchor, makeSection(currentCard, index));
+    });
   }
 
   advancedByPage["02_classic_ml/01_intro_to_classical_ml.html"] = entry(
