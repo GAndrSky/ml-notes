@@ -130,6 +130,19 @@ td.mono{font-family:monospace;}
     3. <span class="hl-blue">Ненасыщение</span> — чтобы градиент не «умирал» при обратном распространении
   </div>
 </div>
+<!-- neural-deepening:start:3-2-nonlinearity-composition -->
+  <section class="concept-walkthrough" data-neural-deepening="3-2-nonlinearity-composition">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Нелинейность не украшает сеть, а создаёт сложную геометрию</h3>
+    <p>Если убрать активации, любое число линейных слоёв схлопнется в один линейный слой. Глубина без нелинейности не добавляет выразительности: произведение матриц всё равно остаётся матрицей.</p>
+    <p>Активации разрезают пространство на области, где сеть ведёт себя по-разному. ReLU-сеть, например, строит кусочно-линейную функцию: локально она линейна, но глобально может иметь очень сложную форму.</p>
+    <ul>
+      <li>Linear layers поворачивают, растягивают и смешивают признаки.</li>
+      <li>Activations меняют режим вычисления в зависимости от значения.</li>
+      <li>Композиция слоёв создаёт иерархию всё более сложных признаков.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- SECTION 2: Интерактивный атлас -->
 <div class="card">
@@ -234,6 +247,19 @@ td.mono{font-family:monospace;}
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-2-derivative-gate -->
+  <section class="concept-walkthrough" data-neural-deepening="3-2-derivative-gate">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Производная активации - это gate для градиента</h3>
+    <p>Во время backprop градиент проходит через производные всех промежуточных активаций. Если производные много раз меньше единицы, сигнал ошибки постепенно исчезает. Если они много раз больше единицы, градиент может взорваться.</p>
+    <p>Поэтому активация выбирается не только по форме forward pass. Важно, как она пропускает gradient flow. ReLU стала популярной именно потому, что в положительной области её производная равна единице и не гасит сигнал.</p>
+    <ul>
+      <li>Sigmoid насыщается на больших по модулю входах и даёт малую производную.</li>
+      <li>Tanh центрирована около нуля, но тоже насыщается.</li>
+      <li>ReLU хорошо пропускает положительный градиент, но может умереть в отрицательной области.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- SECTION 4: Мёртвые нейроны ReLU -->
 <div class="card">
@@ -268,6 +294,19 @@ td.mono{font-family:monospace;}
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-2-dying-relu-mechanism -->
+  <section class="concept-walkthrough" data-neural-deepening="3-2-dying-relu-mechanism">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Dying ReLU возникает из-за постоянного отрицательного pre-activation</h3>
+    <p>Если для всех или почти всех объектов z у нейрона становится отрицательным, ReLU выдаёт ноль. Производная на этой стороне тоже нулевая, поэтому веса нейрона перестают получать полезный gradient update.</p>
+    <p>Это чаще происходит при слишком большом learning rate, плохой initialization или сильном сдвиге bias. LeakyReLU, GELU и SiLU уменьшают риск, потому что не делают отрицательную сторону полностью мёртвой.</p>
+    <ul>
+      <li>Мёртвый нейрон выдаёт почти всегда ноль.</li>
+      <li>Нулевой output часто означает нулевой gradient через этот путь.</li>
+      <li>Leaky activations оставляют небольшой канал для восстановления.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- SECTION 5: Сравнительная таблица -->
 <div class="card">
@@ -398,6 +437,19 @@ td.mono{font-family:monospace;}
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-2-softmax-logits -->
+  <section class="concept-walkthrough" data-neural-deepening="3-2-softmax-logits">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Softmax превращает относительные logits в распределение</h3>
+    <p>Softmax не смотрит на абсолютные значения logits отдельно. Ему важны разности между ними: если ко всем logits добавить одно и то же число, вероятности не изменятся. Поэтому перед softmax можно вычитать максимум logits для численной стабильности.</p>
+    <p>Температура softmax управляет резкостью распределения. Низкая температура делает выбор почти argmax, высокая - распределяет вероятность мягче между классами.</p>
+    <ul>
+      <li>Logits - сырые score до нормировки.</li>
+      <li>Softmax делает вероятности, сумма которых равна единице.</li>
+      <li>CrossEntropyLoss в PyTorch ждёт logits, а не уже применённый softmax.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- SECTION 7: Производные — полные выводы -->
 <div class="card">
@@ -1026,6 +1078,7 @@ drawDeath();
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

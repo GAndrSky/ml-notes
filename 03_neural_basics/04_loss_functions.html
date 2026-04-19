@@ -127,6 +127,19 @@ td.mono{font-family:monospace;}
     💡 Меняешь предположение о распределении — получаешь другую loss. Архитектура сети не меняется, меняется только интерпретация выходного слоя.
   </div>
 </div>
+<!-- neural-deepening:start:3-4-loss-as-assumption -->
+  <section class="concept-walkthrough" data-neural-deepening="3-4-loss-as-assumption">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Loss фиксирует предположение о шуме и цене ошибки</h3>
+    <p>Loss - это не просто число для optimizer. Он кодирует, какие ошибки считаются дорогими и какой probabilistic story мы считаем правдоподобной. MSE соответствует гауссовскому шуму, MAE ближе к лапласовскому, BCE - Bernoulli target, CrossEntropy - categorical target.</p>
+    <p>Если loss не совпадает с реальной задачей, модель может честно оптимизировать неправильное поведение. Поэтому выбор loss всегда связан с метрикой, распределением target и downstream-решением.</p>
+    <ul>
+      <li>MSE сильно штрафует крупные промахи.</li>
+      <li>MAE устойчивее к выбросам.</li>
+      <li>CrossEntropy штрафует уверенные ошибки особенно сильно.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- 2. Интерактивный атлас loss-функций -->
 <div class="card">
@@ -194,6 +207,19 @@ td.mono{font-family:monospace;}
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-4-mse-bce-gradients -->
+  <section class="concept-walkthrough" data-neural-deepening="3-4-mse-bce-gradients">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Хороший loss даёт полезный gradient signal</h3>
+    <p>Loss важен не только как итоговая метрика. Он определяет, какой градиент получает модель на каждом примере. Для BCE уверенная неправильная вероятность создаёт сильный gradient push, потому что такую ошибку нужно быстро исправлять.</p>
+    <p>Поэтому в классификации обычно используют logits плюс CrossEntropy или BCEWithLogitsLoss. Такая связка стабильнее и даёт правильный gradient flow без ручного sigmoid или softmax перед loss.</p>
+    <ul>
+      <li>Для binary classification используй BCEWithLogitsLoss, если модель выдаёт один logit.</li>
+      <li>Для multiclass classification используй CrossEntropyLoss по logits.</li>
+      <li>Не применяй softmax перед CrossEntropyLoss в PyTorch.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- 5. Вывод CrossEntropy из MLE -->
 <div class="card">
@@ -260,6 +286,19 @@ pₜ = p̂   if y=1
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-4-focal-loss-meaning -->
+  <section class="concept-walkthrough" data-neural-deepening="3-4-focal-loss-meaning">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Focal Loss меняет внимание optimizer</h3>
+    <p>Focal Loss уменьшает вклад лёгких примеров, которые модель уже уверенно классифицирует. Это освобождает gradient budget для трудных и редких примеров, что полезно при сильном imbalance или dense detection.</p>
+    <p>Но focal loss не является универсальным лекарством. Если labels шумные, он может усилить внимание к спорным или неверно размеченным объектам. Поэтому его стоит проверять вместе с calibration и PR-метриками.</p>
+    <ul>
+      <li>gamma управляет тем, насколько сильно подавляются лёгкие примеры.</li>
+      <li>alpha может компенсировать imbalance между классами.</li>
+      <li>Слишком сильный focal режим может ухудшить calibration вероятностей.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- 7. Сравнение градиентов -->
 <div class="card">
@@ -436,6 +475,19 @@ log-sum-exp трюк (ХОРОШО):
     </div>
   </div>
 </div>
+<!-- neural-deepening:start:3-4-numerical-stability -->
+  <section class="concept-walkthrough" data-neural-deepening="3-4-numerical-stability">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Численная стабильность защищает математику от ограничений float</h3>
+    <p>Математически exp большого logit существует, но в float32 или float16 он может стать infinity. Маленькие вероятности могут стать нулём, а log(0) превращается в бесконечность. Это ломает loss и градиенты.</p>
+    <p>log-sum-exp trick сохраняет те же вероятностные отношения, но переносит вычисления в безопасный диапазон. Поэтому production-код почти всегда использует fused losses, где sigmoid, softmax и log объединены в устойчивую операцию.</p>
+    <ul>
+      <li>Вычитай максимум logits перед softmax.</li>
+      <li>Используй BCEWithLogitsLoss вместо sigmoid плюс BCE.</li>
+      <li>Следи за NaN и inf в loss, gradients и activations.</li>
+    </ul>
+  </section>
+<!-- neural-deepening:end -->
 
 <!-- 11. Шпаргалка: когда что использовать -->
 <div class="card">
@@ -1170,6 +1222,7 @@ showCode('basic', document.querySelector('#codeTabs button'));
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 
