@@ -676,6 +676,19 @@
       <span class="hl-blue">насколько осмысленно представлены признаки</span>.
     </div>
   </div>
+<!-- model-deepening:start:2-8-metric-bias -->
+  <section class="concept-walkthrough" data-model-deepening="2-8-metric-bias">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Метрика расстояния — это hidden assumption модели</h3>
+    <p>k-NN не учит веса в привычном смысле, но это не значит, что у него нет предположений. Главное предположение спрятано в distance metric: близкие объекты считаются похожими по target. Если выбранная геометрия не отражает реальную похожесть, модель будет уверенно искать не тех соседей.</p>
+    <p>Поэтому preprocessing и metric learning здесь особенно важны. Scaling, encoding и выбор L1/L2 фактически задают карту пространства, по которой модель ищет локальные закономерности.</p>
+    <ul>
+      <li>Euclidean distance хорошо работает, когда важны гладкие радиальные отклонения.</li>
+      <li>Manhattan distance устойчивее, когда признаки складываются как независимые абсолютные вклады.</li>
+      <li>Cosine distance полезен, когда важнее направление вектора, чем его длина.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>2.8.1 k-NN intuition</h2>
@@ -1046,6 +1059,19 @@
       Его обычно подбирают по validation / cross-validation.
     </div>
   </div>
+<!-- model-deepening:start:2-8-k-as-smoother -->
+  <section class="concept-walkthrough" data-model-deepening="2-8-k-as-smoother">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>k управляет степенью локального сглаживания</h3>
+    <p>Маленькое k делает модель почти запоминанием отдельных объектов: граница становится рваной, чувствительной к шуму и выбросам. Большое k усредняет больше соседей и сглаживает решение, но может стереть локальные паттерны.</p>
+    <p>В этом смысле k играет роль regularization. Он не добавляет штраф в loss, но ограничивает, насколько сильно один объект может повлиять на prediction.</p>
+    <ul>
+      <li>k=1: низкий bias, высокая variance.</li>
+      <li>Большое k: выше bias, ниже variance.</li>
+      <li>Distance weighting частично смягчает проблему большого k, потому что близкие соседи получают больший голос.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Odd vs even k</h2>
@@ -1309,6 +1335,19 @@
       не настолько близким, как хотелось бы.
     </div>
   </div>
+<!-- model-deepening:start:2-8-distance-concentration -->
+  <section class="concept-walkthrough" data-model-deepening="2-8-distance-concentration">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>В высокой размерности расстояния теряют контраст</h3>
+    <p>Curse of dimensionality для k-NN проявляется не только в том, что данных нужно больше. Важнее другое: ближайший и дальний сосед становятся похожими по расстоянию. Когда все объекты примерно одинаково далеко, понятие ближайшего соседа теряет смысл.</p>
+    <p>Это объясняет, почему dimensionality reduction, feature selection и domain-specific embeddings часто важнее самого выбора k. Нужно вернуть пространству контраст: близкое должно быть действительно близким, а далёкое — заметно далёким.</p>
+    <ul>
+      <li>Удаляй шумные признаки: они добавляют расстояние, но не добавляют сигнал.</li>
+      <li>Используй embeddings, если сырые признаки плохо отражают семантическую близость.</li>
+      <li>Проверяй распределение nearest-neighbor distances, а не только итоговую accuracy.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: curse of dimensionality intuition</h2>
@@ -1961,6 +2000,7 @@ print("Minkowski p=3:", minkowski)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

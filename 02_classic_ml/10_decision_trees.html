@@ -703,6 +703,19 @@
       можно буквально прочитать путь от корня к листу как набор правил.
     </div>
   </div>
+<!-- model-deepening:start:2-10-piecewise-constant -->
+  <section class="concept-walkthrough" data-model-deepening="2-10-piecewise-constant">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Дерево — это кусочно-постоянная модель пространства</h3>
+    <p>Каждый split режет пространство признаков осевым условием: x_j &lt;= threshold. После нескольких split-ов пространство превращается в прямоугольные регионы, а каждый лист хранит простое предсказание: класс majority или средний target.</p>
+    <p>Поэтому дерево хорошо ловит нелинейные правила и взаимодействия признаков, но его границы остаются ступенчатыми. Чем глубже дерево, тем мельче регионы и тем ближе модель к запоминанию train.</p>
+    <ul>
+      <li>Classification leaf хранит распределение классов.</li>
+      <li>Regression leaf хранит среднее target внутри региона.</li>
+      <li>Глубина дерева управляет размером регионов и риском переобучения.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Основные части дерева</h2>
@@ -891,6 +904,19 @@
       Чем ближе Gini к 0, тем “чище” узел.
     </div>
   </div>
+<!-- model-deepening:start:2-10-impurity-as-risk -->
+  <section class="concept-walkthrough" data-model-deepening="2-10-impurity-as-risk">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Impurity измеряет риск ошибочного листа</h3>
+    <p>Gini и entropy можно читать как разные способы измерить неопределённость класса внутри узла. Если узел чистый, листовое решение очевидно. Если классы смешаны, любой prediction из этого узла рискован.</p>
+    <p>Split полезен, когда он переносит неопределённость из родителя в более чистые дочерние узлы. Поэтому дерево не ищет красивую глобальную границу: оно жадно выбирает вопрос, который прямо сейчас уменьшает локальный риск.</p>
+    <ul>
+      <li>Gini быстрее и часто даёт похожие split-ы с entropy.</li>
+      <li>Entropy сильнее реагирует на очень малые вероятности.</li>
+      <li>Information gain должен учитывать размер дочерних узлов, иначе маленькие чистые группы переоценятся.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: Gini impurity</h2>
@@ -1368,6 +1394,19 @@
       которые действительно помогают generalization.
     </div>
   </div>
+<!-- model-deepening:start:2-10-pruning-regularization -->
+  <section class="concept-walkthrough" data-model-deepening="2-10-pruning-regularization">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Pruning — это регуляризация структуры, а не весов</h3>
+    <p>В линейных моделях регуляризация обычно штрафует коэффициенты. В деревьях главная сложность находится в структуре: глубина, число листьев, min_samples_leaf и min_impurity_decrease. Они ограничивают, насколько мелко дерево имеет право дробить пространство.</p>
+    <p>Хороший split должен не просто улучшать train impurity, а давать устойчивое улучшение на новых данных. Поэтому ограничения на листья часто важнее, чем точный выбор между Gini и entropy.</p>
+    <ul>
+      <li>max_depth ограничивает длину цепочек условий.</li>
+      <li>min_samples_leaf защищает от листьев на 1-2 объектах.</li>
+      <li>ccp_alpha удаляет ветви, которые дают слишком маленький выигрыш относительно сложности.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Pre-pruning vs Post-pruning</h2>
@@ -2242,6 +2281,7 @@ print("best score :", search.best_score_)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

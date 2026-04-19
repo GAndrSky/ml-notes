@@ -676,6 +676,19 @@
       не “кто ближе”, а “в каком классе такие признаки более типичны”.
     </div>
   </div>
+<!-- model-deepening:start:2-9-generative-story -->
+  <section class="concept-walkthrough" data-model-deepening="2-9-generative-story">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Naive Bayes строит историю генерации данных</h3>
+    <p>Naive Bayes относится к generative models: он пытается описать, как признаки могли появиться внутри каждого класса. Сначала выбирается класс через prior, потом для этого класса генерируются признаки через likelihood. Классификация получается обратным вопросом: какой класс лучше объясняет уже увиденные признаки.</p>
+    <p>Это отличается от logistic regression, которая напрямую моделирует P(y|x). Naive Bayes чаще проще и быстрее, но платит за это сильным предположением об условной независимости.</p>
+    <ul>
+      <li>Prior отвечает за базовую частоту класса.</li>
+      <li>Likelihood отвечает за типичность признака внутри класса.</li>
+      <li>Posterior соединяет prior и evidence после наблюдения объекта.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>2.9.1 Формула Байеса для классификации</h2>
@@ -883,6 +896,19 @@
       даже когда independence assumption явно нарушено.
     </div>
   </div>
+<!-- model-deepening:start:2-9-double-counting -->
+  <section class="concept-walkthrough" data-model-deepening="2-9-double-counting">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Нарушение независимости приводит к double counting</h3>
+    <p>Если два признака сильно коррелированы, Naive Bayes может посчитать один и тот же сигнал дважды. Например, слова profit и revenue в финансовом тексте могут усиливать один и тот же смысл, но модель умножит их likelihood так, будто это независимые свидетельства.</p>
+    <p>Иногда это всё равно работает, потому что для классификации важен правильный ranking классов, а не идеально откалиброванная вероятность. Но вероятности Naive Bayes часто получаются слишком уверенными.</p>
+    <ul>
+      <li>Коррелированные признаки завышают уверенность posterior.</li>
+      <li>Для ranking модель может оставаться полезной даже при плохой calibration.</li>
+      <li>Если нужны честные вероятности, проверяй calibration или используй calibrators.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: как independence assumption раскладывает вероятность</h2>
@@ -1286,6 +1312,19 @@
       Smoothing — это не косметика, а критически важная защита от нулевых вероятностей.
     </div>
   </div>
+<!-- model-deepening:start:2-9-smoothing-prior -->
+  <section class="concept-walkthrough" data-model-deepening="2-9-smoothing-prior">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Smoothing — это prior против нулевой вероятности</h3>
+    <p>Без smoothing один невиданный токен может обнулить вероятность всего класса. Это слишком сильное наказание: отсутствие слова в train не означает невозможность встретить его в будущем.</p>
+    <p>Additive smoothing добавляет виртуальные наблюдения. Модель становится менее уверенной в редких событиях и лучше переносит новые тексты, категории или признаки.</p>
+    <ul>
+      <li>alpha=0: максимальная вера train-частотам, высокий риск нулей.</li>
+      <li>alpha=1: Laplace smoothing, сильнее сглаживает редкости.</li>
+      <li>Маленькая alpha часто лучше, если данных много и словарь большой.</li>
+    </ul>
+  </section>
+<!-- model-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: smoothing против нулевых вероятностей</h2>
@@ -2041,6 +2080,7 @@ print("predicted class:", pred)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 
