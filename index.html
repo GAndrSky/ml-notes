@@ -707,8 +707,54 @@
         });
       }
 
+      function enhanceTopicMenus() {
+        Array.prototype.slice.call(document.querySelectorAll(".topic-detail-menu")).forEach(function (menu) {
+          menu.remove();
+        });
+
+        Array.prototype.slice.call(document.querySelectorAll(".section .card")).forEach(function (card) {
+          var badge = card.querySelector(".badge");
+          var heading = card.querySelector("h3");
+          var description = card.querySelector("p");
+          var text = description ? description.textContent.trim() : "";
+          var fragments = text
+            .replace(/\.$/, "")
+            .split(/,|\sи\s|\sand\s|·/)
+            .map(function (item) {
+              return item.trim();
+            })
+            .filter(function (item) {
+              return item.length > 2;
+            })
+            .slice(0, 6);
+
+          var menu = document.createElement("div");
+          menu.className = "topic-detail-menu";
+          menu.setAttribute("aria-hidden", "true");
+          menu.innerHTML =
+            '<span class="topic-detail-menu__kicker">' +
+            (badge ? badge.textContent.trim() : "Topic") +
+            "</span>" +
+            "<strong>" +
+            (heading ? heading.textContent.trim() : "Тема") +
+            "</strong>" +
+            "<p>" +
+            text +
+            "</p>" +
+            '<div class="topic-detail-menu__chips">' +
+            fragments.map(function (item) {
+              return "<span>" + item + "</span>";
+            }).join("") +
+            "</div>";
+          card.appendChild(menu);
+        });
+      }
+
       window.addEventListener("load", function () {
-        window.setTimeout(enhanceSubgroupMenus, 0);
+        window.setTimeout(function () {
+          enhanceSubgroupMenus();
+          enhanceTopicMenus();
+        }, 0);
       });
 
       function initRobotArm() {
