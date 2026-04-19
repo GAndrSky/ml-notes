@@ -628,31 +628,54 @@
         setActiveNode(graphNodes[0]);
       }
 
-      Array.prototype.slice.call(document.querySelectorAll(".section .card")).forEach(function (card) {
-        if (card.querySelector(".topic-context-menu")) {
-          return;
-        }
+      function enhanceSubgroupMenus() {
+        Array.prototype.slice.call(document.querySelectorAll(".topic-context-menu")).forEach(function (menu) {
+          menu.remove();
+        });
 
-        var badge = card.querySelector(".badge");
-        var heading = card.querySelector("h3");
-        var description = card.querySelector("p");
-        var href = card.getAttribute("href") || "#";
-        var menu = document.createElement("div");
-        menu.className = "topic-context-menu";
-        menu.setAttribute("aria-hidden", "true");
-        menu.innerHTML =
-          '<span class="topic-context-menu__kicker">' +
-          (badge ? badge.textContent.trim() : "Topic") +
-          "</span>" +
-          "<strong>" +
-          (heading ? heading.textContent.trim() : "Тема") +
-          "</strong>" +
-          "<p>" +
-          (description ? description.textContent.trim() : "") +
-          "</p>" +
-          '<span class="topic-context-menu__action">Открыть конспект</span>';
-        card.appendChild(menu);
-        card.style.setProperty("--topic-href", '"' + href + '"');
+        Array.prototype.slice.call(document.querySelectorAll(".index-subgroup")).forEach(function (subgroup) {
+          if (subgroup.querySelector(".subgroup-context-menu")) {
+            return;
+          }
+
+          var label = subgroup.querySelector(".index-subgroup__label");
+          var topics = [];
+          var cursor = subgroup.nextElementSibling;
+
+          while (cursor && !cursor.classList.contains("index-subgroup")) {
+            if (cursor.classList.contains("card")) {
+              topics.push(cursor);
+            }
+            cursor = cursor.nextElementSibling;
+          }
+
+          var menu = document.createElement("div");
+          menu.className = "subgroup-context-menu";
+          menu.setAttribute("aria-hidden", "true");
+
+          var items = topics.slice(0, 8).map(function (card) {
+            var badge = card.querySelector(".badge");
+            var heading = card.querySelector("h3");
+            return (
+              "<li>" +
+              "<span>" + (badge ? badge.textContent.trim() : "") + "</span>" +
+              (heading ? heading.textContent.trim() : card.textContent.trim()) +
+              "</li>"
+            );
+          }).join("");
+
+          menu.innerHTML =
+            '<span class="subgroup-context-menu__kicker">Раздел</span>' +
+            "<strong>" + (label ? label.textContent.trim() : "Темы") + "</strong>" +
+            "<p>Внутри: " + topics.length + " тем.</p>" +
+            '<ul class="subgroup-context-menu__list">' + items + "</ul>";
+
+          subgroup.appendChild(menu);
+        });
+      }
+
+      window.addEventListener("load", function () {
+        window.setTimeout(enhanceSubgroupMenus, 0);
       });
     })();
   </script>
