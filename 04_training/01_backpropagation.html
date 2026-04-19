@@ -117,6 +117,19 @@ Backprop: один forward + один backward → O(1) по числу прох
     💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
   </div>
 </div>
+<!-- training-deepening:start:4-1-backprop-as-credit-assignment -->
+  <section class="concept-walkthrough" data-training-deepening="4-1-backprop-as-credit-assignment">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Backprop решает задачу распределения ответственности</h3>
+    <p>Forward pass строит prediction, а backprop отвечает на другой вопрос: какие промежуточные решения внутри сети больше всего виноваты в loss. Это credit assignment problem. Без него мы знали бы только итоговую ошибку, но не знали бы, какие веса менять.</p>
+    <p>Backprop эффективен потому, что переиспользует локальные производные и проходит граф один раз назад. Он не перебирает каждый параметр отдельно, а передаёт один градиентный сигнал через всю композицию функций.</p>
+    <ul>
+      <li>Локальная производная говорит, как узел реагирует на свой вход.</li>
+      <li>Upstream gradient говорит, насколько итоговый loss чувствителен к выходу узла.</li>
+      <li>Их произведение даёт вклад узла в ошибку всей сети.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 2. Цепное правило — освежение -->
 <div class="card">
@@ -187,6 +200,19 @@ Backward: δˡ = (∂L/∂Aˡ) ⊙ f′(Zˡ)   ← поэлементно
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-1-vjp-efficiency -->
+  <section class="concept-walkthrough" data-training-deepening="4-1-vjp-efficiency">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>VJP важнее полного Якобиана в реальных сетях</h3>
+    <p>Полный Jacobian может быть огромным: выходов и входов у слоя тысячи или миллионы. Backprop почти никогда не строит его явно. Вместо этого он умножает incoming gradient на Jacobian локальной операции: это vector-Jacobian product.</p>
+    <p>Такой подход экономит память и вычисления. Autograd хранит граф операций forward pass, а затем вызывает для каждой операции локальное правило backward, которое возвращает нужные VJP.</p>
+    <ul>
+      <li>Jacobian описывает все локальные чувствительности.</li>
+      <li>VJP берёт только то направление, которое нужно текущему loss.</li>
+      <li>Reverse-mode autodiff подходит для моделей с миллионами параметров и скалярным loss.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 3. Интерактивный граф -->
 <div class="card">
@@ -287,6 +313,19 @@ Tanh:
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-1-activation-mask -->
+  <section class="concept-walkthrough" data-training-deepening="4-1-activation-mask">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Активация фильтрует не только forward-сигнал, но и gradient flow</h3>
+    <p>Если ReLU в forward pass обнулила отрицательный z, то в backward pass она также блокирует градиент через этот путь. Поэтому mask активации фактически решает, какие нейроны участвовали в обучении на данном batch.</p>
+    <p>Для гладких активаций вроде GELU и SiLU блокировка мягче. Они могут передавать небольшой сигнал даже в отрицательной области, что иногда делает обучение стабильнее на глубоких сетях.</p>
+    <ul>
+      <li>ReLU создаёт жёсткую бинарную маску.</li>
+      <li>Sigmoid и tanh могут гасить градиент через saturation.</li>
+      <li>GELU и SiLU дают более плавный gradient gate.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 7. Матричные формулы backprop -->
 <div class="card">
@@ -334,6 +373,19 @@ BACKWARD (дано δ^l = ∂L/∂A^l, shape (B, n_out)):
   </div>
   <div id="codeContent" class="formula" data-no-tex data-code-block style="font-size:.81em;white-space:pre;overflow-x:auto;"></div>
 </div>
+<!-- training-deepening:start:4-1-debugging-backward -->
+  <section class="concept-walkthrough" data-training-deepening="4-1-debugging-backward">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Backprop нужно отлаживать по нормам градиентов</h3>
+    <p>Если loss не учится, смотреть только на значение loss недостаточно. Нужно проверить, доходят ли градиенты до ранних слоёв, не стали ли они нулевыми, не взорвались ли они и не блокирует ли их случайный detach.</p>
+    <p>Практический debugging начинается с gradient norms по слоям, проверки requires_grad, отсутствия in-place ошибок и сравнения train/eval режимов. Это быстрее, чем менять архитектуру вслепую.</p>
+    <ul>
+      <li>Нулевые gradient norms часто означают detach, saturation или dead ReLU.</li>
+      <li>Очень большие norms указывают на exploding gradients или слишком высокий lr.</li>
+      <li>Разные нормы по слоям помогают увидеть, где именно ломается gradient flow.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <script>
 // ===================== COMPUTATIONAL GRAPH =====================
@@ -779,6 +831,7 @@ drawMask();
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

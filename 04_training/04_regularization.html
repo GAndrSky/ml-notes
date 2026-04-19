@@ -146,6 +146,19 @@ Underfitting:  train loss ↑   test loss ↑
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-4-regularization-as-prior -->
+  <section class="concept-walkthrough" data-training-deepening="4-4-regularization-as-prior">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Регуляризация добавляет предпочтение к более простым решениям</h3>
+    <p>Переобучение возникает, когда модель использует лишнюю свободу, чтобы подстроиться под случайные детали train set. Регуляризация не просто ухудшает train score ради порядка; она задаёт inductive bias: какие функции считаются более правдоподобными до наблюдения validation.</p>
+    <p>В вероятностном смысле L2 похожа на Gaussian prior на веса, L1 - на sparse prior, dropout - на усреднение множества подсетей. Разные техники ограничивают модель разными способами.</p>
+    <ul>
+      <li>Weight decay ограничивает масштаб весов.</li>
+      <li>Dropout снижает co-adaptation нейронов.</li>
+      <li>Normalization стабилизирует распределения активаций и градиентов.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 1. Weight Decay -->
 <div class="card">
@@ -193,6 +206,19 @@ Underfitting:  train loss ↑   test loss ↑
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-4-weight-decay-function-smoothness -->
+  <section class="concept-walkthrough" data-training-deepening="4-4-weight-decay-function-smoothness">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Малые веса часто означают более гладкую функцию</h3>
+    <p>Штраф на большие веса ограничивает чувствительность модели к входам. Если веса огромные, маленькое изменение признака может резко изменить output. Weight decay мягко толкает модель к решениям, где prediction меняется спокойнее.</p>
+    <p>Но decay не должен применяться механически ко всем параметрам. Для bias, BatchNorm/LayerNorm scale и некоторых embedding-параметров decay может вредить, потому что их роль не равна обычным весам линейного слоя.</p>
+    <ul>
+      <li>Слишком маленький decay почти не влияет.</li>
+      <li>Слишком большой decay вызывает underfit.</li>
+      <li>AdamW обычно предпочтительнее Adam + L2 для deep learning.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 2. Dropout -->
 <div class="card">
@@ -260,6 +286,19 @@ Test:    ã = a                  ← без маски, без масштаба<
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
     </div>
     </div>
+<!-- training-deepening:start:4-4-dropout-ensemble -->
+  <section class="concept-walkthrough" data-training-deepening="4-4-dropout-ensemble">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Dropout обучает сеть не зависеть от одного маршрута</h3>
+    <p>Во время training dropout случайно отключает часть активаций. Это заставляет сеть распределять информацию по нескольким маршрутам, а не строить хрупкую цепочку, где один нейрон решает всё.</p>
+    <p>Dropout особенно полезен в fully-connected слоях и больших моделях с ограниченным датасетом. В современных архитектурах с normalization, residual connections и большим объёмом данных его сила часто ниже, чем раньше.</p>
+    <ul>
+      <li>Training mode включает dropout.</li>
+      <li>Eval mode отключает dropout и использует полную сеть.</li>
+      <li>Слишком высокий dropout может уничтожить полезный сигнал.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 3. BatchNorm -->
 <div class="card">
@@ -352,6 +391,19 @@ yᵢ = γ·x̂ᵢ + β                ← масштаб+сдвиг (learnable)<
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
     </div>
     </div>
+<!-- training-deepening:start:4-4-normalization-axes -->
+  <section class="concept-walkthrough" data-training-deepening="4-4-normalization-axes">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Normalization выбирает ось, по которой стабилизирует статистику</h3>
+    <p>BatchNorm использует статистику batch-а, поэтому хорошо работает в CNN и больших batch-ах, но может быть нестабилен при маленьких batch или distribution shift. LayerNorm нормирует внутри одного объекта, поэтому не зависит от batch statistics и удобен для Transformer.</p>
+    <p>Нормализация не только регуляризует. Она меняет conditioning задачи оптимизации: градиенты становятся более управляемыми, а сеть меньше зависит от масштаба промежуточных активаций.</p>
+    <ul>
+      <li>BatchNorm: статистика по batch и spatial dimensions.</li>
+      <li>LayerNorm: статистика по feature dimension внутри объекта.</li>
+      <li>RMSNorm: упрощённая нормировка без вычитания среднего.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 4. LayerNorm -->
 <div class="card">
@@ -907,6 +959,7 @@ showCode('bn',document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

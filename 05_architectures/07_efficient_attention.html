@@ -70,7 +70,20 @@
 становится главным bottleneck при длинном контексте.</div>
     <div class="warn">Проблема часто не только во FLOPs, а в том, что веса attention приходится materialize в памяти, и GPU начинает упираться в bandwidth и SRAM/HBM traffic.</div>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-7-quadratic-bottleneck -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-7-quadratic-bottleneck">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>O(n^2) attention ограничивает не только FLOPs, но и память</h3>
+    <p>Обычный attention строит матрицу scores размера sequence length на sequence length для каждой head. При росте контекста в 2 раза эта матрица растёт примерно в 4 раза.</p>
+    <p>На практике bottleneck часто находится в памяти и bandwidth, а не только в количестве умножений. Поэтому efficient attention методы пытаются уменьшить materialization attention matrix, IO между HBM/SRAM или само число разрешённых связей.</p>
+    <ul>
+      <li>Длинный контекст резко увеличивает activation memory.</li>
+      <li>Attention matrix часто дороже, чем кажется по формуле FLOPs.</li>
+      <li>KV-cache переносит часть стоимости в autoregressive inference.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>Три стратегии ускорения</h2>
       <div class="grid-3">
         <div class="success"><strong>FlashAttention</strong><br>Не меняет саму математику, а меняет порядок вычислений и memory layout.</div>
@@ -87,7 +100,20 @@
 не materialize полную attention matrix</div>
     <div class="info">Это один из лучших примеров, где ускорение пришло не из новой модели, а из лучшей численной и memory-aware реализации.</div>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-7-flashattention-io -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-7-flashattention-io">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>FlashAttention ускоряет exact attention через IO-aware вычисление</h3>
+    <p>FlashAttention не меняет математический результат attention. Он меняет способ вычисления: обрабатывает блоки Q/K/V так, чтобы не материализовать огромную attention matrix в медленной памяти.</p>
+    <p>Ключевая идея - online softmax и tiling. Это уменьшает чтение/запись в HBM и делает attention быстрее и экономнее по памяти, особенно на длинных последовательностях.</p>
+    <ul>
+      <li>Результат остаётся exact attention, а не approximation.</li>
+      <li>Экономия идёт через memory IO.</li>
+      <li>Польза растёт с sequence length и размером batch/heads.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>Интерактив: как растёт цена attention</h2>
       <div class="control"><span>Длина последовательности</span><input id="seq" type="range" min="512" max="32768" step="512" value="8192" oninput="drawComplexity()" /><strong id="seqVal">8192</strong></div>
       <canvas id="effCanvas" width="860" height="280"></canvas>
@@ -115,7 +141,20 @@
         </tbody>
       </table>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-7-sparse-approx-tradeoff -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-7-sparse-approx-tradeoff">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Sparse и approximate attention меняют inductive bias модели</h3>
+    <p>Sparse attention запрещает часть связей между токенами. Это экономит compute, но задаёт гипотезу: не все токены должны напрямую смотреть друг на друга. Approximate attention пытается заменить полную матрицу более дешёвой оценкой.</p>
+    <p>Такие методы требуют проверки на задаче. Если важная зависимость попала в запрещённую или плохо аппроксимированную область, модель может терять качество даже при хорошей скорости.</p>
+    <ul>
+      <li>Local attention хорошо подходит для локального контекста.</li>
+      <li>Global tokens помогают переносить summary по всей sequence.</li>
+      <li>Approximation нужно сравнивать не только по speed, но и по downstream quality.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>Кодовые ориентиры</h2>
       <div class="tabs">
         <button class="tab-btn active" onclick="showTab('flash', this)">FlashAttention</button>
@@ -208,6 +247,8 @@ for token in sequence:
 <!-- step1-learning:end -->
 </body>
 </html>
+
+
 
 
 

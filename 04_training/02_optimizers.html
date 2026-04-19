@@ -125,6 +125,19 @@ update зависит от оптимизатора:
     💡 Все оптимизаторы решают одну задачу: двигаться вниз по loss surface, но делают это по-разному. SGD — прямолинейно. Momentum — с инерцией. Adam — адаптивно для каждого параметра.
   </div>
 </div>
+<!-- training-deepening:start:4-2-optimizer-as-dynamical-system -->
+  <section class="concept-walkthrough" data-training-deepening="4-2-optimizer-as-dynamical-system">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Optimizer задаёт динамику движения по loss surface</h3>
+    <p>Один и тот же gradient можно использовать по-разному. SGD делает прямой шаг против градиента, momentum добавляет инерцию, Adam нормирует шаг через историю первого и второго моментов. Поэтому optimizer - это не техническая деталь, а правило движения по сложному рельефу loss.</p>
+    <p>В глубоких сетях loss surface плохо обусловлена: в одних направлениях кривизна большая, в других маленькая. Хороший optimizer помогает двигаться быстрее по длинным долинам и осторожнее по резким направлениям.</p>
+    <ul>
+      <li>lr задаёт базовую длину шага.</li>
+      <li>momentum сглаживает направление движения.</li>
+      <li>adaptive methods меняют шаг отдельно для разных параметров.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 2. Интерактивная loss surface + траектории -->
 <div class="card">
@@ -218,6 +231,19 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-2-sgd-noise -->
+  <section class="concept-walkthrough" data-training-deepening="4-2-sgd-noise">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Шум mini-batch gradient может помогать обучению</h3>
+    <p>SGD использует приближённый градиент по mini-batch, а не точный градиент по всему датасету. Это добавляет шум, но шум не всегда вреден: он может помогать выходить из резких локальных областей и улучшать generalization.</p>
+    <p>Слишком маленький batch делает обучение нестабильным, слишком большой может требовать lr scaling и хуже исследовать поверхность. Поэтому batch size и learning rate нужно рассматривать как связанную пару.</p>
+    <ul>
+      <li>Маленький batch: больше шума, дешевле шаг, нестабильнее оценка.</li>
+      <li>Большой batch: стабильнее gradient estimate, выше memory cost.</li>
+      <li>При увеличении batch часто нужно пересматривать learning rate и warmup.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 4. Momentum -->
 <div class="card">
@@ -282,6 +308,19 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-2-momentum-valley -->
+  <section class="concept-walkthrough" data-training-deepening="4-2-momentum-valley">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Momentum подавляет колебания поперёк ущелья</h3>
+    <p>В узком овраге loss gradient часто меняет знак поперёк долины и остаётся более согласованным вдоль долины. Momentum накапливает согласованную часть движения и усредняет поперечные колебания.</p>
+    <p>Поэтому momentum ускоряет движение в стабильном направлении, но может overshoot, если lr слишком большой или loss surface резко меняется. Это причина, почему lr и momentum нельзя тюнить полностью независимо.</p>
+    <ul>
+      <li>Большой momentum ускоряет движение, но повышает риск перелёта.</li>
+      <li>Маленький momentum ближе к обычному SGD.</li>
+      <li>Warmup может снизить риск раннего overshoot.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 5. Adam -->
 <div class="card">
@@ -450,6 +489,19 @@ Linear decay: η_t = η₀ · (1 − t/T)</div>
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-2-scheduler-control -->
+  <section class="concept-walkthrough" data-training-deepening="4-2-scheduler-control">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Scheduler управляет фазами обучения</h3>
+    <p>В начале обучения нужен достаточно большой шаг, чтобы быстро найти рабочую область параметров. Ближе к концу нужен меньший шаг, чтобы не прыгать вокруг хорошего решения. Scheduler формализует эту смену режимов.</p>
+    <p>Warmup особенно важен для больших моделей: optimizer states ещё не накопили статистику, initialization может давать нестабильные activations, а большой lr в первые шаги легко разрушает представления.</p>
+    <ul>
+      <li>Warmup защищает ранние шаги.</li>
+      <li>Decay или cosine annealing стабилизируют финальную донастройку.</li>
+      <li>Restart или OneCycle могут помочь выйти из плохой траектории.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <!-- 9. Код -->
 <div class="card">
@@ -901,6 +953,7 @@ showCode('api',document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

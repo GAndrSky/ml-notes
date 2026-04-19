@@ -96,6 +96,19 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
 <!-- ===== POSITIONAL ENCODING ===== -->
 <div id="t-pe" class="tab-content active">
 <h2>1. Positional Encoding</h2>
+<!-- architecture-deepening:start:5-4-position-breaks-symmetry -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-4-position-breaks-symmetry">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Позиции ломают permutation symmetry self-attention</h3>
+    <p>Self-attention без positional information видит последовательность как набор токенов: перестановка токенов переставит выходы, но не даст модели знания о порядке. Для языка, кода и времени порядок является частью смысла.</p>
+    <p>Positional encoding добавляет модели координатную систему. Абсолютные позиции говорят, где токен стоит, относительные и rotary-подходы больше фокусируются на расстоянии и взаимном расположении.</p>
+    <ul>
+      <li>Sinusoidal PE даёт фиксированные частоты и может экстраполировать ограниченно.</li>
+      <li>Learnable PE хорошо подстраивается под train length, но хуже переносится за пределы длины.</li>
+      <li>RoPE кодирует относительный сдвиг через вращение query/key.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <div class="card">
 <p>Attention — перестановочно-инвариантная операция: порядок токенов не имеет значения без явной информации о позиции. PE вводит её.</p>
 
@@ -179,6 +192,19 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
 <div class="sr"><span>Позиция pos</span><input type="range" id="pe-pos" min="0" max="39" value="5" oninput="drawPESim()"><span class="sv" id="pe-pos-v">5</span></div>
 <canvas id="pe-sim-canvas" width="800" height="120" style="width:100%"></canvas>
 </div>
+<!-- architecture-deepening:start:5-4-residual-stream -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-4-residual-stream">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Residual stream - общая шина информации Transformer</h3>
+    <p>Transformer block не заменяет состояние полностью. Attention и FFN добавляют поправки в residual stream. Это позволяет глубокой сети накапливать информацию, не разрушая полностью предыдущие представления.</p>
+    <p>Такой дизайн делает обучение глубже стабильнее: если подблок временно бесполезен, residual path всё равно переносит сигнал дальше. Поэтому skip connections здесь так же важны, как и сами attention/FFN.</p>
+    <ul>
+      <li>Attention смешивает информацию между токенами.</li>
+      <li>FFN перерабатывает информацию внутри каждого токена.</li>
+      <li>Residual connection сохраняет маршрут для activations и gradients.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ===== АРХИТЕКТУРА ===== -->
@@ -212,7 +238,19 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
 <h3 style="margin-top:14px">Полная схема (Vaswani 2017)</h3>
 <canvas id="arch-canvas" width="800" height="500" style="width:100%;margin-top:8px"></canvas>
 </div>
-
+<!-- architecture-deepening:start:5-4-preln-stability -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-4-preln-stability">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Pre-LN стабилизирует gradient path в глубоких Transformer</h3>
+    <p>В Post-LN normalization стоит после residual addition, и gradient к ранним слоям может быть менее стабильным. В Pre-LN нормализация стоит перед подблоком, а residual path остаётся ближе к identity route.</p>
+    <p>Поэтому современные большие decoder-only модели чаще используют Pre-LN или его варианты. Цена - иногда хуже финальная expressivity без дополнительных приёмов, но training stability обычно важнее.</p>
+    <ul>
+      <li>Post-LN ближе к оригинальному Transformer.</li>
+      <li>Pre-LN проще обучать на большой глубине.</li>
+      <li>RMSNorm упрощает LayerNorm и часто используется в LLM.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <h2>Pre-LN vs Post-LN</h2>
 <div class="card">
 <div class="grid2">
@@ -237,6 +275,19 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
 <div class="sr"><span>FFN d_ff (обычно 4×d)</span><input type="range" id="tf-ff" min="1" max="8" value="4" oninput="calcTFParams()"><span class="sv" id="tf-ff-v">4×</span></div>
 <div id="tf-params-result" style="margin-top:10px;font-size:.9em;line-height:2"></div>
 </div>
+<!-- architecture-deepening:start:5-4-ffn-token-memory -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-4-ffn-token-memory">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>FFN - это token-wise нелинейная память</h3>
+    <p>Attention отвечает за обмен между токенами, но FFN применяет одну и ту же MLP к каждому токену отдельно. Он расширяет hidden dimension, применяет нелинейность и сжимает обратно, создавая более богатое представление токена.</p>
+    <p>В LLM большая доля параметров часто находится именно в FFN. SwiGLU/GEGLU улучшают этот блок через gated activation: одна ветка создаёт значение, другая управляет тем, сколько его пропустить.</p>
+    <ul>
+      <li>d_ff обычно в несколько раз больше d_model.</li>
+      <li>FFN не смешивает позиции напрямую.</li>
+      <li>Gated FFN повышает expressivity при хорошем compute trade-off.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ===== FFN + LN ===== -->
@@ -882,6 +933,8 @@ drawArch();calcTFParams();drawResid();drawLRSchedule();
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
+
 
 
 

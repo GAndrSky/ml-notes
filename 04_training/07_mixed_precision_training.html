@@ -70,6 +70,19 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="warn"><h3>Риск</h3><p>Узкий диапазон чисел приводит к underflow/overflow, поэтому training loop должен быть аккуратнее, чем в чистом FP32.</p></div>
   </div>
 </div>
+<!-- training-deepening:start:4-7-throughput-memory -->
+  <section class="concept-walkthrough" data-training-deepening="4-7-throughput-memory">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Mixed precision ускоряет обучение через память и tensor cores</h3>
+    <p>Половинная точность уменьшает размер activations и временных буферов, поэтому в память помещается больший batch или более длинная sequence. На современных GPU FP16/BF16 операции также используют специализированные tensor cores.</p>
+    <p>Но ускорение не бесплатно. Некоторые операции чувствительны к диапазону и точности, поэтому AMP автоматически оставляет часть вычислений в более стабильных форматах.</p>
+    <ul>
+      <li>FP16/BF16 уменьшают memory footprint.</li>
+      <li>Tensor Cores ускоряют matmul и convolution.</li>
+      <li>Optimizer states часто остаются в FP32.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>📊 FP16 vs BF16 vs FP32</h2>
@@ -95,6 +108,19 @@ FP32 = надёжный baseline и master copy параметров</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
     </div>
     </div>
+<!-- training-deepening:start:4-7-fp16-bf16-range -->
+  <section class="concept-walkthrough" data-training-deepening="4-7-fp16-bf16-range">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>BF16 жертвует mantissa ради широкого диапазона exponent</h3>
+    <p>FP16 имеет больше точности в mantissa, но значительно уже диапазон чисел. BF16 имеет меньшую точность, зато exponent похож на FP32, поэтому он реже ловит overflow и underflow.</p>
+    <p>Для больших моделей BF16 часто удобнее и стабильнее, если hardware его поддерживает. FP16 может быть быстрее или доступнее, но чаще требует loss scaling.</p>
+    <ul>
+      <li>FP16: выше риск underflow малых gradients.</li>
+      <li>BF16: шире динамический диапазон, обычно меньше нуждается в scaling.</li>
+      <li>FP32: медленнее и больше по памяти, но стабильнее.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>🧮 Интерактив: зачем нужен loss scaling</h2>
@@ -113,6 +139,19 @@ FP32 = надёжный baseline и master copy параметров</div>
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-7-loss-scaling -->
+  <section class="concept-walkthrough" data-training-deepening="4-7-loss-scaling">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Loss scaling защищает маленькие градиенты от underflow</h3>
+    <p>В FP16 маленькие gradient values могут округлиться до нуля. Loss scaling временно умножает loss на большой коэффициент, чтобы градиенты стали представимыми, а затем перед optimizer step делит их обратно.</p>
+    <p>Dynamic scaler меняет scale автоматически: увеличивает, если всё стабильно, и уменьшает, если появляются Inf/NaN. Это делает FP16 training практичным без ручной настройки scale.</p>
+    <ul>
+      <li>Scale применяется до backward.</li>
+      <li>Unscale делается перед clipping и optimizer step.</li>
+      <li>Если найден Inf/NaN, optimizer step пропускается.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 <!-- step1-viz:start -->
     <div class="classic-viz-note" data-step1-viz-explainer="1">
       <div class="classic-viz-note__kicker">Как читать интерактив</div>
@@ -145,6 +184,19 @@ clip / optimizer.step() → обновляем master weights</div>
   <div class="step blue">Clipping до unscale — частая техническая ошибка</div>
   <div class="warn">Если видишь NaN только в AMP-режиме, а в FP32 всё стабильно, сначала проверь: scaling, порядок `unscale_ -> clip -> step`, слишком резкие logits, и нет ли операций, которые стоит исключить из autocast.</div>
 </div>
+<!-- training-deepening:start:4-7-sensitive-ops -->
+  <section class="concept-walkthrough" data-training-deepening="4-7-sensitive-ops">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Самые опасные места - softmax, reductions и logits-sensitive операции</h3>
+    <p>Softmax, log, exp, variance, normalization и большие reductions чувствительны к переполнению и потере точности. Поэтому фреймворки часто считают их в FP32 или используют fused kernels.</p>
+    <p>Если AMP ломает обучение, не нужно сразу отключать mixed precision полностью. Часто достаточно найти нестабильный участок, отключить autocast локально или заменить операцию на устойчивую версию.</p>
+    <ul>
+      <li>Проверяй loss на Inf/NaN после каждого шага при debugging.</li>
+      <li>Используй fused losses вместо ручных sigmoid/softmax + log.</li>
+      <li>Для нестабильного блока можно временно использовать autocast(enabled=False).</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>💻 PyTorch AMP в коде</h2>
@@ -252,6 +304,7 @@ showCode('fp16', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

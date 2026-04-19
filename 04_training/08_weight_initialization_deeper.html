@@ -104,6 +104,19 @@ canvas{border-radius:8px;display:block;}
         </div>
       </div>
     </div>
+<!-- training-deepening:start:4-8-signal-propagation -->
+  <section class="concept-walkthrough" data-training-deepening="4-8-signal-propagation">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Инициализация задаёт начальный режим распространения сигнала</h3>
+    <p>До первого шага optimizer сеть уже имеет динамику: activations проходят вперёд, gradients пойдут назад. Если variance активаций растёт по слоям, forward signal взрывается. Если variance убывает, сигнал исчезает ещё до обучения.</p>
+    <p>Хорошая initialization пытается удержать масштаб activations и gradients примерно стабильным по глубине. Это не гарантирует качество, но даёт optimizer шанс начать обучение в рабочем диапазоне.</p>
+    <ul>
+      <li>Слишком большие веса вызывают exploding activations.</li>
+      <li>Слишком маленькие веса вызывают vanishing signal.</li>
+      <li>Residual connections и normalization частично снижают чувствительность к initialization.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>Откуда берётся Xavier / Glorot</h2>
@@ -133,6 +146,19 @@ a = sqrt(6 / (fan_in + fan_out))</div>
     </div>
       </div>
     </div>
+<!-- training-deepening:start:4-8-xavier-assumption -->
+  <section class="concept-walkthrough" data-training-deepening="4-8-xavier-assumption">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Xavier предполагает примерно симметричные активации</h3>
+    <p>Xavier/Glorot initialization выбирает scale так, чтобы variance сохранялась между входом и выходом слоя при линейных или tanh-like активациях. Она балансирует fan_in и fan_out, потому что важны и forward, и backward масштабы.</p>
+    <p>Для ReLU это предположение хуже, потому что половина значений часто обнуляется. Поэтому ReLU-сетям обычно нужна другая поправка масштаба.</p>
+    <ul>
+      <li>fan_in связан с числом входов нейрона.</li>
+      <li>fan_out связан с числом выходных путей градиента.</li>
+      <li>Xavier хорошо подходит для tanh/sigmoid-like сетей, но sigmoid всё равно может насыщаться.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>Почему He / Kaiming лучше для ReLU</h2>
@@ -162,6 +188,19 @@ a = sqrt(6 / (fan_in + fan_out))</div>
     </div>
       </div>
     </div>
+<!-- training-deepening:start:4-8-he-relu -->
+  <section class="concept-walkthrough" data-training-deepening="4-8-he-relu">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>He initialization компенсирует обнуление ReLU</h3>
+    <p>ReLU пропускает в среднем только положительную часть распределения. Это уменьшает variance активаций, поэтому He/Kaiming initialization использует больший scale, чтобы сохранить сигнал после ReLU.</p>
+    <p>Если использовать слишком маленький scale с ReLU, глубокая сеть может начать почти мёртвой. Если scale слишком большой, появляются exploding activations и нестабильный loss.</p>
+    <ul>
+      <li>Kaiming normal/uniform обычно выбирают для ReLU и LeakyReLU.</li>
+      <li>Для GELU/SiLU часто работают похожие режимы, но architecture-specific defaults важны.</li>
+      <li>После изменения activation полезно пересмотреть initialization.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: как variance ведёт себя по глубине</h2>
@@ -206,6 +245,19 @@ a = sqrt(6 / (fan_in + fan_out))</div>
       <div class="step green">Для Transformer важны не только сами веса, но и масштаб attention-логитов, residual path и нормализация.</div>
       <div class="step blue">Orthogonal init, scaled residual init и специальные схемы для very deep nets — следующий уровень после Xavier и He.</div>
     </div>
+<!-- training-deepening:start:4-8-practical-diagnostics -->
+  <section class="concept-walkthrough" data-training-deepening="4-8-practical-diagnostics">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Проверяй initialization через статистики activations</h3>
+    <p>Самый быстрый sanity-check: сделать один forward pass до обучения и посмотреть mean/std activations по слоям. Если std быстро растёт или падает к нулю, optimizer будет бороться с плохим стартом.</p>
+    <p>Для глубоких сетей полезно также смотреть gradient norms после первого backward. Если ранние слои получают почти ноль или огромные значения, проблема может быть в initialization, activation, normalization или lr.</p>
+    <ul>
+      <li>Логируй activation mean/std по слоям.</li>
+      <li>Проверяй долю нулей после ReLU.</li>
+      <li>Смотри gradient norms до первого optimizer step.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>PyTorch: инициализация в коде</h2>
@@ -441,6 +493,7 @@ showCode('xavier', document.querySelector('#codeTabs button'));
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

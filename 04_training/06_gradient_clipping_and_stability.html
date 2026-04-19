@@ -84,6 +84,19 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="info"><h3>Что делает clipping</h3><p>Не “лечит архитектуру”, а ограничивает размер слишком агрессивного шага, чтобы optimizer не улетел с траектории.</p></div>
   </div>
 </div>
+<!-- training-deepening:start:4-6-exploding-product -->
+  <section class="concept-walkthrough" data-training-deepening="4-6-exploding-product">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Exploding gradients часто возникают как произведение многих Jacobian</h3>
+    <p>В глубокой или рекуррентной сети backprop умножает сигнал ошибки на множество локальных производных. Если их эффективные нормы часто больше единицы, общий gradient может расти экспоненциально по глубине или длине последовательности.</p>
+    <p>Clipping не исправляет причину плохого conditioning, но ограничивает максимальный шаг optimizer. Это похоже на ремень безопасности: он не улучшает дорогу, но предотвращает катастрофу при резком рывке.</p>
+    <ul>
+      <li>Длинные sequence усиливают риск exploding gradients.</li>
+      <li>Плохая initialization может сделать Jacobian слишком большим.</li>
+      <li>Слишком высокий lr превращает большой gradient в разрушительный update.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>✂️ Два основных вида clipping</h2>
@@ -127,6 +140,19 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
   </div>
   <div class="intuition">💡 Норм-clipping лучше согласуется с геометрией оптимизации: если градиент уже смотрит в “правильную” сторону, мы хотим уменьшить шаг, а не перекроить весь вектор по координатам.</div>
 </div>
+<!-- training-deepening:start:4-6-clip-norm-vs-value -->
+  <section class="concept-walkthrough" data-training-deepening="4-6-clip-norm-vs-value">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Clip by norm сохраняет направление градиента лучше, чем clip by value</h3>
+    <p>Clip by value обрезает каждую координату отдельно и может сильно изменить направление gradient vector. Clip by norm масштабирует весь gradient, если его общая длина превышает threshold, поэтому направление сохраняется лучше.</p>
+    <p>Для deep learning чаще используют global norm clipping, особенно в RNN, Transformer и sequence задачах. Но threshold нельзя выбирать вслепую: слишком низкий threshold превращает обучение в постоянное недошагивание.</p>
+    <ul>
+      <li>clip_grad_value_ ограничивает отдельные координаты.</li>
+      <li>clip_grad_norm_ ограничивает общую норму.</li>
+      <li>Логируй gradient norm до clipping, чтобы понимать, как часто clipping срабатывает.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>🎮 Интерактив: как clipping меняет градиент</h2>
@@ -173,6 +199,19 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-6-stability-stack -->
+  <section class="concept-walkthrough" data-training-deepening="4-6-stability-stack">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Стабильность - это стек мер, а не одна настройка</h3>
+    <p>Если обучение регулярно взрывается, clipping может скрыть симптом, но не решить проблему. Нужно проверить initialization, lr schedule, normalization, mixed precision, loss implementation и качество данных.</p>
+    <p>Хороший debugging строится от дешёвых проверок к дорогим: сначала NaN/Inf, gradient norms, lr, batch statistics; затем архитектура, scaling данных и optimizer state.</p>
+    <ul>
+      <li>Clipping помогает пережить редкие spikes.</li>
+      <li>Постоянный clipping почти каждый шаг говорит о слишком агрессивном режиме.</li>
+      <li>NaN нужно ловить сразу, иначе optimizer state тоже может испортиться.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>💻 PyTorch: clipping в коде</h2>
@@ -297,6 +336,7 @@ showCode('norm', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

@@ -65,7 +65,20 @@
     <p>ViT режет изображение на патчи размера <code>P × P</code>, распрямляет каждый патч в вектор и линейно проецирует его в embedding space. После этого картинка становится обычной последовательностью токенов.</p>
       <div class="info">Главная цена такого подхода: мы теряем жёстко зашитую локальную inductive bias CNN и должны “выучить” её на данных.</div>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-8-patchify-tokenization -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-8-patchify-tokenization">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Patchify - это токенизация изображения</h3>
+    <p>ViT превращает картинку в последовательность patch tokens. Каждый patch линейно проецируется в embedding, после чего Transformer работает с изображением почти как с текстовой последовательностью.</p>
+    <p>Это убирает встроенный CNN prior локальности и translation equivariance. Модель получает больше гибкости, но обычно требует больше данных, augmentation или pretraining, чтобы выучить visual structure.</p>
+    <ul>
+      <li>Patch size задаёт длину visual sequence.</li>
+      <li>Projection patch-а похожа на convolution с kernel=stride=patch_size.</li>
+      <li>Position embeddings нужны, потому что порядок patch-ей важен.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>Class token и позиция</h2>
       <div class="formula" data-no-tex>[CLS], patch_1, patch_2, ..., patch_N
 
@@ -98,7 +111,20 @@
         <div class="warn"><strong>Баланс</strong><br>Patch size — это компромисс между разрешением представления и вычислительной ценой.</div>
       </div>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-8-patch-size-tradeoff -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-8-patch-size-tradeoff">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Patch size управляет балансом деталей и стоимости attention</h3>
+    <p>Маленький patch сохраняет больше локальных деталей, но создаёт больше токенов. Attention cost растёт квадратично по числу patch tokens, поэтому слишком маленький patch быстро становится дорогим.</p>
+    <p>Большой patch дешевле, но грубее: мелкие объекты и границы могут потеряться ещё до Transformer. Поэтому patch size - это архитектурный компромисс между spatial resolution и compute.</p>
+    <ul>
+      <li>16x16 - классический ViT baseline.</li>
+      <li>8x8 даёт больше деталей, но заметно дороже.</li>
+      <li>32x32 дешевле, но может терять small objects.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>CNN vs ViT</h2>
       <table>
         <thead><tr><th>Свойство</th><th>CNN</th><th>ViT</th></tr></thead>
@@ -109,7 +135,20 @@
         </tbody>
       </table>
     </div>
-    <div class="card">
+<!-- architecture-deepening:start:5-8-cnn-vs-vit-priors -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-8-cnn-vs-vit-priors">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>CNN и ViT отличаются количеством встроенных предположений</h3>
+    <p>CNN заранее предполагает локальность, shared filters и translation equivariance. Это помогает на малых и средних датасетах. ViT делает меньше таких предположений и позволяет attention самому выучить отношения между patch-ами.</p>
+    <p>Поэтому ViT часто раскрывается при большом pretraining и сильных augmentation. Если данных мало, CNN или hybrid architecture могут быть устойчивее.</p>
+    <ul>
+      <li>CNN сильнее как data-efficient prior.</li>
+      <li>ViT гибче при большом масштабе данных.</li>
+      <li>Hybrid models используют convolutional stem или multi-scale features.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
+<div class="card">
       <h2>Кодовые ориентиры</h2>
       <div class="tabs">
         <button class="tab-btn active" onclick="showTab('patchify', this)">Patchify</button>
@@ -201,6 +240,8 @@ logits = head(encoded[:, 0])</div></div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
+
 
 
 

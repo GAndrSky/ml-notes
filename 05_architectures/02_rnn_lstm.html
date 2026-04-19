@@ -103,6 +103,19 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
 <!-- ===== TAB 1: Базовый RNN ===== -->
 <div id="t-rnn" class="tab-content active">
 <h2>1. Рекуррентная нейронная сеть — идея</h2>
+<!-- architecture-deepening:start:5-2-state-compression -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-2-state-compression">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>RNN сжимает прошлое в скрытое состояние</h3>
+    <p>RNN читает последовательность по шагам и хранит историю в hidden state. Это сильное ограничение: вся полезная информация о прошлом должна поместиться в вектор фиксированного размера.</p>
+    <p>Такой inductive bias подходит для потоковых данных и коротких зависимостей. Но когда нужно помнить много деталей на больших расстояниях, fixed hidden state становится узким горлом.</p>
+    <ul>
+      <li>h_t хранит summary прошлого.</li>
+      <li>x_t добавляет новую информацию текущего шага.</li>
+      <li>Один и тот же recurrent weight переиспользуется на всех позициях.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <div class="card">
 <p>RNN обрабатывает последовательность <span class="hl-b">x₁, x₂, …, xₜ</span>, поддерживая <span class="hl-a">hidden state hₜ</span> — «память» о прошлом.</p>
 <div class="formula">hₜ = <span class="hl-a">tanh</span>( <span class="hl-g">Wₕ</span>·hₜ₋₁  +  <span class="hl-b">Wₓ</span>·xₜ  +  b )
@@ -198,6 +211,19 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
 </div>
 <canvas id="rnn-canvas" width="800" height="120" style="width:100%;margin-top:12px"></canvas>
 </div>
+<!-- architecture-deepening:start:5-2-spectral-radius -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-2-spectral-radius">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Долгая память RNN зависит от спектра recurrent dynamics</h3>
+    <p>Backprop through time умножает градиент на похожие матрицы много раз. Если эффективные собственные значения меньше единицы, сигнал затухает. Если больше единицы, сигнал взрывается.</p>
+    <p>Это не только математическая проблема. На практике RNN может хорошо учить ближайшие зависимости и почти игнорировать далёкие, потому что gradient от далёкого шага просто не доходит до ранних параметров.</p>
+    <ul>
+      <li>Vanishing gradient стирает дальние зависимости.</li>
+      <li>Exploding gradient требует clipping и осторожного lr.</li>
+      <li>Gates в LSTM/GRU создают более управляемые пути для памяти.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ===== TAB 2: Vanishing Gradient ===== -->
@@ -262,6 +288,19 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
 <canvas id="vanish-canvas" width="800" height="220" style="width:100%;margin-top:10px"></canvas>
 <div id="vanish-info" style="margin-top:8px;font-size:.9em"></div>
 </div>
+<!-- architecture-deepening:start:5-2-lstm-cell-highway -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-2-lstm-cell-highway">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Cell state работает как почти линейная магистраль памяти</h3>
+    <p>Главная идея LSTM - отделить долгосрочную память c_t от краткосрочного hidden state h_t. Cell state обновляется через forget и input gates, поэтому информация может пройти через много шагов с меньшим разрушением.</p>
+    <p>Gates не просто добавляют параметры. Они дают модели право решать, что забыть, что записать и что показать наружу. Это делает память управляемой, а не полностью перезаписываемой на каждом шаге.</p>
+    <ul>
+      <li>Forget gate контролирует сохранение старой памяти.</li>
+      <li>Input gate контролирует запись новой информации.</li>
+      <li>Output gate контролирует, какая часть памяти влияет на hidden state.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ===== TAB 3: LSTM ===== -->
@@ -572,7 +611,19 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
 <div class="step-box"><span class="sn">∂L/∂h₃</span>= 2·h₃ = 1.90</div>
 <div class="step-box"><span class="sn">∂L/∂Wₕ</span>= ∂L/∂h₃ · [(1-h₃²)·h₂ + (1-h₃²)·Wₕ·(1-h₂²)·h₁ + …]</div>
 </div>
-
+<!-- architecture-deepening:start:5-2-truncated-bptt -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-2-truncated-bptt">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Truncated BPTT ограничивает длину кредитного назначения</h3>
+    <p>Полный BPTT через длинную sequence дорог по памяти и вычислениям. Truncated BPTT режет историю на окна и не передаёт gradient бесконечно далеко назад.</p>
+    <p>Это ускоряет обучение и стабилизирует память, но вводит bias: модель может не получить прямой gradient для зависимостей длиннее окна. Поэтому длина окна - это архитектурно-оптимизационный компромисс.</p>
+    <ul>
+      <li>Короткое окно дешевле, но хуже для long-range dependencies.</li>
+      <li>Длинное окно точнее, но дороже и менее стабильно.</li>
+      <li>Hidden state можно переносить вперёд, даже если gradient назад обрезан.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <h2>Визуализация градиентного потока</h2>
 <div class="card">
 <div class="slider-row"><span>T (длина)</span><input type="range" id="bT" min="2" max="20" value="8" oninput="drawBPTT()"><span class="sv" id="bT-v">8</span></div>
@@ -1075,6 +1126,8 @@ drawLSTMDyn();
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
+
 
 
 

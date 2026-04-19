@@ -105,6 +105,19 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     💡 Хороший scheduler — это способ менять <strong>характер оптимизации во времени</strong>: сначала осторожно разогнаться, потом активно искать, потом мягко стабилизироваться.
   </div>
 </div>
+<!-- training-deepening:start:4-5-lr-as-energy -->
+  <section class="concept-walkthrough" data-training-deepening="4-5-lr-as-energy">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Learning rate задаёт энергию движения optimizer</h3>
+    <p>Слишком маленький lr делает обучение медленным и может застревать в слабых областях. Слишком большой lr разрушает уже найденные представления и создаёт loss spikes. Scheduler нужен потому, что оптимальный масштаб шага меняется по ходу обучения.</p>
+    <p>В начале модель далека от хорошего решения и может двигаться грубее. В конце маленькие изменения параметров уже важны, поэтому шаг нужно уменьшать, чтобы не шуметь вокруг минимума.</p>
+    <ul>
+      <li>Большой lr быстрее исследует пространство, но нестабилен.</li>
+      <li>Малый lr точнее донастраивает, но медленнее.</li>
+      <li>Scheduler превращает один lr в траекторию шагов.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>📈 Интерактив: сравнение графиков lr</h2>
@@ -225,6 +238,45 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     </div>
   </div>
 </div>
+<!-- training-deepening:start:4-5-onecycle -->
+  <section class="concept-walkthrough" data-training-deepening="4-5-onecycle">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>OneCycle использует временно высокий lr как контролируемый стресс</h3>
+    <p>OneCycleLR сначала повышает lr, затем резко снижает его к концу. Высокая фаза может помочь выйти из узких резких областей, а финальная низкая фаза стабилизирует решение.</p>
+    <p>Этот режим требует аккуратного max_lr. Если он слишком высокий, модель не получает полезный стресс, а просто разваливается. Поэтому lr finder или небольшой pilot run здесь особенно полезны.</p>
+    <ul>
+      <li>max_lr - главный параметр риска.</li>
+      <li>pct_start задаёт длину фазы роста.</li>
+      <li>Финальная фаза часто работает как aggressive annealing.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
+<!-- training-deepening:start:4-5-cosine-annealing -->
+  <section class="concept-walkthrough" data-training-deepening="4-5-cosine-annealing">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Cosine annealing делает плавный переход от поиска к уточнению</h3>
+    <p>Cosine schedule уменьшает lr без резких скачков. Это полезно, когда хочется сначала активно исследовать loss surface, а затем постепенно перейти к тонкой настройке.</p>
+    <p>В отличие от step decay, cosine не создаёт внезапных переломов в динамике optimizer. Это часто даёт более стабильные кривые loss, особенно в больших deep learning training runs.</p>
+    <ul>
+      <li>Высокий lr в начале помогает исследованию.</li>
+      <li>Плавное снижение уменьшает шум в финале.</li>
+      <li>Минимальный lr не всегда должен быть нулём.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
+<!-- training-deepening:start:4-5-warmup-protects-stats -->
+  <section class="concept-walkthrough" data-training-deepening="4-5-warmup-protects-stats">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Warmup защищает модель, пока статистики ещё не стабилизировались</h3>
+    <p>В первые шаги optimizer states пустые, normalization statistics ещё грубые, а random initialization может давать нестабильные activation scales. Если сразу дать большой lr, модель может уйти в плохую область до того, как training станет информативным.</p>
+    <p>Warmup постепенно увеличивает lr и даёт optimizer время накопить статистику. Особенно это важно для Transformer, больших batch-ей и mixed precision.</p>
+    <ul>
+      <li>Warmup слишком короткий: ранние spikes.</li>
+      <li>Warmup слишком длинный: медленный старт.</li>
+      <li>Обычно warmup настраивают как долю от общего числа training steps.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
 <div class="card">
   <h2>🧠 Почему warmup особенно важен в современных моделях</h2>
@@ -454,6 +506,7 @@ showCode('cosine', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

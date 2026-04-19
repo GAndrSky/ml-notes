@@ -70,6 +70,19 @@
         <div class="success"><strong>Cancellation</strong><br>Вычитание двух почти равных больших чисел теряет точность и делает градиент шумным или бессмысленным.</div>
       </div>
     </div>
+<!-- training-deepening:start:4-9-finite-floats -->
+  <section class="concept-walkthrough" data-training-deepening="4-9-finite-floats">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Компьютер считает не вещественными числами, а конечной сеткой</h3>
+    <p>Математическая формула может быть корректной, но её реализация в float может ломаться. У чисел есть конечный диапазон, конечная точность и округление. Поэтому две алгебраически эквивалентные записи могут вести себя по-разному в коде.</p>
+    <p>Numerical stability - это умение записать вычисление так, чтобы важные отношения между числами сохранялись в доступном формате. В deep learning это критично, потому что ошибки повторяются миллионы раз за training run.</p>
+    <ul>
+      <li>Overflow превращает слишком большое число в Inf.</li>
+      <li>Underflow превращает слишком маленькое число в ноль.</li>
+      <li>Cancellation теряет точность при вычитании близких чисел.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>FP32, FP16 и BF16: почему форматы ведут себя по-разному</h2>
@@ -92,6 +105,19 @@
       </div>
       <div class="info">Практическая интуиция такая: FP16 чаще ломается не потому, что “плохой”, а потому что слишком узкий диапазон быстрее упирается в экстремальные значения активаций и градиентов.</div>
     </div>
+<!-- training-deepening:start:4-9-format-choice -->
+  <section class="concept-walkthrough" data-training-deepening="4-9-format-choice">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Формат числа - это trade-off между скоростью, памятью и диапазоном</h3>
+    <p>FP32 даёт хороший баланс точности и диапазона, но стоит больше памяти. FP16 быстрее и компактнее, но имеет узкий exponent. BF16 сохраняет широкий exponent, поэтому лучше переносит большие и маленькие значения, но имеет меньше точности в mantissa.</p>
+    <p>Выбор формата влияет не только на скорость. Он меняет вероятность NaN, underflow gradients, unstable softmax и расхождение optimizer state.</p>
+    <ul>
+      <li>FP32 удобен для стабильности и debugging.</li>
+      <li>FP16 часто требует dynamic loss scaling.</li>
+      <li>BF16 обычно предпочтителен для больших моделей при поддержке hardware.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>Где численная нестабильность появляется чаще всего</h2>
@@ -140,6 +166,19 @@
     </div>
     <div class="success">Это не меняет результат mathematically, но резко улучшает численную устойчивость, потому что теперь самый большой logit становится нулём, а все остальные — неположительными.</div>
     </div>
+<!-- training-deepening:start:4-9-stable-softmax-why -->
+  <section class="concept-walkthrough" data-training-deepening="4-9-stable-softmax-why">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Вычитание max сохраняет softmax, но убирает overflow</h3>
+    <p>Softmax инвариантен к добавлению или вычитанию одной и той же константы из всех logits. Поэтому можно вычесть максимальный logit: самый большой exp станет exp(0)=1, а остальные будут меньше или равны единице.</p>
+    <p>Это не меняет вероятности, потому что числитель и знаменатель масштабируются одинаково. Но вычисление становится безопаснее для float, особенно при больших logits.</p>
+    <ul>
+      <li>Не считай exp(logits) напрямую для больших logits.</li>
+      <li>Используй log_softmax или CrossEntropyLoss вместо ручного softmax + log.</li>
+      <li>Проверяй logits distribution, если softmax становится слишком резким.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: наивный softmax vs stable softmax</h2>
@@ -217,6 +256,19 @@ gradients = gradients / s
 7. Замени наивные exp/log/division на stable variants</div>
       <div class="success">Очень часто “численная проблема” оказывается первым видимым симптомом другой ошибки: слишком агрессивного lr, неверного preprocessing или badly scaled loss term. Поэтому здесь всегда полезно смотреть и на числа, и на training recipe целиком.</div>
     </div>
+<!-- training-deepening:start:4-9-debug-order -->
+  <section class="concept-walkthrough" data-training-deepening="4-9-debug-order">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Отладка NaN должна идти от источника, а не от последнего симптома</h3>
+    <p>NaN часто появляется далеко от причины. Например, gradient overflow случился в backward, optimizer state испортился на step, а заметили это только на следующем forward. Поэтому нужно логировать промежуточные места: inputs, logits, loss, gradients, weights и optimizer step.</p>
+    <p>Хорошая стратегия - временно включить anomaly detection, уменьшить lr, отключить AMP, проверить один batch и затем возвращать оптимизации по одной. Так легче найти минимальное условие, при котором ошибка появляется.</p>
+    <ul>
+      <li>Сначала воспроизведи NaN на маленьком batch.</li>
+      <li>Проверь данные: Inf, NaN, экстремальные значения, неправильные labels.</li>
+      <li>Потом проверяй model forward, loss, backward, clipping и optimizer step отдельно.</li>
+    </ul>
+  </section>
+<!-- training-deepening:end -->
   </div>
 
   <script>
@@ -312,6 +364,7 @@ gradients = gradients / s
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

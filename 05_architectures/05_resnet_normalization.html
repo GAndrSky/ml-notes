@@ -94,6 +94,19 @@ canvas{display:block;width:100%}
 <!-- 0 -->
 <div id="t0" class="tc active">
 <h2>1. Degradation Problem</h2>
+<!-- architecture-deepening:start:5-5-residual-correction -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-5-residual-correction">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Residual block учит поправку, а не всю функцию заново</h3>
+    <p>Если оптимальное преобразование близко к identity, plain network всё равно должна выучить identity через несколько нелинейных слоёв. ResNet делает identity route явным, а блок учит только residual correction F(x).</p>
+    <p>Это снижает сложность оптимизации: блоку легче научиться маленькой поправке, чем полностью реконструировать вход. Поэтому глубина становится полезной, а не только опасной.</p>
+    <ul>
+      <li>Skip path переносит исходный сигнал.</li>
+      <li>Residual branch добавляет поправку.</li>
+      <li>Если поправка не нужна, сеть может приблизиться к identity.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <div class="card">
 <p>До ResNet: добавление слоёв ухудшало <strong>train loss</strong>. Это не overfitting — деградация оптимизации.</p>
 <div class="wb"><span class="hr">He et al. 2015:</span> 56-слойная plain сеть хуже 20-слойной на CIFAR-10 — и train, и test. Деградация!</div>
@@ -189,6 +202,19 @@ Skip path чист → градиент без BN и ReLU</div>
     </div>
     <div class="ib"><strong>Зачем Pre-act лучше:</strong> при Post-act добавление проходит через BN+ReLU — skip не чистый. Pre-act: residual stream = чистая сумма слагаемых.</div>
 </div>
+<!-- architecture-deepening:start:5-5-bottleneck-economy -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-5-bottleneck-economy">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Bottleneck экономит compute через 1x1 channel projection</h3>
+    <p>Bottleneck block сначала сжимает channels через 1x1 convolution, затем делает 3x3 convolution в меньшем пространстве, а потом расширяет channels обратно. Это снижает стоимость spatial convolution.</p>
+    <p>1x1 convolution не видит соседние пиксели, но эффективно смешивает каналы. Поэтому bottleneck разделяет channel mixing и spatial processing, похожим образом к идее эффективных CNN-блоков.</p>
+    <ul>
+      <li>1x1 reduce уменьшает channel dimension.</li>
+      <li>3x3 работает в сжатом пространстве.</li>
+      <li>1x1 expand возвращает нужную ширину residual stream.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <h2>Визуализация блоков</h2>
 <div class="card">
 <div class="tabs" id="btabs">
@@ -205,6 +231,19 @@ Skip path чист → градиент без BN и ReLU</div>
 <div class="sr"><span>Reduction r</span><input type="range" id="slR" min="2" max="8" value="4" oninput="calcBN()"><span class="sv" id="vR">4</span></div>
 <div id="infBN" style="font-size:.88em;line-height:2;margin-top:6px"></div>
 </div>
+<!-- architecture-deepening:start:5-5-gradient-identity -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-5-gradient-identity">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Skip connection создаёт прямой путь для градиента</h3>
+    <p>В residual block градиент может пройти через branch F(x), но также имеет identity path. Это уменьшает риск, что все градиенты будут проходить через длинную цепочку нестабильных Jacobian.</p>
+    <p>Именно поэтому residual connections стали базовым элементом не только CNN, но и Transformer, diffusion U-Net и многих современных архитектур.</p>
+    <ul>
+      <li>Identity path стабилизирует backward.</li>
+      <li>Residual branch может учить сложную поправку.</li>
+      <li>Projection shortcut нужен, когда меняется размерность.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- 2 -->
@@ -298,6 +337,19 @@ x = x + FFN(LN(x))
     </div>
 </div>
 </div>
+<!-- architecture-deepening:start:5-5-normalization-choice -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-5-normalization-choice">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Выбор normalization зависит от оси статистики и режима inference</h3>
+    <p>BatchNorm использует batch statistics во время training и running statistics во время eval. Если batch маленький или distribution inference отличается, эти статистики могут стать источником ошибки.</p>
+    <p>LayerNorm и GroupNorm не зависят от batch size таким же образом. Поэтому LN доминирует в Transformer, GN полезен при маленьких batch в vision, а BN остаётся сильным default для классических CNN с нормальным batch size.</p>
+    <ul>
+      <li>BatchNorm: хорошо для CNN и больших batch.</li>
+      <li>LayerNorm: хорошо для sequence models и Transformer.</li>
+      <li>GroupNorm: устойчивее BatchNorm при маленьких batch.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- 4 -->
@@ -864,6 +916,8 @@ window.addEventListener('load',()=>{
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
+
 
 
 

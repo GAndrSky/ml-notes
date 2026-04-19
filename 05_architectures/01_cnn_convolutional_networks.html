@@ -112,6 +112,19 @@ tr:last-child td{border-bottom:none}
 <div id="t-conv" class="tab-content active">
 
 <h2>1. Дискретная свёртка — математика</h2>
+<!-- architecture-deepening:start:5-1-locality-prior -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-1-locality-prior">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>CNN вшивает prior локальности и повторяемости паттернов</h3>
+    <p>Свёртка предполагает, что важные признаки часто локальны: край, угол, текстура или маленький объект можно распознать по соседним пикселям. Второе предположение - один и тот же detector полезен в разных местах изображения.</p>
+    <p>Именно parameter sharing делает CNN эффективной. Один фильтр скользит по всей карте и ищет один паттерн везде, вместо того чтобы учить отдельный набор весов для каждой позиции.</p>
+    <ul>
+      <li>Локальность уменьшает число возможных взаимодействий.</li>
+      <li>Shared weights уменьшают число параметров.</li>
+      <li>Translation equivariance означает: сдвиг входа сдвигает feature map.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <div class="card">
 <p>Свёртка в DL — дискретная кросс-корреляция (по историческим причинам называется свёрткой):</p>
 <div class="formula">
@@ -217,6 +230,19 @@ tr:last-child td{border-bottom:none}
 <div id="conv-calc-box" style="max-width:220px;font-size:.82em;color:var(--muted)"></div>
 </div>
 </div>
+<!-- architecture-deepening:start:5-1-effective-receptive-field -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-1-effective-receptive-field">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Теоретическое RF больше, чем реально используемое RF</h3>
+    <p>На бумаге receptive field показывает, какая область входа может повлиять на конкретную активацию. Но фактическое влияние внутри этой области обычно распределено неравномерно: центральные пиксели часто влияют сильнее, чем дальние.</p>
+    <p>Поэтому простое увеличение глубины не всегда означает, что модель хорошо использует глобальный контекст. Иногда нужны dilation, pooling, attention или архитектурные блоки, которые явно расширяют обмен информацией.</p>
+    <ul>
+      <li>Малые ядра дают больше нелинейностей на ту же область.</li>
+      <li>Dilation расширяет RF без роста числа параметров.</li>
+      <li>Stride и pooling быстро уменьшают spatial resolution.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ========== TAB 2: Рецептивное поле ========== -->
@@ -286,6 +312,19 @@ tr:last-child td{border-bottom:none}
     </div>
 <!-- step1-viz:end -->
 </div>
+<!-- architecture-deepening:start:5-1-pooling-tradeoff -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-1-pooling-tradeoff">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Pooling покупает устойчивость ценой точной позиции</h3>
+    <p>Max pooling оставляет сильнейший локальный сигнал и делает модель менее чувствительной к небольшому сдвигу объекта. Average pooling сглаживает область и больше похож на локальное усреднение энергии признака.</p>
+    <p>Потеря spatial detail может вредить segmentation, detection и задачам, где важна точная геометрия. Поэтому современные сети часто заменяют грубый pooling на strided convolution, skip connections или multi-scale features.</p>
+    <ul>
+      <li>Max pooling хорошо ловит наличие признака.</li>
+      <li>Average pooling лучше сохраняет общий фон сигнала.</li>
+      <li>Global average pooling превращает feature maps в class-level summary.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 </div>
 
 <!-- ========== TAB 3: Pooling ========== -->
@@ -507,7 +546,19 @@ tr:last-child td{border-bottom:none}
 </table>
 <p class="muted" style="margin-top:6px">ResNet-34: всего ≈21.8M параметров</p>
 </div>
-
+<!-- architecture-deepening:start:5-1-depthwise-separable -->
+  <section class="concept-walkthrough" data-architecture-deepening="5-1-depthwise-separable">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Depthwise separable conv разделяет spatial mixing и channel mixing</h3>
+    <p>Обычная convolution одновременно смешивает соседние пиксели и каналы. Depthwise separable convolution сначала применяет отдельный spatial filter к каждому каналу, а затем 1x1 convolution смешивает каналы.</p>
+    <p>Такое разделение резко снижает число параметров и FLOPs. Цена - меньше совместной выразительности в одном слое, поэтому MobileNet-подобные сети компенсируют это шириной, глубиной и аккуратным дизайном блоков.</p>
+    <ul>
+      <li>Depthwise conv отвечает за spatial pattern внутри канала.</li>
+      <li>Pointwise 1x1 conv отвечает за mixing каналов.</li>
+      <li>Mobile architectures используют этот trade-off для скорости на edge devices.</li>
+    </ul>
+  </section>
+<!-- architecture-deepening:end -->
 <h2>Depthwise Separable Convolution (MobileNet)</h2>
 <div class="card">
 <p>Разделение свёртки на два этапа резко сокращает количество параметров:</p>
@@ -1041,6 +1092,8 @@ drawEquivar();
 <script src="../bundle.js" defer></script>
 </body>
 </html>
+
+
 
 
 
