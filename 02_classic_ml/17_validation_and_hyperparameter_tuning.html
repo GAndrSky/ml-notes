@@ -462,6 +462,19 @@
         которая выглядит блестяще на бумаге, но разваливается в реальном использовании.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-17-validation-as-experiment -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-17-validation-as-experiment">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Validation protocol - это дизайн эксперимента</h3>
+    <p>Валидация отвечает не на вопрос &#171;насколько модель хороша на этих данных&#187;, а на вопрос &#171;что, вероятно, произойдёт с будущими объектами из того же процесса&#187;. Поэтому split должен имитировать будущий inference: время, группы пользователей, редкие классы, дубликаты и способ сбора данных.</p>
+    <p>Если split не похож на реальный сценарий, метрика становится измерением удобства эксперимента, а не качества модели. В таком случае можно улучшать validation score и одновременно ухудшать реальный продукт.</p>
+    <ul>
+      <li>Random split подходит только если будущие объекты действительно похожи на случайную подвыборку прошлого.</li>
+      <li>Time split нужен, когда порядок времени влияет на распределение признаков и target.</li>
+      <li>Group split нужен, когда один пользователь, пациент, товар или документ может появляться несколько раз.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Главная структура: train / validation / test</h2>
@@ -652,6 +665,19 @@ Validation = 20%</div>
         </div>
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-17-cv-estimator -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-17-cv-estimator">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Cross-validation оценивает среднее качество, но не отменяет uncertainty</h3>
+    <p>K-fold CV уменьшает зависимость оценки от одного случайного split-а, но не превращает validation score в абсолютную истину. Fold-и могут быть коррелированы, данные могут иметь скрытые группы, а распределение будущего inference может отличаться от train.</p>
+    <p>Поэтому полезно смотреть не только mean score, но и разброс по fold-ам. Большой разброс означает, что модель или validation protocol нестабильны: качество зависит от того, какие объекты попали в validation.</p>
+    <ul>
+      <li>Mean CV score показывает ожидаемый уровень качества.</li>
+      <li>Std по fold-ам показывает устойчивость оценки.</li>
+      <li>Очень маленький validation set даёт шумную оценку даже при хорошем алгоритме.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: K-fold cross-validation</h2>
@@ -852,6 +878,19 @@ gamma ∈ {0.01, 0.1, 1}
         </div>
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-17-hpo-overfits -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-17-hpo-overfits">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>HPO тоже переобучается на validation</h3>
+    <p>Каждый запуск grid search, random search или Bayesian optimization смотрит на validation score и выбирает лучший вариант. Если перебрать достаточно много вариантов, часть улучшений будет случайной. Это такой же selection bias, как выбор лучшей модели по test set.</p>
+    <p>Чем больше гиперпараметров и чем шумнее validation, тем выше риск выбрать конфигурацию, которая победила случайно. Поэтому финальный test должен оставаться нетронутым, а для дорогих решений используют nested CV или отдельный holdout после HPO.</p>
+    <ul>
+      <li>Не используй test set для выбора гиперпараметров.</li>
+      <li>Фиксируй search space заранее, иначе эксперимент начинает подгоняться под результат.</li>
+      <li>Сравнивай best score с простым baseline, а не только с соседними настройками.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>2.17.5 Random search</h2>
@@ -1029,6 +1068,19 @@ fit только на train-part этого fold</div>
         </div>
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-17-leakage-protocol -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-17-leakage-protocol">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Leakage чаще возникает в preprocessing, а не в модели</h3>
+    <p>Модель редко получает target напрямую. Чаще leakage появляется раньше: scaler обучили на всех данных, target encoding посчитали до split-а, oversampling сделали до CV, дубликаты пользователя попали и в train, и в validation.</p>
+    <p>Практическое правило: всё, что учится по данным, должно учиться только внутри train-fold-а. Validation-fold должен проходить через уже обученный transformer как будущий новый объект.</p>
+    <ul>
+      <li>fit_transform применяется на train, transform - на validation.</li>
+      <li>Feature selection должна быть внутри CV, если она смотрит на target.</li>
+      <li>Sampling и target encoding тоже должны жить внутри pipeline.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: leakage vs no leakage</h2>
@@ -1837,6 +1889,7 @@ random search почти всегда разумнее
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

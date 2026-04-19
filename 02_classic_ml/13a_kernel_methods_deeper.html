@@ -71,6 +71,19 @@
     <p>Ядро говорит не “какие у точки признаки”, а <strong>насколько две точки похожи</strong> в некотором скрытом feature space. Линейная модель в этом пространстве может соответствовать очень нелинейной границе в исходных координатах.</p>
       <div class="info">Kernel trick работает, потому что во многих алгоритмах данные входят только через скалярные произведения. Если заменить их на <code>K(x, x')</code>, алгоритм остаётся линейным “внутри”, но ведёт себя нелинейно “снаружи”.</div>
     </div>
+<!-- advanced-models-deepening:start:2-13a-feature-space -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13a-feature-space">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Kernel trick скрывает явное пространство признаков</h3>
+    <p>Kernel можно читать как быстрый способ посчитать inner product после некоторого преобразования признаков. Мы не строим огромный вектор phi(x) явно, но получаем значение похожести так, будто работаем в этом пространстве.</p>
+    <p>Это полезно, когда разделение в исходных признаках сложное, но становится линейным после нелинейного отображения. SVM затем строит линейную границу уже в скрытом feature space.</p>
+    <ul>
+      <li>Polynomial kernel добавляет взаимодействия признаков.</li>
+      <li>RBF kernel создаёт очень богатое локальное пространство похожести.</li>
+      <li>Kernel matrix хранит попарные сходства объектов и быстро растёт как O(n&#178;).</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Mercer коротко и по делу</h2>
       <div class="formula" data-no-tex>Хорошее ядро должно порождать симметричную
@@ -86,6 +99,19 @@ K_ij = K(x_i, x_j),   K = K^T,   z^T K z ≥ 0</div>
     <p>Это и есть практический смысл теоремы Mercer: если матрица похожести ведёт себя как валидное скалярное произведение, то существует пространство признаков, в котором это ядро действительно равно внутреннему произведению.</p>
       <div class="warn">Не каждая “похожесть” годится как kernel. Если Gram matrix не PSD, алгоритм может терять выпуклость и понятную геометрию.</div>
     </div>
+<!-- advanced-models-deepening:start:2-13a-mercer-psd -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13a-mercer-psd">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Корректный kernel должен вести себя как скалярное произведение</h3>
+    <p>Mercer condition в практическом смысле говорит: kernel matrix должна быть positive semidefinite. Тогда её можно интерпретировать как матрицу скалярных произведений в некотором feature space.</p>
+    <p>Если функция похожести не PSD, оптимизационная задача SVM может потерять выпуклость и стабильность. Поэтому не любая красивая мера похожести автоматически является хорошим kernel.</p>
+    <ul>
+      <li>PSD matrix не создаёт отрицательных квадратов длины.</li>
+      <li>Симметрия важна: похожесть x с y равна похожести y с x.</li>
+      <li>Domain-specific similarity нужно проверять, прежде чем использовать как kernel.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>RBF и почему <code>gamma</code> так важен</h2>
       <div class="formula" data-render-tex data-tex-source="K_{\text{RBF}}(x, x') = \exp(-\gamma \|x - x'\|^2)">K_RBF(x, x') = exp(-γ ||x - x'||²)</div>
@@ -107,6 +133,19 @@ K_ij = K(x_i, x_j),   K = K^T,   z^T K z ≥ 0</div>
         <div><h3>Большой gamma</h3><p>Похожесть быстро падает. Каждая точка влияет локально, boundary становится гибкой, но риск переобучения растёт.</p></div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-13a-rbf-bandwidth -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13a-rbf-bandwidth">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>gamma в RBF - это обратная ширина локального внимания</h3>
+    <p>RBF kernel быстро уменьшает похожесть с расстоянием. gamma управляет скоростью этого затухания: при большом gamma только почти идентичные точки сильно похожи, при маленьком gamma похожесть размазана шире.</p>
+    <p>Геометрически gamma задаёт размер локального района, в котором обучающий объект может влиять на prediction. Поэтому он тесно связан с density данных и масштабом признаков.</p>
+    <ul>
+      <li>Перед RBF почти всегда нужен scaling.</li>
+      <li>Большой gamma делает kernel matrix ближе к единичной матрице.</li>
+      <li>Маленький gamma делает многие точки похожими и сглаживает boundary.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Интерактив: kernel matrix</h2>
       <p class="muted">Смотри, как меняется матрица похожести при изменении <code>gamma</code>. Чем ярче диагональ и темнее всё вокруг, тем локальнее становится модель.</p>
@@ -243,6 +282,7 @@ Z = model.fit_transform(X)</div></div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

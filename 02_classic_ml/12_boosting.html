@@ -462,6 +462,19 @@ Boosting:
         но становится чувствительнее к tuning и регуляризации, чем Random Forest.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12-additive-view -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12-additive-view">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Boosting лучше читать как additive model</h3>
+    <p>Boosting не просто усредняет много деревьев. Он строит предсказание как сумму последовательных поправок, где каждая новая модель видит ошибки текущего ансамбля. Поэтому порядок моделей важен: позднее дерево обучается уже на другом представлении задачи.</p>
+    <p>Такой взгляд объясняет, почему boosting часто уменьшает bias сильнее, чем bagging. Bagging стабилизирует шумные модели через усреднение, а boosting постепенно достраивает недостающую форму функции.</p>
+    <ul>
+      <li>Bagging: много независимых моделей, затем усреднение.</li>
+      <li>Boosting: одна последовательная модель, собранная из маленьких шагов.</li>
+      <li>Главный риск boosting - слишком долго исправлять train-ошибки и начать учить шум.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Общая схема boosting</h2>
@@ -636,6 +649,19 @@ w_i ← w_i · exp(-α_m y_i h_m(x_i))
         </div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12-adaboost-margin -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12-adaboost-margin">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>AdaBoost можно понимать через margin объектов</h3>
+    <p>В AdaBoost веса объектов растут не просто потому, что модель ошиблась. Алгоритм пытается увеличить margin: правильный класс должен получать уверенный суммарный голос, а не случайное преимущество в один слабый классификатор.</p>
+    <p>Если объект стабильно ошибочный из-за шума или неверной разметки, AdaBoost будет всё сильнее на него смотреть. Это делает метод чувствительным к выбросам и объясняет, почему современные GBDT обычно удобнее в реальных табличных задачах.</p>
+    <ul>
+      <li>Большой положительный margin означает уверенно правильное решение.</li>
+      <li>Отрицательный margin означает, что ансамбль склоняется к неправильному классу.</li>
+      <li>Шумные labels могут получить слишком большой вес и испортить следующие weak learners.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: как AdaBoost перераспределяет веса</h2>
@@ -1119,6 +1145,19 @@ Leaf-wise growth:
         Это обычно даёт более аккуратную и устойчивую модель, чем большой шаг и мало деревьев.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12-hyperparameter-coupling -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12-hyperparameter-coupling">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Гиперпараметры boosting нельзя читать по одному</h3>
+    <p>learning_rate, n_estimators, depth, subsampling и regularization образуют связанную систему. Маленький learning_rate обычно требует больше деревьев, но даёт более плавную траекторию обучения. Большая depth повышает способность ловить interactions, но резко увеличивает риск локального переобучения.</p>
+    <p>Практическая настройка boosting - это управление скоростью, гибкостью и доверием к split-ам. Если менять все параметры хаотично, легко получить улучшение на validation случайно и не понять, что именно сработало.</p>
+    <ul>
+      <li>Сначала зафиксируй validation protocol и early stopping.</li>
+      <li>Потом найди разумную сложность деревьев: depth, leaves, min_child_weight.</li>
+      <li>После этого подбирай learning_rate и n_estimators как пару.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: learning rate vs n_estimators</h2>
@@ -1937,6 +1976,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

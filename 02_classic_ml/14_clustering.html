@@ -461,6 +461,19 @@ between-cluster similarity ↓</div>
         Иногда они просто результат выбранной метрики, масштаба признаков и конкретного алгоритма.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-14-exploratory-compression -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14-exploratory-compression">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Кластеризация - это гипотеза о структуре, а не ground truth</h3>
+    <p>Без labels невозможно доказать, что найденные группы являются истинными классами. Кластеризация сжимает данные в несколько групп по выбранной геометрии и помогает увидеть возможную структуру, но смысл этим группам даёт уже человек или downstream-задача.</p>
+    <p>Один и тот же датасет может иметь несколько полезных кластеризаций: по цене, поведению, риску, географии или стилю использования. Поэтому вопрос не только в алгоритме, а в том, какая похожесть полезна для решения.</p>
+    <ul>
+      <li>Кластеры нельзя автоматически называть классами.</li>
+      <li>Метрика расстояния задаёт, что значит похожесть.</li>
+      <li>Качество проверяется стабильностью, интерпретируемостью и downstream-пользой.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Когда кластеризация полезна</h2>
@@ -533,6 +546,19 @@ J = Σ_{j=1..k} Σ_{x_i ∈ C_j} ||x_i - μ_j||²</div>
         </div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-14-kmeans-assumptions -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14-kmeans-assumptions">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>k-means предполагает компактные примерно сферические группы</h3>
+    <p>k-means минимизирует расстояние до центроидов, поэтому лучше всего работает, когда кластеры похожи на округлые облака сравнимого размера. Если группы вытянутые, разной плотности или вложенные друг в друга, центроиды описывают данные грубо.</p>
+    <p>Инициализация тоже важна: плохие стартовые центры могут привести к другому локальному минимуму. Поэтому k-means++ и несколько random starts - не косметика, а часть устойчивого pipeline.</p>
+    <ul>
+      <li>Scaling обязателен, если признаки в разных единицах.</li>
+      <li>k-means плохо отделяет non-convex формы.</li>
+      <li>Centroid не всегда является реальным типичным объектом, особенно для sparse или categorical данных.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: k-means по шагам</h2>
@@ -798,6 +824,19 @@ s(i) = (b(i) - a(i)) / max(a(i), b(i))</div>
         </div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-14-validation-limits -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14-validation-limits">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Внутренние метрики кластеризации легко переинтерпретировать</h3>
+    <p>Silhouette, inertia и elbow помогают сравнивать режимы, но они не знают бизнес-смысла кластеров. Высокий silhouette может означать геометрически чистые группы, которые бесполезны для продукта. Низкий silhouette может быть нормальным, если данные действительно образуют плавный спектр без резких границ.</p>
+    <p>Поэтому хороший анализ кластеров всегда включает sanity-check: профили групп, размер групп, стабильность при resampling и проверку на downstream-задаче.</p>
+    <ul>
+      <li>Elbow часто субъективен и может не иметь явного изгиба.</li>
+      <li>Silhouette любит компактные разделённые группы.</li>
+      <li>Стабильность кластеров важнее одного красивого числа.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Что k-means любит, а что не любит</h2>
@@ -1848,6 +1887,7 @@ GMM:
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

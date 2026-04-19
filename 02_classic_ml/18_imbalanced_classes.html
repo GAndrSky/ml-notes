@@ -448,6 +448,19 @@ Class 1 = 1%
         <strong>насколько хорошо она находит редкий, но важный класс</strong>.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-18-prior-utility -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-18-prior-utility">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Imbalance меняет prior и цену действия</h3>
+    <p>Редкий класс создаёт две разные проблемы. Первая - статистическая: positive examples мало, поэтому модель хуже видит их разнообразие. Вторая - decision problem: даже правильная вероятность может требовать другого threshold, потому что цена false negative и false positive несимметрична.</p>
+    <p>Поэтому imbalance нельзя лечить только oversampling или class_weight. Нужно отдельно решить, хотим ли мы улучшить ranking, calibration, recall редкого класса или бизнес-стоимость решений.</p>
+    <ul>
+      <li>Ranking отвечает: кого поднять выше в списке риска.</li>
+      <li>Calibration отвечает: можно ли доверять вероятности.</li>
+      <li>Threshold отвечает: когда превращать score в действие.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>2.18.1 Почему accuracy ломается</h2>
@@ -493,6 +506,19 @@ Class 1 = 1%
         </div>
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-18-accuracy-baseline -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-18-accuracy-baseline">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Accuracy при imbalance надо сравнивать с тупым baseline</h3>
+    <p>Если positive class составляет 1%, модель, которая всегда говорит negative, уже получает 99% accuracy. Это не качество, а отражение base rate. Поэтому высокая accuracy без confusion matrix ничего не доказывает.</p>
+    <p>Нужно смотреть, какую часть редкого класса модель реально находит и сколько ложных тревог создаёт. В реальных задачах часто важен не один threshold, а вся PR-кривая или top-k качество.</p>
+    <ul>
+      <li>Baseline accuracy равен доле majority class.</li>
+      <li>Recall показывает, сколько редких событий найдено.</li>
+      <li>Precision показывает, сколько найденных тревог действительно полезны.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: высокая accuracy при плохой модели</h2>
@@ -660,6 +686,19 @@ L = Σ_i w_{y_i} · loss_i</div>
         где ошибаться по редкому классу “дёшево”. Class weights меняют эту экономику.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-18-weights-vs-threshold -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-18-weights-vs-threshold">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Class weights и threshold решают разные задачи</h3>
+    <p>Class weights меняют обучение: ошибки minority class становятся дороже внутри loss, и модель пытается сдвинуть boundary. Threshold tuning меняет только правило принятия решения после обучения. Эти методы похожи по эффекту на confusion matrix, но работают на разных этапах.</p>
+    <p>Если модель хорошо ранжирует объекты, иногда достаточно подобрать threshold. Если модель вообще не учится видеть minority class, нужны веса, sampling, новые признаки или другая модель.</p>
+    <ul>
+      <li>Class weights влияют на параметры модели.</li>
+      <li>Threshold влияет на действие, но не на learned representation.</li>
+      <li>После class weights вероятности могут хуже калиброваться, поэтому calibration стоит проверить отдельно.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: влияние class weights</h2>
@@ -1068,6 +1107,19 @@ validation fold remains untouched</div>
         и оценка станет нечестной.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-18-sampling-inside-cv -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-18-sampling-inside-cv">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Sampling должен происходить внутри cross-validation</h3>
+    <p>Oversampling, undersampling и SMOTE нельзя делать до train/validation split. Если синтетические или дублированные точки попадут в validation, модель будет проверяться на данных, которые частично видела во время обучения.</p>
+    <p>Правильная схема: split сначала, sampling только на train-fold-е, validation остаётся в естественном распределении. Так метрика показывает поведение на реальных будущих данных, а не на искусственно сбалансированной проверке.</p>
+    <ul>
+      <li>SMOTE до CV создаёт leakage через соседей.</li>
+      <li>Validation distribution должен отражать реальную частоту классов.</li>
+      <li>Sampling лучше оформлять как шаг imbalanced-learn Pipeline.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Когда oversampling и SMOTE могут вредить</h2>
@@ -1704,6 +1756,7 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

@@ -517,6 +517,19 @@ wᵀx + b = -1</div>
         </div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-13-margin-robustness -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13-margin-robustness">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Margin - это геометрический запас прочности</h3>
+    <p>SVM выбирает не просто разделяющую линию, а линию с максимальным зазором до ближайших объектов. Этот зазор можно читать как устойчивость к небольшим сдвигам данных: если точка немного шумит, она всё ещё остаётся на правильной стороне boundary.</p>
+    <p>Именно support vectors определяют boundary. Далёкие точки почти не влияют на решение, потому что они уже имеют достаточный margin и не несут информации о границе.</p>
+    <ul>
+      <li>Большой margin обычно лучше переносится на новые данные.</li>
+      <li>Support vectors - точки, которые ограничивают зазор.</li>
+      <li>Если классы сильно пересекаются, maximum margin без ошибок становится невозможен.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: максимальный зазор</h2>
@@ -660,6 +673,19 @@ y_i (wᵀx_i + b) ≥ 1 - ξ_i
 → margin шире
 → выше bias, но больше устойчивость</div>
     </div>
+<!-- advanced-models-deepening:start:2-13-soft-margin-c -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13-soft-margin-c">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>C задаёт цену нарушения margin</h3>
+    <p>Soft margin разрешает ошибаться или заходить внутрь margin, но штрафует такие нарушения. Параметр C управляет тем, насколько дорого модели игнорировать проблемные точки.</p>
+    <p>Большой C заставляет SVM сильнее подгоняться под train и делать меньше нарушений. Маленький C допускает больше нарушений ради более широкой и спокойной границы.</p>
+    <ul>
+      <li>C вверх: меньше train-ошибок, выше риск переобучения.</li>
+      <li>C вниз: шире margin, больше bias, устойчивее к шуму.</li>
+      <li>C нельзя выбирать без scaling, потому что расстояния и margin зависят от масштаба признаков.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: влияние C</h2>
@@ -1300,6 +1326,19 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       </div>
       <p>Полезная инженерная интуиция такая: <code>C</code> контролирует, насколько сильно мы наказываем ошибки, а <code>gamma</code> — насколько локальной будет сама геометрия решения. Поэтому их почти всегда надо читать вместе, а не как независимые ручки.</p>
     </div>
+<!-- advanced-models-deepening:start:2-13-c-gamma-joint -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-13-c-gamma-joint">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>C и gamma управляют разными сторонами сложности RBF-SVM</h3>
+    <p>gamma задаёт радиус влияния точки в RBF kernel. Большой gamma делает влияние локальным: boundary может изгибаться вокруг отдельных объектов. Маленький gamma делает похожесть глобальной: boundary становится гладкой.</p>
+    <p>C решает, насколько сильно модель обязана исправлять нарушения этой boundary. Поэтому опасная комбинация - большой gamma и большой C: локальная гибкость плюс высокий штраф ошибок часто превращают SVM в memorization.</p>
+    <ul>
+      <li>Большой gamma + большой C: максимальная гибкость и риск overfit.</li>
+      <li>Маленький gamma + маленький C: гладко, но может underfit.</li>
+      <li>Grid search обычно смотрит C и gamma вместе в логарифмической шкале.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
   <script>
     document.querySelectorAll('[data-tabs]').forEach(group => {
       const buttons = group.querySelectorAll('.tab-btn');
@@ -1702,6 +1741,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

@@ -84,6 +84,19 @@
         <div class="kpi"><div class="label">Что делает ν</div><div class="value">shrinkage</div></div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12a-function-space -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12a-function-space">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Градиент считается по предсказаниям, а не по весам дерева</h3>
+    <p>В нейросети gradient descent двигает параметры. В gradient boosting мы двигаем функцию F(x). Для каждого объекта считаем, как нужно изменить текущее предсказание, чтобы loss уменьшился быстрее всего, а затем обучаем дерево приближать это направление.</p>
+    <p>Именно поэтому residuals в boosting называются pseudo-residuals. Для MSE они похожи на обычные остатки, но для logloss, quantile loss или другой функции потерь это уже антиградиент по prediction.</p>
+    <ul>
+      <li>Объект получает свой целевой сдвиг prediction.</li>
+      <li>Дерево аппроксимирует эти сдвиги кусочно-постоянной функцией.</li>
+      <li>Ансамбль обновляется маленьким шагом, чтобы не переучить шум.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Как выводится шаг boosting</h2>
@@ -202,6 +215,32 @@ subsample ↓ → больше stochasticity и меньше correlation</div>
         </div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12a-stagewise-complexity -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12a-stagewise-complexity">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Stage-wise обучение само по себе является регуляризацией</h3>
+    <p>Boosting не ищет лучшую сумму всех деревьев за один глобальный solve. Он добавляет деревья по одному и ограничивает каждое дерево как слабую поправку. Это создаёт inductive bias: модель предпочитает решения, которые можно собрать постепенно.</p>
+    <p>Такой режим похож на аккуратное редактирование текста. Вместо полной переписи на каждом шаге алгоритм делает локальную правку, проверяет ошибку и только потом решает, что исправлять дальше.</p>
+    <ul>
+      <li>Слабые learners ограничивают форму одной поправки.</li>
+      <li>learning rate ограничивает силу поправки.</li>
+      <li>число итераций ограничивает общий объём исправлений.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
+<!-- advanced-models-deepening:start:2-12a-shrinkage -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12a-shrinkage">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Shrinkage делает функциональный шаг более осторожным</h3>
+    <p>Если новое дерево сразу добавить с полным весом, ансамбль может слишком резко подстроиться под текущие pseudo-residuals. learning rate уменьшает вклад дерева и превращает boosting в серию маленьких корректировок.</p>
+    <p>Маленькие шаги часто дают лучшую generalization, потому что модель проходит более гладкий путь по пространству функций. Цена - нужно больше деревьев и больше времени.</p>
+    <ul>
+      <li>Большой learning rate: быстрее, но выше риск overshoot.</li>
+      <li>Маленький learning rate: медленнее, но стабильнее.</li>
+      <li>Early stopping нужен, чтобы остановить последовательное исправление до момента заучивания шума.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Псевдокод и связь с практикой</h2>
@@ -322,6 +361,7 @@ r_i = y_i - p_i
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

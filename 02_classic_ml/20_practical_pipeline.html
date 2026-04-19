@@ -482,6 +482,19 @@ problem framing
         плохому baseline и невозможности воспроизвести результат позже.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-20-pipeline-protocol -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-20-pipeline-protocol">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Pipeline нужен, чтобы эксперимент был воспроизводимым объектом</h3>
+    <p>В реальном ML модель - это не только estimator.fit(). Это порядок split-а, preprocessing, feature engineering, sampling, model selection, threshold tuning и evaluation. Если эти шаги живут отдельно в notebook cells, эксперимент легко становится нереплицируемым.</p>
+    <p>Pipeline превращает процесс в один объект с явной границей между fit и transform. Это снижает leakage, упрощает CV и делает production-поведение ближе к validation-поведению.</p>
+    <ul>
+      <li>fit учится только на train.</li>
+      <li>transform применяет уже выученные правила к validation/test/inference.</li>
+      <li>Одинаковый pipeline должен обслуживать training и inference.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Общая карта процесса</h2>
@@ -567,6 +580,19 @@ FN для нас дороже FP,
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
     </div>
     </div>
+<!-- practical-ml-deepening:start:2-20-framing -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-20-framing">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Framing определяет метрику, данные и допустимые ошибки</h3>
+    <p>До выбора модели нужно решить, что именно считается правильным действием. Одну и ту же проблему можно поставить как regression, binary classification, ranking, anomaly detection или forecasting. От framing зависит target, split, metric и способ принятия решения.</p>
+    <p>Плохой framing нельзя исправить мощной моделью. Если target запаздывает, labels шумные или метрика не связана с реальной стоимостью ошибок, pipeline будет оптимизировать неправильную цель.</p>
+    <ul>
+      <li>Определи decision: что система должна сделать после prediction.</li>
+      <li>Определи horizon: на какой момент времени нужен прогноз.</li>
+      <li>Определи cost: какие ошибки дороже и почему.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: framing задачи</h2>
@@ -735,6 +761,19 @@ FN для нас дороже FP,
         не понимая, что простая логистическая регрессия уже давала 0.86.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-20-baseline-instrument -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-20-baseline-instrument">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Baseline - это измерительный прибор, а не слабая модель для отчёта</h3>
+    <p>Хороший baseline показывает, есть ли в задаче сигнал и насколько сложная модель вообще нужна. Он должен быть настолько простым, чтобы его поведение можно было объяснить: majority class, mean predictor, linear model, shallow tree или простая business rule.</p>
+    <p>Если сложная модель не обгоняет baseline честно и стабильно, проблема может быть не в алгоритме, а в target, split, признаках или метрике. Baseline экономит время, потому что быстро выявляет слабые места постановки.</p>
+    <ul>
+      <li>Baseline должен запускаться первым.</li>
+      <li>Baseline должен проходить тот же validation protocol.</li>
+      <li>Baseline нужен для сравнения не только score, но и сложности поддержки.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: baseline vs improved model</h2>
@@ -950,6 +989,19 @@ FN для нас дороже FP,
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для 50/50 Gini = 0.5, а для 90/10 Gini = 1-(0.9&#178;+0.1&#178;)=0.18.</div>
     </div>
     </div>
+<!-- practical-ml-deepening:start:2-20-evaluation-to-deployment -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-20-evaluation-to-deployment">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Evaluation должна моделировать deployment decision</h3>
+    <p>Offline metric полезна только если она связана с реальным действием системы. Для credit scoring важен threshold и cost ошибок, для рекомендаций - ranking и position bias, для fraud - top-k investigation capacity, для медицинской задачи - sensitivity при допустимом false positive rate.</p>
+    <p>Поэтому evaluation часто включает несколько слоёв: техническую метрику модели, decision metric после threshold, segment analysis, stability over time и sanity-check ошибок. Один общий score скрывает слишком много рисков.</p>
+    <ul>
+      <li>Смотри качество по сегментам, а не только среднее.</li>
+      <li>Проверяй calibration, если prediction используется как probability.</li>
+      <li>Проверяй drift и деградацию, если данные меняются во времени.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>2.20.7 Reproducibility</h2>
@@ -1554,6 +1606,7 @@ print("sklearn:", sklearn.__version__)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

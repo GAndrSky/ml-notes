@@ -78,6 +78,19 @@
         <div class="kpi"><div class="label">CatBoost</div><div class="value">категории и leakage control</div></div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12b-library-differences -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12b-library-differences">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Разница библиотек - это не только скорость</h3>
+    <p>XGBoost, LightGBM и CatBoost реализуют одну идею GBDT, но делают разные инженерные ставки. XGBoost силён стабильной регуляризацией и контролем split-ов. LightGBM оптимизирован под скорость, histogram training и leaf-wise growth. CatBoost отдельно решает категориальные признаки и target leakage через ordered boosting.</p>
+    <p>Выбор библиотеки должен зависеть от структуры данных. Для wide табличных данных с категориальными признаками CatBoost часто даёт сильный baseline. Для очень больших данных LightGBM может быстрее найти хороший режим. XGBoost удобен, когда нужен предсказуемый контроль regularization.</p>
+    <ul>
+      <li>CatBoost: категориальные признаки и ordered statistics.</li>
+      <li>LightGBM: скорость, histogram, leaf-wise деревья.</li>
+      <li>XGBoost: сильный контроль регуляризации и стабильный production baseline.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Ключевая формула листа</h2>
       <div class="formula" data-render-tex data-tex-source="w_j^\* = -\frac{G_j}{H_j + \lambda}, \qquad \text{Gain} = \frac{1}{2}\left(\frac{G_L^2}{H_L+\lambda} + \frac{G_R^2}{H_R+\lambda} - \frac{G^2}{H+\lambda}\right) - \gamma">w*_j = - G_j / (H_j + λ),   Gain = 1/2 ( G_L²/(H_L+λ) + G_R²/(H_R+λ) - G²/(H+λ) ) - γ</div>
@@ -147,6 +160,33 @@ gamma / min_split_gain ↑</div>
     <p>Эти ручки говорят дереву: “не дроби пространство, пока нет достаточно статистики, что сплит реально окупается”.</p></div>
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-12b-tuning-protocol -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12b-tuning-protocol">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Тюнинг должен начинаться с честного validation</h3>
+    <p>Самая частая ошибка в boosting - искать лучший набор параметров без стабильного validation protocol. Для временных данных нужен time split, для группированных данных - group split, для редких классов - stratification. Иначе модель оптимизируется под неправильный эксперимент.</p>
+    <p>После честного split-а лучше двигаться слоями: baseline, early stopping, сложность деревьев, регуляризация, subsampling, финальная калибровка или threshold. Такой порядок даёт причинное понимание улучшений.</p>
+    <ul>
+      <li>Не тюнь параметры на test set.</li>
+      <li>Сравнивай модели на одинаковых fold-ах.</li>
+      <li>Сохраняй best_iteration, иначе можно случайно использовать переобученный хвост.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
+<!-- advanced-models-deepening:start:2-12b-parameter-groups -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-12b-parameter-groups">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Дели параметры на группы: шаг, форма, доверие, шум</h3>
+    <p>Практический тюнинг GBDT становится проще, если не держать десятки параметров как плоский список. learning_rate и n_estimators управляют длиной траектории. max_depth, num_leaves и min_child_samples управляют формой деревьев. lambda, min_gain_to_split и min_child_weight регулируют доверие к локальным улучшениям.</p>
+    <p>subsample и colsample добавляют случайность, чтобы деревья меньше повторяли ошибки друг друга. Это особенно полезно, когда данных много, признаков много или train-score быстро улучшается быстрее validation-score.</p>
+    <ul>
+      <li>Шаг: learning_rate, n_estimators, early_stopping_rounds.</li>
+      <li>Форма: max_depth, num_leaves, max_leaf_nodes.</li>
+      <li>Доверие к split-у: min_child_weight, min_data_in_leaf, min_gain_to_split.</li>
+      <li>Шум и diversity: subsample, colsample_bytree, bagging_fraction.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Кодовые шаблоны</h2>
       <div class="tabs">
@@ -256,6 +296,7 @@ gamma / min_split_gain ↑</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

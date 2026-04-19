@@ -75,6 +75,19 @@
     <p>Вместо одного распределения мы предполагаем, что данные порождены несколькими скрытыми компонентами. Каждая компонента отвечает за свой режим данных.</p>
       <div class="info">K-means можно смотреть как очень грубый частный случай: одинаковые сферические ковариации, жёсткое присвоение, только геометрия расстояния. GMM добавляет вероятность и форму кластера.</div>
     </div>
+<!-- advanced-models-deepening:start:2-14a-soft-membership -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14a-soft-membership">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>GMM заменяет жёсткий кластер на распределение ответственности</h3>
+    <p>В k-means точка принадлежит одному ближайшему центроиду. В GMM точка получает probability-like responsibility для каждой компоненты. Это лучше отражает неопределённость на границах кластеров и позволяет компонентам иметь разную форму через covariance matrix.</p>
+    <p>Такой подход особенно полезен, когда данные перекрываются. Вместо искусственного жёсткого решения модель показывает, что объект частично похож на несколько групп.</p>
+    <ul>
+      <li>pi_k отвечает за размер компоненты.</li>
+      <li>mu_k отвечает за центр компоненты.</li>
+      <li>Sigma_k отвечает за форму и ориентацию эллипса плотности.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>EM шаг за шагом</h2>
       <div class="formula" data-render-tex data-tex-source="\gamma_{ik} = p(z_i = k \mid x_i) = \frac{\pi_k \mathcal{N}(x_i \mid \mu_k, \Sigma_k)}{\sum_j \pi_j \mathcal{N}(x_i \mid \mu_j, \Sigma_j)}">\gamma_ik = p(z_i = k | x_i) = [π_k N(x_i | μ_k, Σ_k)] / Σ_j [π_j N(x_i | μ_j, Σ_j)]</div>
@@ -124,6 +137,19 @@
       <p>Число компонент нужно проверять по validation, BIC/AIC и смыслу задачи. Больше компонент не всегда значит лучшее объяснение.</p>
     </aside>
     </div>
+<!-- advanced-models-deepening:start:2-14a-em-lower-bound -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14a-em-lower-bound">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>EM оптимизирует likelihood через чередование двух простых задач</h3>
+    <p>Главная трудность GMM - скрытая переменная: мы не знаем, какая компонента породила каждую точку. E-step оценивает распределение этой скрытой принадлежности при текущих параметрах. M-step обновляет параметры так, будто эти soft labels известны.</p>
+    <p>Каждый шаг EM не уменьшает likelihood при корректной реализации. Но это не гарантирует глобальный optimum: алгоритм может застрять в локальном решении, поэтому initialization имеет большое значение.</p>
+    <ul>
+      <li>E-step: оценить responsibilities.</li>
+      <li>M-step: пересчитать параметры с весами responsibilities.</li>
+      <li>Повторять до стабилизации likelihood или параметров.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Интерактив: 1D смесь</h2>
       <div class="control"><span>μ₁</span><input id="mu1" type="range" min="-35" max="0" value="-18" oninput="drawMixture()" /><strong id="mu1Val">-1.8</strong></div>
@@ -169,6 +195,19 @@
         </tbody>
       </table>
     </div>
+<!-- advanced-models-deepening:start:2-14a-covariance-regularization -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-14a-covariance-regularization">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Covariance делает модель гибкой, но может стать нестабильной</h3>
+    <p>Full covariance позволяет компоненте быть эллипсом любой ориентации. Это мощно, но требует больше данных: маленькая компонента может схлопнуться вокруг одной точки и получить почти сингулярную covariance.</p>
+    <p>На практике часто используют diagonal covariance, tied covariance или reg_covar. Это ограничивает форму компонент и защищает likelihood от искусственного роста через слишком узкие гауссианы.</p>
+    <ul>
+      <li>full covariance: гибко, но дорого и чувствительно.</li>
+      <li>diag covariance: проще, устойчивее, игнорирует корреляции признаков.</li>
+      <li>reg_covar добавляет численную защиту к covariance matrix.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
     <div class="card">
       <h2>Код</h2>
       <div class="tabs">
@@ -280,6 +319,7 @@ GMM намного содержательнее.</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

@@ -507,6 +507,19 @@
         выигрыш будет маленьким.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-16-diversity-competence -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-16-diversity-competence">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Ансамбль требует одновременно качества и разнообразия</h3>
+    <p>Если все модели делают одинаковые ошибки, ансамбль почти ничего не улучшит. Если модели очень разные, но каждая слабая, усреднение тоже не спасёт. Сила ансамбля появляется, когда base learners достаточно компетентны и ошибаются не полностью синхронно.</p>
+    <p>Это объясняет пользу разных seeds, bootstrap samples, feature subsets и разных model families. Они создают diversity, но не должны разрушать базовое качество.</p>
+    <ul>
+      <li>Компетентность: base learner лучше случайного baseline.</li>
+      <li>Разнообразие: ошибки моделей частично независимы.</li>
+      <li>Усреднение уменьшает variance только если ошибки не идеально коррелированы.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Три больших идеи ансамблей</h2>
@@ -702,6 +715,19 @@ p̂ = (Σ_m w_m p̂_m) / (Σ_m w_m)</div>
         Но веса нельзя подгонять на test set. Иначе это уже leakage.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-16-probability-averaging -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-16-probability-averaging">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Усреднение вероятностей требует calibration</h3>
+    <p>Soft voting обычно сильнее hard voting, потому что использует уверенность моделей. Но если одна модель плохо откалибрована и выдаёт слишком экстремальные вероятности, она может перетянуть ансамбль даже при невысоком качестве.</p>
+    <p>Поэтому перед probability averaging полезно смотреть calibration curve, log loss и распределение predicted probabilities. Иногда лучше усреднять logits или использовать calibrated classifiers.</p>
+    <ul>
+      <li>Hard voting использует только классы.</li>
+      <li>Soft voting использует вероятности и лучше различает уверенность.</li>
+      <li>Плохая calibration может сделать soft voting хуже простого majority vote.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>2.16.2 Bagging vs boosting</h2>
@@ -865,6 +891,19 @@ meta-model train features = predictions on same train data
         Это одна из самых частых ошибок в stacking.
       </div>
     </div>
+<!-- advanced-models-deepening:start:2-16-stacking-leakage -->
+  <section class="concept-walkthrough" data-advanced-models-deepening="2-16-stacking-leakage">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Stacking должен учиться только на out-of-fold predictions</h3>
+    <p>Главная ошибка stacking - обучить meta-model на предсказаниях base models для тех же объектов, на которых base models обучались. Тогда meta-model видит слишком оптимистичные predictions и учится на leakage.</p>
+    <p>Правильный stacking строит out-of-fold predictions: каждый train-объект получает прогноз от модели, которая не видела его при обучении. Только такие признаки честно показывают, как base learners ведут себя на новых данных.</p>
+    <ul>
+      <li>Train base models внутри folds.</li>
+      <li>Собери OOF-predictions для meta-model.</li>
+      <li>После выбора схемы переобучи base models на полном train для финального inference.</li>
+    </ul>
+  </section>
+<!-- advanced-models-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: stacking и leakage</h2>
@@ -1592,6 +1631,7 @@ train meta-model on stacked OOF predictions
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

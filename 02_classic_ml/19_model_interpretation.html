@@ -472,6 +472,19 @@
         Интерпретация отвечает на вопрос “на чём именно модель строит свои решения”.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-19-model-not-world -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-19-model-not-world">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Интерпретация объясняет поведение модели, а не причинность мира</h3>
+    <p>Если SHAP, permutation importance или коэффициент говорит, что признак важен, это означает важность для конкретной обученной модели на конкретном распределении данных. Это не доказывает, что признак причинно влияет на target в реальности.</p>
+    <p>Причинный вывод требует другого дизайна: экспериментов, инструментальных переменных, causal graphs или сильных assumptions. Интерпретация ML полезна для debugging, доверия и коммуникации, но её нельзя автоматически превращать в бизнес-причину.</p>
+    <ul>
+      <li>Model explanation: почему модель дала такой prediction.</li>
+      <li>Data explanation: какие паттерны есть в датасете.</li>
+      <li>Causal explanation: что изменит outcome при вмешательстве.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Два уровня интерпретации</h2>
@@ -559,6 +572,19 @@ logit(p) = β₀ + β₁x₁ + β₂x₂ + ... + β_p x_p</div>
         при изменении признака на 1 единицу, если остальные фиксированы”.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-19-coefficients-scale -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-19-coefficients-scale">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Коэффициенты читаются только вместе с масштабом признаков</h3>
+    <p>Большой коэффициент не всегда означает большую практическую важность. Если признак измеряется в тысячах, его коэффициент может быть маленьким, но вклад в prediction большим. Если признаки стандартизированы, коэффициенты становятся сравнимее.</p>
+    <p>Для логистической регрессии коэффициент живёт в log-odds пространстве. Его удобно переводить через exp(coef): это multiplicative change odds при увеличении признака на одну единицу.</p>
+    <ul>
+      <li>Перед сравнением коэффициентов проверь scaling.</li>
+      <li>Знак коэффициента показывает направление связи в модели.</li>
+      <li>Коррелированные признаки делят вклад нестабильно.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: коэффициенты линейной модели</h2>
@@ -679,6 +705,19 @@ log-odds изменится на β_j</div>
         связь с probability нелинейная.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-19-correlated-features -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-19-correlated-features">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Корреляции делают attribution нестабильной</h3>
+    <p>Когда два признака несут один и тот же сигнал, модель может использовать любой из них или разделить вклад между ними. Тогда permutation importance, коэффициенты и SHAP могут показывать разные истории, хотя predictive quality почти не меняется.</p>
+    <p>Это не баг конкретного метода, а неоднозначность объяснения. Если признаки взаимозаменяемы, вопрос &#171;какой признак важен&#187; становится плохо определённым без группировки признаков или domain constraints.</p>
+    <ul>
+      <li>Смотри correlation matrix и feature clusters перед интерпретацией.</li>
+      <li>Групповая permutation importance часто честнее одиночной.</li>
+      <li>Не делай вывод о неважности признака, если его копия остаётся в данных.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>2.19.2 Feature importance</h2>
@@ -964,6 +1003,19 @@ prediction = base_value + Σ_j φ_j
         а не доказывает, что именно эти признаки вызывают реальный исход в мире.
       </div>
     </div>
+<!-- practical-ml-deepening:start:2-19-pdp-shap-assumptions -->
+  <section class="concept-walkthrough" data-practical-ml-deepening="2-19-pdp-shap-assumptions">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>PDP, permutation и SHAP отвечают на разные вопросы</h3>
+    <p>PDP показывает среднее изменение prediction при искусственном изменении признака, но может создавать нереалистичные комбинации признаков. Permutation importance измеряет падение качества при разрушении признака, но страдает от корреляций. SHAP раскладывает prediction на вклады, но результат зависит от background distribution и assumptions о зависимости признаков.</p>
+    <p>Поэтому хорошая интерпретация обычно использует несколько методов. Если они противоречат друг другу, это сигнал не выбрать любимый график, а проверить данные, корреляции и устойчивость модели.</p>
+    <ul>
+      <li>PDP: средний эффект признака на prediction.</li>
+      <li>Permutation: насколько качество падает без нормального признака.</li>
+      <li>SHAP: как конкретный prediction раскладывается относительно baseline.</li>
+    </ul>
+  </section>
+<!-- practical-ml-deepening:end -->
 
     <div class="card">
       <h2>Интерактив: SHAP-like decomposition</h2>
@@ -1670,6 +1722,7 @@ shap.force_plot(
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 
