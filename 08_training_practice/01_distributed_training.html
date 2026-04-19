@@ -54,6 +54,19 @@
     </div>
     <div class="success">DDP — обычно первый выбор: простая ментальная модель, хороший throughput и меньше шансов сломать тренировку сложной инфраструктурой.</div>
     </div>
+<!-- frontier-deepening:start:8-1-ddp-throughput -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-1-ddp-throughput">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>DDP масштабирует batch parallelism, но платит communication cost</h3>
+    <p>В DDP каждая GPU хранит полную копию модели и считает gradients на своей части batch. Затем gradients синхронизируются через all-reduce. Поэтому compute масштабируется хорошо, пока communication не становится bottleneck.</p>
+    <p>Главный практический вопрос: достаточно ли большая работа на GPU между синхронизациями. Если batch слишком маленький или сеть медленная, GPUs ждут communication вместо вычислений.</p>
+    <ul>
+      <li>Global batch равен local batch умножить на число workers.</li>
+      <li>All-reduce синхронизирует gradients.</li>
+      <li>Gradient accumulation помогает увеличить effective batch без роста memory на один step.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Что на самом деле ограничивает DDP</h2>
@@ -99,6 +112,19 @@ optimizer state не помещается
     </div>
     <div class="info">FSDP снижает memory footprint, но платит большей сложностью: больше communication, чувствительность к wrapping policy и checkpoint handling.</div>
     </div>
+<!-- frontier-deepening:start:8-1-fsdp-sharding -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-1-fsdp-sharding">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>FSDP покупает память ценой более сложной коммуникации</h3>
+    <p>FSDP шардирует параметры, gradients и optimizer states между устройствами. Это позволяет обучать модели, которые не помещаются целиком на одну GPU, но требует собирать параметры перед вычислением слоёв и снова освобождать память.</p>
+    <p>Поэтому FSDP чувствителен к wrap policy, размеру блоков, overlap communication и checkpointing. Неправильная настройка может сэкономить память, но потерять throughput.</p>
+    <ul>
+      <li>Sharding снижает memory per GPU.</li>
+      <li>All-gather нужен перед использованием shard-нутых параметров.</li>
+      <li>Wrap granularity влияет на баланс memory и communication overhead.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему FSDP выигрывает память, но усложняет жизнь</h2>
@@ -144,6 +170,19 @@ optimizer state не помещается
     </div>
     <p>Лучший практический порядок почти всегда такой: сначала выжать простой стек до понятного предела, и только потом добавлять распределённую сложность. Это уменьшает число мест, где может сломаться обучение, и ускоряет отладку реальной причины bottleneck.</p>
     </div>
+<!-- frontier-deepening:start:8-1-reproducibility -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-1-reproducibility">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Distributed training меняет не только скорость, но и эксперимент</h3>
+    <p>При изменении числа GPU меняется global batch, порядок данных, seed behavior, численная недетерминированность reductions и иногда learning rate schedule. Поэтому distributed run нельзя считать тем же экспериментом без проверки.</p>
+    <p>Надёжный pipeline фиксирует effective batch, schedule по optimizer steps, checkpoint format и eval protocol. Иначе можно получить другое качество и не понять, почему.</p>
+    <ul>
+      <li>Логируй global batch и число optimizer steps.</li>
+      <li>Сохраняй checkpoints совместимо с выбранной стратегией sharding.</li>
+      <li>Сравни single-GPU sanity run с distributed run на маленьком subset.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Distributed Training</h2>
@@ -188,6 +227,7 @@ optimizer state не помещается
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

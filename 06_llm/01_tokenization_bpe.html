@@ -50,6 +50,19 @@
         <div class="warn"><strong>Хороший компромисс</strong><br>Subword tokenization даёт гибкость и контролирует размер vocabulary.</div>
       </div>
     </div>
+<!-- frontier-deepening:start:6-1-tokenizer-contract -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-1-tokenizer-contract">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Tokenizer задаёт контракт между текстом и моделью</h3>
+    <p>LLM не видит слова напрямую. Она видит последовательность token ids, и все дальнейшие операции работают именно с этой дискретной последовательностью. Поэтому tokenizer определяет, какие куски текста модель может обрабатывать как единицы смысла.</p>
+    <p>Если tokenizer плохо покрывает язык, домен или код, модель получает длинные и шумные последовательности. Это повышает стоимость attention и усложняет обучение зависимостей.</p>
+    <ul>
+      <li>Хороший tokenizer сжимает частые паттерны в короткие последовательности.</li>
+      <li>Редкие слова и новые домены распадаются на больше токенов.</li>
+      <li>Изменение tokenizer обычно несовместимо с уже обученными embeddings.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Идея BPE</h2>
@@ -78,6 +91,19 @@ lo+w -> low</div>
     </div>
     <div class="info">BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
     </div>
+<!-- frontier-deepening:start:6-1-bpe-compression -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-1-bpe-compression">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>BPE - это жадное сжатие частых пар</h3>
+    <p>BPE начинает с маленьких единиц и много раз объединяет самые частые соседние пары. В результате частые слова, морфемы, пробелы и куски кода получают короткие токены, а редкие строки всё равно можно собрать из меньших частей.</p>
+    <p>Это не лингвистический парсер. BPE оптимизирует статистическую частоту, поэтому границы токенов не обязаны совпадать с границами слов или морфем.</p>
+    <ul>
+      <li>Большой vocab уменьшает длину sequence, но увеличивает embedding matrix.</li>
+      <li>Маленький vocab универсальнее, но даёт длинные последовательности.</li>
+      <li>Доменные данные меняют то, какие merge rules окажутся полезными.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Формальный взгляд</h2>
@@ -221,6 +247,19 @@ Unigram:
       <p>Современные LLM часто идут ещё глубже и начинают не с символов языка, а с байтов. Это делает tokenizer почти универсальным: любой Unicode-текст можно выразить без “unknown token”.</p>
       <div class="success">Именно поэтому современные модели устойчивее к редким словам, опечаткам, смешанным языкам и кодовым фрагментам.</div>
     </div>
+<!-- frontier-deepening:start:6-1-byte-level -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-1-byte-level">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Byte-level tokenization почти убирает OOV, но меняет гранулярность</h3>
+    <p>Byte-level подход гарантирует, что любой текст можно представить через байты. Это удобно для многоязычности, emoji, кода и неожиданных символов, потому что tokenizer не ломается на unknown token.</p>
+    <p>Цена - часть редких или необычных строк превращается в длинную цепочку мелких токенов. Модель всё ещё может их обработать, но контекстное окно расходуется быстрее.</p>
+    <ul>
+      <li>Плюс: почти любой input представим без OOV.</li>
+      <li>Минус: редкие символы могут быть дорогими по длине.</li>
+      <li>Для кода и mixed-language текста byte-level tokenizer часто практичнее word-level.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Практические эффекты на модель</h2>
@@ -350,6 +389,7 @@ for step in range(num_merges):
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

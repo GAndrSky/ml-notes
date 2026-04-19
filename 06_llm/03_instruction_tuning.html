@@ -47,6 +47,19 @@
         <div class="warn"><strong>Но</strong><br>SFT не решает до конца preference alignment и не гарантирует полезность в сложных случаях.</div>
       </div>
     </div>
+<!-- frontier-deepening:start:6-3-behavior-layer -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-3-behavior-layer">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Instruction tuning меняет policy поведения, а не только знания</h3>
+    <p>SFT обучает модель сопоставлять инструкцию с ожидаемым форматом ответа. Она начинает видеть prompt не как произвольный текст для продолжения, а как задачу, на которую нужно реагировать.</p>
+    <p>Поэтому instruction tuning может резко улучшить пользовательское качество даже при похожем language modeling loss. Меняется распределение ответов: больше явного следования задаче, меньше случайного продолжения корпуса.</p>
+    <ul>
+      <li>Модель учится ролям: вопрос, инструкция, контекст, ответ.</li>
+      <li>Формат датасета становится частью learned interface.</li>
+      <li>SFT не добавляет магически новые знания, если их не было в base model или данных.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Объектив</h2>
       <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{\text{SFT}} = - \sum_t \log p_\theta(y_t \mid x, y_{<t})">L_SFT = - Σ log p_θ(y_t | x, y_&lt;t)</div>
@@ -101,6 +114,19 @@ assistant: attention — это механизм ...</div>
         <div class="warn"><strong>Fragility</strong><br>Если формат обучающих примеров шумный или непоследовательный, модель потом тоже становится нестабильной в интерфейсе.</div>
       </div>
     </div>
+<!-- frontier-deepening:start:6-3-prompt-template -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-3-prompt-template">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Prompt template должен совпадать между train и inference</h3>
+    <p>Если SFT обучалась на одном формате сообщений, а inference использует другой, модель получает distribution shift на самом входе. Спецтокены, роли, разделители и порядок секций начинают иметь смысл как управляющие сигналы.</p>
+    <p>Это особенно важно для chat models. Даже сильная base model может отвечать хуже, если шаблон диалога сломан или роли перепутаны.</p>
+    <ul>
+      <li>Chat template должен быть единым в training и serving.</li>
+      <li>System/user/assistant роли нельзя подменять произвольно.</li>
+      <li>Evaluation нужно запускать через тот же formatting pipeline.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Хороший instruction dataset обычно покрывает</h2>
       <div class="grid-2">
@@ -135,6 +161,19 @@ SFT слабее для:
 - calibration under ambiguity
 - subtle human preference alignment</div>
     </div>
+<!-- frontier-deepening:start:6-3-sft-limits -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-3-sft-limits">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>SFT легко переучивает стиль и сложнее исправляет рассуждение</h3>
+    <p>Instruction tuning хорошо учит формат, тон, структуру ответа и типовые навыки. Но если задача требует новых знаний, длинного reasoning или инструментального поведения, одного SFT может быть недостаточно.</p>
+    <p>Слишком узкий instruction dataset может сделать модель вежливой, но менее разнообразной и менее устойчивой к нестандартным запросам. Поэтому важны coverage, negative examples и независимая оценка.</p>
+    <ul>
+      <li>SFT улучшает interface alignment.</li>
+      <li>Для сложных предпочтений часто нужны preference methods.</li>
+      <li>Для новых знаний лучше retrieval, continued pretraining или качественный domain fine-tuning.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Типичная схема</h2>
       <div class="tabs">
@@ -208,6 +247,7 @@ SFT слабее для:
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

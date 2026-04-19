@@ -57,6 +57,19 @@
     </div>
     <p>Многие метрики качества при увеличении масштаба следуют примерно степенным законам. Это значит, что улучшения предсказуемы и не хаотичны, пока мы находимся в рабочем scaling regime.</p>
     </div>
+<!-- frontier-deepening:start:6-6-planning-tool -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-6-planning-tool">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Scaling laws - инструмент планирования, а не магическое обещание</h3>
+    <p>Scaling laws описывают среднюю зависимость loss от размера модели, данных и compute при похожем качестве setup. Они полезны для выбора бюджета эксперимента и оценки, где bottleneck: параметров мало, данных мало или compute распределён неудачно.</p>
+    <p>Но закон работает только при сопоставимых данных, архитектуре и training recipe. Если меняется качество корпуса, tokenizer, optimizer или eval distribution, extrapolation становится менее надёжной.</p>
+    <ul>
+      <li>Размер модели отвечает за capacity.</li>
+      <li>Число токенов отвечает за обучающий сигнал.</li>
+      <li>Compute связывает параметры, токены и число training steps.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Что именно масштабируют</h2>
       <p>В больших языковых моделях нельзя говорить о “масштабе” как об одном числе. На практике масштабирование почти всегда означает совместное движение по трём осям: число параметров, число токенов и общий compute-бюджет. Сильные scaling laws важны именно потому, что они позволяют видеть, какая ось сейчас стала bottleneck.</p>
@@ -92,6 +105,19 @@
       <p>Ранние large models часто были слишком большими относительно числа токенов. Chinchilla-подход напомнил, что при фиксированном compute нужно балансировать параметры и данные, а не просто бездумно раздувать модель.</p>
       <div class="info">Идея “compute-optimal model” изменила практику: лучше не просто огромная сеть, а сеть, которой дали достаточно данных, чтобы она не оставалась недообученной.</div>
     </div>
+<!-- frontier-deepening:start:6-6-chinchilla -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-6-chinchilla">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Chinchilla сдвинул фокус от bigger model к compute-optimal balance</h3>
+    <p>Ранние LLM часто были недообучены по числу токенов относительно размера модели. Chinchilla-style вывод показал, что при фиксированном compute иногда лучше обучать меньшую модель на большем числе токенов, чем огромную модель на недостаточном корпусе.</p>
+    <p>Практический вывод: параметры без данных не дают оптимального качества. Нужен баланс model size и token budget.</p>
+    <ul>
+      <li>Undertrained model имеет слишком мало токенов на параметр.</li>
+      <li>Compute-optimal режим балансирует N и D.</li>
+      <li>Data quality может сдвигать оптимальный баланс сильнее, чем простая формула.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Chinchilla и compute-optimal режим</h2>
       <p>Главный вывод Chinchilla не в том, что “нужны модели поменьше”. Вывод глубже: при фиксированном compute слишком большая модель, которой дали мало токенов, тратит мощность впустую. Она могла бы быть меньше, но обучена дольше и на более широком корпусе — и итоговое качество было бы лучше.</p>
@@ -135,6 +161,19 @@ params и tokens растут согласованно</div>
 получаем лучший compute return.</div>
     <p>Scaling laws важны не как красивая кривая в статье, а как инженерный инструмент планирования бюджета обучения.</p>
     </div>
+<!-- frontier-deepening:start:6-6-eval-scaling -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-6-eval-scaling">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Loss scaling не всегда совпадает с ростом продуктового качества</h3>
+    <p>Снижение pretraining loss обычно улучшает модель, но пользовательские навыки растут неравномерно. Некоторые abilities появляются плавно, другие требуют instruction tuning, tools, retrieval или другой evaluation setup.</p>
+    <p>Поэтому scaling experiments должны смотреть не только perplexity, но и набор задач: reasoning, coding, factuality, long context, safety, latency и serving cost.</p>
+    <ul>
+      <li>Perplexity полезна для общей языковой модели.</li>
+      <li>Task eval показывает прикладные навыки.</li>
+      <li>Serving cost может сделать меньшую модель предпочтительнее даже при худшем loss.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему это меняет реальные решения команды</h2>
       <div class="grid-3">
@@ -209,6 +248,7 @@ params и tokens растут согласованно</div>
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

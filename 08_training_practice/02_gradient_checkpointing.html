@@ -57,6 +57,19 @@
     </div>
     <div class="success">Если память — главный bottleneck, checkpointing часто самый дешёвый способ влезть в больший batch или контекст без смены архитектуры.</div>
     </div>
+<!-- frontier-deepening:start:8-2-activation-memory -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-2-activation-memory">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Checkpointing меняет память на дополнительный compute</h3>
+    <p>Обычный training сохраняет activations, чтобы backward мог использовать их позже. Gradient checkpointing сохраняет только часть activations, а пропущенные пересчитывает заново во время backward.</p>
+    <p>Это не меняет математический gradient, если операции детерминированы и правильно обработан RNG state. Меняется только способ организации вычислений.</p>
+    <ul>
+      <li>Память уменьшается за счёт меньшего числа сохранённых activations.</li>
+      <li>Время растёт из-за повторного forward для checkpointed blocks.</li>
+      <li>Лучше checkpoint-ить большие повторяющиеся blocks.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему activations так быстро съедают память</h2>
@@ -113,6 +126,19 @@ forward один раз
     </div>
     <div class="warn">Это и объясняет главную цену: ты экономишь память не бесплатно, а за счёт повторных вычислений и более длинного шага обучения.</div>
     </div>
+<!-- frontier-deepening:start:8-2-rng-state -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-2-rng-state">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Dropout и случайность требуют сохранения RNG-состояния</h3>
+    <p>Если checkpointed block содержит dropout, повторный forward во время backward должен использовать тот же random mask, что и original forward. Иначе backward будет соответствовать другой функции.</p>
+    <p>Фреймворки обычно умеют сохранять RNG state, но это может добавлять overhead. При нестандартных random operations стоит проверить корректность явно.</p>
+    <ul>
+      <li>Детерминированные blocks checkpoint-ить проще.</li>
+      <li>Dropout требует согласованного RNG.</li>
+      <li>Нестандартные side effects внутри forward могут ломать checkpointing.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Когда checkpointing особенно окупается</h2>
@@ -138,6 +164,19 @@ forward один раз
     </div>
     <p>Практический смысл такой: checkpointing почти никогда не нужен “по умолчанию”, но очень часто оказывается самым дешёвым способом сдвинуть границу возможного training regime без смены железа или архитектуры.</p>
     </div>
+<!-- frontier-deepening:start:8-2-where-worth-it -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-2-where-worth-it">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Checkpointing особенно выгоден для activation-heavy моделей</h3>
+    <p>Если память в основном занята параметрами, checkpointing даст мало. Если память съедают activations из-за длинного контекста, большого batch или глубокой сети, выигрыш может быть большим.</p>
+    <p>Поэтому checkpointing часто используют в Transformer, diffusion U-Net и больших sequence-моделях. Но его надо измерять: иногда bottleneck смещается в compute и throughput падает слишком сильно.</p>
+    <ul>
+      <li>Полезен при длинной sequence length.</li>
+      <li>Полезен при большом batch или resolution.</li>
+      <li>Менее полезен, если memory bottleneck - optimizer states или parameters.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Gradient Checkpointing</h2>
@@ -182,6 +221,7 @@ forward один раз
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

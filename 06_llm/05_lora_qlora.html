@@ -56,6 +56,19 @@
     </div>
     <p>Мы не обновляем всю матрицу веса, а учим низкоранговую поправку. Если нужное изменение действительно живёт в маленьком подпространстве, это даёт почти то же поведение за гораздо меньшую цену.</p>
     </div>
+<!-- frontier-deepening:start:6-5-low-rank-subspace -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-5-low-rank-subspace">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>LoRA ограничивает fine-tuning низкоранговым подпространством</h3>
+    <p>Полный fine-tuning может изменить каждую координату матрицы весов. LoRA говорит: полезное изменение часто лежит в подпространстве малой размерности, поэтому достаточно учить произведение двух маленьких матриц.</p>
+    <p>Это снижает число trainable parameters и optimizer states. Base weights остаются замороженными, а адаптация хранится как компактная добавка.</p>
+    <ul>
+      <li>Rank r задаёт ёмкость адаптации.</li>
+      <li>Alpha масштабирует влияние LoRA update.</li>
+      <li>Target modules определяют, какие части Transformer могут адаптироваться.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Низкоранговая декомпозиция математически</h2>
       <p>Полная матрица обновления <code>ΔW</code> для большого линейного слоя имеет огромное число степеней свободы. LoRA делает сильное предположение: полезное task-specific изменение лежит не во всём пространстве матриц, а в сравнительно маленьком подпространстве ранга <code>r</code>.</p>
@@ -82,6 +95,19 @@
         <div class="warn"><strong>Ограничение</strong><br>Если задача требует очень сильной перестройки модели, rank может не хватить.</div>
       </div>
     </div>
+<!-- frontier-deepening:start:6-5-target-modules -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-5-target-modules">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Выбор target modules важнее, чем кажется</h3>
+    <p>LoRA можно ставить в attention projections, FFN layers или почти все linear layers. Чем больше target modules, тем больше capacity и memory cost. Чем меньше target modules, тем выше риск недоадаптации.</p>
+    <p>Для instruction tuning часто адаптируют q_proj, v_proj и иногда o_proj/FFN. Для сильной доменной адаптации может понадобиться шире покрыть модель.</p>
+    <ul>
+      <li>Attention LoRA хорошо меняет routing информации.</li>
+      <li>FFN LoRA лучше меняет token-wise transformations.</li>
+      <li>Слишком высокий rank может переобучить маленький dataset.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>QLoRA</h2>
       <p>QLoRA идёт дальше: базовая модель хранится в квантизованном виде, а обучение всё равно идёт через LoRA-адаптеры. Это даёт возможность дообучать очень крупные модели на более скромном железе.</p>
@@ -90,6 +116,19 @@
       + аккуратное восстановление для backward pass</div>
     <div class="info">Смысл не в том, что модель “думает в 4 битах”, а в том, что веса хранятся компактнее, а вычисления для обучения организованы умно.</div>
     </div>
+<!-- frontier-deepening:start:6-5-qlora-quantization -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-5-qlora-quantization">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>QLoRA экономит память, но требует аккуратности к quantization noise</h3>
+    <p>QLoRA хранит base model в quantized формате, а обучает LoRA adapters в более удобной точности. Это позволяет fine-tune большие модели на меньшем железе, потому что основная память уходит на frozen weights.</p>
+    <p>Но quantization добавляет ошибку представления весов. Обычно это приемлемо, если base model качественная, adapters имеют достаточную ёмкость, а training loop использует стабильные dtype и optimizer settings.</p>
+    <ul>
+      <li>NF4 полезен для весов с примерно нормальным распределением.</li>
+      <li>Double quantization дополнительно снижает memory overhead.</li>
+      <li>Compute dtype и optimizer choice всё равно влияют на стабильность.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему QLoRA работает на практике</h2>
       <p>Ключевая идея QLoRA в том, что базовая модель не обязана храниться в полном precision, если мы не собираемся обновлять её целиком. Нам нужно дешёво держать крупный frozen backbone в памяти и обучать маленькие адаптеры поверх него.</p>
@@ -205,6 +244,7 @@ LoRA:
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

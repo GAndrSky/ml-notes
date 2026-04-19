@@ -56,6 +56,19 @@ y_l — менее предпочтительный ответ
 r_φ(x, y_w) > r_φ(x, y_l)</div>
     <div class="info">Reward model — это уже не “истина”, а learned proxy человеческих предпочтений. И именно поэтому reward hacking остаётся реальной проблемой.</div>
     </div>
+<!-- frontier-deepening:start:6-4-reward-proxy -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-4-reward-proxy">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Reward model является proxy человеческих предпочтений</h3>
+    <p>Reward model не знает истинную полезность ответа. Он учится предсказывать, какой из двух ответов люди предпочли бы в конкретном prompt. Поэтому качество RLHF ограничено качеством preference data и тем, насколько reward generalizes.</p>
+    <p>Если reward model ошибается систематически, policy optimization будет усиливать эти ошибки. Это называется reward hacking: модель находит ответы, которые выглядят хорошими для reward model, но не обязательно полезны человеку.</p>
+    <ul>
+      <li>Preference data задаёт критерий поведения.</li>
+      <li>Reward model аппроксимирует этот критерий.</li>
+      <li>Policy optimization может эксплуатировать слабости reward model.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Как обучают reward model</h2>
       <p>На практике reward model почти никогда не учат выставлять абсолютную “оценку пользы”. Ей гораздо проще и надёжнее учиться на парных сравнениях: какой из двух ответов на один и тот же промпт предпочёл человек.</p>
@@ -96,6 +109,19 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     <p>Нам не нужно, чтобы модель просто “максимизировала reward любой ценой”. Поэтому её удерживают рядом с reference policy, чтобы она не улетала слишком далеко от pre-trained / SFT поведения.</p>
       <div class="warn">Без KL-штрафа модель может найти странные, нестабильные способы получать высокий reward, которые человеку уже не понравятся.</div>
     </div>
+<!-- frontier-deepening:start:6-4-ppo-kl -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-4-ppo-kl">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>KL penalty удерживает policy рядом с SFT-моделью</h3>
+    <p>В LLM RLHF нельзя просто максимизировать reward. Без ограничений модель быстро уходит в странные области текста, где reward model даёт высокую оценку, но язык и полезность деградируют.</p>
+    <p>KL penalty штрафует отклонение от reference policy. Это делает оптимизацию более консервативной: модель улучшает предпочтения, но не должна слишком далеко уходить от SFT-поведения.</p>
+    <ul>
+      <li>Слабый KL повышает риск reward hacking.</li>
+      <li>Сильный KL мешает реально изменить поведение.</li>
+      <li>PPO clip и KL оба ограничивают слишком агрессивные policy updates.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>PPO в контексте LLM</h2>
       <p>В классическом RL агент много раз действует в среде и получает reward по траектории. В LLM этот язык немного ломается: “средой” становится процесс генерации текста, а reward часто приходит только после полного ответа. PPO здесь важен не как красивая формула, а как осторожный способ улучшать policy без слишком больших скачков.</p>
@@ -142,6 +168,19 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
       </div>
       <p>Именно поэтому RLHF на практике — это не “запустили PPO и получили aligned model”. Это careful pipeline: фильтрация ответов, контроль KL, мониторинг reward hacking, ограничение rollout distribution и постоянная ручная sanity-check проверка.</p>
     </div>
+<!-- frontier-deepening:start:6-4-rlhf-evaluation -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-4-rlhf-evaluation">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>RLHF требует отдельной оценки полезности, безопасности и правдивости</h3>
+    <p>Одна reward-метрика не покрывает все свойства ассистента. Модель может стать более вежливой, но менее честной; более безопасной, но слишком отказной; более уверенной, но хуже калиброванной.</p>
+    <p>Поэтому RLHF оценивают через набор независимых checks: human preference eval, factuality, refusal behavior, jailbreak robustness, domain tasks и regression на старых навыках.</p>
+    <ul>
+      <li>Нужны holdout prompts, которые reward model не видел.</li>
+      <li>Нужно отслеживать regressions по базовым навыкам.</li>
+      <li>Safety и helpfulness часто конфликтуют и требуют явного баланса.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: RLHF</h2>
@@ -186,6 +225,7 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

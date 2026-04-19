@@ -64,6 +64,19 @@
     <p>Модель последовательно предсказывает следующий токен. Это простая цель, но из неё вырастает многое: грамматика, факты, код, стиль, локальные и частично глобальные зависимости.</p>
       <div class="info">Важно не путать: pre-training не учит модель “быть ассистентом”. Он учит её хорошо моделировать распределение текста.</div>
     </div>
+<!-- frontier-deepening:start:6-2-next-token-compression -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-2-next-token-compression">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Next-token prediction учит модель сжимать закономерности мира в параметры</h3>
+    <p>Чтобы предсказать следующий токен, модель должна использовать грамматику, факты, стиль, причинные связи в тексте, формат документов и локальный контекст. Поэтому простая формулировка objective приводит к богатим внутренним представлениям.</p>
+    <p>Модель не хранит train set как базу данных в прямом смысле. Она аппроксимирует распределение токенов, а параметры становятся сжатым описанием статистических закономерностей корпуса.</p>
+    <ul>
+      <li>Loss измеряет surprise следующего токена.</li>
+      <li>Context window задаёт доступную условную информацию.</li>
+      <li>Качество данных ограничивает полезность выученного распределения.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему next-token objective оказывается таким сильным</h2>
@@ -98,6 +111,19 @@
 - filtered conversational data</div>
     <div class="warn">Плохой pretraining corpus потом очень трудно “дочинить” только RLHF или instruction tuning. Если базовая статистика грязная, верхние слои alignment исправляют это ограниченно.</div>
     </div>
+<!-- frontier-deepening:start:6-2-data-mixture -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-2-data-mixture">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Data mixture задаёт личность и компетенции base model</h3>
+    <p>Архитектура определяет, что модель может представить, но смесь данных определяет, что модель чаще видит и чему придаёт вес. Код, математика, диалоги, web-текст и научные тексты формируют разные навыки.</p>
+    <p>Переизбыток низкокачественных или дублированных данных может ухудшить обучение даже при большом compute. Поэтому deduplication, filtering и domain balance часто важнее мелких архитектурных изменений.</p>
+    <ul>
+      <li>Dedup снижает memorization и wasted compute.</li>
+      <li>High-quality mixture повышает sample efficiency.</li>
+      <li>Domain oversampling помогает специализации, но может ухудшить общий стиль.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему качество корпуса иногда важнее архитектурных трюков</h2>
@@ -147,6 +173,19 @@
       <p>Одна из самых полезных интуиций про LLM такая: pre-training в основном отвечает за <strong>representation и knowledge substrate</strong>, а более поздние этапы отвечают за <strong>поведение на интерфейсе</strong>. Если модель не выучила базовую статистику математики, кода или фактов на pre-training, instruction tuning не создаст это из воздуха. Но если знание уже есть в параметрах, SFT и RLHF могут сильно изменить то, как оно извлекается и подаётся пользователю.</p>
       <div class="warn">Поэтому плохой ответ модели может быть проблемой либо знаний, либо интерфейса поведения. И эти два случая лечатся разными этапами пайплайна.</div>
     </div>
+<!-- frontier-deepening:start:6-2-boundary-knowledge-behavior -->
+  <section class="concept-walkthrough" data-frontier-deepening="6-2-boundary-knowledge-behavior">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Pre-training даёт способности, но не обязательно удобный интерфейс поведения</h3>
+    <p>Base model может знать много закономерностей, но не обязана отвечать как ассистент. Она продолжает текст по распределению pretraining corpus, а не следует пользовательской инструкции как продуктовая система.</p>
+    <p>Instruction tuning и preference optimization меняют интерфейс поведения: как модель отвечает, отказывается, структурирует ответ и следует формату. Это надстройка над знаниями, а не полная замена pretraining.</p>
+    <ul>
+      <li>Pretraining создаёт языковую и фактическую основу.</li>
+      <li>SFT учит форматам задач и инструкций.</li>
+      <li>RLHF/DPO уточняют предпочтительный стиль и безопасность поведения.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Где главные риски</h2>
@@ -220,6 +259,7 @@
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

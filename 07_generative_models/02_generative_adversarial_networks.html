@@ -56,6 +56,19 @@
     </div>
     <p>Дискриминатор учится распознавать “реально / фейк”, а генератор учится подделывать данные так, чтобы дискриминатор ошибался.</p>
     </div>
+<!-- frontier-deepening:start:7-2-game-dynamics -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-2-game-dynamics">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>GAN - это динамическая игра двух обучающихся систем</h3>
+    <p>Generator и discriminator меняют задачу друг для друга на каждом шаге. Discriminator учится отличать real от fake, а generator учится производить samples, которые проходят этот тест.</p>
+    <p>В отличие от обычной supervised optimization, цель здесь не стационарна. Когда один игрок меняется, loss landscape другого тоже меняется. Это делает обучение GAN чувствительным к балансу скоростей.</p>
+    <ul>
+      <li>Сильный discriminator может дать generator слабый gradient.</li>
+      <li>Слабый discriminator не даёт полезного сигнала качества.</li>
+      <li>Баланс update ratio и learning rate критичен.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему это игра, а не обычная оптимизация</h2>
       <p>GAN сложно читать как “минимизируем один loss”. Здесь два игрока одновременно меняют свои параметры, и objective одного зависит от текущего состояния другого. Поэтому обучение может не просто медленно сходиться, а буквально вращаться, колебаться или ломаться из-за неудачного баланса.</p>
@@ -83,6 +96,19 @@
 и начинает повторять их снова и снова</div>
     <p>Модель выглядит “качественной”, но покрывает распределение плохо. Это одна из центральных проблем GAN.</p>
     </div>
+<!-- frontier-deepening:start:7-2-mode-collapse -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-2-mode-collapse">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Mode collapse - локальная победа generator при плохом покрытии распределения</h3>
+    <p>Generator может найти несколько samples, которые хорошо обманывают discriminator, и начать производить почти только их. Визуально качество может быть высоким, но разнообразие падает.</p>
+    <p>Это происходит потому, что adversarial objective не всегда достаточно штрафует отсутствие редких modes. Поэтому GAN оценивают не только sharpness, но и diversity.</p>
+    <ul>
+      <li>Collapse может выглядеть как повторение похожих картинок.</li>
+      <li>Discriminator feedback может стать слишком локальным.</li>
+      <li>Diversity metrics и human inspection нужны вместе.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему возникает mode collapse</h2>
       <p>Генератору не обязательно покрывать всё распределение данных, чтобы получать хороший сигнал от дискриминатора. Если он нашёл несколько образцов или один локальный режим, которые хорошо обманывают текущий дискриминатор, ему выгодно снова и снова идти туда же. Это и создаёт коллапс: samples выглядят правдоподобно, но разнообразие резко падает.</p>
@@ -109,6 +135,19 @@
     </div>
     <p>Интуитивно Wasserstein distance отвечает на вопрос: сколько “работы” нужно, чтобы перетащить массу одного распределения в другое. Эта геометрическая интерпретация часто даёт более гладкую и полезную оптимизацию, чем исходная minimax-цель.</p>
     </div>
+<!-- frontier-deepening:start:7-2-wasserstein -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-2-wasserstein">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Wasserstein distance даёт более полезный сигнал, когда распределения не пересекаются</h3>
+    <p>Классический GAN может иметь слабый gradient, если real и generated distributions лежат на разных manifold. Wasserstein distance измеряет стоимость переноса массы и меняется более плавно при сдвиге distributions.</p>
+    <p>WGAN заменяет discriminator на critic и требует Lipschitz constraint. Это улучшает стабильность, но добавляет свои практические ограничения: gradient penalty, clipping или spectral normalization.</p>
+    <ul>
+      <li>Critic оценивает score, а не probability real/fake.</li>
+      <li>Lipschitz constraint нужен для корректной Wasserstein-оценки.</li>
+      <li>WGAN loss легче интерпретировать как качество training dynamics.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Интуиция игры</h2>
       <div class="grid-3">
@@ -161,6 +200,7 @@
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

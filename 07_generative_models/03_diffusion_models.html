@@ -58,6 +58,19 @@
     </div>
     <p>На каждом шаге мы чуть-чуть портим данные гауссовым шумом. После многих шагов исходный объект превращается почти в чистый шум.</p>
     </div>
+<!-- frontier-deepening:start:7-3-forward-schedule -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-3-forward-schedule">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Noise schedule задаёт учебную программу denoising</h3>
+    <p>Forward process постепенно разрушает данные шумом. Если шум добавляется слишком резко, reverse model получает слишком сложную задачу. Если слишком медленно, training и sampling становятся дорогими.</p>
+    <p>Schedule определяет, какие уровни corrupted data модель увидит и насколько равномерно она научится denoise на разных signal-to-noise regimes.</p>
+    <ul>
+      <li>Ранние шаги сохраняют много структуры изображения.</li>
+      <li>Поздние шаги почти полностью шумовые.</li>
+      <li>SNR schedule влияет на то, какие детали модель учит лучше.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Closed form для шума на любом шаге</h2>
       <p>Красивая часть DDPM в том, что forward process можно свернуть в одну формулу: не обязательно добавлять шум пошагово, чтобы получить <code>x_t</code>. Можно сразу сэмплировать его из исходного объекта <code>x_0</code> и одного гауссова шума.</p>
@@ -119,6 +132,19 @@
     <p>На практике очень удобно учить сеть не напрямую предсказывать весь <code>x_{t-1}</code>, а угадывать добавленный шум. Это даёт стабильный и простой objective.</p>
       <div class="info">Именно поэтому diffusion часто воспринимают как “денойзер, обученный на многих уровнях шума”.</div>
     </div>
+<!-- frontier-deepening:start:7-3-noise-prediction -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-3-noise-prediction">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Предсказание шума превращает reverse process в supervised denoising</h3>
+    <p>В DDPM мы знаем, какой шум epsilon добавили к x_0 на шаге t. Поэтому можно обучать сеть предсказывать этот шум по noisy sample и timestep. Это даёт простой MSE objective вместо прямого моделирования сложного reverse distribution.</p>
+    <p>Интуитивно модель учится говорить: какая часть текущего sample является шумом, который нужно убрать, чтобы приблизиться к данным.</p>
+    <ul>
+      <li>x_t - зашумлённый sample.</li>
+      <li>t сообщает уровень шума.</li>
+      <li>epsilon prediction даёт направление denoising.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>От variational bound к DDPM objective</h2>
       <p>Исторически diffusion-модели выводятся как variational модель с латентной цепочкой. Полный training objective состоит из набора KL-термов по шагам цепочки. Но после аккуратных упрощений оказывается, что большая часть практической силы сидит в гораздо более удобной задаче — предсказании шума.</p>
@@ -160,6 +186,19 @@
         <div class="warn"><strong>Цена</strong><br>Сэмплирование часто медленнее, потому что идёт во многих шагах.</div>
       </div>
     </div>
+<!-- frontier-deepening:start:7-3-guidance-sampling -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-3-guidance-sampling">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Качество diffusion сильно зависит от sampler и guidance</h3>
+    <p>Обученная denoising model задаёт локальные шаги, но итоговая генерация зависит от того, как мы идём от шума к данным. Число шагов, sampler, classifier-free guidance и schedule меняют trade-off между качеством, разнообразием и скоростью.</p>
+    <p>Слишком сильный guidance может сделать samples красивее, но менее разнообразными или с артефактами. Слишком слабый guidance хуже следует условию prompt.</p>
+    <ul>
+      <li>Больше sampling steps обычно повышает качество, но замедляет inference.</li>
+      <li>Guidance scale усиливает следование условию.</li>
+      <li>Sampler выбирает численный путь reverse process.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Связь со score matching</h2>
       <p>Есть ещё один очень полезный взгляд: diffusion можно понимать как обучение полю направлений, которое показывает, как двигаться от зашумлённого объекта обратно к области высокой плотности данных. В этом смысле diffusion тесно связан со score matching, где модель оценивает градиент лог-плотности.</p>
@@ -247,6 +286,7 @@
 <!-- step1-learning:end -->
 </body>
 </html>
+
 
 
 

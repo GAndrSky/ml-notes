@@ -54,6 +54,19 @@
     </div>
     <p>Мы предполагаем простой prior на латентную переменную <code>z</code> и учим decoder, который генерирует объект <code>x</code> из этой скрытой причины.</p>
     </div>
+<!-- frontier-deepening:start:7-1-latent-variable-model -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-1-latent-variable-model">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>VAE учит вероятностную модель скрытых причин</h3>
+    <p>VAE предполагает, что наблюдение x порождается скрытой переменной z. Encoder приближает posterior q(z|x), а decoder задаёт likelihood p(x|z). Это делает autoencoder не просто компрессором, а generative model.</p>
+    <p>Latent space должен быть не набором произвольных кодов, а распределением, из которого можно семплировать. Именно поэтому появляется prior p(z) и KL-штраф.</p>
+    <ul>
+      <li>Encoder оценивает распределение скрытого кода.</li>
+      <li>Decoder восстанавливает или генерирует объект из z.</li>
+      <li>Prior делает latent space пригодным для sampling.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему нужен ELBO</h2>
       <div class="formula" data-render-tex data-tex-source="\log p_\theta(x) \ge \mathbb{E}_{q_\phi(z \mid x)}[\log p_\theta(x \mid z)] - D_{KL}(q_\phi(z \mid x)\,\|\,p(z))">\log p_θ(x) ≥ E_q[log p_θ(x|z)] - KL(q_φ(z|x) || p(z))</div>
@@ -95,6 +108,19 @@
     </div>
     <p>Так как KL-дивергенция неотрицательна, ELBO автоматически становится нижней оценкой истинного лог-правдоподобия. Получается очень удобная стратегия: вместо недоступного <code>log p_θ(x)</code> мы максимизируем то, что можем вычислить и через что можем пропустить градиент.</p>
     </div>
+<!-- frontier-deepening:start:7-1-elbo-tradeoff -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-1-elbo-tradeoff">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>ELBO балансирует reconstruction и regularized latent space</h3>
+    <p>Первая часть ELBO поощряет decoder хорошо объяснять объект через z. Вторая часть, KL, удерживает q(z|x) рядом с prior. Если KL слишком слабый, latent space может стать рваным. Если слишком сильный, модель игнорирует z.</p>
+    <p>Этот trade-off объясняет beta-VAE и KL annealing. Мы регулируем, насколько модель должна предпочитать чистую структуру latent space вместо максимальной реконструкции.</p>
+    <ul>
+      <li>Reconstruction term отвечает за качество восстановления.</li>
+      <li>KL term отвечает за форму latent distribution.</li>
+      <li>Posterior collapse возникает, когда decoder игнорирует z.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Reparameterization trick</h2>
       <div class="formula" data-render-tex data-tex-source="z = \mu_\phi(x) + \sigma_\phi(x)\odot \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, I)">z = μ_φ(x) + σ_φ(x) ⊙ ε,   ε ~ N(0, I)</div>
@@ -116,6 +142,19 @@
     </div>
     <p>Сэмплирование внутри сети мешает обычному backprop. Reparameterization переносит случайность в отдельную переменную <code>ε</code>, а encoder начинает выдавать детерминированные параметры распределения.</p>
     </div>
+<!-- frontier-deepening:start:7-1-reparameterization-gradient -->
+  <section class="concept-walkthrough" data-frontier-deepening="7-1-reparameterization-gradient">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Reparameterization переносит случайность вне обучаемых параметров</h3>
+    <p>Sampling из q(z|x) напрямую мешает backprop, потому что случайная операция разрывает обычный gradient path. Reparameterization записывает z как mu плюс sigma умножить на epsilon, где epsilon не зависит от параметров encoder.</p>
+    <p>Теперь gradient может идти через mu и sigma, а случайность остаётся внешним источником шума. Это делает stochastic latent model обучаемой обычным gradient descent.</p>
+    <ul>
+      <li>epsilon семплируется из фиксированного N(0,1).</li>
+      <li>mu и sigma учатся encoder-ом.</li>
+      <li>z остаётся случайным, но differentiable по параметрам encoder.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
     <div class="card">
       <h2>Почему reparameterization вообще нужен</h2>
       <p>Если бы мы писали просто <code>z ~ q_φ(z|x)</code>, случайный сэмпл стоял бы прямо посреди графа вычислений, и градиент по параметрам encoder-а <code>φ</code> проходил бы плохо. Reparameterization trick переписывает случайную величину как детерминированную функцию параметров и внешнего шума.</p>
@@ -187,6 +226,7 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

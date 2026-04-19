@@ -57,6 +57,19 @@
     </div>
     <div class="info">Главный принцип: сначала ищем bottleneck, потом оптимизируем. Иначе можно потратить день на AMP, когда проблема была в dataloader.</div>
     </div>
+<!-- frontier-deepening:start:8-3-measure-first -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-3-measure-first">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Оптимизировать без профиля - значит угадывать bottleneck</h3>
+    <p>Медленный training step может быть вызван dataloader, CPU preprocessing, GPU kernels, communication, memory bandwidth или синхронизациями. По внешнему времени step нельзя надёжно понять причину.</p>
+    <p>Профилирование должно разделять data time, forward, backward, optimizer step, communication и eval overhead. Только после этого имеет смысл менять код.</p>
+    <ul>
+      <li>GPU utilization показывает, насколько устройство занято.</li>
+      <li>Data loader time показывает, ждёт ли GPU входные batch-и.</li>
+      <li>Memory bandwidth может быть bottleneck даже при умеренных FLOPs.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему profiling — это не “тюнинг в конце”</h2>
@@ -87,6 +100,19 @@ data loading
       <div class="success">Input pipeline, маленькие матрицы, частые sync points, неоптимальные precision settings, плохой overlap compute и communication.</div>
       <div class="warn">Очень частая ошибка — смотреть только на GPU memory и думать, что “если память забита, значит всё оптимально”. Это не так: модель может стоять полупустая по utilization.</div>
     </div>
+<!-- frontier-deepening:start:8-3-cpu-gpu-overlap -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-3-cpu-gpu-overlap">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Хороший pipeline перекрывает CPU, GPU и IO</h3>
+    <p>Пока GPU считает текущий batch, CPU должен готовить следующий. Если preprocessing, decoding или augmentations идут последовательно перед каждым step, GPU простаивает.</p>
+    <p>DataLoader workers, pinned memory, prefetching и перенос данных non_blocking помогают перекрыть подготовку и вычисления. Но слишком много workers тоже может перегрузить CPU или диск.</p>
+    <ul>
+      <li>num_workers тюнится под CPU и storage.</li>
+      <li>pin_memory ускоряет transfer host-to-device.</li>
+      <li>prefetch_factor помогает держать очередь batch-ей.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Как читать bottleneck-и по симптомам</h2>
@@ -119,6 +145,19 @@ data loading
     </div>
     <p>Это скучнее, чем “сразу включить все оптимизации”, но именно так команды не теряют недели на ложные ускорения. У performance всегда есть локальный главный bottleneck — задача profiling в том, чтобы его назвать, а не просто чувствовать.</p>
     </div>
+<!-- frontier-deepening:start:8-3-kernel-fusion -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-3-kernel-fusion">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Мелкие операции могут проигрывать из-за launch overhead</h3>
+    <p>На GPU много маленьких kernels часто хуже, чем один крупный fused kernel. Даже если FLOPs мало, каждый запуск kernel имеет overhead, а промежуточные tensors нужно читать и писать в память.</p>
+    <p>Поэтому torch.compile, fused optimizers, fused attention и vectorized operations могут ускорять код без изменения математики модели.</p>
+    <ul>
+      <li>Ищи частые маленькие kernels в profiler trace.</li>
+      <li>Избегай Python loops по элементам или токенам.</li>
+      <li>Проверяй, что оптимизация не меняет численную стабильность.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Profiling и Performance</h2>
@@ -163,6 +202,7 @@ data loading
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 

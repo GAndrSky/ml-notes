@@ -55,6 +55,19 @@
     </div>
     <div class="success">Лучший дебаг здесь — не “покрутить всё понемногу”, а быстро локализовать: это один плохой batch, системная нестабильность оптимизации или инфраструктурный баг.</div>
     </div>
+<!-- frontier-deepening:start:8-4-spike-taxonomy -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-4-spike-taxonomy">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Loss spike нужно классифицировать до исправления</h3>
+    <p>Spike может быть data issue, numerical issue, optimizer issue или distributed issue. Если сразу уменьшать lr, можно скрыть проблему в данных. Если сразу чистить данные, можно пропустить FP16 overflow.</p>
+    <p>Правильный первый шаг - определить, воспроизводится ли spike на том же batch, той же seed, одной GPU и без AMP. Это быстро сужает класс причин.</p>
+    <ul>
+      <li>Воспроизводится на том же batch - ищи данные или deterministic bug.</li>
+      <li>Пропадает без AMP - ищи overflow/underflow.</li>
+      <li>Появляется только distributed - ищи sync, sharding или batch composition.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Почему spikes так неприятны</h2>
@@ -130,6 +143,19 @@ gradients / optimizer state испортились
       </div>
       <p>Такое разделение полезно не ради красоты. Оно помогает сократить пространство поиска: если spike воспроизводится только на одном batch, почти наверняка проблема в данных. Если он приходит после конкретного scheduler event, причина уже ближе к optimizer stack.</p>
     </div>
+<!-- frontier-deepening:start:8-4-binary-search -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-4-binary-search">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Binary search по training loop быстрее случайных правок</h3>
+    <p>Раздели step на участки: load batch, forward, loss, backward, clipping, optimizer step, scheduler step. Проверяй NaN/Inf и нормы после каждого участка.</p>
+    <p>Так можно найти первый момент, где значение стало плохим. Последний видимый NaN почти никогда не является первопричиной.</p>
+    <ul>
+      <li>Проверяй inputs и labels до forward.</li>
+      <li>Проверяй logits и loss до backward.</li>
+      <li>Проверяй gradient norms до optimizer step.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 
     <div class="card">
       <h2>Что логировать, чтобы не дебажить вслепую</h2>
@@ -156,6 +182,19 @@ gradients / optimizer state испортились
     </div>
     <div class="success">Самый полезный практический приём: сохранить контекст первого плохого шага. Один batch-id и один снимок grad/logit stats часто дают больше пользы, чем час случайного тюнинга hyperparameters.</div>
     </div>
+<!-- frontier-deepening:start:8-4-logging-invariants -->
+  <section class="concept-walkthrough" data-frontier-deepening="8-4-logging-invariants">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Логи должны показывать инварианты, а не только loss</h3>
+    <p>Loss сам по себе говорит, что стало плохо, но не говорит где. Нужны вспомогательные инварианты: диапазон logits, доля NaN/Inf, gradient norm, weight norm, lr, grad scale, batch id и длины последовательностей.</p>
+    <p>Если эти значения пишутся заранее, debugging spike занимает минуты. Если их нет, приходится воспроизводить аварию вслепую.</p>
+    <ul>
+      <li>Логируй batch metadata для воспроизведения.</li>
+      <li>Логируй lr и AMP grad scale.</li>
+      <li>Логируй top gradient norms по слоям или параметр-группам.</li>
+    </ul>
+  </section>
+<!-- frontier-deepening:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Debugging Loss Spikes</h2>
@@ -199,6 +238,7 @@ gradients / optimizer state испортились
   <script src="../bundle.js" defer></script>
 </body>
 </html>
+
 
 
 
