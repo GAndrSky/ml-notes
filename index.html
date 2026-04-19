@@ -20,7 +20,6 @@
       <div class="hero-actions" aria-label="Основные действия">
         <a class="hero-action hero-action--primary" href="#course-map">Открыть карту курса</a>
         <button class="hero-action mindmap-menu-toggle" type="button" aria-controls="mindmap-menu" aria-expanded="false">Меню карты</button>
-        <a class="hero-action" href="04_training/09_numerical_stability.html">Numerical Stability</a>
       </div>
       <div class="hero-progress">
         <div class="hero-progress__meta">
@@ -39,6 +38,41 @@
         <a href="#block-7">Generative</a>
         <a href="#block-8">Практика</a>
       </nav>
+      <div class="robot-arm-lab" aria-label="Интерактивная робот-рука">
+        <svg class="robot-arm-lab__stage" viewBox="0 0 620 520" role="img" aria-labelledby="robot-arm-title robot-arm-desc">
+          <title id="robot-arm-title">Робот-рука с тремя сегментами</title>
+          <desc id="robot-arm-desc">Нажмите в поле, чтобы рука повернулась к выбранной точке.</desc>
+          <defs>
+            <radialGradient id="robotTargetGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#bfe0ff" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#6ea5ff" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <g class="robot-arm-lab__grid" aria-hidden="true">
+            <path d="M60 110 H560" />
+            <path d="M60 210 H560" />
+            <path d="M60 310 H560" />
+            <path d="M60 410 H560" />
+            <path d="M120 70 V460" />
+            <path d="M240 70 V460" />
+            <path d="M360 70 V460" />
+            <path d="M480 70 V460" />
+          </g>
+          <circle class="robot-arm-lab__reach" cx="170" cy="350" r="265" />
+          <circle class="robot-arm-lab__target-glow" cx="430" cy="210" r="42" />
+          <circle class="robot-arm-lab__target" cx="430" cy="210" r="7" />
+          <g class="robot-arm-lab__arm">
+            <line class="robot-arm-lab__segment robot-arm-lab__segment--one" x1="170" y1="350" x2="270" y2="270" />
+            <line class="robot-arm-lab__segment robot-arm-lab__segment--two" x1="270" y1="270" x2="360" y2="240" />
+            <line class="robot-arm-lab__segment robot-arm-lab__segment--three" x1="360" y1="240" x2="430" y2="210" />
+            <circle class="robot-arm-lab__joint robot-arm-lab__joint--base" cx="170" cy="350" r="20" />
+            <circle class="robot-arm-lab__joint robot-arm-lab__joint--elbow" cx="270" cy="270" r="14" />
+            <circle class="robot-arm-lab__joint robot-arm-lab__joint--wrist" cx="360" cy="240" r="12" />
+            <circle class="robot-arm-lab__joint robot-arm-lab__joint--hand" cx="430" cy="210" r="10" />
+          </g>
+          <text class="robot-arm-lab__hint" x="330" y="476">click target</text>
+        </svg>
+      </div>
     </section>
 
     <section class="mindmap-overview" id="course-map" aria-label="Карта связей курса">
@@ -665,7 +699,6 @@
           }).join("");
 
           menu.innerHTML =
-            '<span class="subgroup-context-menu__kicker">Раздел</span>' +
             "<strong>" + (label ? label.textContent.trim() : "Темы") + "</strong>" +
             "<p>Внутри: " + topics.length + " тем.</p>" +
             '<ul class="subgroup-context-menu__list">' + items + "</ul>";
@@ -677,6 +710,104 @@
       window.addEventListener("load", function () {
         window.setTimeout(enhanceSubgroupMenus, 0);
       });
+
+      function initRobotArm() {
+        var stage = document.querySelector(".robot-arm-lab__stage");
+        if (!stage) {
+          return;
+        }
+
+        var base = { x: 170, y: 350 };
+        var lengths = [135, 118, 76];
+        var parts = [
+          stage.querySelector(".robot-arm-lab__segment--one"),
+          stage.querySelector(".robot-arm-lab__segment--two"),
+          stage.querySelector(".robot-arm-lab__segment--three")
+        ];
+        var joints = {
+          base: stage.querySelector(".robot-arm-lab__joint--base"),
+          elbow: stage.querySelector(".robot-arm-lab__joint--elbow"),
+          wrist: stage.querySelector(".robot-arm-lab__joint--wrist"),
+          hand: stage.querySelector(".robot-arm-lab__joint--hand"),
+          target: stage.querySelector(".robot-arm-lab__target"),
+          glow: stage.querySelector(".robot-arm-lab__target-glow")
+        };
+
+        function clamp(value, min, max) {
+          return Math.max(min, Math.min(max, value));
+        }
+
+        function pointOnSvg(event) {
+          var point = stage.createSVGPoint();
+          point.x = event.clientX;
+          point.y = event.clientY;
+          return point.matrixTransform(stage.getScreenCTM().inverse());
+        }
+
+        function setCircle(circle, point) {
+          circle.setAttribute("cx", point.x.toFixed(2));
+          circle.setAttribute("cy", point.y.toFixed(2));
+        }
+
+        function setLine(line, start, end) {
+          line.setAttribute("x1", start.x.toFixed(2));
+          line.setAttribute("y1", start.y.toFixed(2));
+          line.setAttribute("x2", end.x.toFixed(2));
+          line.setAttribute("y2", end.y.toFixed(2));
+        }
+
+        function solve(target) {
+          var dx = target.x - base.x;
+          var dy = target.y - base.y;
+          var angleToTarget = Math.atan2(dy, dx);
+          var wristTarget = {
+            x: target.x - Math.cos(angleToTarget) * lengths[2],
+            y: target.y - Math.sin(angleToTarget) * lengths[2]
+          };
+          var wx = wristTarget.x - base.x;
+          var wy = wristTarget.y - base.y;
+          var distance = clamp(Math.hypot(wx, wy), 26, lengths[0] + lengths[1] - 2);
+          var cosElbow = clamp((distance * distance - lengths[0] * lengths[0] - lengths[1] * lengths[1]) / (2 * lengths[0] * lengths[1]), -1, 1);
+          var elbowAngle = Math.acos(cosElbow);
+          var shoulderAngle =
+            Math.atan2(wy, wx) -
+            Math.atan2(lengths[1] * Math.sin(elbowAngle), lengths[0] + lengths[1] * Math.cos(elbowAngle));
+          var elbow = {
+            x: base.x + Math.cos(shoulderAngle) * lengths[0],
+            y: base.y + Math.sin(shoulderAngle) * lengths[0]
+          };
+          var wrist = {
+            x: elbow.x + Math.cos(shoulderAngle + elbowAngle) * lengths[1],
+            y: elbow.y + Math.sin(shoulderAngle + elbowAngle) * lengths[1]
+          };
+          var handAngle = Math.atan2(target.y - wrist.y, target.x - wrist.x);
+          var hand = {
+            x: wrist.x + Math.cos(handAngle) * lengths[2],
+            y: wrist.y + Math.sin(handAngle) * lengths[2]
+          };
+
+          setLine(parts[0], base, elbow);
+          setLine(parts[1], elbow, wrist);
+          setLine(parts[2], wrist, hand);
+          setCircle(joints.elbow, elbow);
+          setCircle(joints.wrist, wrist);
+          setCircle(joints.hand, hand);
+          setCircle(joints.target, target);
+          setCircle(joints.glow, target);
+        }
+
+        stage.addEventListener("pointerdown", function (event) {
+          var point = pointOnSvg(event);
+          solve({
+            x: clamp(point.x, 56, 566),
+            y: clamp(point.y, 68, 454)
+          });
+        });
+
+        solve({ x: 430, y: 210 });
+      }
+
+      initRobotArm();
     })();
   </script>
   <script src="bundle.js" defer></script>
