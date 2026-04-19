@@ -671,6 +671,19 @@
       <span class="hl-red">распределению target</span>.
     </div>
   </div>
+<!-- metrics-deepening:start:2-6-metric-as-utility -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-6-metric-as-utility">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Метрика — это функция полезности, а не украшение отчёта</h3>
+    <p>Метрика задаёт, какие ошибки считаются дорогими. Если ошибка в 10 единиц в четыре раза хуже ошибки в 5, MSE подходит лучше MAE. Если ошибка в 10 единиц примерно в два раза хуже ошибки в 5, MAE ближе к реальной стоимости.</p>
+    <p>Поэтому метрика должна выбираться до сравнения моделей. Иначе можно построить модель, которая математически улучшает одно число, но ухудшает реальное решение.</p>
+    <ul>
+      <li>MSE/RMSE усиливают крупные промахи.</li>
+      <li>MAE устойчивее к выбросам и ближе к медианной логике.</li>
+      <li>MAPE читабелен для бизнеса, но ломается около нуля.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>Базовые обозначения</h2>
@@ -785,6 +798,19 @@
       Ошибка 10 даёт вклад 100, а ошибка 100 — уже 10000.
     </div>
   </div>
+<!-- metrics-deepening:start:2-6-noise-model -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-6-noise-model">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Выбор метрики эквивалентен предположению о шуме</h3>
+    <p>MSE естественно появляется, если считать, что ошибка вокруг прогноза примерно гауссовская. MAE соответствует более тяжёлым хвостам, где крупные отклонения встречаются чаще и не должны доминировать над обучением.</p>
+    <p>Это полезная вероятностная интерпретация: метрика говорит не только о качестве, но и о том, какой тип ошибки мы считаем нормальным для данных.</p>
+    <ul>
+      <li>Gaussian noise → squared error.</li>
+      <li>Laplace-like noise → absolute error.</li>
+      <li>Heavy tails → подумай о MAE, Huber, quantile loss или robust preprocessing.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>2.6.2 RMSE — Root Mean Squared Error</h2>
@@ -965,7 +991,18 @@
 
       <div>
         <canvas id="outlierCanvas" width="380" height="250"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как читать ошибку на графике</h3>
       <ul>
@@ -1289,6 +1326,19 @@
       <span class="hl-green">смотри не только на число метрики, но и на рисунок ошибок</span>.
     </div>
   </div>
+<!-- metrics-deepening:start:2-6-residuals -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-6-residuals">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Residuals показывают, что именно модель не поняла</h3>
+    <p>Средняя метрика сжимает всю ошибку в одно число, но residual plot показывает структуру этой ошибки. Если residuals имеют форму дуги, модель пропустила нелинейность. Если разброс растёт вместе с прогнозом, шум зависит от масштаба. Если есть группы ошибок, не хватает признака или сегментации.</p>
+    <p>Поэтому residual analysis — это мост между метриками и feature engineering: он подсказывает, что изменить в данных или модели.</p>
+    <ul>
+      <li>Случайное облако residuals — хороший знак.</li>
+      <li>Паттерн в residuals — сигнал пропущенной структуры.</li>
+      <li>Один большой выброс может менять RMSE сильнее, чем качество основной массы объектов.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>Интерактивный калькулятор метрик на своих данных</h2>
@@ -1781,8 +1831,53 @@ print("B R² :", r2_score(y_val, pred_model_b))
     drawMapeDemo();
     calcMetrics();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Метрики регрессии</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Метрики регрессии&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/05_logistic_regression.html">← 2.5 Логистическая регрессия</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/07_classification_metrics.html">2.7 Метрики классификации →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

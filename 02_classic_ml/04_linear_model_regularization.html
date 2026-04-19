@@ -663,6 +663,19 @@
       <span class="hl-blue">простотой / устойчивостью параметров</span>.
     </div>
   </div>
+<!-- classic-deepening:start:2-4-regularization-views -->
+  <section class="concept-walkthrough" data-classic-deepening="2-4-regularization-views">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Три взгляда на регуляризацию</h3>
+    <p>Регуляризацию можно понимать одновременно как ограничение сложности, как prior на параметры и как стабилизатор оптимизации. В инженерном смысле она говорит модели: не используй слишком резкие объяснения, если более спокойное объяснение почти так же хорошо описывает данные.</p>
+    <p>Это особенно важно при шумных признаках, малом числе объектов, высокой размерности и коррелированных колонках. Без регуляризации модель может выбрать большой коэффициент не потому, что признак полезен, а потому что случайно совпал с train.</p>
+    <ul>
+      <li>Геометрический взгляд: ограничиваем область допустимых весов.</li>
+      <li>Вероятностный взгляд: задаём prior, какие веса считаем правдоподобными.</li>
+      <li>Оптимизационный взгляд: улучшаем устойчивость решения и conditioning.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Общий шаблон регуляризованной линейной модели</h2>
@@ -1152,6 +1165,19 @@
       часто попадает в углы ромба, а углы соответствуют нулевым коэффициентам.
     </div>
   </div>
+<!-- classic-deepening:start:2-4-l1-l2-geometry -->
+  <section class="concept-walkthrough" data-classic-deepening="2-4-l1-l2-geometry">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Почему форма ограничения меняет решение</h3>
+    <p>L2-шар гладкий, поэтому оптимум чаще касается ограничения в точке, где оба коэффициента остаются ненулевыми. L1-ромб имеет углы на осях, и линия уровня loss часто впервые касается именно угла. Угол означает, что один из коэффициентов стал ровно нулём.</p>
+    <p>Это не магия Lasso, а геометрическое следствие формы penalty. Поэтому L1 хорошо делает feature selection, но при сильной корреляции признаков может выбрать один из нескольких похожих признаков довольно произвольно.</p>
+    <ul>
+      <li>Ridge распределяет вес между коррелированными признаками.</li>
+      <li>Lasso склонен выбирать один признак и занулять другие.</li>
+      <li>Elastic Net полезен, когда нужна sparsity, но признаки группами коррелированы.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: как λ сжимает веса</h2>
@@ -1185,7 +1211,18 @@
 
       <div>
         <canvas id="weightsCanvas" width="380" height="280"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как видеть L1 и L2</h3>
       <ul>
@@ -1519,6 +1556,19 @@
       что большие веса маловероятны.
     </div>
   </div>
+<!-- classic-deepening:start:2-4-lambda-prior -->
+  <section class="concept-walkthrough" data-classic-deepening="2-4-lambda-prior">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>λ как сила доверия prior</h3>
+    <p>В MAP-интерпретации λ управляет тем, насколько сильно мы верим prior по сравнению с данными. Маленькая λ говорит: данные важнее, пусть веса растут, если это снижает loss. Большая λ говорит: большие веса подозрительны, даже если train становится лучше.</p>
+    <p>Это объясняет, почему λ нельзя выбирать по train loss. Чем выше λ, тем больше bias и меньше variance; оптимальное значение находится только через validation.</p>
+    <ul>
+      <li>Gaussian prior приводит к L2/Ridge.</li>
+      <li>Laplace prior приводит к L1/Lasso.</li>
+      <li>Validation выбирает баланс между prior и likelihood.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: MAP-интуиция</h2>
@@ -2124,8 +2174,53 @@ print("ridge weights:", w_ridge)</div>
     shrinkWeights();
     drawPrior();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Регуляризация линейных моделей</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Регуляризация линейных моделей&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/03_linear_regression.html">← 2.3 Линейная регрессия</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/05_logistic_regression.html">2.5 Логистическая регрессия →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

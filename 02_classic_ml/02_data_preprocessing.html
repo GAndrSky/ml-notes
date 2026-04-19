@@ -621,6 +621,19 @@
       представление, пригодное для обучения и оценки модели.
     </div>
   </div>
+<!-- classic-deepening:start:2-2-geometry -->
+  <section class="concept-walkthrough" data-classic-deepening="2-2-geometry">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Preprocessing меняет геометрию задачи</h3>
+    <p>Предобработка — это не косметика перед моделью. Scaling меняет расстояния, encoding меняет пространство признаков, imputation добавляет предположения о неизвестных значениях, а feature engineering буквально создаёт новые оси, по которым модель сможет разделять данные.</p>
+    <p>Один и тот же алгоритм после preprocessing видит другую задачу. Поэтому качество preprocessing нельзя оценивать отдельно от модели и validation protocol.</p>
+    <ul>
+      <li>Для k-NN и SVM масштаб признаков меняет само понятие близости.</li>
+      <li>Для линейных моделей encoding определяет, какие сравнения модель может выразить.</li>
+      <li>Для деревьев scaling часто не важен, но leakage и target encoding остаются критичными.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Что обычно входит в preprocessing pipeline</h2>
@@ -769,6 +782,19 @@
       Например, “нет данных о доходе” может косвенно коррелировать с поведением клиента.
     </div>
   </div>
+<!-- classic-deepening:start:2-2-missingness -->
+  <section class="concept-walkthrough" data-classic-deepening="2-2-missingness">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Пропуск — это иногда сигнал, а не мусор</h3>
+    <p>Missing values бывают разных типов. MCAR означает, что пропуск случайный и почти не несёт информации. MAR означает, что пропуск объясняется другими наблюдаемыми признаками. MNAR означает, что сам факт пропуска связан с неизвестным значением или поведением пользователя.</p>
+    <p>Если пропуски не случайны, простое среднее может стереть важный сигнал. Поэтому часто полезно добавлять indicator-признак: было значение пропущено или нет.</p>
+    <ul>
+      <li>MCAR: можно использовать простую imputation, если доля пропусков мала.</li>
+      <li>MAR: imputation должна учитывать другие признаки.</li>
+      <li>MNAR: сам факт пропуска может быть предиктором target.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>2. Масштабирование числовых признаков</h2>
@@ -920,7 +946,18 @@
         <h3>Результат</h3>
         <div class="result-box" id="scaleResults"></div>
         <canvas id="scaleCanvas" width="380" height="240"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как читать эффект preprocessing</h3>
       <ul>
@@ -1217,6 +1254,19 @@ Vilnius</textarea>
       Это финальный честный экзамен модели.
     </div>
   </div>
+<!-- classic-deepening:start:2-2-fit-transform -->
+  <section class="concept-walkthrough" data-classic-deepening="2-2-fit-transform">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Fit-state: главный источник тихого leakage</h3>
+    <p>Любой preprocessing, который что-то вычисляет по данным, имеет состояние: среднее и стандартное отклонение scaler-а, частоты категорий, выбранные признаки, статистики target encoding. Это состояние должно обучаться только на train.</p>
+    <p>Validation и test имеют право только проходить через уже обученный transform. Если fit происходит на всём датасете, модель получает статистику будущих данных, даже если target напрямую не использовался.</p>
+    <ul>
+      <li>fit: изучает параметры обработки на train.</li>
+      <li>transform: применяет уже найденные параметры к любым данным.</li>
+      <li>Pipeline нужен, чтобы эта дисциплина сохранялась внутри cross-validation.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: leakage vs правильный split</h2>
@@ -1714,8 +1764,53 @@ pred = full_pipe.predict(X_test)</div>
     leakageBtn.addEventListener('click', updateLeakage);
     updateLeakage();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Предобработка данных</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Предобработка данных&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/01_intro_to_classical_ml.html">← 2.1 Введение в классическое ML</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/03_linear_regression.html">2.3 Линейная регрессия →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

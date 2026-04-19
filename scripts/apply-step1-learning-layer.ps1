@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 Add-Type -AssemblyName System.Web
 
@@ -29,6 +29,26 @@ function Remove-Step1Blocks {
   $html = [regex]::Replace($Html, '(?is)\s*<!-- step1-viz:start -->.*?<!-- step1-viz:end -->\s*', "`r`n")
   $html = [regex]::Replace($html, '(?is)\s*<!-- step1-learning:start -->.*?<!-- step1-learning:end -->\s*', "`r`n")
   return $html
+}
+
+function Get-SectionEndAfter {
+  param([string]$Html, [int]$Start)
+  $sectionEnd = $Html.IndexOf("</section>", $Start, [System.StringComparison]::OrdinalIgnoreCase)
+  if ($sectionEnd -ge 0) { return $sectionEnd + "</section>".Length }
+  return -1
+}
+
+function Get-DivEndFrom {
+  param([string]$Html, [int]$Start)
+  if ($Start -lt 0) { return -1 }
+  $tagRegex = [regex]::new('(?is)<div\b[^>]*>|</div>')
+  $matches = $tagRegex.Matches($Html, $Start)
+  $depth = 0
+  foreach ($tag in $matches) {
+    if ($tag.Value -match '^<div\b') { $depth += 1 } else { $depth -= 1 }
+    if ($depth -eq 0) { return $tag.Index + $tag.Length }
+  }
+  return -1
 }
 
 function Get-SectionKind {
@@ -338,6 +358,24 @@ for ($i = 0; $i -lt $pages.Count; $i++) {
     $html = $html.Insert($insertAt, (New-VizBlock $page))
     $hasCanvasBeforeScript = $true
     $vizUpdated += 1
+  } else {
+    $rangeMatch = [regex]::Match($prefix, '(?is)<input\b[^>]*type=["'']range["''][^>]*>')
+    if ($rangeMatch.Success) {
+      $insertAt = Get-SectionEndAfter $html $rangeMatch.Index
+      if ($insertAt -lt 0) {
+        $cardStart = -1
+        $beforeRange = $prefix.Substring(0, $rangeMatch.Index)
+        foreach ($cardMatch in [regex]::Matches($beforeRange, '(?is)<div\b[^>]*class=["''][^"'']*\bcard\b[^"'']*["''][^>]*>')) {
+          $cardStart = $cardMatch.Index
+        }
+        $insertAt = Get-DivEndFrom $html $cardStart
+      }
+      if ($insertAt -gt 0) {
+        $html = $html.Insert($insertAt, (New-VizBlock $page))
+        $hasCanvasBeforeScript = $true
+        $vizUpdated += 1
+      }
+    }
   }
 
   $prev = if ($i -gt 0) { $pages[$i - 1] } else { $null }
@@ -361,3 +399,6 @@ for ($i = 0; $i -lt $pages.Count; $i++) {
 
 Write-Host "Step 1 learning layer updated: $updated files"
 Write-Host "Visualization notes inserted: $vizUpdated files"
+
+
+

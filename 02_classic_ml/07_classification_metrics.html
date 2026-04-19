@@ -679,6 +679,19 @@
       смотреть только на accuracy и игнорировать imbalance, threshold и структуру ошибок.
     </div>
   </div>
+<!-- metrics-deepening:start:2-7-cost-map -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-7-cost-map">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Метрика классификации — это карта цены ошибок</h3>
+    <p>Классификация почти никогда не сводится к вопросу &#171;угадали или нет&#187;. Ошибки FP и FN обычно стоят по-разному: ложная тревога раздражает пользователя, а пропущенный fraud или диагноз может быть намного дороже.</p>
+    <p>Confusion matrix нужна именно поэтому: она раскладывает общую ошибку на типы решений, которые можно связать с реальной стоимостью.</p>
+    <ul>
+      <li>Accuracy хороша, когда классы сбалансированы и ошибки примерно равны по цене.</li>
+      <li>Precision важен, когда ложное срабатывание дорого.</li>
+      <li>Recall важен, когда пропуск события дорог.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>2.7.1 Confusion matrix</h2>
@@ -992,6 +1005,19 @@
       “Сколько настоящих positive случаев мы вообще не пропустили?”
     </div>
   </div>
+<!-- metrics-deepening:start:2-7-base-rate -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-7-base-rate">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Precision зависит от base rate сильнее, чем кажется</h3>
+    <p>При редком positive class даже хороший классификатор может иметь скромный precision: если реальных положительных случаев мало, среди найденных сигналов легко набираются false positives. Recall отвечает на другой вопрос: какую долю настоящих positive мы поймали.</p>
+    <p>Это объясняет, почему ROC-AUC может выглядеть прилично при imbalance, а PR-AUC остаётся низким. PR-кривая ближе к вопросу: сколько полезных находок среди всех поднятых тревог.</p>
+    <ul>
+      <li>Base rate — доля positive class в данных.</li>
+      <li>Precision сравнивай с baseline precision, равным base rate.</li>
+      <li>При редких событиях PR-AUC обычно информативнее ROC-AUC.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>Когда важнее precision, а когда recall</h2>
@@ -1355,7 +1381,18 @@
 
       <div>
         <canvas id="thresholdCanvas" width="380" height="250"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как читать кривые классификации</h3>
       <ul>
@@ -1397,6 +1434,19 @@
       Чем выше threshold — тем наоборот.
     </div>
   </div>
+<!-- metrics-deepening:start:2-7-ranking-calibration-threshold -->
+  <section class="concept-walkthrough" data-metrics-deepening="2-7-ranking-calibration-threshold">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Разделяй ranking, calibration и threshold</h3>
+    <p>Модель может хорошо ранжировать объекты, но плохо калибровать вероятности. ROC-AUC и PR-AUC проверяют качество ranking: насколько positive обычно выше negative. Log loss и calibration curve проверяют, можно ли доверять числу 0.8 как вероятности.</p>
+    <p>Threshold — это третий слой. Он превращает score или вероятность в действие и должен подбираться под метрику, цену ошибок и ограничения продукта.</p>
+    <ul>
+      <li>Ranking: кто выше в списке риска.</li>
+      <li>Calibration: насколько score похож на настоящую вероятность.</li>
+      <li>Threshold: где провести границу действия.</li>
+    </ul>
+  </section>
+<!-- metrics-deepening:end -->
 
   <div class="card">
     <h2>2.7.7 Log loss</h2>
@@ -2127,8 +2177,53 @@ for t in thresholds:
     drawLogLossDemo();
     calcClsMetrics();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Метрики классификации</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Метрики классификации&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/06_regression_metrics.html">← 2.6 Метрики регрессии</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/08_distance_based_models.html">2.8 Distance-based модели →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

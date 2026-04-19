@@ -358,6 +358,19 @@ canvas { border-radius: 8px; }
     💡 <strong>Очень важная мысль:</strong> classical ML — это не “устаревший ML”. Для табличных данных он до сих пор часто сильнее и практичнее глубоких сетей.
   </div>
 </div>
+<!-- classic-deepening:start:2-1-ml-loop -->
+  <section class="concept-walkthrough" data-classic-deepening="2-1-ml-loop">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>ML как замкнутый контур решений</h3>
+    <p>Классическое машинное обучение удобно понимать не как набор алгоритмов, а как цикл: данные задают наблюдения, модель задаёт семейство допустимых объяснений, loss превращает ошибку в число, optimizer ищет параметры, а validation проверяет, не обманули ли мы себя.</p>
+    <p>Главный вопрос в этом цикле: какая часть качества пришла из настоящего сигнала, а какая из случайной подгонки под конкретную выборку. Поэтому baseline, split и метрика являются частью модели не меньше, чем сам алгоритм.</p>
+    <ul>
+      <li>Hypothesis space — какие функции модель вообще способна выразить.</li>
+      <li>Objective — что модель считает хорошим решением.</li>
+      <li>Validation protocol — как мы проверяем, что решение переживает новые данные.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
 <!-- SECTION 2 -->
 <div class="card">
@@ -543,6 +556,19 @@ canvas { border-radius: 8px; }
     ⚠️ Если ты много раз принимаешь решения, глядя на test, то test перестаёт быть честным показателем обобщающей способности.
   </div>
 </div>
+<!-- classic-deepening:start:2-1-validation-feedback -->
+  <section class="concept-walkthrough" data-classic-deepening="2-1-validation-feedback">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Почему validation постепенно превращается в train</h3>
+    <p>Каждый раз, когда ты смотришь на validation score и меняешь признаки, модель или гиперпараметры, информация из validation попадает в процесс разработки. Формально веса модели на validation не обучались, но твои инженерные решения уже подстроились под этот набор.</p>
+    <p>Именно поэтому test должен оставаться последним независимым измерением. Если test использовать как validation, он перестаёт отвечать на вопрос о будущем качестве и начинает измерять качество подгонки процесса разработки.</p>
+    <ul>
+      <li>Validation нужен для выбора решения.</li>
+      <li>Test нужен для честного финального отчёта.</li>
+      <li>Nested CV нужен, когда сам подбор гиперпараметров становится частью оценки.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
 <!-- SECTION 6 -->
 <div class="card">
@@ -615,6 +641,19 @@ canvas { border-radius: 8px; }
     ℹ️ Эта формула в строгом виде зависит от постановки задачи, но как интуитивная рамка она крайне полезна: слишком простая модель даёт большой bias, слишком сложная — большую variance.
   </div>
 </div>
+<!-- classic-deepening:start:2-1-learning-curves -->
+  <section class="concept-walkthrough" data-classic-deepening="2-1-learning-curves">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Learning curves как диагностика причины ошибки</h3>
+    <p>Bias и variance лучше всего читать не по одному числу, а по двум кривым: train score и validation score при росте данных, сложности модели или числа итераций. Если обе кривые плохие и близкие — модель недообучается. Если train сильно лучше validation — модель слишком хорошо запоминает train.</p>
+    <p>Это превращает абстрактную дилемму в инженерное решение: добавить признаки, упростить модель, усилить регуляризацию, собрать данные или изменить метрику.</p>
+    <ul>
+      <li>Высокий bias: больше выразительности, лучшие признаки, меньше регуляризации.</li>
+      <li>Высокая variance: больше данных, сильнее регуляризация, проще модель, стабильнее split.</li>
+      <li>Шумный target: иногда потолок качества задаёт не модель, а сама постановка задачи.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
 <!-- SECTION 8 -->
 <div class="card">
@@ -628,7 +667,18 @@ canvas { border-radius: 8px; }
         <input type="range" min="1" max="10" step="1" value="3" id="complexity" oninput="updateBiasVariance()">
       </div>
       <canvas id="bvCanvas" width="360" height="240" style="background:#0d1117;border:1px solid var(--border);"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Что именно показывает интерактив</h3>
       <ul>
@@ -990,8 +1040,53 @@ updateLifecycle();
 </script>
 
 <script src="../bundle.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Введение в классическое ML</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Введение в классическое ML&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../01_math/04_information_theory.html">← 1.4 Теория информации</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/02_data_preprocessing.html">2.2 Предобработка данных →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

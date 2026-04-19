@@ -663,6 +663,19 @@
       оптимизации, лосса, градиентов, регуляризации, интерпретации коэффициентов и bias-variance tradeoff.
     </div>
   </div>
+<!-- classic-deepening:start:2-3-assumptions -->
+  <section class="concept-walkthrough" data-classic-deepening="2-3-assumptions">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Предсказание и статистический вывод — разные режимы</h3>
+    <p>Для prediction линейная регрессия может быть полезной даже когда реальные связи не идеально линейны: она даёт стабильный baseline и хорошо работает при адекватных признаках. Для inference требования жёстче: важны независимость ошибок, отсутствие сильной эндогенности, разумная форма шума и корректная интерпретация коэффициентов.</p>
+    <p>Если цель — предсказывать, главный критерий validation quality. Если цель — объяснять причинный эффект признака, одной линейной регрессии недостаточно: нужны дизайн исследования, контроль confounders и проверка assumptions.</p>
+    <ul>
+      <li>Linearity: средний ответ примерно выражается линейной комбинацией признаков.</li>
+      <li>Exogeneity: ошибка не должна систематически зависеть от признаков.</li>
+      <li>Homoscedasticity: масштаб шума не должен резко меняться по диапазону прогнозов.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Форма модели: от одной переменной к многомерному случаю</h2>
@@ -909,6 +922,19 @@
       Поэтому линейная регрессия может сильно страдать от extreme values.
     </div>
   </div>
+<!-- classic-deepening:start:2-3-projection -->
+  <section class="concept-walkthrough" data-classic-deepening="2-3-projection">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Least squares как ортогональная проекция</h3>
+    <p>В матричном виде модель ищет точку Xw в пространстве всех линейных комбинаций столбцов X. Вектор y обычно не лежит точно в этом пространстве, поэтому алгоритм выбирает ближайшую точку по евклидовой дистанции.</p>
+    <p>Residual y−Xw в оптимуме ортогонален каждому столбцу X. Это сильная геометрическая идея: после обучения ни один признак не должен содержать линейно извлекаемый остаточный сигнал.</p>
+    <ul>
+      <li>Столбцы X задают подпространство возможных прогнозов.</li>
+      <li>Xw — конкретная точка в этом подпространстве.</li>
+      <li>Residual — часть target, которую линейная модель не смогла объяснить.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: линия регрессии и residuals</h2>
@@ -944,7 +970,18 @@
 
       <div>
         <canvas id="regressionCanvas" width="380" height="280"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как читать линию регрессии</h3>
       <ul>
@@ -1310,6 +1347,19 @@
       где связь между геометрией, алгеброй и оптимизацией видна особенно прозрачно.
     </div>
   </div>
+<!-- classic-deepening:start:2-3-conditioning -->
+  <section class="concept-walkthrough" data-classic-deepening="2-3-conditioning">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Почему closed-form решение может быть численно хрупким</h3>
+    <p>Нормальное уравнение выглядит элегантно, но матрица XᵀX усиливает проблемы conditioning. Если признаки сильно коррелируют или имеют разные масштабы, обратная матрица становится нестабильной: маленький шум в данных может резко менять коэффициенты.</p>
+    <p>Поэтому на практике часто используют SVD, QR-разложение, регуляризацию Ridge или итерационные методы. Это не усложнение ради усложнения, а защита от плохой геометрии признакового пространства.</p>
+    <ul>
+      <li>Multicollinearity делает коэффициенты неустойчивыми.</li>
+      <li>Scaling улучшает conditioning и ускоряет gradient descent.</li>
+      <li>Ridge добавляет λI и делает задачу более устойчивой.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Статистический смысл линейной регрессии</h2>
@@ -2075,8 +2125,53 @@ print("bias:", model.bias.data)</div>
     // init
     generateData();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Линейная регрессия</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Линейная регрессия&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/02_data_preprocessing.html">← 2.2 Предобработка данных</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/04_linear_model_regularization.html">2.4 Регуляризация линейных моделей →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

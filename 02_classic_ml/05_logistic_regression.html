@@ -646,6 +646,19 @@
       простая, быстрая, интерпретируемая и очень важная для собеседований и практики.
     </div>
   </div>
+<!-- classic-deepening:start:2-5-discriminative -->
+  <section class="concept-walkthrough" data-classic-deepening="2-5-discriminative">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Logistic regression моделирует границу через вероятность</h3>
+    <p>Логистическая регрессия — discriminative model: она не пытается описать, как вообще генерируются признаки внутри каждого класса. Она напрямую моделирует P(y=1|x), то есть вероятность метки при уже наблюдаемых признаках.</p>
+    <p>Это делает модель простой и сильной для baseline: коэффициенты задают направление изменения log-odds, sigmoid переводит score в вероятность, а threshold превращает вероятность в действие.</p>
+    <ul>
+      <li>Score z отвечает за линейную геометрию.</li>
+      <li>Sigmoid отвечает за вероятностную шкалу.</li>
+      <li>Threshold отвечает за бизнес-решение и цену ошибок.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>2.5.1 Sigmoid и вероятность класса</h2>
@@ -760,7 +773,18 @@
 
       <div>
         <canvas id="sigmoidCanvas" width="380" height="260"></canvas>
-    <div class="classic-viz-note" data-classic-viz-note="1">
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, как меняется граница решения, ошибка или метрика при изменении одного гиперпараметра.</li>
+        <li>Если train становится лучше, а validation хуже, это сигнал переобучения, а не прогресса.</li>
+        <li>Проверяй, какой объект или класс страдает: средняя метрика может скрывать систематическую ошибку.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
       <h3>Как читать sigmoid и порог</h3>
       <ul>
@@ -958,6 +982,19 @@
       На самом деле она выдаёт вероятность, а бинарный класс появляется уже после thresholding.
     </div>
   </div>
+<!-- classic-deepening:start:2-5-threshold-cost -->
+  <section class="concept-walkthrough" data-classic-deepening="2-5-threshold-cost">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>Threshold должен зависеть от цены ошибок</h3>
+    <p>Порог 0.5 не является законом природы. Он разумен только если классы примерно сбалансированы и ошибки FP/FN стоят одинаково. В медицине, fraud detection или churn prediction цена пропуска события часто намного выше цены ложной тревоги.</p>
+    <p>Поэтому logistic regression лучше разделять на две части: модель оценивает вероятность, а отдельное decision rule выбирает threshold под метрику, бюджет, risk appetite или business cost.</p>
+    <ul>
+      <li>Высокий threshold уменьшает FP, но увеличивает FN.</li>
+      <li>Низкий threshold повышает recall, но может ухудшить precision.</li>
+      <li>Выбор threshold нужно делать на validation, а не на test.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Почему нельзя обучать её через MSE как линейную регрессию</h2>
@@ -1090,6 +1127,19 @@
       Это именно то, что нам нужно от вероятностной классификации.
     </div>
   </div>
+<!-- classic-deepening:start:2-5-proper-scoring -->
+  <section class="concept-walkthrough" data-classic-deepening="2-5-proper-scoring">
+    <div class="concept-walkthrough__kicker">Теория глубже</div>
+    <h3>BCE — это не просто штраф, а proper scoring rule</h3>
+    <p>Binary cross-entropy поощряет модель говорить честные вероятности. Если реальная частота события около 70%, минимальный ожидаемый BCE достигается около прогноза 0.7, а не около произвольного уверенного класса.</p>
+    <p>Поэтому BCE полезен не только для классификации, но и для calibration. Модель с хорошей accuracy может быть плохо откалибрована: она угадывает класс, но её вероятности нельзя использовать как риск.</p>
+    <ul>
+      <li>Accuracy оценивает дискретное решение.</li>
+      <li>BCE оценивает качество вероятности.</li>
+      <li>Calibration проверяет, совпадает ли уверенность модели с реальной частотой.</li>
+    </ul>
+  </section>
+<!-- classic-deepening:end -->
 
   <div class="card">
     <h2>Интерактив: binary cross-entropy</h2>
@@ -2337,8 +2387,53 @@ proba = multi_model.predict_proba(X_val)</div>
     drawBCEDemo();
     drawBoundary();
   </script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Логистическая регрессия</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Используй тему &#171;Логистическая регрессия&#187; как практический инструмент для табличных данных, baseline-моделей и быстрых проверок гипотез.</li>
+        <li>Классические модели особенно полезны, когда важны скорость, интерпретируемость, небольшой датасет или строгая валидация.</li>
+        <li>Перед нейросетью проверь, какой результат даёт простой baseline: он задаёт нижнюю планку качества.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Подбирать модель до постановки метрики: без правильной метрики можно оптимизировать не ту задачу.</li>
+        <li>Допускать leakage: scaling, encoding, feature selection и tuning должны обучаться только на train внутри pipeline.</li>
+        <li>Сравнивать модели без одинакового split и одинакового preprocessing.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Начни с данных: пропуски, выбросы, encoding, scaling и баланс классов часто важнее выбора алгоритма.</li>
+        <li>Потом меняй сложность модели: регуляризацию, глубину, число соседей, число деревьев или learning rate в зависимости от темы.</li>
+        <li>Фиксируй validation protocol до тюнинга, иначе улучшение может быть подгонкой под конкретный split.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/04_linear_model_regularization.html">← 2.4 Регуляризация линейных моделей</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../02_classic_ml/06_regression_metrics.html">2.6 Метрики регрессии →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
+
 
 
 

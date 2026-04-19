@@ -137,7 +137,18 @@ td.mono{font-family:monospace;}
   </div>
   <br>
   <canvas id="lossCanvas" width="880" height="240" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;border-radius:8px;"></canvas>
-  <div id="lossLegend" style="margin-top:6px;font-size:.82em;color:var(--muted);"></div>
+<!-- step1-viz:start -->
+    <div class="classic-viz-note" data-step1-viz-explainer="1">
+      <div class="classic-viz-note__kicker">Как читать интерактив</div>
+      <h3>Что менять и как интерпретировать</h3>
+      <ul class="ml-explainer-list">
+        <li>Смотри, где сигнал обнуляется, насыщается или становится слишком большим.</li>
+        <li>Ползунки обычно показывают чувствительность: маленькое изменение входа может резко менять gradient flow.</li>
+        <li>Сравни поведение функции около нуля, на больших положительных и больших отрицательных значениях.</li>
+      </ul>
+    </div>
+<!-- step1-viz:end -->
+<div id="lossLegend" style="margin-top:6px;font-size:.82em;color:var(--muted);"></div>
 </div>
 
 <!-- 3. Вывод MSE из MLE -->
@@ -323,6 +334,19 @@ NLL = const + |y − ŷ| / b
 L_MAE = (1/N)·Σ |yᵢ − ŷᵢ|
 
 ∂L/∂ŷ = sign(ŷ − y)  ← субградиент!</div>
+    <div class="formula-anatomy" data-manual-formula-anatomy="1">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+      <div class="formula-anatomy__row"><span class="fa-sym">Laplace(0,b)</span><span class="fa-name">лапласов шум</span><span class="fa-desc">Распределение с более тяжёлыми хвостами, чем Gaussian; поэтому MAE меньше боится выбросов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">scale</span><span class="fa-desc">Масштаб шума: чем больше b, тем шире распределение ошибок вокруг прогноза.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|y-ŷ|</span><span class="fa-name">абсолютная ошибка</span><span class="fa-desc">Расстояние между правильным ответом и прогнозом без квадрата.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sign(ŷ-y)</span><span class="fa-name">направление ошибки</span><span class="fa-desc">Показывает, куда двигать прогноз: вниз, если он завышен, и вверх, если занижен.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAE штрафует ошибку линейно, поэтому один большой выброс не начинает доминировать над всем loss.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как считать расстояние по прямой линейке: промах в 10 единиц ровно в 10 раз хуже промаха в 1, а не в 100 раз.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10 и ŷ=7, то MAE-вклад равен |10−7|=3; если ŷ=20, вклад равен 10, без квадратичного усиления.</div>
+    </div>
       <div class="warn" style="margin-top:10px;font-size:.85em;">
         ⚠️ MAE негладкий в 0 — субградиент, оптимизаторы хуже сходятся. Зато робастен к выбросам (линейный штраф, не квадратный).
       </div>
@@ -1103,8 +1127,52 @@ showCode('basic', document.querySelector('#codeTabs button'));
   </section>
 
 <script src="../bundle.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Loss-функции</h2>
+    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+      <ul class="ml-endcap-list">
+        <li>Возвращайся к теме &#171;Loss-функции&#187;, когда нужно понять, как слой преобразует сигнал и почему градиент проходит или затухает.</li>
+        <li>Эти темы нужны перед обучением больших моделей: без них трудно отлаживать loss, активации и размерности.</li>
+        <li>Используй формулы как карту forward/backward pass, а не как отдельные факты.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+      <ul class="ml-endcap-list">
+        <li>Путать logits, probabilities и labels: от этого ломается выбор loss-функции и интерпретация выхода.</li>
+        <li>Игнорировать scale: слишком большие logits, активации или loss быстро приводят к нестабильному обучению.</li>
+        <li>Считать shape второстепенной деталью: большинство багов в нейросетях начинается с неправильной оси.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить</h3>
+      <ul class="ml-endcap-list">
+        <li>Проверяй activation/loss pair, initialization, learning rate и нормализацию.</li>
+        <li>Следи за распределением активаций и градиентов по слоям: нули, NaN и взрыв масштаба показывают проблему раньше метрики.</li>
+        <li>Для классификации отдельно настраивай threshold или calibration, если важны вероятности.</li>
+      </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+      <ul class="ml-endcap-list">
+        <li><a href="../03_neural_basics/03_forward_pass.html">← 3.3 Forward pass</a> — повторить предыдущий контекст перед этой темой.</li>
+        <li><a href="../04_training/01_backpropagation.html">4.1 Backpropagation →</a> — следующий шаг, где эта идея используется дальше.</li>
+        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
+      </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
 </body>
 </html>
+
+
+
 
 
 
