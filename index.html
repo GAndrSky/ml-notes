@@ -76,6 +76,17 @@
         <a class="mindmap-node mindmap-node--gen" href="#block-7" style="--x: 22%; --y: 82%;">Generative</a>
         <a class="mindmap-node mindmap-node--practice" href="#block-8" style="--x: 12%; --y: 50%;">Практика</a>
       </div>
+      <aside class="mindmap-preview" aria-live="polite">
+        <div class="mindmap-preview__kicker">Выберите узел</div>
+        <h3>Карта курса</h3>
+        <p>Наведи курсор или перейди фокусом на тему, чтобы увидеть описание и список связанных конспектов.</p>
+        <div class="mindmap-preview__count">8 блоков · 63 темы</div>
+        <ul class="mindmap-preview__list">
+          <li>Математика</li>
+          <li>Классическое ML</li>
+          <li>Нейросети и LLM</li>
+        </ul>
+      </aside>
     </section>
 
     <section class="section" id="block-1" data-block="1">
@@ -525,6 +536,97 @@
           setMenuOpen(false);
         }
       });
+
+      var preview = document.querySelector(".mindmap-preview");
+      var graphNodes = Array.prototype.slice.call(document.querySelectorAll(".mindmap-node"));
+      var activeNode = null;
+
+      function getSectionForNode(node) {
+        var href = node.getAttribute("href") || "";
+        if (!href || href.charAt(0) !== "#") {
+          return null;
+        }
+        return document.querySelector(href);
+      }
+
+      function getNodeTitle(node, section) {
+        if (section) {
+          var title = section.querySelector(".section-head h2");
+          if (title) {
+            return title.textContent.trim();
+          }
+        }
+        return node.textContent.trim();
+      }
+
+      function renderPreview(node) {
+        if (!preview || !node) {
+          return;
+        }
+
+        var section = getSectionForNode(node);
+        var title = getNodeTitle(node, section);
+        var description = section && section.querySelector(".section-head span");
+        var cards = section
+          ? Array.prototype.slice.call(section.querySelectorAll(".card")).slice(0, 8)
+          : [];
+
+        preview.querySelector(".mindmap-preview__kicker").textContent = section
+          ? "Theme " + (section.dataset.block || "")
+          : "Core graph";
+        preview.querySelector("h3").textContent = title;
+        preview.querySelector("p").textContent = description
+          ? description.textContent.trim()
+          : "Центральный узел связывает все блоки курса в одну карту.";
+        preview.querySelector(".mindmap-preview__count").textContent = section
+          ? cards.length + " из " + section.querySelectorAll(".card").length + " тем показано"
+          : "8 блоков · 63 темы";
+
+        var list = preview.querySelector(".mindmap-preview__list");
+        list.innerHTML = "";
+        if (!cards.length) {
+          ["Математика", "Классическое ML", "Архитектуры", "LLM"].forEach(function (item) {
+            var li = document.createElement("li");
+            li.textContent = item;
+            list.appendChild(li);
+          });
+          return;
+        }
+
+        cards.forEach(function (card) {
+          var badge = card.querySelector(".badge");
+          var heading = card.querySelector("h3");
+          var li = document.createElement("li");
+          li.textContent =
+            (badge ? badge.textContent.trim() + " · " : "") +
+            (heading ? heading.textContent.trim() : card.textContent.trim());
+          list.appendChild(li);
+        });
+      }
+
+      function setActiveNode(node) {
+        if (activeNode) {
+          activeNode.classList.remove("is-previewed");
+        }
+        activeNode = node;
+        if (activeNode) {
+          activeNode.classList.add("is-previewed");
+          renderPreview(activeNode);
+        }
+      }
+
+      graphNodes.forEach(function (node) {
+        node.addEventListener("mouseenter", function () {
+          setActiveNode(node);
+        });
+        node.addEventListener("focus", function () {
+          setActiveNode(node);
+        });
+      });
+
+      if (graphNodes.length) {
+        setActiveNode(graphNodes[0]);
+      }
     })();
   </script>
   <script src="bundle.js" defer></script>

@@ -1407,6 +1407,7 @@ body.ml-index-theme .mindmap-overview__header h2 {
 body.ml-index-theme .mindmap-graph {
   position: relative;
   min-height: clamp(520px, 62vw, 760px);
+  width: min(100%, 820px);
   overflow: hidden;
   border-radius: 0;
   background:
@@ -1467,6 +1468,13 @@ body.ml-index-theme .mindmap-node:hover {
   box-shadow: 0 0 54px color-mix(in srgb, var(--node-color) 24%, transparent);
 }
 
+body.ml-index-theme .mindmap-node.is-previewed {
+  border-color: color-mix(in srgb, var(--node-color) 84%, #edf4ff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--node-color) 34%, transparent) inset,
+    0 0 62px color-mix(in srgb, var(--node-color) 28%, transparent);
+}
+
 body.ml-index-theme .mindmap-node--core {
   --node-color: #d8e9ff;
   left: 50%;
@@ -1496,6 +1504,78 @@ body.ml-index-theme .mindmap-node--arch { --node-color: var(--accent-arch); }
 body.ml-index-theme .mindmap-node--llm { --node-color: var(--accent-llm); }
 body.ml-index-theme .mindmap-node--gen { --node-color: var(--accent-generative); }
 body.ml-index-theme .mindmap-node--practice { --node-color: var(--accent-practice); }
+
+body.ml-index-theme .mindmap-preview {
+  position: absolute;
+  right: 0;
+  bottom: clamp(36px, 6vw, 82px);
+  width: min(390px, 38vw);
+  min-height: 340px;
+  padding: 28px;
+  border-left: 1px solid rgba(142, 165, 195, 0.18);
+  background:
+    linear-gradient(90deg, rgba(5, 11, 20, 0.92), rgba(5, 11, 20, 0.66)),
+    radial-gradient(circle at 24% 12%, rgba(110, 165, 255, 0.12), transparent 16rem);
+  backdrop-filter: blur(16px);
+}
+
+body.ml-index-theme .mindmap-preview__kicker {
+  margin-bottom: 14px;
+  color: #8ea2ba;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+body.ml-index-theme .mindmap-preview h3 {
+  margin: 0 0 12px;
+  color: #f0f6ff;
+  font-size: clamp(1.45rem, 2.4vw, 2.1rem);
+  line-height: 1;
+}
+
+body.ml-index-theme .mindmap-preview p {
+  margin: 0;
+  color: #98a8bb !important;
+  line-height: 1.62;
+}
+
+body.ml-index-theme .mindmap-preview__count {
+  margin-top: 18px;
+  color: color-mix(in srgb, #6ea5ff 72%, #edf4ff);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+body.ml-index-theme .mindmap-preview__list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.ml-index-theme .mindmap-preview__list li {
+  position: relative;
+  padding-left: 18px;
+  color: #cad6e6;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+body.ml-index-theme .mindmap-preview__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #6ea5ff;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
 
 body.ml-index-theme .section {
   display: block;
@@ -1583,6 +1663,11 @@ body.ml-index-theme .card {
   backdrop-filter: blur(10px);
 }
 
+body.ml-index-theme .card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--block-accent, #6ea5ff) 70%, #edf4ff);
+  outline-offset: 5px;
+}
+
 body.ml-index-theme .card:first-of-type {
   border-top: 1px solid color-mix(in srgb, var(--block-accent, #6ea5ff) 22%, rgba(142, 165, 195, 0.18));
 }
@@ -1623,7 +1708,30 @@ body.ml-index-theme .card h3 {
 }
 
 body.ml-index-theme .card p {
-  display: none;
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 12px);
+  z-index: 20;
+  display: block;
+  width: min(280px, 82vw);
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--block-accent, #6ea5ff) 34%, rgba(142, 165, 195, 0.2));
+  border-radius: 16px;
+  background: rgba(5, 11, 20, 0.96);
+  color: #b8c5d6 !important;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+body.ml-index-theme .card:hover p,
+body.ml-index-theme .card:focus-visible p {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 body.ml-index-theme .index-card-check {
@@ -1763,7 +1871,22 @@ body.ml-index-theme .mindmap-menu__links a:hover {
   }
 
   body.ml-index-theme .mindmap-graph {
+    width: 100%;
     min-height: 640px;
+  }
+
+  body.ml-index-theme .mindmap-preview {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    min-height: 0;
+    margin-top: 16px;
+    padding: 22px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(142, 165, 195, 0.16);
+    background: transparent;
+    backdrop-filter: none;
   }
 
   body.ml-index-theme .mindmap-node {
@@ -1789,6 +1912,11 @@ body.ml-index-theme .mindmap-menu__links a:hover {
 
   body.ml-index-theme .card {
     flex-basis: calc(50% - 12px);
+  }
+
+  body.ml-index-theme .card p {
+    top: auto;
+    bottom: calc(100% + 10px);
   }
 }
 
