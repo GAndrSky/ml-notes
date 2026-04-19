@@ -18,7 +18,8 @@
       <h1>Интерактивный ML-конспект</h1>
       <p class="hero-subtitle">63 темы от математики до LLM и generative models. Короткие конспекты, интерактивы, код и плотные теоретические разборы.</p>
       <div class="hero-actions" aria-label="Основные действия">
-        <a class="hero-action hero-action--primary" href="#block-1">Открыть карту курса</a>
+        <a class="hero-action hero-action--primary" href="#course-map">Открыть карту курса</a>
+        <button class="hero-action mindmap-menu-toggle" type="button" aria-controls="mindmap-menu" aria-expanded="false">Меню карты</button>
         <a class="hero-action" href="04_training/09_numerical_stability.html">Numerical Stability</a>
       </div>
       <div class="hero-progress">
@@ -38,6 +39,43 @@
         <a href="#block-7">Generative</a>
         <a href="#block-8">Практика</a>
       </nav>
+    </section>
+
+    <section class="mindmap-overview" id="course-map" aria-label="Карта связей курса">
+      <div class="mindmap-overview__header">
+        <span>Obsidian map</span>
+        <h2>Темы как граф знаний</h2>
+      </div>
+      <div class="mindmap-graph" aria-label="Связи между блоками курса">
+        <svg class="mindmap-graph__links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M50 50 L22 18" />
+          <path d="M50 50 L50 13" />
+          <path d="M50 50 L78 18" />
+          <path d="M50 50 L88 50" />
+          <path d="M50 50 L78 82" />
+          <path d="M50 50 L50 88" />
+          <path d="M50 50 L22 82" />
+          <path d="M50 50 L12 50" />
+          <path d="M22 18 C40 8 60 8 78 18" />
+          <path d="M78 18 C94 34 94 66 78 82" />
+          <path d="M78 82 C60 92 40 92 22 82" />
+          <path d="M22 82 C6 66 6 34 22 18" />
+          <path d="M50 13 C64 34 64 66 50 88" />
+          <path d="M12 50 C34 38 66 38 88 50" />
+        </svg>
+        <a class="mindmap-node mindmap-node--core" href="#block-1">
+          <span>ML Notes</span>
+          <small>63 темы</small>
+        </a>
+        <a class="mindmap-node mindmap-node--math" href="#block-1" style="--x: 22%; --y: 18%;">Математика</a>
+        <a class="mindmap-node mindmap-node--classic" href="#block-2" style="--x: 50%; --y: 13%;">Classic ML</a>
+        <a class="mindmap-node mindmap-node--neural" href="#block-3" style="--x: 78%; --y: 18%;">Нейросети</a>
+        <a class="mindmap-node mindmap-node--training" href="#block-4" style="--x: 88%; --y: 50%;">Обучение</a>
+        <a class="mindmap-node mindmap-node--arch" href="#block-5" style="--x: 78%; --y: 82%;">Архитектуры</a>
+        <a class="mindmap-node mindmap-node--llm" href="#block-6" style="--x: 50%; --y: 88%;">LLM</a>
+        <a class="mindmap-node mindmap-node--gen" href="#block-7" style="--x: 22%; --y: 82%;">Generative</a>
+        <a class="mindmap-node mindmap-node--practice" href="#block-8" style="--x: 12%; --y: 50%;">Практика</a>
+      </div>
     </section>
 
     <section class="section" id="block-1" data-block="1">
@@ -426,6 +464,69 @@
       </div>
     </section>
   </div>
+  <button class="mindmap-floating-toggle mindmap-menu-toggle" type="button" aria-controls="mindmap-menu" aria-expanded="false">Карта</button>
+  <div class="mindmap-menu-backdrop" data-mindmap-close hidden></div>
+  <aside class="mindmap-menu" id="mindmap-menu" aria-hidden="true" aria-label="Меню карты курса">
+    <div class="mindmap-menu__top">
+      <div>
+        <span>ML Notes</span>
+        <strong>Карта курса</strong>
+      </div>
+      <button type="button" data-mindmap-close aria-label="Закрыть меню">×</button>
+    </div>
+    <nav class="mindmap-menu__links" aria-label="Навигация по блокам">
+      <a href="#course-map" data-mindmap-close>Graph overview</a>
+      <a href="#block-1" data-mindmap-close>1. Математика</a>
+      <a href="#block-2" data-mindmap-close>2. Классическое ML</a>
+      <a href="#block-3" data-mindmap-close>3. База нейросетей</a>
+      <a href="#block-4" data-mindmap-close>4. Обучение</a>
+      <a href="#block-5" data-mindmap-close>5. Архитектуры</a>
+      <a href="#block-6" data-mindmap-close>6. LLM</a>
+      <a href="#block-7" data-mindmap-close>7. Generative Models</a>
+      <a href="#block-8" data-mindmap-close>8. Практика обучения</a>
+    </nav>
+  </aside>
+  <script>
+    (function () {
+      var menu = document.getElementById("mindmap-menu");
+      if (!menu) {
+        return;
+      }
+
+      var toggles = Array.prototype.slice.call(document.querySelectorAll(".mindmap-menu-toggle"));
+      var backdrop = document.querySelector(".mindmap-menu-backdrop");
+      var closers = Array.prototype.slice.call(document.querySelectorAll("[data-mindmap-close]"));
+
+      function setMenuOpen(isOpen) {
+        document.body.classList.toggle("mindmap-menu-open", isOpen);
+        menu.setAttribute("aria-hidden", isOpen ? "false" : "true");
+        toggles.forEach(function (toggle) {
+          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+        if (backdrop) {
+          backdrop.hidden = !isOpen;
+        }
+      }
+
+      toggles.forEach(function (toggle) {
+        toggle.addEventListener("click", function () {
+          setMenuOpen(!document.body.classList.contains("mindmap-menu-open"));
+        });
+      });
+
+      closers.forEach(function (closer) {
+        closer.addEventListener("click", function () {
+          setMenuOpen(false);
+        });
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          setMenuOpen(false);
+        }
+      });
+    })();
+  </script>
   <script src="bundle.js" defer></script>
 </body>
 </html>
