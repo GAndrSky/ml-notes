@@ -393,7 +393,7 @@
       "</span>" +
       '<span class="ml-page-nav__link-check' +
       (isVisited ? " is-visible" : "") +
-      '" aria-hidden="true">✓</span>' +
+      '" aria-hidden="true">\u2713</span>' +
       "</a>"
     );
   }
@@ -462,6 +462,191 @@
     );
   }
 
+  function getStudyMeta() {
+    var sectionMeta = {
+      math: {
+        time: "90-120 min",
+        job: "Medium",
+        depth: "Deep",
+        tldr: "Mathematics is the language for shapes, gradients, probabilities, and information; without it ML becomes a list of recipes.",
+        why: "This topic helps you read formulas, check dimensions, understand algorithm limits, and explain decisions in interviews without memorizing scripts."
+      },
+      "classic-ml": {
+        time: "75-120 min",
+        job: "High",
+        depth: "Solid",
+        tldr: "Classical ML builds core engineering intuition: data, features, metrics, baselines, overfitting, and validation.",
+        why: "Most practical ML work starts with problem framing, clean validation, a strong baseline, and the correct metric rather than a large neural model."
+      },
+      "neural-basics": {
+        time: "90-120 min",
+        job: "High",
+        depth: "Solid",
+        tldr: "Neural basics explain how layers transform signals into representations and why nonlinearities make models expressive.",
+        why: "This is the bridge to backprop, initialization, activations, losses, and the reasons some networks train stably while others fail."
+      },
+      training: {
+        time: "100-140 min",
+        job: "High",
+        depth: "Deep",
+        tldr: "Training answers the practical question: how parameters move, why optimization breaks, and how to debug it.",
+        why: "In real projects, quality is often limited by optimizer choice, learning rate, gradient stability, precision, and loss diagnostics."
+      },
+      architectures: {
+        time: "100-150 min",
+        job: "High",
+        depth: "Deep",
+        tldr: "Architectures show which inductive biases we put into models for images, sequences, and attention-based systems.",
+        why: "This topic helps you choose models for data, track tensor shapes, and explain why CNNs, RNNs, and Transformers solve different problems."
+      },
+      llm: {
+        time: "100-150 min",
+        job: "High",
+        depth: "Deep",
+        tldr: "The LLM block connects tokenization, pre-training, alignment, adaptation, inference, and scaling laws.",
+        why: "Modern ML roles increasingly require understanding tokenization, fine-tuning, LoRA, RLHF, and limitations of large language models."
+      },
+      generative: {
+        time: "120-160 min",
+        job: "Medium",
+        depth: "Deep",
+        tldr: "Generative models explain how a model learns a data distribution and then samples new objects from it.",
+        why: "VAE, GAN, and Diffusion connect probability, optimization, and representation learning, which makes them important for research depth."
+      },
+      "training-practice": {
+        time: "90-130 min",
+        job: "High",
+        depth: "Solid",
+        tldr: "Training practice turns theory into a real pipeline: distributed training, memory tradeoffs, profiling, and debugging.",
+        why: "Production ML requires training models under GPU, memory, time, and unstable-data constraints, not just knowing the equations."
+      }
+    };
+
+    var meta = sectionMeta[currentSection.id] || sectionMeta.math;
+    var focus = currentPage.label.replace(/^\d+(?:\.\d+)?[a-z]?\s+/i, "");
+
+    if (/backprop|adam|optimizer|regularization|stability|mixed precision|clipping|initialization/i.test(currentPage.label)) {
+      meta = Object.assign({}, meta, { job: "High", depth: "Deep" });
+    }
+
+    return Object.assign({}, meta, { focus: focus });
+  }
+
+  function buildPrerequisiteMarkup() {
+    var prerequisiteItems = [];
+    var neuronPage = pages.find(function (page) {
+      return page.path === "03_neural_basics/01_perceptron_and_neuron.html";
+    });
+
+    if (previousPage) {
+      prerequisiteItems.push(
+        '<a class="ml-study-header__link" href="' +
+        pageHref(previousPage) +
+        '">' +
+        escapeHtml(previousPage.label) +
+        "</a>"
+      );
+    }
+
+    if (currentSection.id !== "math") {
+      prerequisiteItems.push(
+        '<a class="ml-study-header__link" href="' +
+        pageHref(pages[0]) +
+        '">1.1 Linear algebra</a>'
+      );
+    }
+
+    if (
+      neuronPage &&
+      (currentSection.id === "training" ||
+        currentSection.id === "architectures" ||
+        currentSection.id === "llm" ||
+        currentSection.id === "generative")
+    ) {
+      prerequisiteItems.push(
+        '<a class="ml-study-header__link" href="' +
+        pageHref(neuronPage) +
+        '">3.1 Neuron</a>'
+      );
+    }
+
+    if (!prerequisiteItems.length) {
+      return "Course start: school algebra is enough.";
+    }
+
+    return prerequisiteItems.join('<span class="ml-study-header__separator">-></span>');
+  }
+
+  function buildStudyHeaderMarkup() {
+    var meta = getStudyMeta();
+
+    return (
+      '<section class="ml-study-header" data-study-header="1" aria-label="Study structure">' +
+      '<div class="ml-study-header__top">' +
+      '<div>' +
+      '<span class="ml-study-header__kicker">Study brief</span>' +
+      '<h2 class="ml-study-header__title">' +
+      escapeHtml(meta.focus) +
+      "</h2>" +
+      "</div>" +
+      '<div class="ml-study-header__badges">' +
+      '<span class="ml-study-header__badge">Time: ' +
+      escapeHtml(meta.time) +
+      "</span>" +
+      '<span class="ml-study-header__badge">Job: ' +
+      escapeHtml(meta.job) +
+      "</span>" +
+      '<span class="ml-study-header__badge">Research: ' +
+      escapeHtml(meta.depth) +
+      "</span>" +
+      "</div>" +
+      "</div>" +
+      '<p class="ml-study-header__tldr"><strong>TL;DR:</strong> ' +
+      escapeHtml(meta.tldr) +
+      "</p>" +
+      '<div class="ml-study-header__grid">' +
+      '<div class="ml-study-header__panel">' +
+      '<span class="ml-study-header__label">Prerequisites</span>' +
+      '<div class="ml-study-header__links">' +
+      buildPrerequisiteMarkup() +
+      "</div>" +
+      "</div>" +
+      '<div class="ml-study-header__panel">' +
+      '<span class="ml-study-header__label">Why this matters</span>' +
+      '<p>' +
+      escapeHtml(meta.why) +
+      "</p>" +
+      "</div>" +
+      "</div>" +
+      '<div class="ml-study-header__flow">' +
+      "<span>1. Formulas</span>" +
+      "<span>2. Intuition</span>" +
+      "<span>3. Code / interactive</span>" +
+      "<span>4. Pitfalls</span>" +
+      "<span>5. Exercises / checkpoint</span>" +
+      "</div>" +
+      "</section>"
+    );
+  }
+
+  function insertStudyHeader() {
+    if (!pageContainer || pageContainer.querySelector('.ml-study-header[data-study-header="1"]')) {
+      return;
+    }
+
+    var wrapper = document.createElement("div");
+    wrapper.innerHTML = buildStudyHeaderMarkup();
+    var studyHeader = wrapper.firstElementChild;
+    var hero = pageContainer.querySelector(".hero");
+
+    if (hero && hero.parentNode === pageContainer) {
+      hero.insertAdjacentElement("afterend", studyHeader);
+      return;
+    }
+
+    pageContainer.insertBefore(studyHeader, pageContainer.firstElementChild);
+  }
+
   var initialVisitedPaths = readVisitedPaths();
   if (initialVisitedPaths.indexOf(currentPage.path) === -1) {
     initialVisitedPaths.push(currentPage.path);
@@ -484,7 +669,7 @@
     '<div class="ml-page-nav__toolbar-meta">' +
     '<span class="ml-page-nav__current-kicker">' +
     escapeHtml(currentPage.sectionLabel) +
-    " · " +
+    " \u00b7 " +
     (currentPage.pageIndexInSection + 1) +
     " / " +
     currentPage.sectionSize +
@@ -557,6 +742,7 @@
     ".ml-explainer-section",
     ".ml-advanced-section",
     ".ml-endcap-section",
+    ".ml-study-header",
     ".ml-formula-explainer"
   ].join(", ");
 
@@ -618,6 +804,7 @@
     }
   }
 
+  insertStudyHeader();
   placeBottomPager();
   window.addEventListener("load", placeBottomPager);
 
