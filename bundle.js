@@ -269,8 +269,11 @@
       .replace(/'/g, "&#39;");
   }
 
-  function ensureScript(relativePath, dataAttributeName) {
+  function ensureScript(relativePath, dataAttributeName, onLoad) {
     if (dataAttributeName && document.querySelector("script[" + dataAttributeName + '="1"]')) {
+      if (typeof onLoad === "function") {
+        window.setTimeout(onLoad, 0);
+      }
       return;
     }
 
@@ -278,6 +281,10 @@
     script.src = new URL(relativePath, rootUrl).href;
     script.defer = true;
     script.async = false;
+    if (typeof onLoad === "function") {
+      script.addEventListener("load", onLoad);
+      script.addEventListener("error", onLoad);
+    }
     if (dataAttributeName) {
       script.setAttribute(dataAttributeName, "1");
     }
@@ -522,6 +529,68 @@
 
   document.body.insertBefore(navShell, document.body.firstChild);
 
+  var pageContainer = document.querySelector(".page");
+
+  var detachedLessonContentSelector = [
+    "main",
+    "section",
+    "article",
+    "aside",
+    "header",
+    "footer",
+    ".hero",
+    ".card",
+    ".grid-2",
+    ".grid-3",
+    ".formula",
+    ".formula-anatomy",
+    ".intuition",
+    ".info",
+    ".warn",
+    ".success",
+    ".step",
+    ".concept-walkthrough",
+    ".classic-theory-note",
+    ".classic-viz-note",
+    ".ml-practice-section",
+    ".ml-theory-section",
+    ".ml-explainer-section",
+    ".ml-advanced-section",
+    ".ml-endcap-section",
+    ".ml-formula-explainer"
+  ].join(", ");
+
+  function isDetachedLessonContent(element) {
+    if (!element || element === pageContainer || element === navShell) {
+      return false;
+    }
+
+    if (element.matches("script, style, link, template, noscript")) {
+      return false;
+    }
+
+    if (
+      element.classList.contains("ml-page-nav-shell") ||
+      element.classList.contains("ml-page-pager")
+    ) {
+      return false;
+    }
+
+    return element.matches(detachedLessonContentSelector);
+  }
+
+  function normalizeDetachedLessonContent() {
+    if (!pageContainer) {
+      return;
+    }
+
+    Array.prototype.slice.call(document.body.children).forEach(function (element) {
+      if (isDetachedLessonContent(element)) {
+        pageContainer.appendChild(element);
+      }
+    });
+  }
+
   var bottomNav = document.createElement("nav");
   bottomNav.className = "ml-page-pager";
   bottomNav.setAttribute("aria-label", "\u041f\u0435\u0440\u0435\u0445\u043e\u0434 \u043c\u0435\u0436\u0434\u0443 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430\u043c\u0438");
@@ -535,12 +604,22 @@
     "</a>" +
     buildPagerCard(nextPage, "\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u0442\u0435\u043c\u0430 \u2192", "is-next", "\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u044f\u044f \u0442\u0435\u043c\u0430 \u0431\u043b\u043e\u043a\u0430");
 
-  var pageContainer = document.querySelector(".page");
-  if (pageContainer) {
-    pageContainer.appendChild(bottomNav);
-  } else {
-    document.body.appendChild(bottomNav);
+  function placeBottomPager() {
+    if (pageContainer) {
+      normalizeDetachedLessonContent();
+      if (pageContainer.lastElementChild !== bottomNav) {
+        pageContainer.appendChild(bottomNav);
+      }
+      return;
+    }
+
+    if (document.body.lastElementChild !== bottomNav) {
+      document.body.appendChild(bottomNav);
+    }
   }
+
+  placeBottomPager();
+  window.addEventListener("load", placeBottomPager);
 
   var mobileToggle = navShell.querySelector(".ml-page-nav__mobile-toggle");
   var overlay = navShell.querySelector(".ml-page-nav__overlay");
@@ -709,30 +788,30 @@
   );
 
   if (currentPage.sectionId === "classic-ml") {
-    ensureScript("shared-classic-ml-practice.js", "data-ml-practice-script");
+    ensureScript("shared-classic-ml-practice.js", "data-ml-practice-script", placeBottomPager);
   }
 
-  ensureScript("shared-theory-notes.js", "data-ml-theory-script");
+  ensureScript("shared-theory-notes.js", "data-ml-theory-script", placeBottomPager);
 
   if (currentPage.sectionId !== "math") {
-    ensureScript("shared-explainer-notes.js", "data-ml-explainer-script");
+    ensureScript("shared-explainer-notes.js", "data-ml-explainer-script", placeBottomPager);
   }
 
-  ensureScript("shared-advanced-notes.js", "data-ml-advanced-script");
+  ensureScript("shared-advanced-notes.js", "data-ml-advanced-script", placeBottomPager);
 
-  ensureScript("shared-endcap-notes.js", "data-ml-endcap-script");
-  ensureScript("shared-interactive-guides.js", "data-ml-interactive-guides-script");
+  ensureScript("shared-endcap-notes.js", "data-ml-endcap-script", placeBottomPager);
+  ensureScript("shared-interactive-guides.js", "data-ml-interactive-guides-script", placeBottomPager);
 
   if (hasFormulaExplainCandidates) {
-    ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script");
+    ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script", placeBottomPager);
   }
 
   if (hasMathCandidates) {
-    ensureScript("shared-katex.js", "data-ml-katex-script");
+    ensureScript("shared-katex.js", "data-ml-katex-script", placeBottomPager);
   }
 
   if (hasCodeCandidates) {
-    ensureScript("shared-code-highlight.js", "data-ml-code-highlight-script");
+    ensureScript("shared-code-highlight.js", "data-ml-code-highlight-script", placeBottomPager);
   }
 })();
 
