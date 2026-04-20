@@ -1,4 +1,4 @@
-﻿(function(){
+(function(){
   if(window.__mlNotesFormulaAnatomyInitialized){return;}
   window.__mlNotesFormulaAnatomyInitialized=true;
   var page=window.__mlNotesCurrentPagePath;
@@ -396,7 +396,13 @@
     if(/\bK\b/.test(text)){add(kind==='attention'?row('K','Key','Как элемент описан для сопоставления с query.'):row('K','число классов','Сколько классов учитывается в сумме: k идёт от 1 до K.'));}
     if(/x[_\s]?\{?j\}?|x_j/i.test(text)){add(row('x_j','j-й признак','Конкретный признак объекта, по которому дерево проверяет условие.'));}
     if(/\bj\b|x_j/i.test(text)){add(row('j','индекс признака','Номер признака, выбранного для текущего split.'));}
-    if(/\bt\b|threshold|порог/i.test(text)){add(row('t','порог split','Граница, относительно которой объект отправляется в левую или правую ветку.'));}
+    if(/\bt\b|threshold|порог/i.test(text)){
+      if(kind==='logistic'){
+        add(row('t','decision threshold','Порог вероятности: если \\hat{p} не меньше t, объект относят к классу 1.'));
+      }else{
+        add(row('t','порог split','Граница, относительно которой объект отправляется в левую или правую ветку.'));
+      }
+    }
     if(/left|right|branch|вет/i.test(text)){add(row('left/right','ветви дерева','Два направления после проверки условия: одна ветка для true, другая для false.'));}
     if(/ŷ|y_hat|\\hat\{y\}/i.test(text)){add(row('ŷ','предсказание','Численный ответ модели для объекта.'));}
     if(/y_i|y\\mid|\\hat\{y\}|ŷ|\by\b/i.test(text)){add(row('y','истинный ответ','Правильное значение или метка из данных.'));}
