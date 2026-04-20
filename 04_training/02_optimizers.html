@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -908,6 +908,51 @@ drawWD();
 drawLRSchedule();
 showCode('api',document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Оптимизатор как правило движения по loss landscape</h2>
+      <p>Optimizer превращает градиент в обновление параметров. SGD делает прямой шаг против градиента, momentum добавляет инерцию, RMSProp/Adam масштабируют шаги по истории градиентов.</p>
+      <p>Разница между optimizer-ами особенно заметна на плохо обусловленных поверхностях loss: узкие долины, разные масштабы параметров, шумные mini-batches и sparse gradients требуют разной динамики движения.</p>
+      <p>Выбор optimizer-а нельзя отделять от learning rate, batch size, scheduler, normalization и weight decay. На практике optimizer — это часть общей системы обучения, а не одна изолированная формула.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>SGD двигается локально вниз по поверхности, но может зигзагами идти по узкой долине.</li>
+            <li>Momentum сглаживает направление движения и помогает быстрее проходить длинные пологие направления.</li>
+            <li>Adaptive methods меняют размер шага по координатам: параметры с большими историческими градиентами получают меньший effective step.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Mini-batch gradient — случайная оценка полного градиента, поэтому оптимизация всегда содержит шум.</li>
+            <li>Momentum можно читать как exponential moving average направления, где недавние batch-и важнее старых.</li>
+            <li>Шум SGD иногда помогает выходить из резких минимумов, но слишком большой шум мешает сходимости.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Learning rate задаёт базовый размер шага; слишком большой lr даёт расходимость, слишком маленький — медленное обучение.</li>
+            <li>Momentum уменьшает variance направления, но при слишком большом lr может усиливать overshoot.</li>
+            <li>Adaptive scaling ускоряет раннее обучение, но не всегда даёт лучшую финальную generalization.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Начинай диагностику с learning rate: это самая чувствительная ручка почти для всех optimizer-ов.</li>
+            <li>Сравнивай optimizer-ы при честно подобранном lr и scheduler, иначе вывод будет случайным.</li>
+            <li>Смотри train curve в первые сотни шагов: divergence, plateau и spikes часто видны сразу.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если SGD прыгает между стенками узкой долины, momentum усредняет предыдущие направления и позволяет двигаться вдоль долины более стабильно.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Оптимизаторы</h2>
@@ -953,14 +998,3 @@ showCode('api',document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

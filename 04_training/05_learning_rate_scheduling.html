@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -461,6 +461,51 @@ function showCode(key, btn){
 drawSchedule();
 showCode('cosine', document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Learning rate schedule как управление скоростью обучения во времени</h2>
+      <p>Learning rate — самая сильная ручка оптимизации. Scheduler меняет её во времени: warmup защищает первые шаги, decay помогает сходиться, cosine annealing плавно снижает шаг, OneCycle временно разгоняет обучение.</p>
+      <p>Постоянный lr редко оптимален на всём протяжении тренировки. В начале параметры случайны и gradients нестабильны, в середине нужен быстрый прогресс, ближе к концу полезны меньшие шаги для уточнения решения.</p>
+      <p>Scheduler нужно выбирать вместе с optimizer-ом, batch size и total training budget. Один и тот же schedule может работать по-разному при другой длине обучения.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Большой lr делает длинные шаги по loss landscape и может перепрыгивать хорошие области.</li>
+            <li>Малый lr даёт точную локальную настройку, но может застревать или учиться слишком медленно.</li>
+            <li>Warmup постепенно увеличивает радиус шага, пока сеть выходит из случайной инициализации.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>SGD noise scale зависит от lr и batch size: schedule фактически меняет температуру оптимизации.</li>
+            <li>Больший lr может помогать искать широкие области, меньший lr — стабилизировать финальное решение.</li>
+            <li>Резкие изменения lr могут менять распределение updates и вызывать spikes loss.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Warmup особенно важен для Transformer-like моделей, больших batch и mixed precision.</li>
+            <li>Cosine decay плавно уменьшает step size без резких границ.</li>
+            <li>ReduceLROnPlateau реагирует на validation metric, но требует аккуратного patience и noise tolerance.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Сначала найди разумный максимальный lr через короткий range test или быстрые прогоны.</li>
+            <li>Логируй lr вместе с loss, иначе трудно понять, почему изменилась динамика.</li>
+            <li>При изменении total epochs пересчитай schedule, а не копируй старые параметры.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если loss стабильно падает первые 5 эпох, а потом validation застрял, cosine decay или ReduceLROnPlateau может дать меньшие шаги и улучшить fine-tuning.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Learning Rate Scheduling</h2>
@@ -506,12 +551,3 @@ showCode('cosine', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-

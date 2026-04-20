@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -259,6 +259,51 @@ function showCode(key, btn){
 calcMP();
 showCode('fp16', document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Mixed precision как компромисс скорости, памяти и численной точности</h2>
+      <p>Mixed precision использует низкую точность для части операций, чтобы ускорить обучение и снизить расход памяти. Обычно матричные операции выполняются в FP16/BF16, а master weights, некоторые reductions и чувствительные операции остаются в FP32.</p>
+      <p>FP16 даёт высокую скорость, но имеет узкий динамический диапазон и легко ловит underflow/overflow. BF16 имеет меньше mantissa precision, но гораздо шире range, поэтому часто стабильнее для больших моделей.</p>
+      <p>Loss scaling нужен в FP16, чтобы маленькие градиенты не округлялись в ноль. Dynamic scaler увеличивает или уменьшает scale в зависимости от того, появились ли overflow/NaN.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Числа в низкой точности лежат на более грубой сетке представимых значений.</li>
+            <li>Малые градиенты могут исчезать между ячейками этой сетки, а большие значения могут уходить в infinity.</li>
+            <li>Autocast выбирает, какие операции безопасно считать в низкой точности, а какие лучше оставить в FP32.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Округление добавляет численный шум, который не равен полезному стохастическому шуму SGD.</li>
+            <li>BF16 лучше сохраняет масштаб больших и малых значений, но хуже различает близкие числа.</li>
+            <li>NaN/Inf часто появляются не случайно, а из-за конкретных операций: exp, division, softmax, log, norm.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Mixed precision меняет не objective, а численную реализацию updates.</li>
+            <li>Loss scaling защищает backward pass от underflow градиентов.</li>
+            <li>Некоторые операции должны оставаться в FP32, иначе optimizer state или normalization могут стать нестабильными.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Используй autocast и GradScaler вместо ручного перевода всей модели в FP16.</li>
+            <li>Для новых GPU и больших моделей часто проверяй BF16 как более стабильный режим.</li>
+            <li>При NaN сначала отключи AMP на короткий прогон, чтобы отделить численную проблему от архитектурной.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если градиент 1e-8 в FP16 округляется в ноль, loss scaling умножает loss, делает градиент крупнее в backward, а перед step масштаб корректно снимается.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Mixed Precision Training</h2>
@@ -304,11 +349,3 @@ showCode('fp16', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

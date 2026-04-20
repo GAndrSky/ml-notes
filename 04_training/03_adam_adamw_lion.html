@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -847,6 +847,51 @@ buildHPSliders();
 runHP();
 showCode('adam', document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Adam, AdamW и Lion как разные способы нормировать шаг</h2>
+      <p>Adam хранит две истории: средний градиент и средний квадрат градиента. Первая история задаёт направление, вторая — масштабирует шаг по каждому параметру, чтобы шумные координаты двигались осторожнее.</p>
+      <p>AdamW отделяет weight decay от adaptive update. Это важно, потому что классический L2 penalty внутри Adam смешивается с per-parameter scaling и работает не так, как обычное уменьшение весов.</p>
+      <p>Lion использует sign-based update с momentum-like состоянием. Он может быть эффективен по памяти и скорости, но сильнее требует аккуратного выбора learning rate и weight decay.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Adam делает разные effective step sizes по разным координатам loss landscape.</li>
+            <li>AdamW дополнительно равномерно тянет веса к нулю, не смешивая этот эффект с адаптивным делителем.</li>
+            <li>Lion двигается по знаку направления, поэтому меньше зависит от точной величины градиента.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>EMA моментов — статистическая оценка среднего направления и масштаба шума по параметру.</li>
+            <li>Bias correction нужна, потому что в начале EMA стартует с нуля и занижает моменты.</li>
+            <li>Большой второй момент означает, что параметр часто получает крупные или шумные градиенты.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Adam часто быстро снижает loss в начале, особенно при sparse или разношкальных градиентах.</li>
+            <li>AdamW обычно предпочтительнее Adam для современных deep learning моделей из-за decoupled weight decay.</li>
+            <li>У Lion обычно learning rate меньше, чем у AdamW, а weight decay часто играет более заметную роль.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Для большинства современных сетей начинай с AdamW, а не Adam.</li>
+            <li>Не переносишь lr между AdamW и Lion напрямую: динамика шага другая.</li>
+            <li>Если validation хуже при хорошем train loss, проверь weight decay, scheduler и overfitting, а не только optimizer.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если у одного параметра градиенты постоянно в 100 раз больше, Adam уменьшит его effective step через второй момент, чтобы он не доминировал над обучением.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Adam, AdamW, Lion</h2>
@@ -892,14 +937,3 @@ showCode('adam', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

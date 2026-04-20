@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -291,6 +291,51 @@ function showCode(key, btn){
 drawClip();
 showCode('norm', document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Gradient clipping как ограничитель опасных шагов</h2>
+      <p>Gradient clipping ограничивает размер обновления, когда градиент становится слишком большим. Это особенно важно для RNN, Transformers, mixed precision и задач с редкими тяжёлыми batch-ами.</p>
+      <p>Clipping не исправляет причину нестабильности полностью. Он ставит предохранитель на шаг optimizer-а, но NaN, плохой loss scaling, неверные labels, слишком большой lr или unstable operation всё равно нужно диагностировать отдельно.</p>
+      <p>Различай clipping by norm и clipping by value. Norm clipping сохраняет направление общего градиента и ограничивает длину вектора, value clipping режет каждую координату отдельно и может сильнее исказить направление.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Gradient vector показывает направление шага, а clipping ограничивает его длину.</li>
+            <li>Norm clipping помещает update внутрь шара допустимого радиуса.</li>
+            <li>Value clipping режет отдельные координаты и может менять направление сильнее, чем norm clipping.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Редкие batch-и могут давать heavy-tailed gradients: большая часть шагов нормальна, но иногда возникает резкий пик.</li>
+            <li>Clipping уменьшает влияние таких выбросов на траекторию обучения.</li>
+            <li>Если clipping срабатывает почти всегда, threshold слишком мал или обучение действительно нестабильно.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Clipping применяется после backward и до optimizer.step.</li>
+            <li>Слишком маленький threshold замедляет обучение, потому что почти все шаги становятся искусственно короткими.</li>
+            <li>Clipping особенно полезен вместе с scheduler и mixed precision, где spikes могут быстро превратиться в overflow.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Логируй global grad norm и долю шагов, где clipping сработал.</li>
+            <li>При NaN проверь inputs, loss, lr, AMP scaler, exp/log/division операции и только потом меняй clipping.</li>
+            <li>Начинай с norm clipping, если нет причины резать значения по координатам.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если обычно grad norm около 2, но раз в 200 шагов прыгает до 300, clipping на 5 не даст одному batch-у разрушить параметры.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Gradient Clipping и стабильность</h2>
@@ -336,12 +381,3 @@ showCode('norm', document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-

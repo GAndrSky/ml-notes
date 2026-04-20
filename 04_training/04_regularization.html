@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -914,6 +914,51 @@ buildXLInputs();
 calcXL();
 showCode('bn',document.querySelector('#codeTabs button'));
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Регуляризация как управление capacity модели</h2>
+      <p>Регуляризация нужна, когда модель способна объяснить train set слишком точно, включая шум. Она добавляет ограничения или шум, чтобы решение стало проще, устойчивее и лучше переносилось на unseen data.</p>
+      <p>Weight decay, dropout, label smoothing, data augmentation и early stopping работают по-разному, но их общий смысл один: уменьшить зависимость модели от случайных деталей train-выборки.</p>
+      <p>Регуляризация не заменяет правильную валидацию. Если split неверный или есть leakage, regularization может лишь замаскировать проблему, но не сделать оценку честной.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Weight decay сжимает веса и делает функцию менее резкой.</li>
+            <li>Dropout заставляет сеть работать без части связей, поэтому представления становятся менее хрупкими.</li>
+            <li>Augmentation расширяет область вокруг примеров, где модель должна давать согласованный ответ.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>L2 weight decay можно читать как Gaussian prior на веса.</li>
+            <li>Dropout похож на обучение большого ансамбля подсетей с общими параметрами.</li>
+            <li>Label smoothing уменьшает чрезмерную уверенность и улучшает калибровку вероятностей.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Penalty меняет objective: модель минимизирует не только ошибку, но и цену сложности.</li>
+            <li>Early stopping выбирает параметры до момента, когда модель начинает подгонять train noise.</li>
+            <li>Слишком сильная регуляризация даёт underfitting: train и validation остаются плохими.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Диагностируй по train-validation gap: большой gap говорит о variance, плохой train score — о bias или optimization issue.</li>
+            <li>Weight decay и dropout тюнь отдельно: они не всегда взаимозаменяемы.</li>
+            <li>Не добавляй регуляризацию вслепую, если проблема на самом деле в learning rate, данных или loss.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если train accuracy 99%, а validation 78%, увеличение weight decay или dropout может помочь. Если train accuracy тоже 78%, регуляризация только ухудшит underfitting.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Регуляризация</h2>
@@ -959,14 +1004,3 @@ showCode('bn',document.querySelector('#codeTabs button'));
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

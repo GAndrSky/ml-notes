@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -786,6 +786,51 @@ showCode('numpy',document.querySelector('#codeTabs button'));
 calcNet();
 drawMask();
 </script>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Backpropagation как эффективное применение chain rule</h2>
+      <p>Backpropagation — это способ быстро посчитать, как каждый параметр сети влияет на итоговый loss. Он не является отдельной магией нейросетей: это reverse-mode automatic differentiation, применённый к computational graph.</p>
+      <p>Главная идея в локальности. Каждый узел графа знает только свою локальную производную и входящий сверху градиент. Перемножая эти локальные чувствительности в обратном порядке, сеть получает градиенты для миллионов параметров за один backward pass.</p>
+      <p>Практически backprop важен не только для вывода формул. Он объясняет vanishing gradients, exploding gradients, detach, in-place operation bugs, необходимость сохранения intermediate activations и стоимость памяти при обучении.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Loss можно представить как поверхность над пространством параметров, а градиент — как направление самого быстрого роста этой поверхности.</li>
+            <li>Backprop переносит чувствительность от выхода к ранним слоям через цепочку локальных преобразований.</li>
+            <li>Jacobian показывает, как маленькое движение входа слоя меняет выход слоя; VJP умножает этот Jacobian на градиент сверху.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Если loss является negative log-likelihood, градиент показывает, как изменить параметры, чтобы повысить вероятность наблюдаемых ответов.</li>
+            <li>Mini-batch gradient — шумная оценка полного градиента по распределению данных.</li>
+            <li>Слишком маленький или слишком большой gradient signal искажает обучение: модель либо почти не обновляет ранние слои, либо делает нестабильные шаги.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Reverse-mode AD эффективен, когда параметров много, а loss один: именно это типично для нейросетей.</li>
+            <li>Backward pass переиспользует промежуточные значения forward pass, поэтому memory footprint растёт с глубиной и размером batch.</li>
+            <li>Градиент сам по себе не обучает модель; optimizer решает, как превратить градиент в шаг параметров.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Проверяй shapes градиентов и параметров, особенно вокруг transpose, broadcasting и batch dimension.</li>
+            <li>Не используй detach, no_grad или in-place операции там, где нужен gradient flow.</li>
+            <li>Если обучение не идёт, смотри norm градиентов по слоям: нули, NaN и резкие пики сразу показывают проблему.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Для z = w*x + b и loss L градиент по w равен dL/dz * x. Если x большой, тот же upstream gradient даст больший шаг по w, поэтому масштаб входов напрямую влияет на обучение.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Backpropagation</h2>
@@ -831,15 +876,3 @@ drawMask();
 <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-

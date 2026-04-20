@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -451,6 +451,51 @@ showCode('xavier', document.querySelector('#codeTabs button'));
 </script>
 <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Инициализация весов как контроль потока variance</h2>
+      <p>Инициализация задаёт стартовую динамику сети до первого шага optimizer-а. Если variance активаций или градиентов растёт с глубиной, обучение взрывается. Если variance затухает, ранние слои почти не учатся.</p>
+      <p>Xavier/Glorot и He initialization выводятся из требования сохранить масштаб сигнала при прохождении через слой. Выбор зависит от activation: tanh/sigmoid требуют одного масштаба, ReLU-подобные функции — другого.</p>
+      <p>Правильная инициализация не гарантирует хорошего качества, но плохая может убить обучение полностью. Особенно это заметно в глубоких MLP, CNN без normalization и Transformer-блоках без аккуратного residual scaling.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Инициализация задаёт начальный радиус облака активаций в каждом слое.</li>
+            <li>Слишком большие веса растягивают пространство и насыщают активации.</li>
+            <li>Слишком маленькие веса сжимают представления к почти одинаковым значениям.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Веса стартуют как случайные величины с выбранной дисперсией.</li>
+            <li>Цель fan-in/fan-out scaling — сохранить variance активаций и градиентов примерно постоянной.</li>
+            <li>Symmetry breaking нужен, чтобы нейроны одного слоя не учились одинаково.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Плохая инициализация создаёт vanishing/exploding gradients ещё до выбора optimizer-а.</li>
+            <li>Normalization layers расширяют допустимый диапазон инициализаций, но не делают её неважной.</li>
+            <li>Residual connections помогают градиенту проходить глубже, но scale residual ветвей всё равно важен.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Выбирай initialization под activation: He для ReLU-like, Xavier для tanh/sigmoid-like.</li>
+            <li>Проверяй распределение активаций на первом forward pass до обучения.</li>
+            <li>Не инициализируй все веса одинаково: это ломает symmetry breaking.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если в 50-слойной сети variance активаций умножается на 1.2 в каждом слое, к выходу она вырастет примерно в 1.2^50, то есть почти в 9100 раз.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Инициализация весов глубже</h2>
@@ -493,12 +538,3 @@ showCode('xavier', document.querySelector('#codeTabs button'));
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
