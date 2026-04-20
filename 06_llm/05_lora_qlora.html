@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -202,6 +202,50 @@ LoRA:
   </script>
   <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>LoRA/QLoRA как параметрически дешёвое изменение поведения</h2>
+      <p>LoRA исходит из наблюдения, что для адаптации модели не всегда нужно менять всю огромную матрицу весов. Достаточно учить low-rank поправку, которая добавляется к замороженным весам и меняет нужное поведение.</p>
+      <p>Это даёт сильную практическую экономию: меньше обучаемых параметров, меньше optimizer state, проще хранить несколько адаптеров под разные задачи. QLoRA добавляет к этому quantization base model, чтобы обучать адаптеры ещё дешевле по памяти.</p>
+      <p>Но LoRA не бесплатная магия. Rank, target modules, alpha, dropout, качество данных и quantization format сильно влияют на то, сможет ли адаптер выразить нужное изменение.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Base model остаётся основным носителем знаний, adapter задаёт компактный поведенческий сдвиг.</li>
+          <li>Rank r контролирует bottleneck: слишком малый rank недовыражает задачу, слишком большой повышает риск переобучения и стоимость.</li>
+          <li>Target modules определяют, какие части computation graph вообще могут измениться.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Начинай с attention projections и MLP projections, затем проверяй ablation по target modules.</li>
+          <li>Следи за trainable params, VRAM, validation loss и task-specific evals, а не только за training loss.</li>
+          <li>Для QLoRA проверяй, не ломает ли quantization редкие доменные навыки или численную стабильность.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Ожидать, что маленький adapter добавит знания, которых нет в base model и данных.</li>
+          <li>Поднимать rank вместо исправления плохого датасета.</li>
+          <li>Сравнивать LoRA runs без одинакового prompt format и eval protocol.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Объясни формулу ΔW = BA: большая поправка заменяется произведением двух маленьких матриц.</li>
+          <li>Скажи, почему это экономит optimizer state и память.</li>
+          <li>Добавь ограничения: capacity adapter-а ограничена rank-ом и выбранными target modules.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: LoRA / QLoRA</h2>
@@ -244,12 +288,3 @@ LoRA:
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-

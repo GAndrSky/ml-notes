@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -158,6 +158,50 @@ data loading
     </ul>
   </section>
 <!-- frontier-deepening:end -->
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Profiling как поиск настоящего bottleneck, а не угадывание</h2>
+      <p>Performance optimization без профилирования почти всегда превращается в гадание. Training step состоит из dataloader, host-to-device transfer, forward, backward, optimizer step, communication и logging. Узкое место может быть в любом из этих сегментов.</p>
+      <p>Главная задача profiling — не получить красивый граф, а отделить compute-bound проблему от memory-bound, input-bound или communication-bound проблемы.</p>
+      <p>Для больших моделей важно смотреть не только average step time. Нужны variance, spikes, GPU idle gaps, kernel fragmentation и synchronization points.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>GPU utilization низкий не всегда означает слабую модель: возможно, CPU/dataloader не успевает кормить GPU.</li>
+          <li>Много маленьких kernels может быть хуже одного крупного fused kernel.</li>
+          <li>Синхронизации скрывают latency и ломают параллелизм.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Разделяй data time, compute time, communication time и logging/checkpoint time.</li>
+          <li>Проверяй batch size, num_workers, pinned memory, prefetch, sequence padding и kernel fusion.</li>
+          <li>Сравнивай throughput в tokens/sec или samples/sec, а не только loss/sec.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Оптимизировать Python-код, когда bottleneck в GPU kernels или communication.</li>
+          <li>Смотреть только среднее время шага и игнорировать spikes.</li>
+          <li>Добавлять слишком частый logging/evaluation/checkpointing и портить throughput.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Скажи, что profiling начинается с breakdown training step.</li>
+          <li>Объясни difference between compute-bound, memory-bound, input-bound, communication-bound.</li>
+          <li>Приведи пример: если GPU idle, проверь dataloader и host-to-device transfer.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Profiling и Performance</h2>
@@ -202,11 +246,3 @@ data loading
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

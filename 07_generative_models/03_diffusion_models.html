@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -244,6 +244,50 @@
   </script>
   <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Diffusion как обучение обратного процесса удаления шума</h2>
+      <p>Diffusion models превращают генерацию в последовательность простых denoising-задач. Forward process постепенно добавляет шум к данным, а neural network учится идти назад: предсказывать шум, чистый sample или velocity.</p>
+      <p>Сила diffusion в том, что обучение становится стабильнее adversarial игры: модель получает supervised-like сигнал на каждом noise level. Цена — sampling обычно требует много шагов, хотя современные samplers сильно ускоряют процесс.</p>
+      <p>Для подготовки важно понимать три слоя: noise schedule, prediction target и sampler. Они вместе определяют качество, скорость и устойчивость генерации.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Forward process фиксирован и разрушает данные до шума.</li>
+          <li>Reverse process обучается и постепенно восстанавливает структуру.</li>
+          <li>Score matching intuition: модель учится направлению, куда надо двигаться от шума к data manifold.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Проверяй noise schedule: слишком агрессивный schedule усложняет denoising.</li>
+          <li>Сравнивай ε-prediction, x0-prediction и v-prediction для конкретной архитектуры.</li>
+          <li>Оцени sampler steps, guidance scale и diversity вместе, потому что они конфликтуют.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Думать, что больше denoising steps всегда лучше: после точки насыщения растёт цена, а качество почти не меняется.</li>
+          <li>Ставить слишком высокий guidance и получать красивые, но менее разнообразные samples.</li>
+          <li>Путать training objective и sampling algorithm: модель одна, samplers могут быть разные.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Опиши forward noising и learned reverse denoising.</li>
+          <li>Объясни, почему задача обучения стабильнее GAN.</li>
+          <li>Добавь trade-off: качество и controllability против стоимости sampling.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Diffusion Models</h2>
@@ -286,12 +330,3 @@
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-

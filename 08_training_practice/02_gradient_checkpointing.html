@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -177,6 +177,50 @@ forward один раз
     </ul>
   </section>
 <!-- frontier-deepening:end -->
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Gradient checkpointing как обмен памяти на compute</h2>
+      <p>Backprop требует хранить activations, потому что они нужны для вычисления градиентов. В больших моделях именно activations часто становятся главным потребителем памяти, особенно при длинном context length.</p>
+      <p>Gradient checkpointing сохраняет только часть activations, а остальные пересчитывает во время backward. Поэтому память уменьшается, но compute и wall-clock time растут.</p>
+      <p>Это не оптимизация скорости. Это способ сделать training возможным при ограниченной памяти или поднять batch/context/model size ценой дополнительных forward recomputations.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Без checkpointing храним больше, считаем меньше.</li>
+          <li>С checkpointing храним меньше, считаем часть forward повторно.</li>
+          <li>Лучшие checkpoints ставятся на границах блоков, где recompute дешёв относительно memory saved.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Измеряй peak memory и step time до/после, а не только факт запуска.</li>
+          <li>Проверяй корректность с dropout/RNG: recompute должен быть согласованным.</li>
+          <li>Комбинируй checkpointing с mixed precision, FSDP и sequence packing осторожно.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Включить checkpointing везде и неожиданно сильно замедлить training.</li>
+          <li>Не учитывать, что memory bottleneck может быть optimizer state, а не activations.</li>
+          <li>Забыть проверить deterministic behavior при recomputation.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Объясни, какие activations нужны backward pass.</li>
+          <li>Скажи, что checkpointing удаляет часть activations и пересчитывает их.</li>
+          <li>Назови trade-off: меньше memory, больше compute.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Gradient Checkpointing</h2>
@@ -221,11 +265,3 @@ forward один раз
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

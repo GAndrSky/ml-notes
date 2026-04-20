@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -181,6 +181,50 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     </ul>
   </section>
 <!-- frontier-deepening:end -->
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>RLHF как оптимизация предпочтений под ограничением</h2>
+      <p>RLHF нужен там, где нет единственного правильного target-а, но есть человеческое предпочтение между ответами. Модель учится не просто повторять демонстрации, а сдвигать policy в сторону ответов, которые люди чаще выбирают.</p>
+      <p>Reward model является суррогатом, а не истиной. Поэтому весь RLHF держится на балансе: улучшать preference score, но не дать policy уйти слишком далеко от reference model и не начать эксплуатировать слабости reward model.</p>
+      <p>Самое важное для понимания RLHF: это не магический слой безопасности и не способ добавить знания. Это механизм изменения поведения под noisy preference signal.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>SFT задаёт стартовую policy, reward model оценивает ответы, PPO/DPO-подобный этап меняет вероятности ответов.</li>
+          <li>KL к reference model работает как страховочный трос: он ограничивает слишком резкие поведенческие сдвиги.</li>
+          <li>Reward hacking возникает, когда model learns to please the reward model instead of the human.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Оценивай helpfulness, harmlessness, factuality и refusal behavior раздельно.</li>
+          <li>Смотри reward score вместе с human eval: рост reward не всегда означает рост качества.</li>
+          <li>Проверяй regressions: RLHF может улучшить стиль, но ухудшить калибровку, краткость или фактическую точность.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Принимать reward model за объективную метрику истины.</li>
+          <li>Ставить слишком слабый KL и получать странный over-optimized style.</li>
+          <li>Считать RLHF заменой data quality, retrieval, reasoning evals или safety evals.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Опиши pipeline: SFT, preference data, reward model, policy optimization with KL.</li>
+          <li>Объясни proxy problem и reward hacking.</li>
+          <li>Скажи, что RLHF оптимизирует предпочтения, но требует независимых evals и ограничений.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: RLHF</h2>
@@ -225,12 +269,3 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-

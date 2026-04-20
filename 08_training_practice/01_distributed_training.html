@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -183,6 +183,50 @@ optimizer state не помещается
     </ul>
   </section>
 <!-- frontier-deepening:end -->
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Distributed training как борьба с памятью и коммуникацией</h2>
+      <p>Distributed training нужен не только для скорости. Часто одна модель или один batch просто не помещаются на один GPU, и приходится разделять параметры, optimizer state, gradients или данные.</p>
+      <p>DDP и FSDP решают разные задачи. DDP реплицирует модель и синхронизирует градиенты, что просто и эффективно, пока модель помещается на каждую карту. FSDP шардирует параметры и optimizer state, экономя память ценой более сложной коммуникации.</p>
+      <p>Главная инженерная мысль: после некоторого масштаба bottleneck переносится с compute на communication, dataloader, synchronization и memory movement.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Data parallelism делит batch, model parallelism делит модель, sharding делит состояние.</li>
+          <li>All-reduce gradients стоит времени и сети, а не FLOPs GPU.</li>
+          <li>Effective batch size меняет optimization dynamics, поэтому scaling требует LR/schedule adjustments.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Смотри GPU utilization, step time breakdown, communication time и dataloader wait.</li>
+          <li>Проверяй, одинаковы ли random seeds, shuffling и gradients across ranks.</li>
+          <li>Следи за memory per rank: параметры, gradients, activations, optimizer state, buffers.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Думать, что больше GPU всегда почти линейно ускоряют training.</li>
+          <li>Игнорировать network bandwidth и topology.</li>
+          <li>Сравнивать runs с разным effective batch без корректного LR scaling.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Сравни DDP и FSDP через память и коммуникацию.</li>
+          <li>Объясни all-reduce как синхронизацию градиентов.</li>
+          <li>Назови bottlenecks: communication, dataloader, memory, stragglers.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Distributed Training</h2>
@@ -227,11 +271,3 @@ optimizer state не помещается
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -347,6 +347,50 @@ for step in range(num_merges):
   </script>
   <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Tokenizer как часть модели, а не техническая мелочь</h2>
+      <p>Tokenizer задаёт то, какие фрагменты текста вообще доступны модели как атомарные единицы. Если строка распалась на слишком много токенов, attention платит больше compute, контекст расходуется быстрее, а статистика редких фрагментов становится шумнее.</p>
+      <p>Важно отделять лингвистическую интуицию от статистической. BPE, WordPiece и Unigram не обязаны находить красивые морфемы. Они строят компромисс между размером словаря, длиной последовательности и покрытием редких строк.</p>
+      <p>Для подготовки полезно думать о tokenization как о первом bottleneck LLM: до embeddings, attention и pre-training модель уже получила искажённое, дискретное представление текста.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Большой vocabulary уменьшает sequence length, но увеличивает embedding matrix и делает редкие токены менее обученными.</li>
+          <li>Маленький vocabulary лучше покрывает новые строки, но удлиняет контекст и повышает цену attention.</li>
+          <li>Byte-level tokenizer почти не имеет unknown tokens, но может давать странные разбиения для языков, символов и форматирования.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Смотри tokens per word / tokens per character на своём домене, а не только средние метрики на английском.</li>
+          <li>Проверяй код, числа, пробелы, Unicode, русский текст и специальные символы отдельно.</li>
+          <li>При смене tokenizer почти всегда нужна новая embedding matrix или полный re-training совместимых слоёв.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Думать, что токены равны словам и context length равен числу слов.</li>
+          <li>Сравнивать модели по context length без учёта tokenizer-а: 8k токенов у разных tokenizer-ов покрывают разный текст.</li>
+          <li>Игнорировать домен: tokenizer для общего текста может плохо сжимать логи, код, медицину или юридические документы.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Начни с проблемы word-level vocabulary: редкость, OOV и огромный словарь.</li>
+          <li>Объясни subword-компромисс: частые куски становятся короткими, редкие строки собираются из частей.</li>
+          <li>Заверши практическим выводом: tokenizer влияет на стоимость, контекст, качество embeddings и поведение модели.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Tokenization и BPE</h2>
@@ -389,11 +433,3 @@ for step in range(num_merges):
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-

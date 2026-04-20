@@ -21,6 +21,47 @@
   function spec(match,rows,intuition,analogy,example){return {match:match,rows:rows,intuition:intuition,analogy:analogy,example:example};}
   function includesAll(text,parts){return parts.every(function(part){return text.indexOf(part)!==-1;});}
   function cleanup(){all('.formula-anatomy[data-ml-generated="1"],details.intuition-block[data-ml-generated="1"]').forEach(function(el){el.remove();});}
+  function hasAny(text,patterns){return patterns.some(function(pattern){return pattern.test(text);});}
+  function formulaForAnatomy(el){
+    var prev=el.previousElementSibling;
+    if(prev&&prev.matches&&prev.matches('.formula,.fm,[data-render-tex]')){return prev;}
+    return null;
+  }
+  function weakStaticAnatomy(el){
+    if(!el||el.getAttribute('data-ml-generated')==='1'){return false;}
+    var formula=formulaForAnatomy(el);
+    var formulaText=formula?src(formula):'';
+    var anatomyText=norm(el.textContent||'');
+    var formulaLow=formulaText.toLowerCase();
+
+    if(hasAny(anatomyText,[
+      /Формула переводит линейный score/i,
+      /Если logit=0/i,
+      /Если один множитель равен 2/i,
+      /Как панель с несколькими ручками/i,
+      /Собирает вклад многих элементов в один итог/i,
+      /Показывает, как левая величина выражается через правую часть/i
+    ])){return true;}
+
+    if(/(?:σ\(z\)|threshold|logit)/i.test(anatomyText)&&!/(sigmoid|σ|logit|threshold|bce|binary|logistic|softmax|logits?)/i.test(formulaLow)){
+      return true;
+    }
+
+    if(/\b(?:query|key|value)\b/i.test(anatomyText)&&!/(attention|query|key|value|qk|softmax)/i.test(formulaLow)){
+      return true;
+    }
+
+    if(/w\s*\/\s*W\s+веса/i.test(anatomyText)&&!/(^|[^a-zа-я])w([^a-zа-я]|$)|weight|вес/i.test(formulaLow)){
+      return true;
+    }
+
+    return false;
+  }
+  function cleanupWeakStatic(){
+    all('.formula-anatomy').forEach(function(el){
+      if(weakStaticAnatomy(el)){el.remove();}
+    });
+  }
   function codeLike(text,el){
     if(!text){return true;}
     if(el.hasAttribute('data-code-block')||el.closest('pre,code,.code-block,.hljs')){return true;}
@@ -261,6 +302,10 @@
     {tokens:['θ'],row:row('θ','параметры','Обучаемые веса и другие настраиваемые величины.')},
     {tokens:['η'],row:row('η','learning rate','Размер шага оптимизации.')},
     {tokens:['λ'],row:row('λ','коэффициент штрафа','Сила регуляризации или дополнительного ограничения.')},
+    {tokens:['γ'],row:row('γ','дополнительный штраф','Часто задаёт цену за сложность split-а или компонента модели.')},
+    {tokens:['ρ'],row:row('ρ','корреляция / вес шага','В зависимости от формулы: связь между моделями или масштаб шага.')},
+    {tokens:['ν'],row:row('ν','shrinkage','Коэффициент, уменьшающий вклад нового learner-а.')},
+    {tokens:['ε'],row:row('ε','малое число / шум','Защита от деления на ноль или случайная ошибка модели.')},
     {tokens:['∇','grad'],row:row('∇','градиент','Направление роста функции по параметрам.')},
     {tokens:['∂'],row:row('∂','частная производная','Показывает чувствительность выхода к одному аргументу.')},
     {tokens:['Σ','sum'],row:row('Σ','сумма','Собирает вклад многих элементов в один итог.')},
@@ -272,10 +317,6 @@
     {tokens:['query'],row:row('Q','Query','Что текущий элемент ищет у других.')},
     {tokens:['key'],row:row('K','Key','Как элемент описан для сопоставления.')},
     {tokens:['value'],row:row('V','Value','Какую информацию элемент может передать.')},
-    {tokens:['w'],row:row('w','веса','Важности признаков или связей.')},
-    {tokens:['x'],row:row('x','вход','То, что формула берёт на вход.')},
-    {tokens:['y','ŷ'],row:row('y / ŷ','истина и прогноз','Сравнение правильного ответа и предсказания модели.')},
-    {tokens:['b'],row:row('b','bias','Смещение, меняющее порог или сдвиг решения.')},
     {tokens:['p('],row:row('P(·)','вероятность','Насколько событие или гипотеза согласуется с данными.')}
   ];
 
@@ -285,6 +326,23 @@
     return null;
   }
   function genericCategory(text){
+    if(/bpe|token|merge|vocab|wordpiece|sentencepiece/i.test(text)){return 'tokenization';}
+    if(/chinchilla|scaling|compute|parameters|tokens|loss.*compute/i.test(text)){return 'scaling';}
+    if(/lora|qlora|low-rank|adapter|ΔW|\bBA\b|\bAB\b/i.test(text)){return 'lora';}
+    if(/vae|elbo|encoder|decoder|reparameter|z\s*~/i.test(text)){return 'vae';}
+    if(/gan|minimax|generator|discriminator|wasserstein/i.test(text)){return 'gan';}
+    if(/diffusion|ddpm|score matching|β_t|alpha|x_t|ε_θ/i.test(text)){return 'diffusion';}
+    if(/ddp|fsdp|all-reduce|world size|gradient checkpoint|activation memory|flops|throughput|memory/i.test(text)){return 'systems';}
+    if(/gmm|gaussian mixture|responsibilit|em\b|π_k|μ_k|Σ_k/i.test(text)){return 'gmm';}
+    if(/pca|eigen|eigenvalue|eigenvector|variance explained|svd|component/i.test(text)){return 'pca';}
+    if(/svm|margin|hinge|kernel|rbf|support vector/i.test(text)){return 'svm';}
+    if(/boost|xgboost|lightgbm|catboost|pseudo-residual|learner|F_m|F_M|h_m|g_i|h_i|H_j|G_j/i.test(text)){return 'boosting';}
+    if(/cluster|k-means|centroid|silhouette|inertia|dbscan|eps|min_samples/i.test(text)){return 'clustering';}
+    if(/mae|rmse|mape|r2|r\^2|precision|recall|f1|auc|roc|tp|fp|tn|fn/i.test(text)){return 'metric';}
+    if(/euclidean|manhattan|minkowski|cosine|distance|nearest|knn/i.test(text)){return 'distance';}
+    if(/ridge|lasso|elastic|l1|l2|regularization|weight decay/i.test(text)){return 'regularization';}
+    if(/linear regression|least squares|normal equation|residual|ŷ|y_hat|xw|w\^t|w⊤/i.test(text)){return 'regression';}
+    if(/sigmoid|logistic|logit|bce|binary cross/i.test(text)){return 'logistic';}
     if(/gini|impurity|information gain|\bgain\b/i.test(text)){return 'impurity';}
     if(/attention|softmax|query|key|value|qk/i.test(text)){return 'attention';}
     if(/adam|momentum|optimizer|gradient|grad|θ|η|β|ε/i.test(text)){return 'optim';}
@@ -297,6 +355,23 @@
     return 'general';
   }
   function genericCopy(kind){
+    if(kind==='tokenization'){return {intuition:'Формула описывает, как текст разбивается или сжимается в дискретные токены.',analogy:'Как заменить часто встречающиеся пары букв одним удобным сокращением.',example:'Если пара "th" встречается чаще других, BPE может объединить t+h в новый токен "th".'};}
+    if(kind==='scaling'){return {intuition:'Формула связывает качество модели с размером модели, объёмом данных и compute.',analogy:'Как бюджет проекта: важны не только деньги, но и куда именно они распределены.',example:'При фиксированном compute слишком большая модель на малых данных может быть хуже меньшей модели, обученной на большем корпусе.'};}
+    if(kind==='lora'){return {intuition:'Формула заменяет полное изменение весов компактной low-rank поправкой.',analogy:'Как не переписывать всю книгу, а вложить тонкий список правок к нужным главам.',example:'Вместо матрицы 4096×4096 LoRA может учить две матрицы 4096×8 и 8×4096, что намного дешевле.'};}
+    if(kind==='vae'){return {intuition:'Формула балансирует качество реконструкции и аккуратность latent-пространства.',analogy:'Как сжать фотографию так, чтобы её можно было восстановить и чтобы коды были упорядоченными.',example:'Если decoder хорошо восстанавливает x, но q(z|x) далеко от prior, KL-штраф удерживает latent space от хаоса.'};}
+    if(kind==='gan'){return {intuition:'Формула задаёт игру между генератором, который подделывает данные, и дискриминатором, который ищет подделку.',analogy:'Как фальшивомонетчик и эксперт, которые одновременно становятся сильнее.',example:'Если discriminator легко отличает fake, generator получает сильный сигнал, куда улучшать samples.'};}
+    if(kind==='diffusion'){return {intuition:'Формула описывает добавление шума или обратный шаг очистки данных от шума.',analogy:'Как постепенно зашумить фото, а потом учиться восстанавливать его слой за слоем.',example:'На малом t изображение почти целое; на большом t остаётся почти чистый шум, и модель учится идти обратно.'};}
+    if(kind==='systems'){return {intuition:'Формула оценивает цену обучения: память, коммуникации, compute или скорость шага.',analogy:'Как планировать логистику на складе: важно не только сколько работы, но и где узкое место.',example:'Если activation memory растёт с числом слоёв, checkpointing снижает память ценой повторного forward.'};}
+    if(kind==='gmm'){return {intuition:'Формула описывает данные как смесь нескольких вероятностных компонент.',analogy:'Как считать, что толпа состоит из нескольких групп, но принадлежность каждого человека мягкая.',example:'Если точка близка к μ₁ и далека от μ₂, responsibility γ₁ будет высокой, а γ₂ низкой.'};}
+    if(kind==='pca'){return {intuition:'Формула ищет направления, вдоль которых данные имеют максимальный разброс.',analogy:'Как повернуть камеру так, чтобы облако точек было видно с самой информативной стороны.',example:'Если первая компонента объясняет 70% variance, одна ось уже сохраняет большую часть структуры.'};}
+    if(kind==='svm'){return {intuition:'Формула строит границу с максимальным запасом и штрафует нарушения margin.',analogy:'Как провести дорогу между двумя группами домов, оставив по краям максимальную безопасную зону.',example:'Если точка лежит внутри margin, hinge loss становится положительным и давит на границу.'};}
+    if(kind==='boosting'){return {intuition:'Формула добавляет слабые модели последовательно, каждая исправляет ошибки текущего ансамбля.',analogy:'Как редакторский процесс: каждый новый проход правит самые заметные ошибки предыдущей версии.',example:'При learning_rate=0.1 новое дерево вносит только 10% своего прогноза, поэтому обучение идёт осторожнее.'};}
+    if(kind==='clustering'){return {intuition:'Формула измеряет компактность, разделимость или мягкую принадлежность групп без правильных labels.',analogy:'Как разложить предметы по коробкам так, чтобы внутри было похоже, а между коробками различно.',example:'Если точка ближе к центроиду A, чем к B, k-means назначит её кластеру A.'};}
+    if(kind==='metric'){return {intuition:'Формула превращает ошибки модели в численную меру качества.',analogy:'Как приборная панель: разные шкалы показывают разные стороны одной поездки.',example:'Precision растёт, когда среди предсказанных positives меньше false positives; recall растёт, когда модель находит больше настоящих positives.'};}
+    if(kind==='distance'){return {intuition:'Формула задаёт, что значит “похожесть” между объектами.',analogy:'Как выбирать маршрут: можно считать путь по прямой, по кварталам или по углу направления.',example:'Для точек (0,0) и (3,4) Euclidean distance равна 5, а Manhattan distance равна 7.'};}
+    if(kind==='regularization'){return {intuition:'Формула добавляет штраф за сложность модели, чтобы она меньше переобучалась.',analogy:'Как ограничить громкость усилителя, чтобы звук не начал хрипеть.',example:'Если λ растёт, большие веса становятся дороже, и модель выбирает более гладкое решение.'};}
+    if(kind==='regression'){return {intuition:'Формула описывает предсказание численного значения и ошибку между линией и наблюдениями.',analogy:'Как провести линейку через облако точек так, чтобы суммарные промахи были минимальны.',example:'Если y=10, а ŷ=8, residual равен 2; квадрат ошибки равен 4.'};}
+    if(kind==='logistic'){return {intuition:'Формула превращает линейный score в вероятность класса и штрафует неправильную уверенность.',analogy:'Как индикатор риска, который переводит сырой балл в вероятность события.',example:'Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность около 0.88.'};}
     if(kind==='impurity'){return {intuition:'Формула измеряет, насколько узел дерева смешан по классам: чем выше значение, тем менее чистый узел.',analogy:'Как коробка с шариками разных цветов: если все шарики одного цвета, беспорядка нет; если цвета перемешаны, impurity выше.',example:'Если в узле два класса 50/50, то Gini = 1 − (0.5² + 0.5²) = 0.5. Если узел чистый 100/0, то Gini = 0.'};}
     if(kind==='attention'){return {intuition:'Формула показывает, как элемент выбирает, от кого собрать полезную информацию.',analogy:'Как поисковый запрос, который выбирает самые подходящие результаты и забирает их смысл.',example:'Если один score равен 2, а другой 1, softmax даст примерно 0.73 и 0.27: первый источник внесёт около 73% итоговой информации.'};}
     if(kind==='optim'){return {intuition:'Формула описывает, как параметры делают шаг в сторону меньшей ошибки.',analogy:'Как спускаться с горы, постоянно корректируя длину и направление шага.',example:'Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1·3 = 0.7.'};}
@@ -306,11 +381,13 @@
     if(kind==='cnn'){return {intuition:'Формула ищет знакомый локальный паттерн во входе.',analogy:'Как вести лупу по изображению и искать совпадение с маленьким шаблоном.',example:'Фильтр [1, −1] на фрагменте [5, 2] даёт 1·5 + (−1)·2 = 3: сильный отклик на перепад.'};}
     if(kind==='rnn'){return {intuition:'Формула обновляет память о прошлом с учётом нового входа.',analogy:'Как держать в голове сюжет книги и дополнять его новой главой.',example:'Если старая память 0.7, новый сигнал 0.2, а gate пропускает 50%, итоговая память будет смесью старого и нового, а не полной заменой.'};}
     if(kind==='linear'){return {intuition:'Формула собирает в одной записи влияния входов на итоговый результат.',analogy:'Как таблица влияния, где видно, какой фактор за что отвечает.',example:'Если вес признака 2, значение признака 3 и bias 1, вклад будет 2·3+1=7.'};}
-    return {intuition:'Формула связывает несколько величин и показывает, как они влияют друг на друга.',analogy:'Как панель с несколькими ручками, каждая из которых меняет общий результат.',example:'Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.'};
+    return {intuition:'Формула задаёт правило преобразования входных величин в итоговую величину.',analogy:'Как рецепт: разные ингредиенты вносят разные роли, а порядок действий определяет результат.',example:'Если формула содержит сумму, каждый слагаемый добавляет свой вклад; если есть коэффициент, он усиливает или ослабляет этот вклад.'};
   }
   function genericRows(text){
     var low=text.toLowerCase(),rows=[],kind=genericCategory(text);
     function add(r){if(!rows.some(function(existing){return existing.sym===r.sym;})){rows.push(r);}}
+    if(/x\s*\\in|x\s*∈|mathbb\{r\}|ℝ/i.test(text)){add(row('X','матрица объектов','Таблица данных: строки — объекты, столбцы — признаки.'));add(row('n','число объектов','Сколько примеров находится в выборке.'));add(row('d','число признаков','Сколько признаков описывает каждый объект.'));}
+    if(/test error|bias|variance|noise/i.test(text)){add(row('Test Error','ошибка на новых данных','То, что нас интересует после обучения, а не только на train.'));add(row('Bias²','систематическая ошибка','Ошибка из-за слишком простой модели.'));add(row('Variance','чувствительность','Насколько модель меняется от выборки к выборке.'));add(row('Noise','шум','Неустранимая случайность в данных.'));}
     if(/gini/i.test(text)){add(row('Gini','индекс Джини','Мера нечистоты узла: 0 означает полностью чистый узел, максимум ближе к смешанным классам.'));}
     if(/entropy|\bh\(/i.test(text)){add(row('H','энтропия','Мера неопределённости или смешанности распределения.'));}
     if(/information gain|\bgain\b|ig/i.test(text)){add(row('Gain','выигрыш разбиения','Насколько split уменьшает impurity по сравнению с родительским узлом.'));}
@@ -321,6 +398,34 @@
     if(/\bj\b|x_j/i.test(text)){add(row('j','индекс признака','Номер признака, выбранного для текущего split.'));}
     if(/\bt\b|threshold|порог/i.test(text)){add(row('t','порог split','Граница, относительно которой объект отправляется в левую или правую ветку.'));}
     if(/left|right|branch|вет/i.test(text)){add(row('left/right','ветви дерева','Два направления после проверки условия: одна ветка для true, другая для false.'));}
+    if(/ŷ|y_hat|\\hat\{y\}/i.test(text)){add(row('ŷ','предсказание','Численный ответ модели для объекта.'));}
+    if(/y_i|y\\mid|\\hat\{y\}|ŷ|\by\b/i.test(text)){add(row('y','истинный ответ','Правильное значение или метка из данных.'));}
+    if(/x_i|x\\mid|\bx\b/i.test(text)){add(row('x','объект / признаки','Входные признаки одного объекта или позиция в пространстве.'));}
+    if(/w\^|w\\top|w⊤|xw|\bw\b/i.test(text)){add(row('w','веса','Обучаемые коэффициенты признаков.'));}
+    if(/bias|\bb\b|\+ b/i.test(text)){add(row('b','bias','Смещение, которое сдвигает предсказание независимо от признаков.'));}
+    if(/r\s*=|residual/i.test(text)){add(row('r','residual','Остаток: разница между истинным ответом и предсказанием.'));}
+    if(/σ\^2|sigma|variance/i.test(text)){add(row('σ²','дисперсия шума','Оценка разброса ошибки вокруг модели.'));}
+    if(/mae/i.test(text)){add(row('MAE','средняя абсолютная ошибка','Средний размер промаха без квадрата.'));}
+    if(/rmse|mse/i.test(text)){add(row('MSE/RMSE','квадратичная ошибка','Сильнее штрафует крупные промахи.'));}
+    if(/r2|r\^2|R²/i.test(text)){add(row('R²','доля объяснённой variance','Показывает, насколько модель лучше простого среднего.'));}
+    if(/tp|fp|tn|fn/i.test(text)){add(row('TP/FP/TN/FN','элементы confusion matrix','Счётчики правильных и неправильных решений классификатора.'));}
+    if(/precision/i.test(text)){add(row('Precision','точность positive-предсказаний','Какая доля предсказанных positives оказалась настоящей.'));}
+    if(/recall/i.test(text)){add(row('Recall','полнота','Какую долю настоящих positives модель нашла.'));}
+    if(/f1/i.test(text)){add(row('F1','гармоническое среднее','Балансирует precision и recall одной величиной.'));}
+    if(/euclidean|manhattan|minkowski|cosine|distance/i.test(text)){add(row('d(x,y)','расстояние','Число, показывающее непохожесть двух объектов.'));}
+    if(/centroid|μ_k|mu_k|\\mu/i.test(text)){add(row('μ_k','центроид / среднее','Центр кластера или компоненты распределения.'));}
+    if(/c\(i\)|c_i/i.test(text)){add(row('c(i)','назначение кластера','Какому кластеру принадлежит объект i.'));}
+    if(/silhouette|a\(i\)|b\(i\)/i.test(text)){add(row('a(i)','внутрикластерная дистанция','Средняя близость объекта к своему кластеру.'));add(row('b(i)','соседний кластер','Средняя дистанция до ближайшего другого кластера.'));}
+    if(/π_k|pi_k/i.test(text)){add(row('π_k','вес компоненты','Какая доля данных приходится на k-ю компоненту смеси.'));}
+    if(/γ_?i?k|respons/i.test(text)){add(row('γᵢₖ','responsibility','Мягкая вероятность, что объект i пришёл из компоненты k.'));}
+    if(/kernel|rbf|κ|k\(x/i.test(text)){add(row('K(x,x′)','kernel','Скалярное сходство объектов в неявном признаковом пространстве.'));}
+    if(/margin|hinge|ξ/i.test(text)){add(row('margin','зазор','Безопасное расстояние между границей и ближайшими точками.'));}
+    if(/F_m|F_M|learner|h_m/i.test(text)){add(row('F_m(x)','текущий ансамбль','Суммарное предсказание после m слабых моделей.'));add(row('h_m(x)','weak learner','Новая слабая модель, исправляющая текущие ошибки.'));}
+    if(/g_i|h_i|H_j|G_j/i.test(text)){add(row('g_i','градиент объекта','Первый порядок ошибки для i-го объекта.'));add(row('h_i','Hessian объекта','Второй порядок: насколько быстро меняется градиент.'));}
+    if(/Q|K|V|qk|attention/i.test(text)){add(row('Q','Query','Что текущий токен ищет.'));add(row('K','Key','С чем сравнивается query.'));add(row('V','Value','Информация, которую можно забрать.'));}
+    if(/elbo|q\(z|p\(x\|z|vae/i.test(text)){add(row('ELBO','нижняя оценка likelihood','Цель VAE: реконструкция минус KL-штраф.'));add(row('q(z|x)','encoder','Приближённое posterior-распределение latent-кода.'));add(row('p(x|z)','decoder','Вероятность восстановить данные из latent-кода.'));}
+    if(/β_t|alpha|x_t|ε_θ|ddpm|diffusion/i.test(text)){add(row('x_t','зашумлённый объект','Данные после t шагов добавления шума.'));add(row('β_t','уровень шума','Сколько шума добавляется на шаге t.'));add(row('ε_θ','предсказанный шум','Шум, который модель учится удалить.'));}
+    if(/lora|ΔW|\bBA\b|\bAB\b|low-rank/i.test(text)){add(row('ΔW','поправка весов','Изменение исходной матрицы весов.'));add(row('A,B','low-rank матрицы','Две маленькие матрицы, из которых собирается компактная поправка.'));add(row('r','rank','Размер внутреннего bottleneck в LoRA.'));}
     TOKENS.forEach(function(entry){
       var hit=entry.tokens.some(function(token){return low.indexOf(String(token).toLowerCase())!==-1;});
       if(hit){add(entry.row);}
@@ -365,7 +470,7 @@
   }
 
   var queued=false;
-  function run(){queued=false;cleanup();renderFormulas();renderIntuitionBlocks();}
+  function run(){queued=false;cleanup();cleanupWeakStatic();renderFormulas();renderIntuitionBlocks();}
   function queue(){if(queued){return;}queued=true;window.requestAnimationFrame(run);}
 
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',queue);}else{queue();}

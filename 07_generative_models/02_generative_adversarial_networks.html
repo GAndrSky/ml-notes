@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -156,6 +156,50 @@
         <div class="warn"><strong>Баланс</strong><br>GAN — это не просто оптимизация loss, а хрупкая динамическая игра.</div>
       </div>
     </div>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>GAN как нестабильная, но мощная игра распределений</h2>
+      <p>GAN не максимизирует likelihood напрямую. Он обучает два процесса: discriminator ищет отличие между real и generated samples, generator меняет своё распределение так, чтобы это отличие стало труднее найти.</p>
+      <p>Из-за этого loss GAN нельзя читать как обычный supervised loss. Если discriminator становится слишком сильным, generator может получать плохой gradient. Если discriminator слишком слабый, feedback становится бессмысленным.</p>
+      <p>GAN важен для понимания generative modeling именно как пример adversarial objective: высокое визуальное качество может прийти вместе с mode collapse и плохим покрытием распределения.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Generator двигает p_G, discriminator оценивает различимость p_G и p_data.</li>
+          <li>Сходимость зависит от динамики двух игроков, а не только от одного objective.</li>
+          <li>Wasserstein view делает расстояние между распределениями более геометрически осмысленным.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Смотри diversity samples, а не только sharpness.</li>
+          <li>Отслеживай balance D/G: accuracy discriminator, gradient norms, sample collapse.</li>
+          <li>Пробуй spectral normalization, gradient penalty, label smoothing и разные update ratios.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Считать красивый cherry-picked sample доказательством хорошей модели.</li>
+          <li>Оценивать training только по generator/discriminator loss.</li>
+          <li>Не замечать mode collapse, если нет diversity grid или nearest-neighbor анализа.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Объясни minimax: discriminator максимизирует различение, generator минимизирует различимость.</li>
+          <li>Расскажи mode collapse как failure coverage.</li>
+          <li>Свяжи WGAN с более гладким расстоянием между распределениями.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: GAN</h2>
@@ -200,12 +244,3 @@
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-

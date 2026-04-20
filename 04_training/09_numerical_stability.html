@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -322,6 +322,50 @@ gradients = gradients / s
   </script>
   <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Численная устойчивость как обязательная часть training recipe</h2>
+      <p>Numerical stability — это не отдельная проблема только для low-level инженеров. В deep learning почти каждая большая модель упирается в ограниченный диапазон float, накопление ошибок, экспоненты, логарифмы и scaling градиентов.</p>
+      <p>Две математически одинаковые формулы могут вести себя совершенно по-разному на GPU. Stable softmax, log-sum-exp, epsilon в знаменателях, gradient clipping и loss scaling — это способы записать вычисления так, чтобы training loop не разрушался от крайних значений.</p>
+      <p>Для подготовки важно уметь объяснять не только что такое overflow/underflow, но и как их диагностировать: где впервые появляется Inf/NaN, какие tensors имеют экстремальный range и какой компонент loss породил проблему.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Float — это конечная сетка чисел, а не настоящие вещественные числа.</li>
+          <li>Overflow заражает граф через Inf/NaN, underflow тихо зануляет маленькие вероятности и градиенты.</li>
+          <li>Стабильная запись формулы сохраняет смысл, но меняет порядок вычислений.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Используй log_softmax / CrossEntropyLoss вместо ручного softmax + log.</li>
+          <li>Логируй logits range, grad norm, loss scale, NaN/Inf counts и activation stats.</li>
+          <li>Если проблема непонятна, временно отключи mixed precision и сравни поведение.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Считать NaN случайностью и просто перезапускать training.</li>
+          <li>Добавлять epsilon везде без понимания масштаба величин.</li>
+          <li>Игнорировать data preprocessing: экстремальные входы часто запускают numerical failures.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Объясни overflow, underflow и cancellation.</li>
+          <li>Покажи stable softmax через вычитание max.</li>
+          <li>Назови практический debug route: найти первый Inf/NaN, проверить logits/gradients/loss scale/data batch.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Numerical Stability</h2>
@@ -364,11 +408,3 @@ gradients = gradients / s
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-

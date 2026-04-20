@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -195,6 +195,50 @@ gradients / optimizer state испортились
     </ul>
   </section>
 <!-- frontier-deepening:end -->
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Loss spikes как симптом, а не диагноз</h2>
+      <p>Loss spike говорит только, что training dynamics резко ухудшилась. Он не говорит причину. Причина может быть в bad batch, learning rate, mixed precision, exploding gradients, неправильных targets, data corruption или нестабильной нормализации.</p>
+      <p>Хороший debugging строится вокруг первого плохого шага. Если поймать batch id, logits range, grad norm, loss components и precision state до/после spike, поиск становится инженерной задачей, а не случайным тюнингом.</p>
+      <p>Самый опасный подход — просто уменьшить learning rate и забыть. Иногда это маскирует data bug или NaN source, который потом вернётся на большем масштабе.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Spike может быть optimization issue, data issue, numerical issue или systems issue.</li>
+          <li>Нужно локализовать первый момент divergence, а не анализировать только финальный NaN.</li>
+          <li>Loss components важнее общего loss, если objective состоит из нескольких частей.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Логируй grad norm, logits min/max, activation stats, lr, batch id, sequence length и loss components.</li>
+          <li>Сохраняй problematic batch для воспроизведения.</li>
+          <li>Пробуй disable AMP, lower LR, gradient clipping и data validation по отдельности, чтобы не смешивать причины.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Менять много гиперпараметров одновременно и терять причинность.</li>
+          <li>Игнорировать редкие batches: один corrupted sample может ломать training.</li>
+          <li>Смотреть только train loss без validation и без stats по logits/gradients.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Скажи, что spike — symptom, и перечисли группы причин.</li>
+          <li>Опиши минимальный debug pack: batch, lr, grad norm, logits, NaN/Inf, loss components.</li>
+          <li>Объясни, почему нужно воспроизводить первый плохой шаг.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Debugging Loss Spikes</h2>
@@ -238,11 +282,3 @@ gradients / optimizer state испортились
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-

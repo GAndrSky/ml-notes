@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -182,6 +182,50 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
       <p><strong>Reconstruction term</strong> отвечает за то, чтобы latent-представление реально несло полезную информацию о входе. <strong>KL term</strong> отвечает за геометрию latent space: он не даёт каждому объекту “убежать” в свой отдельный угол пространства. Сила VAE как раз в этом напряжении между точностью реконструкции и регулярностью распределения.</p>
       <div class="warn">Если слишком задавить KL-часть, получится почти обычный autoencoder с плохой генерацией. Если слишком сильно давить KL, можно получить posterior collapse, где latent-переменная почти перестаёт использоваться.</div>
     </div>
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>VAE как вероятностный autoencoder с управляемым latent space</h2>
+      <p>Обычный autoencoder может научиться удобному коду, но этот код не обязан быть пригодным для генерации. VAE добавляет вероятностную структуру: encoder выдаёт распределение, decoder учится восстанавливать из sampled latent, а prior заставляет latent space быть связным.</p>
+      <p>ELBO можно читать как компромисс: reconstruction term хочет сохранить информацию о конкретном объекте, KL term хочет, чтобы posterior не слишком далеко ушёл от prior. В этом напряжении возникает генеративность VAE.</p>
+      <p>Главная практическая опасность — posterior collapse. Если decoder слишком сильный или KL включён слишком резко, модель может игнорировать latent variable.</p>
+      <div class="grid-2">
+        <div class="info">
+          <h3>Как думать об этой теме</h3>
+          <ul>
+          <li>Encoder строит q(z|x), decoder строит p(x|z), prior p(z) задаёт пространство для sampling.</li>
+          <li>Reparameterization trick не убирает случайность, а переносит её в ε, чтобы сохранить gradient path.</li>
+          <li>KL term делает latent space гладким, но может задавить информацию.</li>
+          </ul>
+        </div>
+        <div class="success">
+          <h3>Что проверять в практике</h3>
+          <ul>
+          <li>Отслеживай reconstruction loss и KL отдельно, а не только суммарный ELBO.</li>
+          <li>Проверяй latent traversals: меняется ли sample осмысленно при движении по latent axes.</li>
+          <li>Используй KL annealing или beta-VAE, если видишь collapse или плохую структуру latent space.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <h3>Где чаще всего ошибаются</h3>
+          <ul>
+          <li>Путать хороший reconstruction с хорошей генерацией.</li>
+          <li>Считать prior формальностью: именно он делает sampling осмысленным.</li>
+          <li>Сравнивать VAE с GAN только по sharpness samples, игнорируя likelihood и latent control.</li>
+          </ul>
+        </div>
+        <div class="info">
+          <h3>Как объяснить на собеседовании</h3>
+          <ul>
+          <li>Начни с latent variable model: p(x,z)=p(z)p(x|z).</li>
+          <li>Выведи смысл ELBO как reconstruction минус KL.</li>
+          <li>Объясни reparameterization trick и posterior collapse.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Variational Autoencoders</h2>
@@ -226,12 +270,3 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
   <script src="../bundle.js" defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
