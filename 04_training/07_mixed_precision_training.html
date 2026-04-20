@@ -304,6 +304,139 @@ showCode('fp16', document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если градиент 1e-8 в FP16 округляется в ноль, loss scaling умножает loss, делает градиент крупнее в backward, а перед step масштаб корректно снимается.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Mixed Precision Training</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Объясни, почему loss scaling помогает FP16 backward не потерять маленькие градиенты.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если loss умножить на scale, градиенты тоже умножаются на scale и становятся представимыми в FP16. Перед optimizer step градиенты делят обратно, поэтому математический update сохраняется.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Сравни FP16 и BF16 по динамическому диапазону и точности mantissa. Что это меняет для обучения?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>BF16 имеет меньше точности mantissa, но шире range, поэтому реже ловит overflow/underflow. FP16 точнее в узком диапазоне, но менее стабилен по масштабу.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Напиши минимальный PyTorch training step с autocast и GradScaler.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>autocast выбирает precision для операций, scaler масштабирует loss и безопасно делает backward/step.</p>
+<pre><code class="language-python"># What it does: minimal AMP training step in PyTorch
+# Input shapes: x=(batch,d), y=(batch,1)
+# Output shape: scalar loss
+import torch
+from torch import nn
+
+model = nn.Linear(4, 1).cuda()
+opt = torch.optim.AdamW(model.parameters(), lr=1e-3)
+scaler = torch.cuda.amp.GradScaler()
+x = torch.randn(32, 4, device=&#39;cuda&#39;)
+y = torch.randn(32, 1, device=&#39;cuda&#39;)
+
+opt.zero_grad(set_to_none=True)
+with torch.cuda.amp.autocast():
+    loss = ((model(x) - y) ** 2).mean()
+scaler.scale(loss).backward()
+scaler.step(opt)
+scaler.update()
+# Gotchas: keep optimizer state stable; disable AMP briefly when debugging NaN.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Напиши проверку, которая делает один train step с AMP и один без AMP на маленькой модели и сравнивает loss.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Loss не обязан совпасть бит-в-бит, но должен быть близким. Большое расхождение говорит о precision-sensitive операции или нестабильном масштабе.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему нельзя просто перевести всю модель и optimizer state в FP16?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Некоторые состояния и reductions требуют FP32-стабильности. Полный FP16 может дать underflow/overflow и испортить update.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему BF16 часто предпочитают для больших моделей, если он менее точен по mantissa?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Широкий exponent range обычно важнее для стабильности больших активаций/градиентов. Меньшая mantissa часто переносима из-за статистической природы обучения.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что делает autocast?</li>
+            <li>Зачем нужен GradScaler?</li>
+            <li>Чем FP16 отличается от BF16 practically?</li>
+            <li>Какие операции чаще ломаются в низкой точности?</li>
+            <li>Как диагностировать, что NaN связан именно с AMP?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни mixed precision как компромисс скорости и численной безопасности.</li>
+            <li>Объясни loss scaling без деталей IEEE-формата.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/07_mixed_precision_training">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Mixed Precision Training</h2>

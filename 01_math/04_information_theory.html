@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -930,6 +930,152 @@ calcBinaryCE();
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Теория информации</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> Способность воспроизвести вывод, код и объяснение без подсказок — это реальный тест понимания.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Посчитай entropy для честной монеты и для монеты с P(head)=0.9. Объясни, почему честная монета имеет большую неопределённость.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Для честной монеты H=-2*(0.5 log2 0.5)=1 бит. Для 0.9/0.1: H=-(0.9 log2 0.9 + 0.1 log2 0.1)≈0.47 бит. Честная монета менее предсказуема.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Покажи, что cross-entropy H(p,q)=H(p)+KL(p||q). Что это значит для обучения классификатора?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>H(p,q)=-sum p log q. Добавим и вычтем sum p log p: получаем -sum p log p + sum p log(p/q). Первый член H(p), второй KL. Так как H(p) фиксирован для данных, минимизация cross-entropy минимизирует KL от истинного распределения к модели.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй entropy и KL divergence для дискретных распределений и проверь значения на двух монетах.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Код показывает, что KL несимметричен: KL(p||q) и KL(q||p) обычно разные.</p>
+<pre><code class="language-python"># What it does: computes entropy and KL for discrete distributions
+# Input shapes: p=(k,), q=(k,)
+# Output shapes: scalar entropy, scalar KL
+import numpy as np
+
+def entropy(p):
+    p = np.asarray(p, dtype=float)
+    return -np.sum(p * np.log2(p))
+
+def kl(p, q):
+    p = np.asarray(p, dtype=float)
+    q = np.asarray(q, dtype=float)
+    return np.sum(p * np.log2(p / q))
+
+p = np.array([0.5, 0.5])
+q = np.array([0.9, 0.1])
+print(entropy(p), entropy(q))
+print(kl(p, q), kl(q, p))
+# Gotchas: distributions must sum to 1; handle zero probabilities carefully in real code.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Реализуй softmax cross-entropy для batch logits и labels без PyTorch. Используй log-sum-exp trick.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Вычитание максимального logit не меняет softmax, но предотвращает overflow в exp.</p>
+<pre><code class="language-python"># What it does: stable softmax cross-entropy from logits
+# Input shapes: logits=(batch,classes), y=(batch,)
+# Output shape: scalar loss
+import numpy as np
+
+def cross_entropy(logits, y):
+    shifted = logits - logits.max(axis=1, keepdims=True)
+    log_probs = shifted - np.log(np.exp(shifted).sum(axis=1, keepdims=True))
+    return -log_probs[np.arange(len(y)), y].mean()
+
+logits = np.array([[2.0, 0.0, -1.0], [0.1, 1.2, 0.3]])
+y = np.array([0, 1])
+print(cross_entropy(logits, y))
+# Gotchas: pass raw logits, not softmax probabilities; subtract max before exp.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему cross-entropy штрафует уверенные неправильные ответы сильнее, чем неуверенные?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если модель даёт правильному классу вероятность около нуля, -log(q) становится очень большим. Это делает уверенную ошибку дорогой.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему KL divergence не является настоящим расстоянием?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>KL несимметричен и не обязан удовлетворять triangle inequality. KL(p||q) измеряет цену кодирования данных из p с помощью q, а не геометрическую дистанцию.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что измеряет entropy и когда она максимальна?</li>
+            <li>Почему KL(p||q) не равно KL(q||p)?</li>
+            <li>Как cross-entropy связана с maximum likelihood?</li>
+            <li>Зачем нужен log-sum-exp trick?</li>
+            <li>Как mutual information будет отличаться от correlation?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни entropy как средний surprise без формул.</li>
+            <li>Объясни KL divergence как цену использования неправильной карты мира.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="01_math/04_information_theory">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Теория информации</h2>
@@ -972,15 +1118,3 @@ calcBinaryCE();
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-

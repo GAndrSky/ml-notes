@@ -620,6 +620,63 @@
   placeBottomPager();
   window.addEventListener("load", placeBottomPager);
 
+  function readSelfRatings() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem("ml_notes_self_rating") || "{}");
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writeSelfRatings(ratings) {
+    localStorage.setItem("ml_notes_self_rating", JSON.stringify(ratings || {}));
+    window.dispatchEvent(new CustomEvent("ml-notes-self-rating-changed", { detail: { ratings: ratings || {} } }));
+  }
+
+  function initSelfRatings() {
+    var widgets = Array.prototype.slice.call(document.querySelectorAll(".ml-self-rating[data-topic-id]"));
+    if (!widgets.length) {
+      return;
+    }
+
+    var ratings = readSelfRatings();
+
+    widgets.forEach(function (widget) {
+      var topicId = widget.getAttribute("data-topic-id");
+      var buttons = Array.prototype.slice.call(widget.querySelectorAll("button[data-rating]"));
+      var status = widget.querySelector("[data-rating-status]");
+
+      function render(value) {
+        buttons.forEach(function (button) {
+          button.classList.toggle("is-active", String(value || "") === button.getAttribute("data-rating"));
+        });
+        if (status) {
+          status.textContent = value
+            ? "\u0422\u0435\u043a\u0443\u0449\u0430\u044f \u043e\u0446\u0435\u043d\u043a\u0430: " + value + "/5"
+            : "\u041f\u043e\u043a\u0430 \u0431\u0435\u0437 \u043e\u0446\u0435\u043d\u043a\u0438";
+        }
+      }
+
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          var nextValue = Number(button.getAttribute("data-rating"));
+          ratings = readSelfRatings();
+          if (ratings[topicId] === nextValue) {
+            delete ratings[topicId];
+            render(null);
+          } else {
+            ratings[topicId] = nextValue;
+            render(nextValue);
+          }
+          writeSelfRatings(ratings);
+        });
+      });
+
+      render(ratings[topicId]);
+    });
+  }
+
   var mobileToggle = navShell.querySelector(".ml-page-nav__mobile-toggle");
   var overlay = navShell.querySelector(".ml-page-nav__overlay");
   var closeButton = navShell.querySelector(".ml-page-nav__close");
@@ -765,6 +822,7 @@
   applyFilter("");
   refreshVisitedUi(readVisitedPaths());
   syncSidebarState();
+  initSelfRatings();
 
   var hasMathCandidates = Array.prototype.some.call(
     document.querySelectorAll(".formula, .inline-math, [data-render-tex]"),

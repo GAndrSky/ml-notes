@@ -506,6 +506,134 @@ showCode('cosine', document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если loss стабильно падает первые 5 эпох, а потом validation застрял, cosine decay или ReduceLROnPlateau может дать меньшие шаги и улучшить fine-tuning.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Learning Rate Scheduling</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Запиши cosine decay schedule от lr_max к lr_min и объясни, почему он плавнее step decay.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Cosine плавно меняет lr через половину косинуса, поэтому нет резкого скачка update scale. Step decay может резко изменить динамику loss.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Объясни warmup как постепенное увеличение радиуса шага. Почему он особенно важен для Transformer и больших batch?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>В начале параметры и optimizer state нестабильны. Warmup не даёт большим ранним градиентам сделать разрушительный шаг, особенно при LayerNorm, Adam и больших batch.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй linear warmup + cosine decay и распечатай первые/последние значения lr.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Первые шаги должны расти от 0 до max_lr, затем плавно снижаться к min_lr.</p>
+<pre><code class="language-python"># What it does: warmup + cosine learning-rate schedule
+# Input shape: scalar step
+# Output shape: scalar lr
+import math
+
+def lr_at(step, total=1000, warmup=100, max_lr=3e-4, min_lr=3e-5):
+    if step &lt; warmup:
+        return max_lr * (step + 1) / warmup
+    progress = (step - warmup) / max(1, total - warmup)
+    cosine = 0.5 * (1 + math.cos(math.pi * progress))
+    return min_lr + (max_lr - min_lr) * cosine
+
+print([round(lr_at(s), 8) for s in [0, 10, 99, 100, 500, 999]])
+# Gotchas: recompute schedule when total steps changes; log lr during training.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Добавь lr schedule в простой NumPy gradient descent и сравни с постоянным lr на квадратичной функции.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Schedule должен позволить сначала двигаться быстрее, а ближе к концу стабилизировать точку. На слишком простой функции выигрыш может быть мал.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему хороший lr в начале обучения может быть плохим в конце?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>В начале нужен быстрый прогресс по грубой поверхности. В конце параметры рядом с минимумом, и большой шаг начинает перекидывать через хорошую область.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему нельзя слепо копировать schedule, если поменялось число epochs или batch size?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Schedule зависит от числа optimizer steps и noise scale. Изменение batch/epochs меняет и динамику градиента, и время, когда decay должен начаться.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Зачем нужен warmup?</li>
+            <li>Чем cosine decay отличается от step decay?</li>
+            <li>Почему lr надо логировать вместе с loss?</li>
+            <li>Что делает ReduceLROnPlateau?</li>
+            <li>Как batch size связан с выбором lr?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни scheduler как коробку передач для optimizer-а.</li>
+            <li>Объясни, почему один constant lr редко оптимален от начала до конца.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/05_learning_rate_scheduling">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Learning Rate Scheduling</h2>

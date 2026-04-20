@@ -959,6 +959,131 @@ showCode('bn',document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если train accuracy 99%, а validation 78%, увеличение weight decay или dropout может помочь. Если train accuracy тоже 78%, регуляризация только ухудшит underfitting.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Регуляризация</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Для loss L + lambda * ||w||^2 выведи gradient update и покажи, где появляется weight decay.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Градиент штрафа равен 2 lambda w. SGD update: w &lt;- w - lr(grad_L + 2 lambda w) = (1 - 2 lr lambda)w - lr grad_L. Поэтому L2 тянет веса к нулю.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Объясни inverted dropout scaling: почему во время обучения activations делят на 1-p?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если нейрон оставлен с вероятностью 1-p, то без scaling expectation уменьшится. Деление на 1-p сохраняет expected activation, чтобы train и eval масштабы были ближе.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй dropout mask для матрицы activations и проверь, что среднее примерно сохраняется.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>При достаточно большом числе элементов среднее после inverted dropout должно быть близко к исходному среднему.</p>
+<pre><code class="language-python"># What it does: inverted dropout on activations
+# Input shape: A=(batch,features)
+# Output shape: A_drop=(batch,features)
+import numpy as np
+rng = np.random.default_rng(0)
+A = np.ones((1000, 100))
+p = 0.3
+mask = rng.binomial(1, 1-p, size=A.shape)
+A_drop = A * mask / (1-p)
+print(A.mean(), A_drop.mean())
+# Gotchas: apply dropout only in train mode; do not scale again at eval.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Напиши эксперимент: train/validation gap для polynomial regression при разных lambda.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Ожидаемый результат: при lambda=0 модель может overfit, при умеренной lambda validation улучшается, при слишком большой lambda появляется underfit.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему регуляризация не всегда улучшает качество?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если модель уже underfit или проблема в данных/метрике, дополнительное ограничение только ухудшит train и validation.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему dropout и weight decay не являются взаимозаменяемыми?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Weight decay ограничивает нормы весов, dropout добавляет шум и заставляет сеть распределять представления. Они влияют на разные failure modes.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Как L2 превращается в weight decay в SGD?</li>
+            <li>Что показывает train-validation gap?</li>
+            <li>Когда dropout вреден?</li>
+            <li>Почему label smoothing влияет на calibration?</li>
+            <li>Чем data augmentation отличается от penalty на веса?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни регуляризацию как запрет модели слишком доверять случайным деталям train set.</li>
+            <li>Объясни dropout как тренировку команды без части игроков.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/04_regularization">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Регуляризация</h2>

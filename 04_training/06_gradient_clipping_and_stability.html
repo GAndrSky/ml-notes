@@ -336,6 +336,134 @@ showCode('norm', document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если обычно grad norm около 2, но раз в 200 шагов прыгает до 300, clipping на 5 не даст одному batch-у разрушить параметры.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Gradient Clipping и стабильность</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Выведи формулу global norm clipping: когда ||g|| &gt; c, новый градиент равен g * c / ||g||.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Масштабирование сохраняет направление вектора, но ограничивает длину до c. Если norm меньше порога, градиент не меняют.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Сравни clipping by norm и clipping by value на векторе [100, 1]. Как меняется направление?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Norm clipping сохраняет отношение координат, value clipping режет большую координату отдельно. Поэтому value clipping может сильно повернуть направление update-а.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй global norm clipping для списка NumPy-градиентов.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Код должен посчитать общую норму по всем параметрам и применить один общий scale.</p>
+<pre><code class="language-python"># What it does: global norm gradient clipping
+# Input shapes: list of gradient arrays with arbitrary shapes
+# Output shapes: clipped gradients with same shapes
+import numpy as np
+
+def clip_by_global_norm(grads, max_norm=1.0, eps=1e-12):
+    total = np.sqrt(sum(np.sum(g * g) for g in grads))
+    scale = min(1.0, max_norm / (total + eps))
+    return [g * scale for g in grads], total, scale
+
+grads = [np.array([3.0, 4.0]), np.array([0.0, 12.0])]
+clipped, norm, scale = clip_by_global_norm(grads, max_norm=5.0)
+print(norm, scale, clipped)
+# Gotchas: clipping too often means lr or model dynamics may still be wrong.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Сымитируй 100 шагов SGD, где каждый 20-й gradient spike в 50 раз больше. Сравни траектории с clipping и без.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Без clipping один spike может резко увести параметры. С clipping spike ограничивается и траектория становится стабильнее.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему clipping не является настоящим исправлением причины NaN?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Он ограничивает шаг optimizer-а, но не устраняет overflow, плохие данные, неверный loss, слишком большой lr или нестабильные операции.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему важно логировать, как часто clipping срабатывает?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если clipping срабатывает почти всегда, обучение фактически идёт с другим update rule. Это сигнал, что threshold слишком мал или динамика модели нестабильна.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что такое global gradient norm?</li>
+            <li>Когда clipping by value хуже norm clipping?</li>
+            <li>Где в training loop применяется clipping?</li>
+            <li>Какие причины NaN clipping не исправляет?</li>
+            <li>Как понять, что clipping threshold выбран слишком низко?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни clipping как предохранитель на слишком большой шаг.</li>
+            <li>Объясни разницу между ограничением длины вектора и обрезанием отдельных координат.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/06_gradient_clipping_and_stability">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Gradient Clipping и стабильность</h2>

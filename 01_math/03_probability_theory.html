@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -1265,6 +1265,141 @@ calcKL();
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Теория вероятностей</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> Способность воспроизвести вывод, код и объяснение без подсказок — это реальный тест понимания.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Выведи формулу Байеса из определения условной вероятности P(A|B)=P(A,B)/P(B).</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Из P(A|B)=P(A,B)/P(B) и P(B|A)=P(A,B)/P(A) получаем P(A,B)=P(B|A)P(A). Подставляем в первую формулу: P(A|B)=P(B|A)P(A)/P(B).</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Покажи, почему максимизация произведения likelihood по объектам эквивалентна максимизации суммы log-likelihood.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Логарифм монотонен, поэтому максимум не меняется. log product_i p(x_i|theta) = sum_i log p(x_i|theta). Сумма устойчивее численно и проще оптимизируется.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Смоделируй 10 000 бросков нечестной монеты с p(head)=0.7 и покажи, как empirical frequency сходится к вероятности.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Чем больше наблюдений, тем меньше относительный шум частоты. Это не доказывает вероятность для одного исхода, но показывает закон больших чисел.</p>
+<pre><code class="language-python"># What it does: simulates Bernoulli trials and empirical frequency
+# Input shape: samples=(n,)
+# Output shape: scalar empirical probability
+import numpy as np
+
+rng = np.random.default_rng(0)
+samples = rng.binomial(1, 0.7, size=10_000)
+for n in [10, 100, 1000, 10000]:
+    print(n, samples[:n].mean())
+# Gotchas: random seed affects small n; convergence is noisy, not monotonic.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Реализуй вычисление log-likelihood для Bernoulli-модели и найди p, который лучше объясняет данные.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>MLE для Bernoulli равен среднему значению меток. Grid ниже должен максимум около empirical mean.</p>
+<pre><code class="language-python"># What it does: Bernoulli log-likelihood grid search
+# Input shape: y=(n,)
+# Output shape: best_p=scalar
+import numpy as np
+
+y = np.array([1, 0, 1, 1, 0, 1, 1, 1])
+ps = np.linspace(0.01, 0.99, 99)
+ll = np.array([np.sum(y*np.log(p) + (1-y)*np.log(1-p)) for p in ps])
+best_p = ps[np.argmax(ll)]
+print(&#39;empirical mean=&#39;, y.mean())
+print(&#39;best p=&#39;, best_p)
+# Gotchas: never evaluate log(0); clip probabilities away from 0 and 1.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему prior и likelihood отвечают на разные вопросы?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Prior описывает убеждение о параметре до данных. Likelihood описывает, насколько наблюдаемые данные вероятны при фиксированном параметре. Posterior объединяет оба источника.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему хорошая accuracy не означает хорошую вероятностную калибровку?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Accuracy проверяет только правильный класс после threshold/argmax. Калибровка проверяет, соответствует ли уверенность частоте событий: среди объектов с 0.8 вероятности событие должно происходить примерно в 80% случаев.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Как из определения условной вероятности получить формулу Байеса?</li>
+            <li>Чем likelihood отличается от probability события?</li>
+            <li>Почему log-likelihood численно лучше произведения вероятностей?</li>
+            <li>Что означает posterior в Bayesian learning?</li>
+            <li>Почему calibration важна для ML-решений?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни Bayes theorem через пример медицинского теста.</li>
+            <li>Объясни maximum likelihood как настройку параметров модели под наблюдаемые данные.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="01_math/03_probability_theory">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Теория вероятностей</h2>
@@ -1307,15 +1442,3 @@ calcKL();
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-

@@ -892,6 +892,139 @@ showCode('adam', document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если у одного параметра градиенты постоянно в 100 раз больше, Adam уменьшит его effective step через второй момент, чтобы он не доминировал над обучением.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Adam, AdamW, Lion</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Распиши один шаг Adam: m_t, v_t, bias correction, update theta. Объясни, зачем нужен epsilon.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>m_t хранит EMA градиента, v_t хранит EMA квадрата градиента. Bias correction компенсирует старт с нуля. epsilon защищает от деления на ноль и стабилизирует маленькие v.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Покажи разницу между L2 penalty внутри Adam и decoupled weight decay в AdamW.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>В Adam L2 добавляется к градиенту и затем проходит через адаптивный делитель. В AdamW decay применяется отдельно к параметрам, поэтому штраф не искажается per-parameter scaling.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй один AdamW update для NumPy-вектора параметров.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Код должен сделать m/v update, bias correction, adaptive step и decoupled decay. Проверяй порядок операций.</p>
+<pre><code class="language-python"># What it does: one AdamW update for a vector of parameters
+# Input shapes: theta=(d,), grad=(d,), m=(d,), v=(d,)
+# Output shapes: theta_new=(d,), m_new=(d,), v_new=(d,)
+import numpy as np
+
+def adamw_step(theta, grad, m, v, t, lr=3e-4, b1=0.9, b2=0.999, eps=1e-8, wd=0.01):
+    m = b1 * m + (1 - b1) * grad
+    v = b2 * v + (1 - b2) * (grad ** 2)
+    m_hat = m / (1 - b1 ** t)
+    v_hat = v / (1 - b2 ** t)
+    theta = theta * (1 - lr * wd) - lr * m_hat / (np.sqrt(v_hat) + eps)
+    return theta, m, v
+
+theta = np.array([1.0, -2.0])
+grad = np.array([0.1, -0.4])
+m = np.zeros_like(theta)
+v = np.zeros_like(theta)
+print(adamw_step(theta, grad, m, v, t=1)[0])
+# Gotchas: AdamW decay is decoupled; do bias correction before the parameter update.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Сравни sign update Lion с AdamW на одном и том же градиенте. Что теряется при переходе к sign?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Sign update сохраняет направление по знаку, но теряет информацию о величине градиента. Это может быть эффективно, но требует аккуратного lr.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему Adam часто быстрее стартует, чем SGD?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Он адаптирует шаги по координатам и сглаживает шумные градиенты, поэтому лучше переносит разные масштабы параметров и sparse gradients.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему AdamW стал дефолтом для многих Transformer-like моделей?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Decoupled weight decay лучше контролирует нормы весов в adaptive optimizer-е, а Adam-динамика хорошо работает с noisy gradients, LayerNorm и большими моделями.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что хранят первый и второй моменты Adam?</li>
+            <li>Зачем нужна bias correction?</li>
+            <li>Чем AdamW отличается от Adam + L2?</li>
+            <li>Почему Lion требует другой learning rate?</li>
+            <li>Какие симптомы говорят, что weight decay выбран плохо?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни Adam как осторожного водителя, который смотрит и на направление, и на тряску дороги.</li>
+            <li>Объясни decoupled weight decay без формул.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/03_adam_adamw_lion">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Adam, AdamW, Lion</h2>

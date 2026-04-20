@@ -159,10 +159,20 @@ update зависит от оптимизатора:
       <input type="number" id="lrInput" value="0.003" step="0.001" min="0.0001" max="0.1">
     </div>
     <div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">momentum β: <span id="trajBetaVal" style="color:var(--amber);font-weight:700;">0.90</span></div>
+      <input type="range" id="trajBeta" min="0" max="0.99" step="0.01" value="0.9">
+    </div>
+    <div>
+      <div class="muted" style="font-size:.82em;margin-bottom:4px;">Adam ε</div>
+      <input type="number" id="epsInput" value="0.00000001" step="0.00000001" min="0.00000001" max="0.01">
+    </div>
+    <div>
       <div class="muted" style="font-size:.82em;margin-bottom:4px;">Шагов</div>
       <input type="number" id="nSteps" value="200" min="10" max="1000">
     </div>
     <button onclick="runOpt()" style="border-color:var(--green);color:var(--green);">▶ Run</button>
+    <button onclick="animateOpt()" style="border-color:var(--blue);color:var(--blue);">▶ Animate</button>
+    <button onclick="toggleLossSpike()" id="lossSpikeBtn">⚡ Loss spike: off</button>
     <button onclick="resetTraj()">↺ Сброс</button>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
@@ -170,6 +180,7 @@ update зависит от оптимизатора:
     <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkMom" checked> <span style="color:#f59e0b">● Momentum</span></label>
     <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdam" checked> <span style="color:#10b981">● Adam</span></label>
     <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkAdamW"> <span style="color:#a78bfa">● AdamW</span></label>
+    <label style="cursor:pointer;font-size:.88em;"><input type="checkbox" id="chkClipSpike"> clip spike</label>
   </div>
   <canvas id="surfCanvas" width="880" height="380" style="background:#0a0d14;border:1px solid var(--border);width:100%;max-width:880px;border-radius:8px;"></canvas>
 <!-- step1-viz:start -->
@@ -535,44 +546,108 @@ const XRANGE = {rosenbrock:[-2,2], saddle:[-3,3], ravine:[-2.5,2.5], bowl:[-2,2]
 const YRANGE = {rosenbrock:[-1,2.5], saddle:[-3,3], ravine:[-1.5,1.5], bowl:[-2,2]};
 
 let trajectories = {};
+let optSpikeEnabled = false;
+let optAnimationFrame = null;
 
-function resetTraj() { trajectories = {}; drawSurface(); }
+function resetTraj() {
+  if(optAnimationFrame){cancelAnimationFrame(optAnimationFrame); optAnimationFrame=null;}
+  trajectories = {};
+  drawSurface();
+  document.getElementById('surfResult').textContent = '';
+}
+
+function getOptControls(){
+  return {
+    beta:+document.getElementById('trajBeta').value,
+    eps:+document.getElementById('epsInput').value,
+    clip:document.getElementById('chkClipSpike').checked
+  };
+}
+
+function toggleLossSpike(){
+  optSpikeEnabled = !optSpikeEnabled;
+  document.getElementById('lossSpikeBtn').textContent = optSpikeEnabled ? '⚡ Loss spike: on' : '⚡ Loss spike: off';
+}
+
+function gradAtStep(surf,x,y,step,totalSteps){
+  const g = getGrad(surf,x,y);
+  if(optSpikeEnabled && step === Math.max(3, Math.floor(totalSteps * 0.28))){
+    g[0] += 38;
+    g[1] -= 24;
+  }
+  if(document.getElementById('chkClipSpike').checked){
+    const norm = Math.sqrt(g[0]*g[0] + g[1]*g[1]);
+    const maxNorm = 12;
+    if(norm > maxNorm){
+      g[0] *= maxNorm / norm;
+      g[1] *= maxNorm / norm;
+    }
+  }
+  return g;
+}
 
 function runOpt() {
+  if(optAnimationFrame){cancelAnimationFrame(optAnimationFrame); optAnimationFrame=null;}
   const surf = document.getElementById('surfType').value;
   const lr = +document.getElementById('lrInput').value;
   const steps = +document.getElementById('nSteps').value;
+  const {beta,eps} = getOptControls();
   const [sx,sy] = START[surf];
   const opts = [
     {id:'SGD',   chk:'chkSGD',  col:'#ef4444', run: ()=>runSGD(surf,sx,sy,lr,steps)},
-    {id:'Mom',   chk:'chkMom',  col:'#f59e0b', run: ()=>runMom(surf,sx,sy,lr,steps)},
-    {id:'Adam',  chk:'chkAdam', col:'#10b981', run: ()=>runAdam(surf,sx,sy,lr,steps)},
-    {id:'AdamW', chk:'chkAdamW',col:'#a78bfa', run: ()=>runAdamW(surf,sx,sy,lr,steps)},
+    {id:'Mom',   chk:'chkMom',  col:'#f59e0b', run: ()=>runMom(surf,sx,sy,lr,steps,beta)},
+    {id:'Adam',  chk:'chkAdam', col:'#10b981', run: ()=>runAdam(surf,sx,sy,lr,steps,0.9,0.999,eps)},
+    {id:'AdamW', chk:'chkAdamW',col:'#a78bfa', run: ()=>runAdamW(surf,sx,sy,lr,steps,0.9,0.999,eps)},
   ];
   trajectories = {};
   opts.forEach(o => { if(document.getElementById(o.chk).checked) trajectories[o.id]={col:o.col,pts:o.run()}; });
   drawSurface();
+  updateSurfResult();
+}
+
+function animateOpt(){
+  if(optAnimationFrame){cancelAnimationFrame(optAnimationFrame); optAnimationFrame=null;}
+  runOpt();
+  const maxLen = Math.max(0, ...Object.values(trajectories).map(v=>v.pts.length));
+  let frame = 1;
+  function tick(){
+    drawSurface(frame);
+    frame += Math.max(1, Math.ceil(maxLen / 180));
+    if(frame <= maxLen){
+      optAnimationFrame = requestAnimationFrame(tick);
+    } else {
+      drawSurface();
+      optAnimationFrame = null;
+    }
+  }
+  tick();
+}
+
+function updateSurfResult(){
+  const surf = document.getElementById('surfType').value;
   const res = Object.entries(trajectories).map(([k,v])=>{
     const last=v.pts[v.pts.length-1];
     return `${k}: (${last[0].toFixed(3)},${last[1].toFixed(3)}) L=${getLoss(surf,...last).toFixed(4)}`;
   }).join('  |  ');
-  document.getElementById('surfResult').textContent = res || '';
+  const spikeNote = optSpikeEnabled ? '  |  spike step included' : '';
+  const clipNote = document.getElementById('chkClipSpike').checked ? '  |  clipping on' : '';
+  document.getElementById('surfResult').textContent = (res || '') + spikeNote + clipNote;
 }
 
 function runSGD(surf,x,y,lr,steps){
   const pts=[[x,y]];
-  for(let i=0;i<steps;i++){const [gx,gy]=getGrad(surf,x,y);x-=lr*gx;y-=lr*gy;pts.push([x,y]);}
+  for(let i=0;i<steps;i++){const [gx,gy]=gradAtStep(surf,x,y,i,steps);x-=lr*gx;y-=lr*gy;pts.push([x,y]);}
   return pts;
 }
 function runMom(surf,x,y,lr,steps,beta=0.9){
   const pts=[[x,y]]; let vx=0,vy=0;
-  for(let i=0;i<steps;i++){const [gx,gy]=getGrad(surf,x,y);vx=beta*vx+gx;vy=beta*vy+gy;x-=lr*vx;y-=lr*vy;pts.push([x,y]);}
+  for(let i=0;i<steps;i++){const [gx,gy]=gradAtStep(surf,x,y,i,steps);vx=beta*vx+(1-beta)*gx;vy=beta*vy+(1-beta)*gy;x-=lr*vx;y-=lr*vy;pts.push([x,y]);}
   return pts;
 }
 function runAdam(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8){
   const pts=[[x,y]]; let mx=0,my=0,vx=0,vy=0;
   for(let i=1;i<=steps;i++){
-    const [gx,gy]=getGrad(surf,x,y);
+    const [gx,gy]=gradAtStep(surf,x,y,i-1,steps);
     mx=b1*mx+(1-b1)*gx; my=b1*my+(1-b1)*gy;
     vx=b2*vx+(1-b2)*gx**2; vy=b2*vy+(1-b2)*gy**2;
     const mxh=mx/(1-b1**i), myh=my/(1-b1**i);
@@ -585,7 +660,7 @@ function runAdam(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8){
 function runAdamW(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8,wd=0.01){
   const pts=[[x,y]]; let mx=0,my=0,vx=0,vy=0;
   for(let i=1;i<=steps;i++){
-    const [gx,gy]=getGrad(surf,x,y);
+    const [gx,gy]=gradAtStep(surf,x,y,i-1,steps);
     mx=b1*mx+(1-b1)*gx; my=b1*my+(1-b1)*gy;
     vx=b2*vx+(1-b2)*gx**2; vy=b2*vy+(1-b2)*gy**2;
     const mxh=mx/(1-b1**i), myh=my/(1-b1**i);
@@ -597,7 +672,7 @@ function runAdamW(surf,x,y,lr,steps,b1=0.9,b2=0.999,eps=1e-8,wd=0.01){
   return pts;
 }
 
-function drawSurface() {
+function drawSurface(progressLimit) {
   const c=document.getElementById('surfCanvas');
   const ctx=c.getContext('2d');
   const W=c.width, H=c.height;
@@ -636,6 +711,7 @@ function drawSurface() {
 
   // Draw trajectories
   Object.values(trajectories).forEach(({col,pts})=>{
+    pts = typeof progressLimit === 'number' ? pts.slice(0, Math.max(2, Math.min(progressLimit, pts.length))) : pts;
     if(!pts||pts.length<2) return;
     ctx.strokeStyle=col; ctx.lineWidth=2; ctx.setLineDash([]);
     ctx.beginPath();
@@ -907,6 +983,13 @@ drawMomentum();
 drawWD();
 drawLRSchedule();
 showCode('api',document.querySelector('#codeTabs button'));
+document.getElementById('trajBeta').addEventListener('input', function(){
+  document.getElementById('trajBetaVal').textContent = (+this.value).toFixed(2);
+});
+['trajBeta','epsInput','chkClipSpike','chkSGD','chkMom','chkAdam','chkAdamW'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el){el.addEventListener('change', ()=>{if(Object.keys(trajectories).length){runOpt();}});}
+});
 </script>
 
 <!-- theory-expansion:start -->
@@ -953,6 +1036,121 @@ showCode('api',document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если SGD прыгает между стенками узкой долины, momentum усредняет предыдущие направления и позволяет двигаться вдоль долины более стабильно.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Оптимизаторы</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Запиши update SGD для theta и объясни знак минус через направление градиента.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Градиент указывает направление роста loss, поэтому для минимизации делаем theta_new = theta - lr * grad. Если знак перепутать, loss будет расти.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Выведи momentum update как exponential moving average градиентов и объясни роль beta.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>v_t = beta v_{t-1} + (1-beta) g_t. Большой beta дольше помнит прошлое и сильнее сглаживает шум, но медленнее реагирует на смену направления.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй SGD и Momentum для функции f(x,y)=x^2+20y^2 и сравни траектории.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Momentum должен уменьшить зигзаги в узкой долине, если learning rate выбран стабильно. Если lr слишком большой, momentum может усилить overshoot.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Реализуй optimizer step, который принимает параметры и градиенты списком NumPy-массивов.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Это упражнение проверяет, что optimizer — это отдельная логика update-а, а не часть forward model. Shapes параметров и градиентов должны совпадать.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему один и тот же learning rate может быть нормальным для SGD и слишком большим для Adam или наоборот?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Optimizer меняет effective step. Adam нормирует шаг по истории градиентов, SGD нет. Поэтому одинаковый base lr не означает одинаковое движение параметров.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Как batch size влияет на шумность градиента и на выбор learning rate?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Больший batch даёт менее шумную оценку градиента, но дороже шаг. Часто при увеличении batch можно увеличить lr, но это ограничено стабильностью и generalization.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Чем SGD отличается от full-batch gradient descent?</li>
+            <li>Что momentum запоминает и почему это помогает?</li>
+            <li>Почему optimizer нельзя оценивать без learning rate schedule?</li>
+            <li>Что означает effective learning rate?</li>
+            <li>Как понять по loss curve, что lr слишком большой?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни optimizer как правило движения по поверхности loss.</li>
+            <li>Объясни momentum через аналогию с тяжёлым шаром в долине.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/02_optimizers">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Оптимизаторы</h2>

@@ -366,6 +366,133 @@ gradients = gradients / s
       </div>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Numerical Stability</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Докажи, что softmax(x) не меняется, если из всех logits вычесть одну и ту же константу c.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>В числителе и знаменателе появляется общий множитель exp(-c), который сокращается. Поэтому можно вычитать max(logits) для защиты от overflow.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Выведи log-sum-exp trick: log(sum exp(x_i)) = m + log(sum exp(x_i - m)), где m=max(x).</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Вынеси exp(m) из суммы: log(exp(m) sum exp(x_i-m)) = m + log(sum exp(x_i-m)). Теперь все exp аргументы &lt;= 0.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй stable softmax и сравни с naive softmax на logits [1000, 1001, 1002].</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Naive exp переполнится, stable softmax должен вернуть корректные вероятности.</p>
+<pre><code class="language-python"># What it does: stable softmax with max subtraction
+# Input shape: logits=(classes,)
+# Output shape: probs=(classes,)
+import numpy as np
+
+def softmax_stable(x):
+    z = x - np.max(x)
+    e = np.exp(z)
+    return e / e.sum()
+
+logits = np.array([1000.0, 1001.0, 1002.0])
+print(softmax_stable(logits))
+# Gotchas: use logits, not already-softmaxed probabilities; subtract max per row for batches.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Напиши safe BCE loss, который clipping-ует probabilities перед log.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Clipping защищает от log(0), но в реальном DL лучше использовать BCEWithLogitsLoss, чтобы не терять стабильность sigmoid+log.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему NaN часто появляется не там, где возникла первичная причина?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Одна нестабильная операция создаёт inf/NaN, затем они распространяются по графу. Видимый NaN в loss может быть следствием более раннего overflow.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему стабильная формула может быть математически эквивалентна нестабильной, но практически лучше?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Floating point имеет конечный диапазон и точность. Алгебраически равные выражения могут создавать разные промежуточные значения, например exp(1000) против exp(0).</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Зачем вычитать max перед softmax?</li>
+            <li>Что такое overflow и underflow?</li>
+            <li>Почему лучше CrossEntropyLoss по logits, чем softmax + log вручную?</li>
+            <li>Как искать источник NaN в training loop?</li>
+            <li>Какие операции самые рискованные численно?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни numerical stability как защиту от плохих промежуточных чисел.</li>
+            <li>Объясни log-sum-exp trick без формул.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/09_numerical_stability">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Numerical Stability</h2>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -1348,6 +1348,155 @@ drawSVD();
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Линейная алгебра</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> Способность воспроизвести вывод, код и объяснение без подсказок — это реальный тест понимания.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Докажи вручную, что матричное умножение XW для X формы (n, d) и W формы (d, k) даёт выход формы (n, k). Распиши формулу для одного элемента Y_ij.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Элемент Y_ij равен сумме по общей оси d: Y_ij = sum_m X_im W_mj. Индекс i выбирает объект, j выбирает выходную координату, m пробегает входные признаки. Поэтому n остаётся числом объектов, k становится числом новых признаков.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Выведи, почему скалярное произведение связано с косинусом угла: a&#183;b = ||a|| ||b|| cos(theta). Объясни, почему cosine similarity игнорирует длину вектора.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если нормировать оба вектора до единичной длины, их dot product становится cos(theta). Длина исчезает, остаётся только направление. Поэтому cosine similarity полезна для embeddings, где важнее семантическое направление, чем масштаб.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Реализуй matrix multiplication на NumPy и проверь shapes без использования @ внутри своей функции.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Циклы ниже явно показывают общую ось d. Это медленнее, чем NumPy, но полезно для понимания размерностей.</p>
+<pre><code class="language-python"># What it does: manual matrix multiplication
+# Input shapes: X=(n,d), W=(d,k)
+# Output shape: Y=(n,k)
+import numpy as np
+
+def matmul_manual(X, W):
+    n, d = X.shape
+    d2, k = W.shape
+    assert d == d2
+    Y = np.zeros((n, k))
+    for i in range(n):
+        for j in range(k):
+            for m in range(d):
+                Y[i, j] += X[i, m] * W[m, j]
+    return Y
+
+X = np.array([[1., 2.], [3., 4.]])
+W = np.array([[2., 0., 1.], [1., -1., 3.]])
+print(matmul_manual(X, W))
+print(X @ W)
+# Gotchas: inner dimensions must match; output columns come from W, not X.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Сгенерируй облако 2D-точек, примени линейное преобразование A и сравни determinant с изменением площади маленького квадрата.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Determinant показывает, во сколько раз линейное преобразование масштабирует ориентированную площадь. Если det отрицательный, ориентация переворачивается.</p>
+<pre><code class="language-python"># What it does: checks area scaling by determinant
+# Input shapes: A=(2,2), square=(4,2)
+# Output shape: transformed=(4,2)
+import numpy as np
+
+def polygon_area(P):
+    x, y = P[:, 0], P[:, 1]
+    return 0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+A = np.array([[2.0, 0.5], [0.0, 1.5]])
+square = np.array([[0.,0.], [1.,0.], [1.,1.], [0.,1.]])
+transformed = square @ A.T
+print(&#39;det(A)=&#39;, np.linalg.det(A))
+print(&#39;area ratio=&#39;, polygon_area(transformed) / polygon_area(square))
+# Gotchas: use A.T when row-vectors are stored as points; determinant can be negative because of orientation.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему в ML почти всегда нужно проверять shapes перед чтением смысла формулы?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Потому что shape ошибки часто раскрывают неправильную ось, перепутанный batch dimension или неверный порядок умножения. Если размерности не сходятся, формула не может быть правильной реализацией идеи.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Объясни, почему low-rank approximation может сжимать модель или данные, но одновременно терять важную информацию.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Low-rank approximation сохраняет доминирующие направления variance или энергии матрицы. Если слабое направление содержит редкий, но важный сигнал, сжатие может улучшить среднюю реконструкцию и ухудшить downstream-задачу.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Как по shapes понять, можно ли умножить две матрицы?</li>
+            <li>Что геометрически делает матрица с облаком точек?</li>
+            <li>Почему rank связан с количеством независимых направлений информации?</li>
+            <li>Чем eigenvectors отличаются по смыслу от singular vectors?</li>
+            <li>Почему PCA можно понимать как поиск новой системы координат?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни матрицу весов нейросети как геометрическое преобразование пространства признаков.</li>
+            <li>Объясни SVD человеку, который знает только векторы и проекции.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="01_math/01_linear_algebra">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Линейная алгебра</h2>
@@ -1389,16 +1538,3 @@ drawSVD();
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

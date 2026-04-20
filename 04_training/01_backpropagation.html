@@ -33,6 +33,19 @@ canvas{border-radius:8px;display:block;}
 .step.green{border-left-color:var(--green);background:#0f1f1a;}
 .step.blue{border-left-color:var(--blue);background:#0d1426;}
 .node{cursor:pointer;transition:all .3s;}
+.bp-live-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;margin:12px 0 14px;}
+.bp-live-controls label{display:grid;gap:5px;color:var(--muted);font-size:.82em;}
+.bp-live-stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+.bp-live-panel{background:#0a0d14;border:1px solid var(--border);border-radius:12px;padding:10px;}
+.bp-live-panel h3{margin:0 0 8px;color:var(--blue);}
+.bp-live-caption{margin-top:8px;color:var(--muted);font-size:.84em;}
+.bp-live-status{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px;}
+.bp-live-metric{border:1px solid var(--border);border-radius:10px;background:#0d1117;padding:8px 10px;font-family:monospace;font-size:.84em;}
+.bp-live-metric strong{display:block;color:var(--muted);font-family:system-ui,sans-serif;font-size:.78em;font-weight:600;margin-bottom:2px;}
+.bp-live-phase{color:var(--amber);font-weight:700;}
+@media (max-width: 820px){
+  .bp-live-controls,.bp-live-stage,.bp-live-status{grid-template-columns:1fr;}
+}
 
   /* ml-notes 2.11 shell override */
   body{
@@ -130,6 +143,65 @@ Backprop: один forward + один backward → O(1) по числу прох
     </ul>
   </section>
 <!-- training-deepening:end -->
+
+<div class="card" id="bpLiveTrainer">
+  <h2>Live training: forward → loss → backward → update</h2>
+  <p class="muted">
+    Небольшая сеть 2→4→3→1 учится разделять две 2D-группы. Нажми <strong>Train step</strong>:
+    сначала подсвечивается forward-сигнал, затем loss, потом обратный поток градиентов и изменение весов.
+  </p>
+
+  <div class="bp-live-controls">
+    <label>
+      Learning rate <span class="bp-live-phase" id="bpLiveLrValue">0.08</span>
+      <input type="range" id="bpLiveLr" min="0.005" max="0.25" value="0.08" step="0.005">
+    </label>
+    <label>
+      Activation
+      <select id="bpLiveActivation" style="min-height:38px;background:#0d1117;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px;">
+        <option value="tanh">tanh</option>
+        <option value="relu">ReLU</option>
+        <option value="sigmoid">sigmoid</option>
+      </select>
+    </label>
+    <button type="button" id="bpLiveStep">Train step</button>
+    <button type="button" id="bpLiveReset">Reset</button>
+  </div>
+
+  <div class="bp-live-stage">
+    <div class="bp-live-panel">
+      <h3>Данные и decision surface</h3>
+      <canvas id="bpLiveData" width="420" height="300" style="width:100%;height:auto;"></canvas>
+      <div class="bp-live-caption">Синий/зелёный — классы. Фон показывает текущую вероятность класса 1.</div>
+    </div>
+    <div class="bp-live-panel">
+      <h3>Сеть и поток градиента</h3>
+      <canvas id="bpLiveNet" width="420" height="300" style="width:100%;height:auto;"></canvas>
+      <div class="bp-live-caption">Толщина стрелок в backward отражает среднюю величину градиента для группы весов.</div>
+    </div>
+  </div>
+
+  <div class="bp-live-stage" style="margin-top:14px;">
+    <div class="bp-live-panel">
+      <h3>Loss curve</h3>
+      <canvas id="bpLiveLoss" width="420" height="160" style="width:100%;height:auto;"></canvas>
+      <div class="bp-live-caption">Если learning rate слишком большой, кривая начинает прыгать или расходиться.</div>
+    </div>
+    <div class="bp-live-panel">
+      <h3>Что сейчас происходит</h3>
+      <div class="bp-live-status">
+        <div class="bp-live-metric"><strong>step</strong><span id="bpLiveStepCount">0</span></div>
+        <div class="bp-live-metric"><strong>phase</strong><span id="bpLivePhase">ready</span></div>
+        <div class="bp-live-metric"><strong>loss</strong><span id="bpLiveLossValue">—</span></div>
+        <div class="bp-live-metric"><strong>accuracy</strong><span id="bpLiveAccValue">—</span></div>
+      </div>
+      <div class="intuition" id="bpLiveExplanation" style="margin-top:12px;">
+        Нажми Train step. Сеть сначала сделает prediction для всех точек, затем посчитает ошибку,
+        затем разнесёт ответственность назад по слоям и обновит веса.
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 2. Цепное правило — освежение -->
 <div class="card">
@@ -778,6 +850,352 @@ function showCode(key,btn){
   document.getElementById('codeContent').textContent=CODES[key];
 }
 
+// ===================== LIVE TRAINING ANIMATION =====================
+const bpLive = {
+  X: [],
+  y: [],
+  W1: [],
+  b1: [],
+  W2: [],
+  b2: [],
+  W3: [],
+  b3: [],
+  cache: null,
+  grads: null,
+  step: 0,
+  lossHistory: [],
+  phase: 'ready',
+  busy: false
+};
+
+function bpRand(seed){
+  let s = seed >>> 0;
+  return function(){
+    s = (1664525 * s + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function bpNormal(rand){
+  const u = Math.max(rand(), 1e-9);
+  const v = Math.max(rand(), 1e-9);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function bpInitDataset(){
+  const rand = bpRand(42);
+  bpLive.X = [];
+  bpLive.y = [];
+  for(let i=0;i<80;i++){
+    const cls = i < 40 ? 0 : 1;
+    const angle = rand() * Math.PI * 2;
+    const radius = cls === 0 ? 0.55 + rand() * 0.55 : 1.35 + rand() * 0.55;
+    const noiseX = bpNormal(rand) * 0.08;
+    const noiseY = bpNormal(rand) * 0.08;
+    bpLive.X.push([Math.cos(angle) * radius + noiseX, Math.sin(angle) * radius + noiseY]);
+    bpLive.y.push(cls);
+  }
+}
+
+function bpMat(rows, cols, scale, rand){
+  const out = [];
+  for(let r=0;r<rows;r++){
+    const row = [];
+    for(let c=0;c<cols;c++){ row.push(bpNormal(rand) * scale); }
+    out.push(row);
+  }
+  return out;
+}
+
+function bpZeros(n){return Array.from({length:n},()=>0);}
+function bpSigmoid(z){return 1/(1+Math.exp(-Math.max(-40, Math.min(40, z))));}
+function bpAct(z, kind){
+  if(kind === 'relu'){return Math.max(0,z);}
+  if(kind === 'sigmoid'){return bpSigmoid(z);}
+  return Math.tanh(z);
+}
+function bpActGrad(z, kind){
+  if(kind === 'relu'){return z > 0 ? 1 : 0;}
+  if(kind === 'sigmoid'){const s=bpSigmoid(z);return s*(1-s);}
+  const t = Math.tanh(z); return 1 - t*t;
+}
+
+function bpForwardPoint(x, activation){
+  const z1 = bpLive.W1.map((row,j)=>row[0]*x[0]+row[1]*x[1]+bpLive.b1[j]);
+  const a1 = z1.map(v=>bpAct(v, activation));
+  const z2 = bpLive.W2.map((row,j)=>row.reduce((s,w,i)=>s+w*a1[i],0)+bpLive.b2[j]);
+  const a2 = z2.map(v=>bpAct(v, activation));
+  const logit = bpLive.W3[0].reduce((s,w,i)=>s+w*a2[i],0)+bpLive.b3[0];
+  const p = bpSigmoid(logit);
+  return {z1,a1,z2,a2,logit,p};
+}
+
+function bpForwardBatch(){
+  const activation = document.getElementById('bpLiveActivation').value;
+  const cache = {z1:[],a1:[],z2:[],a2:[],logits:[],p:[]};
+  let loss = 0;
+  let correct = 0;
+  for(let n=0;n<bpLive.X.length;n++){
+    const f = bpForwardPoint(bpLive.X[n], activation);
+    cache.z1.push(f.z1); cache.a1.push(f.a1); cache.z2.push(f.z2); cache.a2.push(f.a2);
+    cache.logits.push(f.logit); cache.p.push(f.p);
+    const y = bpLive.y[n];
+    loss += -(y*Math.log(f.p+1e-9)+(1-y)*Math.log(1-f.p+1e-9));
+    correct += (f.p >= 0.5 ? 1 : 0) === y ? 1 : 0;
+  }
+  bpLive.cache = cache;
+  return {loss:loss/bpLive.X.length, acc:correct/bpLive.X.length};
+}
+
+function bpEmptyGrads(){
+  return {
+    W1: bpLive.W1.map(row=>row.map(()=>0)), b1: bpZeros(bpLive.b1.length),
+    W2: bpLive.W2.map(row=>row.map(()=>0)), b2: bpZeros(bpLive.b2.length),
+    W3: bpLive.W3.map(row=>row.map(()=>0)), b3: bpZeros(bpLive.b3.length)
+  };
+}
+
+function bpBackward(){
+  const activation = document.getElementById('bpLiveActivation').value;
+  const B = bpLive.X.length;
+  const g = bpEmptyGrads();
+  for(let n=0;n<B;n++){
+    const x = bpLive.X[n];
+    const y = bpLive.y[n];
+    const c = bpLive.cache;
+    const dLogit = (c.p[n] - y) / B;
+    for(let i=0;i<3;i++){ g.W3[0][i] += dLogit * c.a2[n][i]; }
+    g.b3[0] += dLogit;
+
+    const da2 = bpLive.W3[0].map(w=>dLogit*w);
+    const dz2 = da2.map((v,i)=>v*bpActGrad(c.z2[n][i], activation));
+    for(let j=0;j<3;j++){
+      for(let i=0;i<4;i++){ g.W2[j][i] += dz2[j] * c.a1[n][i]; }
+      g.b2[j] += dz2[j];
+    }
+
+    const da1 = bpZeros(4);
+    for(let i=0;i<4;i++){
+      for(let j=0;j<3;j++){ da1[i] += dz2[j] * bpLive.W2[j][i]; }
+    }
+    const dz1 = da1.map((v,i)=>v*bpActGrad(c.z1[n][i], activation));
+    for(let j=0;j<4;j++){
+      g.W1[j][0] += dz1[j] * x[0];
+      g.W1[j][1] += dz1[j] * x[1];
+      g.b1[j] += dz1[j];
+    }
+  }
+  bpLive.grads = g;
+  return g;
+}
+
+function bpNorm(mat){
+  let s = 0;
+  mat.forEach(row=>row.forEach(v=>{s += v*v;}));
+  return Math.sqrt(s);
+}
+
+function bpApplyUpdate(){
+  const lr = +document.getElementById('bpLiveLr').value;
+  const g = bpLive.grads;
+  for(let j=0;j<4;j++){
+    for(let i=0;i<2;i++){ bpLive.W1[j][i] -= lr * g.W1[j][i]; }
+    bpLive.b1[j] -= lr * g.b1[j];
+  }
+  for(let j=0;j<3;j++){
+    for(let i=0;i<4;i++){ bpLive.W2[j][i] -= lr * g.W2[j][i]; }
+    bpLive.b2[j] -= lr * g.b2[j];
+  }
+  for(let i=0;i<3;i++){ bpLive.W3[0][i] -= lr * g.W3[0][i]; }
+  bpLive.b3[0] -= lr * g.b3[0];
+}
+
+function bpReset(){
+  const rand = bpRand(7);
+  bpLive.W1 = bpMat(4,2,0.85,rand); bpLive.b1 = bpZeros(4);
+  bpLive.W2 = bpMat(3,4,0.7,rand); bpLive.b2 = bpZeros(3);
+  bpLive.W3 = bpMat(1,3,0.7,rand); bpLive.b3 = [0];
+  bpLive.step = 0; bpLive.lossHistory = []; bpLive.phase = 'ready'; bpLive.busy = false;
+  const metrics = bpForwardBatch();
+  bpLive.lossHistory.push(metrics.loss);
+  bpUpdateStatus(metrics);
+  bpDrawAll();
+}
+
+function bpToCanvas(pt, canvas){
+  const scale = Math.min(canvas.width, canvas.height) / 4.6;
+  return [canvas.width/2 + pt[0]*scale, canvas.height/2 - pt[1]*scale];
+}
+
+function bpDrawData(){
+  const canvas = document.getElementById('bpLiveData');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const activation = document.getElementById('bpLiveActivation').value;
+  const cell = 10;
+  for(let x=0;x<canvas.width;x+=cell){
+    for(let y=0;y<canvas.height;y+=cell){
+      const wx = (x-canvas.width/2)/(Math.min(canvas.width,canvas.height)/4.6);
+      const wy = -(y-canvas.height/2)/(Math.min(canvas.width,canvas.height)/4.6);
+      const p = bpForwardPoint([wx,wy], activation).p;
+      const blue = Math.round(70 + 120*(1-p));
+      const green = Math.round(80 + 135*p);
+      ctx.fillStyle = `rgba(${40},${green},${blue},0.22)`;
+      ctx.fillRect(x,y,cell,cell);
+    }
+  }
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0,canvas.height/2); ctx.lineTo(canvas.width,canvas.height/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height); ctx.stroke();
+  bpLive.X.forEach((pt,i)=>{
+    const p = bpToCanvas(pt, canvas);
+    ctx.beginPath(); ctx.arc(p[0],p[1],5.2,0,Math.PI*2);
+    ctx.fillStyle = bpLive.y[i] ? '#10b981' : '#60a5fa';
+    ctx.fill();
+    ctx.strokeStyle = '#0d1117'; ctx.stroke();
+  });
+}
+
+function bpDrawNet(){
+  const canvas = document.getElementById('bpLiveNet');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const layers = [
+    {x:50, ys:[115,185], label:'x'},
+    {x:160, ys:[70,120,180,230], label:'h1'},
+    {x:280, ys:[95,150,205], label:'h2'},
+    {x:370, ys:[150], label:'ŷ'}
+  ];
+  const gradNorms = bpLive.grads ? [bpNorm(bpLive.grads.W1), bpNorm(bpLive.grads.W2), bpNorm(bpLive.grads.W3)] : [0,0,0];
+  const maxGrad = Math.max(1e-6, ...gradNorms);
+
+  function drawEdges(a,b,weights,gradIndex){
+    for(let i=0;i<a.ys.length;i++){
+      for(let j=0;j<b.ys.length;j++){
+        const w = weights[j][i];
+        const gradWidth = bpLive.phase === 'backward' ? 1 + 7*(gradNorms[gradIndex]/maxGrad) : 1 + Math.min(5, Math.abs(w)*2);
+        ctx.beginPath();
+        ctx.moveTo(a.x,a.ys[i]); ctx.lineTo(b.x,b.ys[j]);
+        ctx.strokeStyle = bpLive.phase === 'backward'
+          ? 'rgba(239,68,68,0.72)'
+          : (w >= 0 ? 'rgba(16,185,129,0.56)' : 'rgba(244,114,182,0.56)');
+        ctx.lineWidth = gradWidth;
+        ctx.stroke();
+      }
+    }
+  }
+  drawEdges(layers[0],layers[1],bpLive.W1,0);
+  drawEdges(layers[1],layers[2],bpLive.W2,1);
+  drawEdges(layers[2],layers[3],bpLive.W3,2);
+
+  layers.forEach((layer,li)=>{
+    layer.ys.forEach((y,ni)=>{
+      let r = 13;
+      let fill = '#0d1117';
+      if(bpLive.phase === 'forward' && bpLive.cache){
+        const source = li===1 ? bpLive.cache.a1 : li===2 ? bpLive.cache.a2 : null;
+        if(source){
+          const mean = source.reduce((s,row)=>s+Math.abs(row[ni]),0)/source.length;
+          r += Math.min(8, mean*5);
+          fill = 'rgba(126,184,126,0.32)';
+        } else if(li===3) {
+          fill = 'rgba(126,184,184,0.34)';
+        }
+      }
+      if(bpLive.phase === 'update'){ fill = 'rgba(245,158,11,0.33)'; }
+      ctx.beginPath(); ctx.arc(layer.x,y,r,0,Math.PI*2);
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = li===0 ? '#60a5fa' : li===3 ? '#10b981' : '#a78bfa';
+      ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#e6edf3'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(layer.label + (ni+1), layer.x, y+4);
+    });
+  });
+
+  ctx.textAlign = 'left'; ctx.font = '12px system-ui'; ctx.fillStyle = '#8b949e';
+  ctx.fillText('blue=data input · purple=hidden reps · green=prediction · red=gradient flow', 10, 18);
+}
+
+function bpDrawLoss(){
+  const canvas = document.getElementById('bpLiveLoss');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#0a0d14'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(34,12); ctx.lineTo(34,canvas.height-24); ctx.lineTo(canvas.width-10,canvas.height-24); ctx.stroke();
+  const hist = bpLive.lossHistory.slice(-80);
+  if(hist.length < 2){return;}
+  const maxL = Math.max(...hist, 0.75);
+  const minL = Math.min(...hist, 0);
+  const range = Math.max(1e-6, maxL-minL);
+  ctx.beginPath();
+  hist.forEach((v,i)=>{
+    const x = 34 + i/(hist.length-1)*(canvas.width-50);
+    const y = canvas.height-24 - (v-minL)/range*(canvas.height-44);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = '#8b949e'; ctx.font = '11px monospace';
+  ctx.fillText('loss', 8, 18);
+  ctx.fillText(hist[hist.length-1].toFixed(3), canvas.width-58, 18);
+}
+
+function bpDrawAll(){bpDrawData();bpDrawNet();bpDrawLoss();}
+
+function bpUpdateStatus(metrics){
+  document.getElementById('bpLiveStepCount').textContent = bpLive.step;
+  document.getElementById('bpLivePhase').textContent = bpLive.phase;
+  document.getElementById('bpLiveLossValue').textContent = metrics ? metrics.loss.toFixed(4) : '—';
+  document.getElementById('bpLiveAccValue').textContent = metrics ? Math.round(metrics.acc*100)+'%' : '—';
+}
+
+function bpSetPhase(phase, text, metrics){
+  bpLive.phase = phase;
+  document.getElementById('bpLiveExplanation').textContent = text;
+  bpUpdateStatus(metrics || bpForwardBatch());
+  bpDrawAll();
+}
+
+function bpTrainStep(){
+  if(bpLive.busy){return;}
+  bpLive.busy = true;
+  const before = bpForwardBatch();
+  bpSetPhase('forward','Forward pass: каждая точка проходит через два hidden слоя, и сеть выдаёт вероятность класса 1.', before);
+  setTimeout(()=>{
+    bpSetPhase('loss','Loss: binary cross-entropy сравнивает вероятности с настоящими метками. Красная кривая показывает историю ошибки.', before);
+    setTimeout(()=>{
+      bpBackward();
+      bpSetPhase('backward','Backward pass: градиент идёт от loss к ранним слоям. Толстые красные связи получили больший gradient signal.', before);
+      setTimeout(()=>{
+        bpApplyUpdate();
+        bpLive.step += 1;
+        const after = bpForwardBatch();
+        bpLive.lossHistory.push(after.loss);
+        bpSetPhase('update','Update: веса сдвинуты против градиента. Фон decision surface сразу меняется после шага.', after);
+        bpLive.busy = false;
+      }, 520);
+    }, 520);
+  }, 520);
+}
+
+function bpInitLiveTrainer(){
+  if(!document.getElementById('bpLiveTrainer')){return;}
+  bpInitDataset();
+  document.getElementById('bpLiveLr').addEventListener('input', function(){
+    document.getElementById('bpLiveLrValue').textContent = (+this.value).toFixed(3);
+  });
+  document.getElementById('bpLiveActivation').addEventListener('change', function(){
+    const m = bpForwardBatch();
+    bpLive.lossHistory = [m.loss];
+    bpLive.phase = 'ready';
+    bpUpdateStatus(m);
+    bpDrawAll();
+  });
+  document.getElementById('bpLiveStep').addEventListener('click', bpTrainStep);
+  document.getElementById('bpLiveReset').addEventListener('click', bpReset);
+  bpReset();
+}
+
 // INIT
 drawCG();
 document.getElementById('cgInfo').textContent='Нажми «Forward pass» или «Backward pass», затем кликай на узлы по порядку';
@@ -785,6 +1203,7 @@ showDeriv('dW',document.querySelector('#derivTabs button'));
 showCode('numpy',document.querySelector('#codeTabs button'));
 calcNet();
 drawMask();
+bpInitLiveTrainer();
 </script>
 
 <!-- theory-expansion:start -->
@@ -831,6 +1250,142 @@ drawMask();
       <p><strong>Мини-пример:</strong> Для z = w*x + b и loss L градиент по w равен dL/dz * x. Если x большой, тот же upstream gradient даст больший шаг по w, поэтому масштаб входов напрямую влияет на обучение.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Backpropagation</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Выведи dL/dW и dL/db для одного линейного слоя z = xW + b и MSE loss. Обязательно укажи shapes для x, W, z и y.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Для batch X формы (n,d), W формы (d,k), Z=XW+b формы (n,k). Если L=mean((Z-Y)^2), то dL/dZ имеет форму (n,k), dL/dW = X^T dL/dZ формы (d,k), dL/db = sum по batch формы (k,).</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Покажи, почему для softmax + cross-entropy градиент по logits упрощается до p - y_onehot.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Производная log-softmax даёт матрицу Jacobian, где diagonal часть p_i(1-p_i), off-diagonal -p_i p_j. После свёртки с one-hot target все члены упрощаются до p_j - y_j. Это причина, почему CrossEntropyLoss удобно принимать logits напрямую.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Реализуй finite-difference gradient check для маленького линейного слоя и сравни с ручным backward.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Finite differences должен совпасть с analytic gradient с малой погрешностью. Если не совпадает, обычно ошибка в transpose, усреднении batch или знаке.</p>
+<pre><code class="language-python"># What it does: finite-difference check for a scalar loss
+# Input shape: w=(d,)
+# Output shape: grad=(d,)
+import numpy as np
+
+def loss(w):
+    x = np.array([1.0, -2.0, 3.0])
+    y = 2.0
+    pred = w @ x
+    return (pred - y) ** 2
+
+def finite_diff(w, eps=1e-5):
+    g = np.zeros_like(w)
+    for i in range(w.size):
+        step = np.zeros_like(w)
+        step[i] = eps
+        g[i] = (loss(w + step) - loss(w - step)) / (2 * eps)
+    return g
+
+w = np.array([0.2, -0.1, 0.3])
+print(finite_diff(w))
+# Gotchas: compare with analytic/autograd gradients at the same parameter values.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Напиши 2-layer MLP на NumPy: forward, ReLU, MSE, backward, update. Не используй PyTorch.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Минимальная реализация должна сохранить pre-activation для ReLU mask, затем пройти backward от loss к W2/b2 и W1/b1. Главные проверки: shapes и падение loss на toy data.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему backprop требует один forward и один backward pass, а не отдельный проход для каждого параметра?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Reverse-mode AD переиспользует локальные производные и upstream gradients в computational graph. Для одного scalar loss это эффективнее, чем perturb каждый параметр отдельно.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Что происходит с градиентами в глубокой сети с sigmoid activations?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Производная sigmoid максимум 0.25. При многократном перемножении такие множители быстро уменьшают сигнал, поэтому ранние слои получают почти нулевой gradient.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Почему backward pass зависит от значений, сохранённых во forward pass?</li>
+            <li>Где в backprop появляется transpose и почему?</li>
+            <li>Что такое VJP и почему он практичнее полного Jacobian?</li>
+            <li>Как отличить ошибку optimizer-а от ошибки backward-а?</li>
+            <li>Почему finite differences полезен для проверки ручных градиентов?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни backprop как передачу ответственности за ошибку назад по графу.</li>
+            <li>Объясни, почему dL/dW зависит и от входа слоя, и от ошибки на выходе слоя.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/01_backpropagation">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Backpropagation</h2>

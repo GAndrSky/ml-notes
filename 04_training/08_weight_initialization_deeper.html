@@ -496,6 +496,136 @@ showCode('xavier', document.querySelector('#codeTabs button'));
       <p><strong>Мини-пример:</strong> Если в 50-слойной сети variance активаций умножается на 1.2 в каждом слое, к выходу она вырастет примерно в 1.2^50, то есть почти в 9100 раз.</p>
     </section>
 <!-- theory-expansion:end -->
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Инициализация весов</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> В блоке обучения понимание проверяется не чтением формул, а способностью вывести update, написать минимальный код и объяснить failure mode.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Выведи интуицию Xavier: почему variance весов должна зависеть от fan_in/fan_out?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если суммировать fan_in независимых входов, variance pre-activation растёт пропорционально fan_in. Масштаб весов выбирают так, чтобы variance не взрывалась и не затухала.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Объясни, почему He initialization больше подходит для ReLU, чем Xavier.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>ReLU примерно зануляет половину сигналов, уменьшая variance. He scale компенсирует этот эффект через множитель 2/fan_in.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Сымитируй прохождение random batch через 30 линейных ReLU-слоёв при разных weight scale и измерь variance активаций.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>При маленьком scale variance затухнет, при большом взорвётся. Хорошая инициализация держит масштаб более стабильным.</p>
+<pre><code class="language-python"># What it does: activation variance through random ReLU network
+# Input shape: X=(batch,width)
+# Output shape: printed variance per depth
+import numpy as np
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(512, 128))
+for scale in [0.05, np.sqrt(2/128), 0.3]:
+    A = X.copy()
+    vars_ = []
+    for _ in range(30):
+        W = rng.normal(scale=scale, size=(128, 128))
+        A = np.maximum(0, A @ W)
+        vars_.append(A.var())
+    print(&#39;scale&#39;, round(scale, 4), &#39;last var&#39;, vars_[-1])
+# Gotchas: activation choice changes the correct scale; normalization can hide but not erase bad initialization.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Напиши проверку первого forward pass: среднее и std активаций по слоям до обучения.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Это быстрый sanity check. Если std быстро уходит в 0 или infinity, обучение будет трудным ещё до optimizer-а.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему нельзя инициализировать все веса нулями?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Нейроны одного слоя будут получать одинаковые градиенты и останутся симметричными. Сеть не сможет выучить разные признаки.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему residual connections смягчают, но не отменяют проблему initialization?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Skip path помогает сигналу и градиенту проходить глубже, но residual ветви всё равно могут иметь неправильный масштаб и разрушать стабильность суммы.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что такое fan_in и fan_out?</li>
+            <li>Почему ReLU требует другого масштаба, чем tanh?</li>
+            <li>Как увидеть плохую инициализацию до обучения?</li>
+            <li>Почему symmetry breaking обязателен?</li>
+            <li>Как normalization влияет на чувствительность к initialization?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни инициализацию как контроль масштаба сигнала по глубине.</li>
+            <li>Объясни, почему нулевые веса ломают обучение, даже если градиенты формально считаются.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="04_training/08_weight_initialization_deeper">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Инициализация весов глубже</h2>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -1069,6 +1069,156 @@ calcHessian();
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- learning-exercises:start -->
+  <section class="ml-exercises-section" data-learning-exercises="1">
+    <h2>Упражнения: Матанализ</h2>
+    <p class="ml-exercises-note"><strong>Не пропускай упражнения.</strong> Способность воспроизвести вывод, код и объяснение без подсказок — это реальный тест понимания.</p>
+    <div class="ml-exercise-list">
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Для f(x)=3x^2-4x+1 выведи производную через определение предела, а не по правилу степени.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Подставь (f(x+h)-f(x))/h. После раскрытия скобок останется (6xh+3h^2-4h)/h = 6x+3h-4. При h -&gt; 0 получаем 6x-4.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Для L=(wx+b-y)^2 выведи dL/dw, dL/db и dL/dx через цепное правило.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Обозначим e=wx+b-y. Тогда L=e^2, dL/de=2e. Далее de/dw=x, de/db=1, de/dx=w. Поэтому dL/dw=2e x, dL/db=2e, dL/dx=2e w.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Напиши finite difference gradient checker для функции f(x)=sum(x^2) и сравни с аналитическим градиентом.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Finite differences приближает производную через маленькое изменение входа. Если epsilon слишком большой, ошибка аппроксимации растёт; если слишком маленький, мешает численное округление.</p>
+<pre><code class="language-python"># What it does: finite-difference gradient check
+# Input shape: x=(d,)
+# Output shape: grad=(d,)
+import numpy as np
+
+def f(x):
+    return np.sum(x ** 2)
+
+def grad_fd(x, eps=1e-5):
+    g = np.zeros_like(x)
+    for i in range(x.size):
+        step = np.zeros_like(x)
+        step[i] = eps
+        g[i] = (f(x + step) - f(x - step)) / (2 * eps)
+    return g
+
+x = np.array([1.0, -2.0, 3.0])
+print(grad_fd(x))
+print(2 * x)
+# Gotchas: do not choose eps extremely small; central difference is usually more accurate than forward difference.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Intermediate</span>
+          </div>
+          <p>Реализуй 20 шагов gradient descent для f(x,y)=x^2+10y^2 и объясни, почему по y шаги чувствительнее.</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Кривизна по y в 10 раз выше, поэтому слишком большой learning rate вызывает oscillation или divergence именно вдоль y.</p>
+<pre><code class="language-python"># What it does: gradient descent on an anisotropic quadratic
+# Input shape: point=(2,)
+# Output shape: trajectory=(steps+1,2)
+import numpy as np
+
+def grad(p):
+    x, y = p
+    return np.array([2*x, 20*y])
+
+p = np.array([4.0, 4.0])
+lr = 0.08
+traj = [p.copy()]
+for _ in range(20):
+    p = p - lr * grad(p)
+    traj.append(p.copy())
+print(np.array(traj)[-5:])
+# Gotchas: lr that is safe for x may be too large for y; curvature controls stable step size.</code></pre>
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Foundational</span>
+          </div>
+          <p>Почему gradient descent идёт против градиента, а не по градиенту?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Градиент указывает направление самого быстрого локального роста функции. Loss нужно уменьшать, поэтому шаг делается в противоположном направлении.</p>
+
+          </details>
+        </article>
+        <article class="ml-exercise-card">
+          <div class="ml-exercise-meta">
+            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Hard</span>
+          </div>
+          <p>Почему Hessian почти никогда не считают явно для больших нейросетей?</p>
+          <details class="ml-exercise-solution">
+            <summary>Показать решение</summary>
+            <p>Если параметров P, Hessian имеет P^2 элементов. Для миллионов параметров это невозможно хранить и дорого считать. Вместо этого используют first-order методы или Hessian-vector products.</p>
+
+          </details>
+        </article>
+    </div>
+  </section>
+<!-- learning-exercises:end -->
+
+<!-- learning-checkpoint:start -->
+  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+    <h2>Learning checkpoint</h2>
+    <div class="ml-advanced-grid">
+      <article class="ml-checkpoint-card">
+        <h3>Ответь без подсказок</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Что именно измеряет производная в контексте ML loss?</li>
+            <li>Как цепное правило делает backprop возможным?</li>
+            <li>Почему learning rate зависит от curvature поверхности?</li>
+            <li>Что показывает Hessian и как распознать saddle point?</li>
+            <li>Чем numerical gradient отличается от autograd?</li>
+        </ol>
+      </article>
+      <article class="ml-checkpoint-card">
+        <h3>Explain to a rubber duck</h3>
+        <ol class="ml-checkpoint-list">
+            <li>Объясни gradient descent как спуск по рельефу loss без формул.</li>
+            <li>Объясни chain rule на примере маленькой вычислительной цепочки из трёх операций.</li>
+        </ol>
+        <div class="ml-self-rating" data-topic-id="01_math/02_calculus">
+          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <button type="button" data-rating="1">1</button>
+          <button type="button" data-rating="2">2</button>
+          <button type="button" data-rating="3">3</button>
+          <button type="button" data-rating="4">4</button>
+          <button type="button" data-rating="5">5</button>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+        </div>
+      </article>
+    </div>
+  </section>
+<!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Матанализ</h2>
@@ -1111,15 +1261,3 @@ calcHessian();
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
