@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -2178,6 +2178,50 @@ for t in thresholds:
     calcClsMetrics();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Метрики классификации как управление порогом</h2>
+      <p>Классификатор часто выдаёт score, а метрики оценивают разные способы превратить score в решение. Accuracy, precision, recall, F1, ROC-AUC и PR-AUC отвечают на разные вопросы и могут противоречить друг другу.</p>
+      <p>При несбалансированных классах accuracy почти всегда опасна. Модель может выглядеть хорошей, просто предсказывая majority class. Поэтому выбор метрики должен идти от цены false positive и false negative.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Threshold двигает границу решения: ниже порог — больше positive, выше порог — меньше positive.</li>
+            <li>ROC-кривая показывает траекторию TPR/FPR по всем порогам.</li>
+            <li>PR-кривая лучше раскрывает качество, когда positive class редкий.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Хороший ranking score не гарантирует калиброванные вероятности.</li>
+            <li>Precision зависит от base rate класса и меняется при переносе на другую популяцию.</li>
+            <li>Recall измеряет долю найденных positive среди всех настоящих positive.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Многие метрики недифференцируемы, поэтому модель обучают на surrogate loss.</li>
+            <li>Threshold подбирают после обучения на validation.</li>
+            <li>F1 балансирует precision и recall, но игнорирует true negatives.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Начинай с confusion matrix при рабочем threshold.</li>
+            <li>Для редкого класса показывай PR-AUC и recall at fixed precision.</li>
+            <li>Не подбирай threshold на test.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> В fraud detection recall 95% может быть бесполезен, если precision 2% и команда не успевает проверять тревоги.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Метрики классификации</h2>
@@ -2220,21 +2264,3 @@ for t in thresholds:
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

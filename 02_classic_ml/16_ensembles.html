@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -1589,6 +1589,50 @@ train meta-model on stacked OOF predictions
     drawDiversity();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Ансамбли как управление разными ошибками</h2>
+      <p>Ансамбль полезен, когда модели ошибаются не полностью одинаково. Averaging снижает variance, voting стабилизирует класс, stacking учит meta-model комбинировать предсказания.</p>
+      <p>Главное условие — diversity. Если все модели имеют одинаковые признаки, алгоритм и ошибки, ансамбль почти не добавит качества.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Averaging сглаживает границы решений.</li>
+            <li>Voting объединяет несколько разбиений пространства.</li>
+            <li>Stacking строит новое пространство из predictions base models.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Усреднение вероятностей похоже на mixture of experts без явного gating.</li>
+            <li>Некалиброванные вероятности разных моделей нельзя бездумно усреднять.</li>
+            <li>Out-of-fold predictions нужны, чтобы meta-model не видел train leakage.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Bagging снижает variance, boosting снижает bias, stacking оптимизирует комбинацию.</li>
+            <li>Weights ансамбля можно подбирать на validation, но легко переобучиться.</li>
+            <li>Сложный ансамбль повышает latency и стоимость поддержки.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Собирай diversity через разные алгоритмы, признаки, seeds и folds.</li>
+            <li>Для stacking используй out-of-fold predictions.</li>
+            <li>Сравни выигрыш качества с ценой inference.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если linear model ловит общий тренд, а tree model локальные правила, их среднее может быть стабильнее каждой отдельно.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Ансамбли</h2>
@@ -1631,16 +1675,3 @@ train meta-model on stacked OOF predictions
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

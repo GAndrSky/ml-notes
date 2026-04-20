@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -1775,6 +1775,50 @@ pred = bagging_predict_classification(models, X_valid)</div>
     runVoteSimulation();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Random Forest как снижение variance деревьев</h2>
+      <p>Bagging обучает много моделей на bootstrap-выборках и усредняет ответы. Если отдельные модели шумные, но ошибаются не одинаково, среднее становится стабильнее.</p>
+      <p>Random Forest добавляет случайность по признакам на каждом split-е. Это снижает корреляцию между деревьями и делает averaging эффективнее.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Одно дерево даёт рваную границу, лес усредняет много таких границ.</li>
+            <li>Random feature subsets заставляют деревья смотреть на разные проекции пространства.</li>
+            <li>Больше деревьев снижает шум ансамбля до плато.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Вероятность класса — средний голос или средняя вероятность по деревьям.</li>
+            <li>Bootstrap создаёт эмпирическое распределение обучающих наборов.</li>
+            <li>OOB score оценивает качество на объектах, не попавших в bootstrap конкретного дерева.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Каждое дерево строится жадно, ансамбль снижает variance через averaging.</li>
+            <li>n_estimators, max_depth, max_features и min_samples_leaf управляют устойчивостью.</li>
+            <li>Коррелированные деревья дают меньше пользы от усреднения.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Начни с достаточного числа деревьев и настрой min_samples_leaf/max_features.</li>
+            <li>Для больших sparse данных лес может быть тяжелее линейных моделей.</li>
+            <li>Impurity importance bias-ится к признакам с большим числом split-ов.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если 200 деревьев дают ошибку 0.18, а 500 деревьев 0.179, качество вышло на плато.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Bagging и Random Forest</h2>
@@ -1817,16 +1861,3 @@ pred = bagging_predict_classification(models, X_valid)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

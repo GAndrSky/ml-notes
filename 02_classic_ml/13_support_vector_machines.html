@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -1699,6 +1699,50 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     drawHingeDemo();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>SVM как максимизация зазора</h2>
+      <p>SVM ищет разделяющую границу с максимальным margin между классами. Модель не просто классифицирует train points, а выбирает границу с максимальным запасом до критичных объектов.</p>
+      <p>В soft-margin SVM разрешены нарушения margin. Параметр C задаёт компромисс между шириной margin и ценой ошибок на train.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Support vectors лежат на margin или нарушают его; именно они определяют границу.</li>
+            <li>Большой margin обычно даёт более устойчивое решение.</li>
+            <li>Kernel SVM строит линейную границу в скрытом feature space, которая выглядит нелинейной в исходном пространстве.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>SVM напрямую не оценивает вероятность, а оптимизирует margin-based score.</li>
+            <li>Для probabilities нужна calibration: Platt scaling или isotonic regression.</li>
+            <li>Hinge loss заботится о стороне margin, а не о калиброванной уверенности.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Hinge loss выпуклый, но недифференцируемый в точке margin.</li>
+            <li>Большой C меньше терпит нарушения, маленький C сильнее регуляризует.</li>
+            <li>Kernel matrix дорогая по памяти и времени на больших данных.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Всегда масштабируй признаки перед SVM.</li>
+            <li>Для RBF тюнь C и gamma вместе.</li>
+            <li>На больших датасетах проверь linear SVM или approximate kernels.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если C слишком велик, SVM может согнуть границу вокруг noisy points. При меньшем C модель допустит нарушения, но сохранит широкий margin.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: SVM</h2>
@@ -1741,16 +1785,3 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

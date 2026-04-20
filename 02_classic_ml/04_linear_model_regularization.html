@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -2175,6 +2175,50 @@ print("ridge weights:", w_ridge)</div>
     drawPrior();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Регуляризация как цена за сложность</h2>
+      <p>Регуляризация добавляет к ошибке модели штраф за форму коэффициентов. Она помогает, когда признаков много, они коррелируют, выборка мала или модель слишком уверенно подстраивается под train.</p>
+      <p>Ridge плавно сжимает веса, Lasso может занулять признаки, Elastic Net совмещает оба эффекта. Поэтому выбор штрафа зависит не только от качества, но и от желаемой структуры решения.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Ridge ограничивает веса шаром L2 и мягко тянет решение к центру.</li>
+            <li>Lasso ограничивает веса ромбом L1; углы повышают шанс получить нулевые коэффициенты.</li>
+            <li>При росте λ граница решения становится проще и менее чувствительной к шуму.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>L2 можно читать как Gaussian prior на веса: большие веса маловероятны.</li>
+            <li>L1 соответствует Laplace prior и сильнее тянет малые веса к нулю.</li>
+            <li>λ задаёт силу prior-а о простоте относительно данных.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>L2 остаётся гладкой выпуклой задачей и улучшает conditioning.</li>
+            <li>L1 недифференцируема в нуле, поэтому часто используется coordinate descent.</li>
+            <li>λ подбирают внутри cross-validation, иначе регуляризация подгоняется под validation.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Перед Ridge/Lasso масштабируй признаки.</li>
+            <li>Не используй Lasso как единственный feature selection без проверки стабильности.</li>
+            <li>Смотри не только score, но и устойчивость коэффициентов на folds.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если два признака почти дублируют друг друга, Ridge обычно распределит вес между ними, а Lasso может оставить один и занулить второй.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Регуляризация линейных моделей</h2>
@@ -2217,21 +2261,3 @@ print("ridge weights:", w_ridge)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

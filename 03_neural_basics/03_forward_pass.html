@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -789,6 +789,50 @@ showCode('numpy', document.querySelector('#codeTabs button'));
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Forward pass как композиция тензорных преобразований</h2>
+      <p>Forward pass — это построение цепочки промежуточных тензоров, которые потом нужны backpropagation. Каждый слой меняет representation: размерность, масштаб, нелинейность и статистику активаций.</p>
+      <p>Хорошее понимание forward pass начинается с shapes. Большая часть ошибок в нейросетях — несогласованные размерности, неправильный batch dimension, лишний transpose или неверная нормализация logits.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Линейный слой поворачивает, масштабирует и сдвигает пространство признаков.</li>
+            <li>Активации сгибают пространство и дают нелинейную функцию.</li>
+            <li>Depth означает последовательное переописание объекта в более абстрактных координатах.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Logits — не вероятности; вероятности появляются после sigmoid/softmax.</li>
+            <li>Normalization layers меняют статистику входов для следующих слоёв.</li>
+            <li>Dropout ведёт себя по-разному в train и eval, поэтому режим модели важен.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Forward pass сохраняет computational graph для chain rule.</li>
+            <li>Плохие масштабы активаций ведут к exploding или vanishing gradients.</li>
+            <li>Numerical overflow в forward ломает backward.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Печатай shapes на границах блоков: input, hidden, logits, loss.</li>
+            <li>Разделяй train/eval режимы.</li>
+            <li>Не применяй softmax перед CrossEntropyLoss в PyTorch.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Для batch 32 и 10 классов logits должны иметь shape [32, 10], а target для CrossEntropyLoss — shape [32] с class indices.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Forward pass</h2>
@@ -831,14 +875,3 @@ showCode('numpy', document.querySelector('#codeTabs button'));
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

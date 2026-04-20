@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -1180,6 +1180,50 @@ showCode('basic', document.querySelector('#codeTabs button'));
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Loss-функции как язык задачи</h2>
+      <p>Loss задаёт, что модель считает ошибкой. Одна и та же архитектура будет вести себя по-разному с MSE, BCE, cross-entropy, contrastive loss или ranking loss, потому что градиенты будут толкать параметры к разным решениям.</p>
+      <p>Training loss и business metric не обязаны совпадать. Loss должен быть удобен для оптимизации и связан с целью, но финальное решение может оцениваться F1, recall at precision, NDCG, calibration error или revenue.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>MSE создаёт квадратичный штраф и сильно тянет к большим ошибкам.</li>
+            <li>Cross-entropy повышает logit правильного класса относительно остальных.</li>
+            <li>Contrastive losses меняют embedding space: похожие объекты сближаются, разные отталкиваются.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>BCE и cross-entropy — negative log-likelihood для Bernoulli и categorical distributions.</li>
+            <li>MSE соответствует Gaussian noise при regression assumptions.</li>
+            <li>Proper scoring rules поощряют честные вероятности, а не только правильный класс.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Стабильные loss работают с logits, чтобы избежать log(0), overflow и underflow.</li>
+            <li>Reduction mean/sum меняет масштаб градиента и фактический learning rate.</li>
+            <li>Class weights и label smoothing меняют градиентный сигнал.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Выбирай loss по типу target: regression, binary, multiclass, multilabel, ranking или embeddings.</li>
+            <li>Проверяй shapes и dtype target.</li>
+            <li>Если loss падает, а метрика нет, возможно loss плохо соответствует рабочей цели.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Для binary classification лучше BCEWithLogitsLoss на raw score z, чем sigmoid(z) + BCELoss вручную: встроенная версия стабильнее.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Loss-функции</h2>
@@ -1222,14 +1266,3 @@ showCode('basic', document.querySelector('#codeTabs button'));
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -1765,6 +1765,50 @@ pred = full_pipe.predict(X_test)</div>
     updateLeakage();
   </script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Preprocessing как часть модели</h2>
+      <p>Предобработка определяет, какую информацию модель увидит и в каком масштабе. Пропуски, категории, даты, выбросы, редкие значения и текстовые поля меняют не только удобство данных, но и саму постановку задачи.</p>
+      <p>Самая частая ошибка — обучать scaler, imputer, encoder или feature selection на всём датасете до split-а. Тогда validation/test уже частично повлияли на train-процесс, и качество становится завышенным.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>Scaling меняет геометрию: признак в больших единицах может доминировать над расстояниями, градиентами и регуляризацией.</li>
+            <li>One-hot encoding превращает категории в дискретные оси без искусственного порядка.</li>
+            <li>Выбросы растягивают оси и могут сдвигать центр данных, поэтому robust scaling иногда меняет результат сильнее, чем модель.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Imputation задаёт предположение о механизме пропусков: случайные они или информативные.</li>
+            <li>Редкие категории похожи на низкочастотные события: объединение снижает шум, но теряет детали.</li>
+            <li>Distribution shift часто проявляется через новые категории, другие диапазоны и изменившуюся долю пропусков.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Нормальный масштаб признаков делает поверхность loss более ровной для градиентных методов.</li>
+            <li>Encoding может резко увеличить размерность и поменять эффективную силу регуляризации.</li>
+            <li>Pipeline гарантирует fit только на train и transform на validation/test.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>Раздели признаки по типам: числовые, категориальные, даты, текст, бинарные флаги, потенциальные утечки.</li>
+            <li>Для каждого преобразования проверь, где вызывается fit.</li>
+            <li>Логируй словари категорий, статистики scaling-а и доли пропусков.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если доход в рублях и возраст в годах подать в k-NN без scaling, расстояние почти полностью будет определяться доходом.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Предобработка данных</h2>
@@ -1807,21 +1851,3 @@ pred = full_pipe.predict(X_test)</div>
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

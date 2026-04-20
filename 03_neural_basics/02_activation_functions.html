@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -1036,6 +1036,50 @@ drawDeath();
 
 <script src="../bundle.js" defer></script>
 
+
+<!-- theory-expansion:start -->
+    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
+      <div class="concept-walkthrough__kicker">Теоретический слой</div>
+      <h2>Активации как источник нелинейности и градиентного поведения</h2>
+      <p>Активация делает сеть нелинейной и одновременно определяет, как градиент проходит назад через слой. Поэтому ReLU, sigmoid, tanh, GELU и SiLU влияют не только на forward pass, но и на trainability.</p>
+      <p>Saturation — ключевая проблема. Когда sigmoid или tanh попадают в плоскую область, производная становится маленькой, и нижние слои получают слабый gradient signal.</p>
+      <div class="ml-advanced-grid">
+        <article class="ml-advanced-card">
+          <h3>Геометрическая интуиция</h3>
+          <ul>
+            <li>ReLU превращает пространство в кусочно-линейные области.</li>
+            <li>Sigmoid сжимает ось в интервал 0..1 и теряет различия между очень большими значениями.</li>
+            <li>GELU и SiLU дают мягкий gating без резкого обрыва отрицательных значений.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Вероятностная интерпретация</h3>
+          <ul>
+            <li>Sigmoid удобно читать как вероятность binary class, но только вместе с правильным loss.</li>
+            <li>Softmax превращает vector logits в распределение по классам.</li>
+            <li>GELU имеет probabilistic gating-интуицию: вход масштабируется вероятностью активности.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Оптимизационный смысл</h3>
+          <ul>
+            <li>Производная активации умножается на upstream gradient.</li>
+            <li>Dead ReLU возникает, когда нейрон долго находится в отрицательной области и получает нулевой градиент.</li>
+            <li>Smooth activations могут давать стабильные градиенты, но стоят дороже вычислительно.</li>
+          </ul>
+        </article>
+        <article class="ml-advanced-card">
+          <h3>Практика и типичные ошибки</h3>
+          <ul>
+            <li>В hidden layers начинай с ReLU/GELU/SiLU.</li>
+            <li>Для logits используй стабильные loss: BCEWithLogitsLoss или CrossEntropyLoss.</li>
+            <li>Если loss не двигается, проверь activation distribution, initialization и learning rate.</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Мини-пример:</strong> Если z = -3, ReLU отдаст 0 и градиент 0, а GELU сохранит маленький отрицательный выход и небольшой gradient signal.</p>
+    </section>
+<!-- theory-expansion:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
     <h2>Как закрепить тему: Функции активации</h2>
@@ -1078,14 +1122,3 @@ drawDeath();
 <!-- step1-learning:end -->
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
