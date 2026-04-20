@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9.4 ML System Design Patterns</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="ML System Design patterns: feature stores, online/offline inference, model versioning, A/B testing, drift и monitoring." />
+  <meta property="og:title" content="9.4 ML System Design Patterns — ML notes" />
+  <meta property="og:description" content="Паттерны production ML-систем: данные, модели, serving, мониторинг и эксперименты." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/04_ml_system_design_patterns.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.3 Docker</span><span class="tag active">9.4 ML System Design</span><span class="tag">9.5 Interview</span></div>
+      <h1>9.4 ML System Design Patterns</h1>
+      <p class="muted">ML system design — это не “какую модель выбрать”, а как построить систему вокруг модели: данные, признаки, обучение, serving, monitoring, rollback и бизнес-метрики.</p>
+    </div>
+
+    <section class="card">
+      <h2>Базовая схема production ML</h2>
+      <div class="formula" data-no-tex>raw data -> validation -> features -> training -> registry -> serving -> monitoring -> retraining</div>
+      <p>Любой production ML system design можно разложить на эти этапы. Отличается только latency, объем данных, требования к качеству, стоимость ошибки и способ обновления модели.</p>
+    </section>
+
+    <section class="card">
+      <h2>Online vs offline inference</h2>
+      <div class="grid-2">
+        <div class="info"><strong>Offline scoring</strong><br>Считаем predictions заранее: рекомендации на день, risk scores, batch moderation. Дешевле и проще, но менее свежо.</div>
+        <div class="success"><strong>Online scoring</strong><br>Считаем prediction в момент запроса. Свежее и персональнее, но требует latency budget, fallback и надежный serving.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Feature store</h2>
+      <p>Feature store решает проблему training-serving skew: признаки для обучения и для online inference должны считаться одинаково. Он хранит definitions, offline values, online low-latency access и metadata.</p>
+      <div class="warn">Если training pipeline и serving pipeline считают признаки разным кодом, модель может быть хорошей offline и плохой online.</div>
+    </section>
+
+    <section class="card">
+      <h2>Versioning и rollback</h2>
+      <p>Версионировать нужно не только модель. Нужны версии данных, feature definitions, preprocessing, threshold, calibration, tokenizer и model artifact. Rollback должен возвращать совместимый набор, а не только старый checkpoint.</p>
+      <div class="formula" data-no-tex>deployment_version = model + features + preprocessing + threshold + config</div>
+    </section>
+
+    <section class="card">
+      <h2>Monitoring: что смотреть</h2>
+      <div class="grid-3">
+        <div class="info"><strong>System</strong><br>Latency, error rate, saturation, memory, CPU/GPU utilization.</div>
+        <div class="success"><strong>Data</strong><br>Schema drift, missing values, distribution shift, outliers, feature freshness.</div>
+        <div class="warn"><strong>Model</strong><br>Prediction drift, calibration, delayed labels, segment quality, business KPI.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>A/B testing моделей</h2>
+      <p>Новая модель может улучшать offline metric и ухудшать бизнес. A/B test проверяет causal impact на реальных пользователях. Важно заранее выбрать primary metric, guardrail metrics и ramp-up plan.</p>
+      <div class="info">Guardrail examples: latency не выше X, complaint rate не растет, conversion не падает, fairness segment не деградирует.</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Pipeline decomposition</h3><p>Разложи fraud detection system на data, features, model, serving, monitoring.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Events/transactions, velocity features, supervised model, online low-latency scoring, delayed label monitoring and drift alerts.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Drift strategy</h3><p>Какие drift signals стоит мониторить для recommender system?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>User distribution, item popularity, missing features, CTR by segment, prediction distribution, exploration traffic, feedback delay.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Rollback design</h3><p>Опиши rollback для модели, где менялись признаки и threshold.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Rollback должен переключить model artifact, feature definitions, preprocessing version, threshold, calibration and config together.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Что такое training-serving skew?</li>
+          <li>Когда offline inference лучше online inference?</li>
+          <li>Почему model version alone недостаточен?</li>
+          <li>Какие три уровня monitoring нужны ML-системе?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни ML-систему как конвейер решений, а не как один checkpoint.</p>
+        <div class="ml-self-rating" data-topic-id="09_mlops_deployment/04_ml_system_design_patterns.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

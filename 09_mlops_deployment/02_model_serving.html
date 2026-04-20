@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9.2 Model Serving</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Model serving для ML: FastAPI, online inference, batch inference, latency, throughput, ONNX и production contract." />
+  <meta property="og:title" content="9.2 Model Serving — ML notes" />
+  <meta property="og:description" content="Как превратить модель в API и думать о latency, throughput, batching и контрактах." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/02_model_serving.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.1 Tracking</span><span class="tag active">9.2 Serving</span><span class="tag">9.3 Docker</span></div>
+      <h1>9.2 Model Serving</h1>
+      <p class="muted">Serving — это место, где модель становится продуктом: она получает запросы, возвращает ответы, выдерживает latency budget и не ломает downstream-системы.</p>
+    </div>
+
+    <section class="card">
+      <h2>Online vs batch inference</h2>
+      <div class="grid-2">
+        <div class="info"><strong>Online inference</strong><br>Запрос приходит сейчас, ответ нужен быстро. Важны p95/p99 latency, timeouts, retries, schema validation и graceful degradation.</div>
+        <div class="success"><strong>Batch inference</strong><br>Много объектов обрабатываются пачкой. Важны throughput, стоимость, idempotency, checkpoints и устойчивость к partial failure.</div>
+      </div>
+      <div class="formula" data-no-tex>serving_quality = model_quality + latency + reliability + monitoring + rollback</div>
+    </section>
+
+    <section class="card">
+      <h2>Production contract модели</h2>
+      <p>Модель в production — это не только `predict(x)`. У неё должен быть контракт: входная schema, preprocessing, output schema, version, expected ranges, error behavior и monitoring signals.</p>
+      <div class="warn">Частая ошибка: обучить модель на DataFrame с одними колонками, а в API принимать JSON без строгой проверки порядка, типов и missing values.</div>
+    </section>
+
+    <section class="card">
+      <h2>Минимальный FastAPI endpoint</h2>
+      <pre><code class="language-python"># FastAPI serving skeleton.
+# Input shape: JSON {"features": [float, float, float]}.
+# Output shape: JSON {"score": float, "model_version": str}.
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
+import numpy as np
+
+MODEL_VERSION = "linear-v1"
+WEIGHTS = np.array([0.7, -0.2, 0.5], dtype=np.float32)
+BIAS = -0.1
+
+class PredictRequest(BaseModel):
+    features: list[float] = Field(..., min_length=3, max_length=3)
+
+app = FastAPI()
+
+@app.post("/predict")
+def predict(request: PredictRequest):
+    x = np.array(request.features, dtype=np.float32)
+    score = float(x @ WEIGHTS + BIAS)
+    return {"score": score, "model_version": MODEL_VERSION}
+
+# Run: uvicorn app:app --reload
+# Gotchas:
+# 1. Validate input shape and type before calling the model.
+# 2. Return model_version so logs can be matched to deployments.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Latency и throughput</h2>
+      <p><strong>Latency</strong> — сколько ждёт один запрос. <strong>Throughput</strong> — сколько запросов система обрабатывает за единицу времени. Batching часто повышает throughput, но может ухудшить latency отдельного пользователя.</p>
+      <div class="formula" data-no-tex>throughput ≈ batch_size / average_batch_time</div>
+      <p>Для real-time API обычно смотрят не среднюю latency, а p95/p99: хвост задержек определяет пользовательский опыт.</p>
+    </section>
+
+    <section class="card">
+      <h2>ONNX и оптимизация inference</h2>
+      <p>ONNX полезен, когда модель нужно запускать вне training framework или ускорять inference через ONNX Runtime/TensorRT. Но export не бесплатен: надо проверить numerical parity, поддерживаемые ops, dynamic axes и preprocessing.</p>
+      <div class="info">Правило: сначала сделай корректный baseline serving, потом оптимизируй runtime. Иначе можно ускорить неправильный pipeline.</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>API contract</h3><p>Опиши input/output schema для модели кредитного скоринга.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Вход: числовые признаки, категориальные признаки, id запроса, timestamp. Выход: probability, thresholded decision, model_version, reason codes if available.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Latency budget</h3><p>Разбей 200 ms latency budget между network, preprocessing, model inference и postprocessing.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Например: network 30 ms, validation/preprocessing 30 ms, model 100 ms, postprocessing/logging 20 ms, safety margin 20 ms.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Serving failure modes</h3><p>Назови 5 причин, почему offline accuracy высокая, а production API плохой.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Training-serving skew, schema drift, missing preprocessing, bad threshold, latency timeouts, stale model, class prior shift, missing monitoring.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Чем online inference отличается от batch inference?</li>
+          <li>Почему p99 latency важнее среднего времени ответа?</li>
+          <li>Что должно входить в production contract модели?</li>
+          <li>Какие риски есть у ONNX export?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни model serving как договор между ML-моделью и остальной системой.</p>
+        <div class="ml-self-rating" data-topic-id="09_mlops_deployment/02_model_serving.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

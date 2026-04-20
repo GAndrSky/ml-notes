@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9.3 Docker for ML Engineers</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Docker для ML Engineers: Dockerfile, layers, cache, GPU containers, reproducibility и production packaging." />
+  <meta property="og:title" content="9.3 Docker for ML Engineers — ML notes" />
+  <meta property="og:description" content="Как упаковывать ML-проекты в воспроизводимые контейнеры." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/03_docker_for_ml.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.2 Serving</span><span class="tag active">9.3 Docker</span><span class="tag">9.4 Design</span></div>
+      <h1>9.3 Docker for ML Engineers</h1>
+      <p class="muted">Docker фиксирует окружение: Python, system packages, CUDA runtime, зависимости и команду запуска. Это снижает класс ошибок “у меня работает, на сервере нет”.</p>
+    </div>
+
+    <section class="card">
+      <h2>Ментальная модель контейнера</h2>
+      <p>Image — это слоистый read-only шаблон окружения. Container — запущенный процесс из image. Для ML это важно, потому что зависимости часто тяжелые, CUDA-sensitive и плохо воспроизводятся вручную.</p>
+      <div class="formula" data-no-tex>image = base_os + system_deps + python_deps + source_code + entrypoint</div>
+    </section>
+
+    <section class="card">
+      <h2>Dockerfile для inference-сервиса</h2>
+      <pre><code class="language-bash"># Dockerfile
+# Input: FastAPI app in app.py and requirements.txt.
+# Output: reproducible image exposing port 8000.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Gotchas:
+# 1. Copy requirements before source code to reuse Docker layer cache.
+# 2. Do not bake secrets or API keys into the image.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>GPU containers</h2>
+      <p>Для GPU важна совместимость: host driver, CUDA runtime внутри контейнера, PyTorch build и NVIDIA Container Toolkit. Контейнер не приносит драйвер GPU сам по себе: он использует host driver через runtime.</p>
+      <div class="warn">Если PyTorch видит CPU вместо GPU, проверяй не только код, но и `--gpus all`, NVIDIA runtime, версию driver и CUDA compatibility.</div>
+    </section>
+
+    <section class="card">
+      <h2>Что делает Docker хорошим для ML</h2>
+      <div class="grid-2">
+        <div class="success"><strong>Reproducibility</strong><br>Одинаковое окружение между локальной машиной, CI и сервером.</div>
+        <div class="info"><strong>Isolation</strong><br>Проекты не ломают зависимости друг друга.</div>
+        <div class="info"><strong>Deployment</strong><br>Один artifact можно запускать в Kubernetes, VM или managed serving.</div>
+        <div class="warn"><strong>Cost</strong><br>Большие images, медленные builds и cache misses могут тормозить workflow.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Практический checklist</h2>
+      <ul>
+        <li>Фиксируй версии в `requirements.txt` или lock-файле.</li>
+        <li>Используй `.dockerignore`, чтобы не копировать datasets, checkpoints и `.git`.</li>
+        <li>Разделяй training image и inference image, если training dependencies тяжелые.</li>
+        <li>Проверяй startup command локально через `docker run`, а не только через compose.</li>
+      </ul>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Layer cache</h3><p>Почему `COPY requirements.txt` обычно ставят до `COPY . .`?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Чтобы Docker мог переиспользовать слой установки зависимостей, если изменился только source code.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Dockerignore</h3><p>Составь `.dockerignore` для ML-проекта.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Добавь `.git`, `data/`, `runs/`, `checkpoints/`, `__pycache__/`, `.venv/`, notebooks outputs и локальные secrets.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>GPU debugging</h3><p>Контейнер не видит GPU. Опиши порядок диагностики.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Проверь host `nvidia-smi`, NVIDIA Container Toolkit, запуск с `--gpus all`, CUDA compatibility, PyTorch CUDA build и `torch.cuda.is_available()`.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Чем image отличается от container?</li>
+          <li>Почему порядок команд в Dockerfile влияет на скорость build?</li>
+          <li>Что нельзя хранить внутри image?</li>
+          <li>Как GPU попадает в контейнер?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни Docker как способ превратить окружение модели в переносимый artifact.</p>
+        <div class="ml-self-rating" data-topic-id="09_mlops_deployment/03_docker_for_ml.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

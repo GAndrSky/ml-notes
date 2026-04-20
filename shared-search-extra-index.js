@@ -206,5 +206,45 @@ window.__mlNotesSearchExtraIndex = [
     summary: "FP16, BF16, overflow, underflow, log-sum-exp, stable softmax и debugging NaN.",
     headings: "4.9 Numerical Stability | Stable Softmax | Log-Sum-Exp | Overflow | Underflow | FP16 | BF16",
     content: "numerical stability fp16 bf16 overflow underflow stable softmax log-sum-exp nan inf mixed precision loss scaling"
+  },
+  {
+    path: "09_mlops_deployment/01_experiment_tracking.html",
+    title: "9.1 Experiment Tracking",
+    section: "Block 9. MLOps / Deployment",
+    summary: "MLflow, W&B, configs, metrics, artifacts, run comparison and reproducibility.",
+    headings: "9.1 Experiment Tracking | MLflow | Weights and Biases | Config | Metrics | Artifacts | Reproducibility",
+    content: "experiment tracking mlflow wandb weights biases config metrics artifacts reproducibility runs model registry"
+  },
+  {
+    path: "09_mlops_deployment/02_model_serving.html",
+    title: "9.2 Model Serving",
+    section: "Block 9. MLOps / Deployment",
+    summary: "FastAPI, online inference, batch inference, latency, throughput, ONNX and production contracts.",
+    headings: "9.2 Model Serving | FastAPI | Online Inference | Batch Inference | Latency | Throughput | ONNX",
+    content: "model serving fastapi online inference batch inference latency throughput onnx p95 p99 production api"
+  },
+  {
+    path: "09_mlops_deployment/03_docker_for_ml.html",
+    title: "9.3 Docker for ML Engineers",
+    section: "Block 9. MLOps / Deployment",
+    summary: "Dockerfile, layers, cache, GPU containers, reproducibility and production packaging.",
+    headings: "9.3 Docker for ML Engineers | Dockerfile | Layers | Cache | GPU Containers | Reproducibility",
+    content: "docker ml dockerfile layers cache gpu containers nvidia runtime reproducibility deployment image"
+  },
+  {
+    path: "09_mlops_deployment/04_ml_system_design_patterns.html",
+    title: "9.4 ML System Design Patterns",
+    section: "Block 9. MLOps / Deployment",
+    summary: "Feature stores, online and offline inference, model versioning, A/B testing, drift and monitoring.",
+    headings: "9.4 ML System Design Patterns | Feature Store | Online Inference | Offline Inference | Drift | Monitoring",
+    content: "ml system design feature store online inference offline inference model versioning ab testing drift monitoring"
+  },
+  {
+    path: "09_mlops_deployment/05_interview_prep_system_design.html",
+    title: "9.5 System Design Interview",
+    section: "Block 9. MLOps / Deployment",
+    summary: "Interview framework and worked examples for recommendation, fraud, search, moderation and RAG assistant.",
+    headings: "9.5 System Design Interview | Framework | Recommendation | Fraud Detection | Search | Moderation | RAG",
+    content: "ml system design interview recommendation fraud detection semantic search image moderation rag assistant framework"
   }
 ];

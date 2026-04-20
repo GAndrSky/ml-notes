@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9.1 Experiment Tracking</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Experiment tracking для ML: MLflow, W&B, конфиги, метрики, артефакты, сравнение runs и воспроизводимость." />
+  <meta property="og:title" content="9.1 Experiment Tracking — ML notes" />
+  <meta property="og:description" content="Как логировать эксперименты, сравнивать runs и делать обучение воспроизводимым." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/01_experiment_tracking.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Блок 9 · MLOps</span>
+        <span class="tag active">9.1 Experiment Tracking</span>
+        <span class="tag">9.2 Serving</span>
+        <span class="tag">9.3 Docker</span>
+      </div>
+      <h1>9.1 Experiment Tracking</h1>
+      <p class="muted">Эксперимент без логов — это не эксперимент, а воспоминание. Tracking нужен, чтобы через неделю понять, какие данные, seed, hyperparameters, commit, метрики и артефакты дали конкретный результат.</p>
+    </div>
+
+    <section class="card">
+      <h2>Главная идея</h2>
+      <p>В ML мы редко запускаем одну модель один раз. Обычно есть десятки runs: разные признаки, learning rate, архитектуры, seed, split данных и preprocessing. Если это не записывать автоматически, невозможно честно сравнить модели и повторить лучший результат.</p>
+      <div class="formula" data-no-tex>run = code_version + data_version + config + random_seed + metrics + artifacts</div>
+      <p><strong>Практический смысл:</strong> каждый run должен быть восстановимым объектом. Если ты не можешь ответить “какой код и какие данные породили эту метрику?”, результат нельзя считать надежным.</p>
+    </section>
+
+    <section class="card">
+      <h2>Что логировать обязательно</h2>
+      <div class="grid-2">
+        <div class="info"><strong>Config</strong><br>Learning rate, batch size, optimizer, scheduler, model size, preprocessing, augmentation, split strategy.</div>
+        <div class="success"><strong>Metrics</strong><br>Train/validation loss, target metrics, latency, memory, calibration, per-class quality when relevant.</div>
+        <div class="info"><strong>Artifacts</strong><br>Model checkpoint, tokenizer, feature schema, plots, confusion matrix, predictions sample, error cases.</div>
+        <div class="warn"><strong>Environment</strong><br>Git commit, package versions, CUDA version, seed, data snapshot, hardware and runtime.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>MLflow и W&B</h2>
+      <p><strong>MLflow</strong> удобен как open-source tracking server и model registry. <strong>Weights & Biases</strong> особенно силен для dashboards, sweeps, командного сравнения графиков и rich media.</p>
+      <div class="grid-2">
+        <div><h3>Когда выбирать MLflow</h3><p>Нужен self-hosted контроль, registry, локальное хранение или интеграция в enterprise-инфраструктуру.</p></div>
+        <div><h3>Когда выбирать W&B</h3><p>Нужны удобные визуализации, sweeps, командная работа и быстрый анализ больших серий экспериментов.</p></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Мини-трекер без зависимостей</h2>
+      <pre><code class="language-python"># Minimal experiment tracker.
+# Input: config dict and metric dicts.
+# Output: runs/&lt;run_id&gt;/config.json and metrics.jsonl.
+import json
+import time
+from pathlib import Path
+
+class RunLogger:
+    def __init__(self, config, root="runs"):
+        self.run_id = time.strftime("%Y%m%d-%H%M%S")
+        self.dir = Path(root) / self.run_id
+        self.dir.mkdir(parents=True, exist_ok=False)
+        (self.dir / "config.json").write_text(
+            json.dumps(config, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        self.metrics_path = self.dir / "metrics.jsonl"
+
+    def log(self, step, **metrics):
+        row = {"step": step, **metrics}
+        with self.metrics_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+
+logger = RunLogger({"lr": 1e-3, "batch_size": 64, "seed": 42})
+for step in range(3):
+    logger.log(step, train_loss=1.0 / (step + 1), val_acc=0.70 + step * 0.03)
+
+# Gotchas:
+# 1. Do not overwrite run directories.
+# 2. Log config before training starts.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Как сравнивать runs</h2>
+      <p>Сравнивать нужно не только лучший validation score. Хороший run должен быть стабильным по seed, иметь приемлемую latency, не переобучаться, не ломаться на важных подгруппах данных и быть воспроизводимым.</p>
+      <div class="formula" data-no-tex>model_selection = quality + stability + latency + reproducibility + operational_cost</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <p class="ml-exercises-note">Не пропускай упражнения: здесь проверяется, можешь ли ты превратить обучение в воспроизводимый инженерный процесс.</p>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span><span class="ml-exercise-badge">Conceptual</span></div><h3>Run identity</h3><p>Назови 8 полей, без которых run нельзя считать воспроизводимым.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Git commit, data version, split, seed, config, package versions, metrics, artifacts/checkpoint. Для DL добавь hardware, precision и tokenizer.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span><span class="ml-exercise-badge">Coding</span></div><h3>Build a local tracker</h3><p>Расширь `RunLogger`: добавь сохранение predictions sample и итогового summary.json.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Создай метод `save_artifact(name, text_or_bytes)` и метод `finish(**summary)`, который пишет `summary.json`.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span><span class="ml-exercise-badge">Design</span></div><h3>Experiment policy</h3><p>Опиши правила команды: когда run можно сравнивать с baseline, какие метрики обязательны и что делать с failed runs.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Сравнение честное только при одинаковом split/eval protocol. Failed runs не удаляются: они показывают нестабильность и плохие hyperparameters.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Почему validation score без версии данных почти бесполезен?</li>
+          <li>Чем metrics отличаются от artifacts?</li>
+          <li>Когда MLflow удобнее W&B, а когда наоборот?</li>
+          <li>Почему seed не гарантирует полной воспроизводимости на GPU?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни experiment tracking как лабораторный журнал для ML.</p>
+        <div class="ml-self-rating" data-topic-id="09_mlops_deployment/01_experiment_tracking.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

@@ -123,6 +123,18 @@
         { path: "08_training_practice/03_profiling_and_performance.html", label: "8.3 Profiling" },
         { path: "08_training_practice/04_debugging_loss_spikes.html", label: "8.4 Loss spikes" }
       ]
+    },
+    {
+      id: "mlops",
+      label: "\u0411\u043b\u043e\u043a 9",
+      title: "MLOps / Deployment",
+      pages: [
+        { path: "09_mlops_deployment/01_experiment_tracking.html", label: "9.1 Experiment Tracking" },
+        { path: "09_mlops_deployment/02_model_serving.html", label: "9.2 Model Serving" },
+        { path: "09_mlops_deployment/03_docker_for_ml.html", label: "9.3 Docker for ML" },
+        { path: "09_mlops_deployment/04_ml_system_design_patterns.html", label: "9.4 ML System Design" },
+        { path: "09_mlops_deployment/05_interview_prep_system_design.html", label: "9.5 System Design Interview" }
+      ]
     }
   ];
 
@@ -134,7 +146,8 @@
     architectures: "#7eb8b8",
     llm: "#d497b8",
     generative: "#d58f79",
-    "training-practice": "#97a9d6"
+    "training-practice": "#97a9d6",
+    mlops: "#6ea5ff"
   };
 
   var visitedStorageKey = "ml_notes_visited";
@@ -518,6 +531,13 @@
         depth: "Solid",
         tldr: "Training practice turns theory into a real pipeline: distributed training, memory tradeoffs, profiling, and debugging.",
         why: "Production ML requires training models under GPU, memory, time, and unstable-data constraints, not just knowing the equations."
+      },
+      mlops: {
+        time: "90-150 min",
+        job: "High",
+        depth: "Solid",
+        tldr: "MLOps connects models to reproducible experiments, deployment, monitoring, and system design decisions.",
+        why: "For ML engineer roles, knowing how to train a model is not enough: you must track experiments, serve models, package environments, and reason about production tradeoffs."
       }
     };
 

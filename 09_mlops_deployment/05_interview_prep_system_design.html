@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>9.5 Interview Prep — System Design</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="ML system design interview prep: framework and worked examples for recommendation, fraud, search, moderation and RAG assistant." />
+  <meta property="og:title" content="9.5 System Design Interview — ML notes" />
+  <meta property="og:description" content="Фреймворк ответа на ML system design и пять worked examples." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/05_interview_prep_system_design.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.4 Design</span><span class="tag active">9.5 Interview</span></div>
+      <h1>9.5 Interview Prep — ML System Design</h1>
+      <p class="muted">На system design интервью оценивают не знание модной модели, а умение структурировать неопределённую задачу: уточнить цель, оценить масштаб, выбрать данные, построить pipeline, serving и monitoring.</p>
+    </div>
+
+    <section class="card">
+      <h2>Framework ответа</h2>
+      <div class="formula" data-no-tex>clarify -> metrics -> scale -> data -> model -> serving -> monitoring -> risks</div>
+      <p>Хороший ответ всегда начинается с уточнений. Нельзя проектировать fraud detection, recommender или RAG одинаково: стоимость ошибки, latency, labels и feedback loop разные.</p>
+    </section>
+
+    <section class="card">
+      <h2>1. Recommendation system</h2>
+      <p><strong>Clarify:</strong> что рекомендуем, кому, где показываем, оптимизируем CTR, watch time или retention. <strong>Data:</strong> impressions, clicks, dwell time, user/item metadata. <strong>Model:</strong> candidate generation + ranking. <strong>Serving:</strong> precompute candidates, online ranker. <strong>Monitoring:</strong> CTR, diversity, freshness, popularity bias.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Fraud detection</h2>
+      <p><strong>Clarify:</strong> real-time или batch, цена false positive и false negative. <strong>Data:</strong> transactions, user history, device, merchant, velocity features. <strong>Model:</strong> gradient boosting baseline, calibrated threshold. <strong>Serving:</strong> low-latency online scoring. <strong>Monitoring:</strong> drift, delayed labels, alert fatigue.</p>
+    </section>
+
+    <section class="card">
+      <h2>3. Semantic document search</h2>
+      <p><strong>Clarify:</strong> enterprise docs, web search или support knowledge base. <strong>Data:</strong> documents, chunks, metadata, query logs. <strong>Model:</strong> embedding retrieval + optional cross-encoder reranker. <strong>Serving:</strong> vector index, hybrid search, caching. <strong>Monitoring:</strong> zero-result rate, click satisfaction, stale documents.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. Image moderation</h2>
+      <p><strong>Clarify:</strong> policy categories, human review, latency and false negative tolerance. <strong>Data:</strong> labeled images, hard negatives, policy updates. <strong>Model:</strong> classifier/detector plus threshold per class. <strong>Serving:</strong> async pipeline for heavy models, fallback rules. <strong>Monitoring:</strong> appeal rate, drift by content source, reviewer disagreement.</p>
+    </section>
+
+    <section class="card">
+      <h2>5. LLM chat assistant with RAG</h2>
+      <p><strong>Clarify:</strong> domain, answer style, hallucination tolerance, privacy. <strong>Data:</strong> documents, chunks, metadata, eval questions. <strong>Model:</strong> retriever + reranker + generator. <strong>Serving:</strong> query rewrite, retrieve, generate, cite. <strong>Monitoring:</strong> groundedness, retrieval hit rate, latency, user feedback.</p>
+    </section>
+
+    <section class="card">
+      <h2>Как звучать сильно на интервью</h2>
+      <ul>
+        <li>Всегда называй primary metric и guardrail metrics.</li>
+        <li>Отделяй offline metric от online business impact.</li>
+        <li>Обсуждай feedback loop и delayed labels.</li>
+        <li>Показывай fallback, rollback и human-in-the-loop там, где ошибка дорогая.</li>
+        <li>Не прыгай к Transformer до baseline и data pipeline.</li>
+      </ul>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Clarifying questions</h3><p>Напиши 10 уточняющих вопросов для “design a fraud detection system”.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Latency, volume, labels, fraud type, cost matrix, manual review, regions, feature freshness, compliance, acceptable false positives.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Metric choice</h3><p>Для image moderation выбери primary и guardrail metrics.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Primary может быть recall for harmful content или policy-weighted F1. Guardrails: false positive appeal rate, latency, reviewer load, segment fairness.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Full answer</h3><p>За 20 минут спроектируй document search system по framework.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Ответ должен пройти clarify, scale, ingestion, chunking, embeddings, vector DB, hybrid retrieval, reranking, serving, eval, monitoring and failure modes.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Почему нельзя начинать system design с выбора модели?</li>
+          <li>Что такое guardrail metric?</li>
+          <li>Чем candidate generation отличается от ranking?</li>
+          <li>Где нужен human-in-the-loop?</li>
+          <li>Как объяснить delayed labels?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни ML system design как управление data loop, а не как выбор алгоритма.</p>
+        <div class="ml-self-rating" data-topic-id="09_mlops_deployment/05_interview_prep_system_design.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>
