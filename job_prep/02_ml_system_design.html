@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ML System Design Framework</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="ML system design interview framework with worked examples: recommendation, fraud detection, semantic search, image moderation, and RAG assistant." />
+  <meta property="og:title" content="ML System Design Framework - ML notes" />
+  <meta property="og:description" content="A practical framework for answering ML system design interviews with five worked examples." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/job_prep/02_ml_system_design.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Job Prep</span>
+        <span class="tag active">System Design</span>
+        <span class="tag">Serving</span>
+        <span class="tag">Monitoring</span>
+        <span class="tag">Trade-offs</span>
+      </div>
+      <h1>ML System Design Framework</h1>
+      <p class="muted">A good ML system design answer is not a model list. It is a product loop: define the objective, shape the data, train a baseline, serve predictions under constraints, monitor failures, and improve safely.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>For interviews, use one repeatable structure: clarify the goal, define metrics, estimate scale, design data pipelines, choose model stages, describe serving, explain monitoring, and call out risks. The model is only one component of the system.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>The answer framework</h2>
+      <div class="formula" data-no-tex>clarify -> metrics -> data -> baseline -> model -> serving -> monitoring -> iteration</div>
+      <div class="grid-2">
+        <div class="insight-card">
+          <h3>1. Clarify the product objective</h3>
+          <p>Ask what success means: engagement, revenue, latency, safety, fraud loss, user trust, or answer quality. If the objective is ambiguous, every model choice is arbitrary.</p>
+        </div>
+        <div class="insight-card">
+          <h3>2. Define offline and online metrics</h3>
+          <p>Offline metrics guide training. Online metrics decide whether the system helps users. They can disagree, so name both and explain how you would resolve conflicts.</p>
+        </div>
+        <div class="insight-card">
+          <h3>3. Estimate scale and constraints</h3>
+          <p>Number of users, items, requests per second, latency budget, storage, freshness, and cost determine whether you can use batch scoring, online inference, retrieval, or cascades.</p>
+        </div>
+        <div class="insight-card">
+          <h3>4. Design the data loop</h3>
+          <p>Specify events, labels, feature freshness, train-serving skew, negative sampling, privacy constraints, and how labels arrive. Most real ML failures are data-loop failures.</p>
+        </div>
+        <div class="insight-card">
+          <h3>5. Start with a baseline</h3>
+          <p>Use rules, logistic regression, matrix factorization, BM25, or a small CNN before heavier systems. A baseline gives a debugging anchor and a business fallback.</p>
+        </div>
+        <div class="insight-card">
+          <h3>6. Add model stages</h3>
+          <p>Large systems often use candidate generation, ranking, reranking, calibration, and guardrails. Each stage trades recall, precision, latency, and interpretability.</p>
+        </div>
+        <div class="insight-card">
+          <h3>7. Serve under constraints</h3>
+          <p>Describe online API, batch jobs, caches, feature store, vector index, model registry, rollout, fallback, and latency budget. Production is where many academic answers collapse.</p>
+        </div>
+        <div class="insight-card">
+          <h3>8. Monitor and iterate</h3>
+          <p>Track model metrics, product metrics, data drift, prediction drift, segment regressions, latency, cost, and alerting. Explain retraining triggers and rollback strategy.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Case 1 - Recommendation system</h2>
+      <p><strong>Prompt:</strong> Design a YouTube/Netflix-style recommendation system for a feed.</p>
+      <div class="formula" data-no-tex>events -> candidate generation -> ranking -> reranking -> feed -> feedback loop</div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Clarify</h3>
+          <ul>
+            <li>Goal: maximize long-term satisfaction, not only click-through rate.</li>
+            <li>Users: millions of users, millions of items, fresh content every minute.</li>
+            <li>Constraints: low latency, diversity, safety, cold-start users and items.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Metrics</h3>
+          <ul>
+            <li>Offline: Recall@K, NDCG@K, MAP, calibration, coverage.</li>
+            <li>Online: watch time, retention, hides, skips, satisfaction surveys.</li>
+            <li>Guardrails: content safety, creator diversity, latency, complaints.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data and labels</h3>
+          <p>Collect impressions, clicks, watch time, skips, likes, search context, device, region, and timestamps. Correct for position bias because top-ranked items receive more exposure regardless of quality.</p>
+        </div>
+        <div class="card">
+          <h3>Model architecture</h3>
+          <p>Use a two-stage system. Candidate generation retrieves hundreds or thousands of items using collaborative filtering, embeddings, ANN search, and fresh/popular rules. Ranking uses a heavier model with user, item, context, and sequence features.</p>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Strong interview answer</summary>
+        <div class="intuition-content">
+          Start with a simple popularity and collaborative-filtering baseline. Add candidate generation to keep latency manageable, then a ranking model for personalization. Use reranking to enforce diversity, freshness, safety, and business constraints. Monitor not only clicks but long-term retention and negative feedback, because CTR-only optimization can create clickbait.
+        </div>
+      </details>
+      <details class="intuition-block">
+        <summary>Common mistakes</summary>
+        <div class="intuition-content">
+          Do not propose one giant neural network scoring every item for every user online. Do not optimize only CTR. Do not ignore cold start, position bias, feedback loops, and safety constraints.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Case 2 - Real-time fraud detection</h2>
+      <p><strong>Prompt:</strong> Design a fraud detection system for payment transactions.</p>
+      <div class="formula" data-no-tex>transaction -> feature lookup -> risk model -> threshold policy -> review / block / allow</div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Clarify</h3>
+          <ul>
+            <li>Goal: reduce fraud loss while minimizing false declines.</li>
+            <li>Latency: often below 100-300 ms for online decisions.</li>
+            <li>Labels: delayed chargebacks, manual review outcomes, confirmed fraud reports.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Metrics</h3>
+          <ul>
+            <li>Offline: PR-AUC, recall at fixed FPR, cost-weighted loss.</li>
+            <li>Online: fraud loss, false decline rate, review load, latency.</li>
+            <li>Segments: new users, high-value transactions, regions, merchants.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data</h3>
+          <p>Use transaction amount, merchant, device, IP, user history, velocity features, geolocation changes, failed attempts, chargeback history, and graph features. Make features point-in-time correct to avoid leakage.</p>
+        </div>
+        <div class="card">
+          <h3>Model and policy</h3>
+          <p>Start with rules and gradient boosted trees. Output calibrated risk score, then use policy thresholds: allow low risk, review medium risk, block high risk. Thresholds should depend on cost and segment.</p>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Strong interview answer</summary>
+        <div class="intuition-content">
+          Fraud is not only classification. It is decision-making under asymmetric costs, delayed labels, adversarial behavior, and strict latency. Explain the separation between model score and business policy. The same score can lead to different actions depending on amount, user trust, region, and current fraud campaign.
+        </div>
+      </details>
+      <details class="intuition-block">
+        <summary>Common mistakes</summary>
+        <div class="intuition-content">
+          Do not use accuracy on imbalanced fraud data. Do not train with features that are known only after the transaction. Do not assume yesterday's fraud patterns remain stable under adversarial adaptation.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Case 3 - Semantic document search</h2>
+      <p><strong>Prompt:</strong> Design a semantic search system for internal company documents.</p>
+      <div class="formula" data-no-tex>documents -> chunks -> embeddings -> vector index -> retrieval -> reranking -> answer / results</div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Clarify</h3>
+          <ul>
+            <li>Goal: return relevant documents or passages for natural language queries.</li>
+            <li>Freshness: documents may change daily or hourly.</li>
+            <li>Access control: users must only retrieve documents they are allowed to see.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Metrics</h3>
+          <ul>
+            <li>Offline: Recall@K, MRR, NDCG, labeled query-document relevance.</li>
+            <li>Online: click success, reformulation rate, time-to-answer.</li>
+            <li>Guardrails: permission leaks, stale results, duplicate chunks.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Retrieval design</h3>
+          <p>Combine BM25 for exact terms with dense embeddings for semantic similarity. Use hybrid retrieval, metadata filters, chunk-level indexing, and a cross-encoder reranker for top candidates.</p>
+        </div>
+        <div class="card">
+          <h3>Serving</h3>
+          <p>Precompute document embeddings, maintain an ANN index, embed each query online, retrieve candidates, filter by permissions, rerank, and return passages with document links and snippets.</p>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Strong interview answer</summary>
+        <div class="intuition-content">
+          Semantic search is a retrieval quality problem plus a systems problem. The important trade-off is recall versus latency: candidate generation must be broad enough to include the right answer, while reranking can be expensive because it only sees a small candidate set. Access control must be applied before returning results, not as a UI detail.
+        </div>
+      </details>
+      <details class="intuition-block">
+        <summary>Common mistakes</summary>
+        <div class="intuition-content">
+          Do not rely only on embeddings; exact keywords, IDs, and names matter. Do not ignore chunking strategy. Do not evaluate with a few manual queries instead of a labeled query set.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Case 4 - Image content moderation</h2>
+      <p><strong>Prompt:</strong> Design an image moderation system for user-uploaded content.</p>
+      <div class="formula" data-no-tex>upload -> lightweight checks -> vision model -> policy layer -> human review -> feedback</div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Clarify</h3>
+          <ul>
+            <li>Goal: detect policy violations while minimizing false positives.</li>
+            <li>Classes: explicit content, violence, self-harm, spam, copyrighted content, minors safety.</li>
+            <li>Constraints: low latency for uploads, high recall for severe categories.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Metrics</h3>
+          <ul>
+            <li>Offline: per-class precision/recall, confusion matrix, threshold curves.</li>
+            <li>Online: appeal rate, moderator agreement, time-to-action.</li>
+            <li>Guardrails: fairness across regions, adversarial images, policy changes.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Model design</h3>
+          <p>Start with a pretrained vision backbone fine-tuned for multi-label classification. Add OCR for text in images, perceptual hashing for known bad content, and human review for uncertain or high-severity cases.</p>
+        </div>
+        <div class="card">
+          <h3>Operations</h3>
+          <p>Use thresholds per category. Block high-confidence severe violations, allow low-risk content, and route uncertain cases to review. Build active learning from moderator labels.</p>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Strong interview answer</summary>
+        <div class="intuition-content">
+          Moderation is not a single classifier. It is a policy enforcement pipeline with different thresholds for different harms. The system needs human escalation, appeal handling, auditability, and fast updates when policy changes.
+        </div>
+      </details>
+      <details class="intuition-block">
+        <summary>Common mistakes</summary>
+        <div class="intuition-content">
+          Do not optimize one global accuracy number. Do not ignore class-specific thresholds. Do not forget adversarial uploads, ambiguous policy boundaries, and reviewer feedback loops.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Case 5 - LLM chat assistant with RAG</h2>
+      <p><strong>Prompt:</strong> Design a company knowledge-base assistant that answers questions using internal documents.</p>
+      <div class="formula" data-no-tex>query -> rewrite -> retrieve -> rerank -> generate with citations -> verify -> log feedback</div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Clarify</h3>
+          <ul>
+            <li>Goal: answer accurately from internal sources, with citations.</li>
+            <li>Constraints: privacy, access control, latency, cost, hallucination risk.</li>
+            <li>Output: answer, citations, uncertainty, escalation path.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Metrics</h3>
+          <ul>
+            <li>Retrieval: context recall, citation recall, MRR.</li>
+            <li>Generation: groundedness, answer correctness, refusal quality.</li>
+            <li>Product: resolution rate, user satisfaction, cost per answer.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Architecture</h3>
+          <p>Ingest documents, chunk them, embed chunks, store vectors with metadata and permissions. At query time, rewrite ambiguous queries, retrieve, rerank, filter permissions, generate an answer with citations, and optionally verify answer support.</p>
+        </div>
+        <div class="card">
+          <h3>Safety and monitoring</h3>
+          <p>Log retrieved chunks, model answer, citations, latency, feedback, and failure category. Use red-team prompts and regression sets before changing chunking, embedding model, reranker, or prompt.</p>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Strong interview answer</summary>
+        <div class="intuition-content">
+          RAG quality is limited by retrieval quality. If the relevant evidence is not in context, the generator must guess or refuse. A strong design separates retrieval evaluation from generation evaluation and treats citations as a product requirement, not decoration.
+        </div>
+      </details>
+      <details class="intuition-block">
+        <summary>Common mistakes</summary>
+        <div class="intuition-content">
+          Do not assume RAG eliminates hallucinations. Do not skip permission filtering. Do not evaluate only final answers; inspect whether the correct evidence was retrieved first.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Interview checklist</h2>
+      <div class="grid-2">
+        <div class="success">
+          <strong>Say explicitly</strong>
+          <ul>
+            <li>What you optimize and what you protect as guardrails.</li>
+            <li>How labels are created and how delayed labels affect learning.</li>
+            <li>What baseline ships first and how you measure improvement.</li>
+            <li>Where the system can fail in production.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Avoid</strong>
+          <ul>
+            <li>Jumping straight to a deep model.</li>
+            <li>Using one metric for the whole problem.</li>
+            <li>Ignoring serving latency and cost.</li>
+            <li>Ignoring feedback loops, drift, and rollback.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain the same framework without looking at the page?</li>
+        <li>Can you design a recommendation system with candidate generation and ranking?</li>
+        <li>Can you explain why fraud detection is a cost-sensitive decision system, not just classification?</li>
+        <li>Can you separate retrieval quality from generation quality in a RAG system?</li>
+        <li>Can you name monitoring signals for model, data, product, latency, and cost?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="job_prep_02_ml_system_design" data-title="ML System Design Framework">
+        <span>I can design and defend these systems:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

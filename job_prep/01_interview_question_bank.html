@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Question Bank</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="ML interview question bank: ML fundamentals, deep learning, LLM and Transformers with model answers, tested skill and common mistakes." />
+  <meta property="og:title" content="Interview Question Bank - ML notes" />
+  <meta property="og:description" content="60 ML interview questions with model answers, what the interviewer tests, and common mistakes." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/job_prep/01_interview_question_bank.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Job Prep</span>
+        <span class="tag active">Interview Question Bank</span>
+        <span class="tag">ML Fundamentals</span>
+        <span class="tag">Deep Learning</span>
+        <span class="tag">LLM</span>
+      </div>
+      <h1>Interview Question Bank</h1>
+      <p class="muted">The goal is not to memorize answers. The goal is to answer structurally: define the idea, explain why it works, name trade-offs, describe failure modes, and give a practical example.</p>
+    </div>
+
+    <section class="card">
+      <h2>How to use this page</h2>
+      <div class="grid-3">
+        <div class="info"><strong>1. Answer aloud first</strong><br>Do not open the solution immediately. If you cannot explain it without notes, the topic is not stable yet.</div>
+        <div class="success"><strong>2. Check the structure</strong><br>A strong answer contains the core idea, math or intuition, practical trade-off, and at least one common failure mode.</div>
+        <div class="warn"><strong>3. Close the gap</strong><br>If the answer fails, go back to the linked topic, solve exercises, then return and answer again.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Answer framework</h2>
+      <div class="formula" data-no-tex>strong_answer = definition + why_it_works + tradeoffs + failure_modes + practical_example</div>
+      <p>A weak interview answer sounds like a textbook definition. A strong answer shows that you can use the concept in a real system and know where it breaks.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>ML Fundamentals - 25 questions</h2>
+      <div class="ml-exercise-list" id="ml-fundamentals"></div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Deep Learning - 20 questions</h2>
+      <div class="ml-exercise-list" id="deep-learning"></div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>LLM / Transformers - 15 questions</h2>
+      <div class="ml-exercise-list" id="llm-transformers"></div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you answer at least 10 ML fundamentals questions without opening solutions?</li>
+        <li>Can you derive one loss or optimizer update on paper?</li>
+        <li>Can you explain one LLM training or inference concept with a practical trade-off?</li>
+        <li>Can you identify what an interviewer is testing before giving the answer?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="job_prep_01_interview_question_bank" data-title="Interview Question Bank">
+        <span>I can answer these under interview pressure:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const groups = {
+      "ml-fundamentals": [
+        ["Why does L2 regularization lead to weight decay?", "Tests whether you can connect objective functions to update rules.", "With L2 we optimize L(theta) + lambda ||theta||^2. The gradient adds 2 lambda theta, so SGD update becomes theta <- theta - eta gradL - eta 2 lambda theta. The last term shrinks weights every step, which is weight decay.", "Saying only 'it prevents overfitting' without deriving the shrinkage term."],
+        ["Gradient descent vs stochastic gradient descent: what changes?", "Tests optimization basics and data-scale reasoning.", "Full gradient descent uses all data for one exact gradient. SGD uses one example or mini-batch, making each step noisy but much cheaper. Mini-batch SGD is preferred for large data because noise can help exploration and hardware parallelism improves throughput.", "Ignoring variance of the gradient estimate."],
+        ["Explain the bias-variance trade-off.", "Tests model capacity and generalization intuition.", "Bias is systematic error from overly restrictive assumptions. Variance is sensitivity to the training sample. Simple models often underfit with high bias; very flexible models can overfit with high variance. Regularization usually increases bias slightly to reduce variance more.", "Treating bias and variance as directly observable metrics in normal training logs."],
+        ["How does regularization affect bias and variance?", "Tests practical model selection.", "Regularization constrains the hypothesis class or discourages complex solutions. This can raise training error and bias, but often lowers test error by reducing variance. The best value is found through validation, not training loss.", "Assuming stronger regularization is always better."],
+        ["Why do we use log probabilities in cross-entropy?", "Tests numerical stability and likelihood understanding.", "Products of many probabilities underflow and are hard to optimize. Logs convert products into sums, preserve the optimum because log is monotonic, and produce stable gradients for likelihood-based learning.", "Saying logs are used only because they are convenient."],
+        ["What is maximum likelihood estimation?", "Tests probabilistic interpretation of training.", "MLE chooses parameters that make observed data most probable under the model. In supervised learning, many common losses are negative log-likelihoods: MSE corresponds to Gaussian noise and cross-entropy to categorical likelihood.", "Not connecting MLE to actual losses."],
+        ["What is MAP estimation and how is it related to regularization?", "Tests Bayesian interpretation.", "MAP maximizes posterior p(theta|D), proportional to likelihood times prior. Taking negative logs gives data loss plus a prior penalty. L2 corresponds to a Gaussian prior over weights.", "Confusing MAP with full Bayesian inference."],
+        ["Why split data into train, validation, and test?", "Tests evaluation hygiene.", "Train fits parameters, validation selects models and hyperparameters, test estimates final generalization. If the test set guides decisions, it becomes validation and the estimate is biased.", "Tuning on the test set."],
+        ["What is data leakage?", "Tests production awareness.", "Leakage happens when training features contain information unavailable at inference time or derived from the target. It inflates validation metrics but fails in production.", "Thinking leakage only means duplicate rows."],
+        ["Precision vs recall: when do you optimize each?", "Tests metric-task alignment.", "Precision matters when false positives are expensive. Recall matters when false negatives are expensive. Fraud, medical screening, and moderation often need explicit threshold trade-offs rather than default accuracy.", "Using accuracy for imbalanced tasks."],
+        ["What is ROC-AUC and what does it not tell you?", "Tests ranking metric nuance.", "ROC-AUC measures how well positives rank above negatives across thresholds. It can look good under heavy imbalance while precision at useful operating points is poor. PR-AUC is often more informative for rare positives.", "Treating AUC as a complete deployment metric."],
+        ["Why can logistic regression be a strong baseline?", "Tests baseline discipline.", "It is convex, fast, interpretable, calibrated reasonably after tuning, and often strong with good features. It exposes data quality and feature signal before using heavier models.", "Skipping baselines because they look too simple."],
+        ["Why does feature scaling matter for some models?", "Tests geometry of algorithms.", "Distance-based models and gradient-based optimization are sensitive to scale because large-scale features dominate distances or gradients. Trees are mostly insensitive because they split by ordering.", "Scaling everything blindly without understanding the model."],
+        ["What is the curse of dimensionality?", "Tests high-dimensional intuition.", "As dimensions grow, data becomes sparse, distances become less informative, and the sample size needed to cover the space grows rapidly. Regularization, feature selection, and representation learning fight this.", "Only saying 'more dimensions are bad'."],
+        ["What is PCA optimizing?", "Tests linear algebra connection.", "PCA finds orthogonal directions of maximum variance and projects data onto them. Equivalently it gives the best low-rank linear reconstruction under squared error.", "Calling PCA supervised feature selection."],
+        ["How do decision trees choose splits?", "Tests impurity and greedy learning.", "Trees greedily choose splits that reduce impurity such as Gini, entropy, or squared error. Each split is locally optimal, not globally optimal.", "Assuming the tree searches all possible trees."],
+        ["Why do random forests reduce overfitting?", "Tests ensemble variance reduction.", "Each tree is high-variance. Bootstrapping rows and subsampling features decorrelates trees, and averaging reduces variance while keeping low bias.", "Saying forests reduce bias as the main mechanism."],
+        ["Why does boosting often overfit less than expected?", "Tests additive modeling.", "Boosting adds weak learners sequentially and uses shrinkage, depth limits, subsampling, and early stopping. These constraints make the additive model learn corrections gradually.", "Thinking boosting is always immune to overfitting."],
+        ["What is the kernel trick in SVMs?", "Tests feature-space reasoning.", "The kernel computes inner products in an implicit high-dimensional feature space without constructing that space explicitly. This lets linear separators in feature space become nonlinear boundaries in input space.", "Saying kernels are just similarity functions without the inner-product constraint."],
+        ["K-means assumptions and failure modes?", "Tests clustering realism.", "K-means assumes compact roughly spherical clusters and uses Euclidean distance to centroids. It fails with non-convex clusters, unequal densities, outliers, and poor k selection.", "Using k-means as a universal clustering method."],
+        ["What is cross-validation for?", "Tests robust model selection.", "Cross-validation estimates model performance by rotating validation folds, reducing dependence on one lucky split. It is useful when data is limited but can be expensive.", "Using normal K-fold on time series without respecting order."],
+        ["What is calibration?", "Tests probability quality.", "Calibration means predicted probabilities match empirical frequencies. If a model says 0.8, about 80% of such cases should be positive. Calibration matters for risk and thresholding.", "Confusing calibration with accuracy."],
+        ["How do you handle imbalanced classes?", "Tests practical workflow.", "Use appropriate metrics, threshold tuning, class weights, resampling, better data, and calibration. The right approach depends on the cost of false positives and false negatives.", "Only oversampling without checking validation distribution."],
+        ["What is early stopping?", "Tests regularization through validation.", "Early stopping halts training when validation performance stops improving. It acts as regularization because the model does not continue fitting noise.", "Monitoring training loss only."],
+        ["How do you debug a bad ML model?", "Tests engineering process.", "Start with data and labels, establish a baseline, inspect train vs validation error, check leakage, validate metrics, run ablations, and inspect errors by segment.", "Jumping to a more complex model first."]
+      ],
+      "deep-learning": [
+        ["Why do residual connections help train deep networks?", "Tests gradient flow and architecture intuition.", "They create shortcut paths so gradients can flow through identity routes. This makes optimization easier and lets layers learn residual corrections instead of complete transformations.", "Saying only that ResNet is deeper."],
+        ["What happens if all weights are initialized to zero?", "Tests symmetry breaking.", "Neurons in the same layer receive identical gradients and stay identical, so the layer cannot learn diverse features. Random initialization breaks symmetry.", "Thinking zero initialization only causes small gradients."],
+        ["Why do Xavier and He initialization exist?", "Tests variance propagation.", "They keep activation and gradient variance roughly stable across layers. Xavier targets tanh-like activations; He accounts for ReLU dropping about half the signal.", "Memorizing formulas without variance intuition."],
+        ["Explain vanishing gradients.", "Tests chain rule intuition.", "Backprop multiplies many Jacobians. If typical derivatives have magnitude below one, gradients shrink exponentially with depth, making early layers learn slowly.", "Blaming only sigmoid while ignoring initialization and architecture."],
+        ["Why can gradients explode?", "Tests stability reasoning.", "If Jacobian norms or recurrent weights are repeatedly greater than one, gradients grow exponentially. Gradient clipping, normalization, initialization, and residual paths help.", "Clipping without fixing the underlying instability."],
+        ["What does batch normalization do?", "Tests normalization and optimization.", "BatchNorm normalizes activations using batch statistics and learns scale/shift. It stabilizes distributions seen by later layers and often allows larger learning rates.", "Saying it only prevents overfitting."],
+        ["BatchNorm vs LayerNorm?", "Tests architecture-specific normalization.", "BatchNorm normalizes over batch dimension and is common in CNNs. LayerNorm normalizes within each example and is common in Transformers because it works with variable sequence lengths and small batches.", "Using BatchNorm blindly in autoregressive Transformers."],
+        ["Why is cross-entropy paired with softmax?", "Tests probabilistic classification.", "Softmax converts logits to a categorical distribution. Cross-entropy is negative log-likelihood of the correct class. The combined gradient has a clean form: prediction minus target.", "Applying softmax twice before a framework loss."],
+        ["Why is Adam often faster than SGD?", "Tests adaptive optimization.", "Adam uses moving averages of gradients and squared gradients to adapt per-parameter step sizes. It handles noisy and sparse gradients well, but can generalize differently from SGD.", "Claiming Adam is always better."],
+        ["Adam vs AdamW?", "Tests regularization detail.", "AdamW decouples weight decay from the adaptive gradient update. This makes decay act as true parameter shrinkage rather than being distorted by Adam's per-parameter scaling.", "Using L2 and AdamW decay as if they are identical."],
+        ["What is learning rate warmup?", "Tests training dynamics.", "Warmup gradually increases learning rate early in training to avoid unstable updates while activations, optimizer moments, and normalization statistics settle.", "Using warmup as a random magic trick."],
+        ["Why use gradient clipping?", "Tests practical stability.", "Clipping limits gradient norm or value to prevent single bad batches or exploding gradients from destroying weights. It is common in RNNs and large language model training.", "Clipping too aggressively so learning stalls."],
+        ["What is dropout doing?", "Tests regularization intuition.", "Dropout randomly removes activations during training, forcing redundant representations and reducing co-adaptation. At inference, scaling preserves expected activation magnitude.", "Using high dropout everywhere, including places where it hurts."],
+        ["CNN vs MLP for images?", "Tests inductive bias.", "CNNs exploit locality and weight sharing, making them parameter-efficient for images. MLPs ignore spatial structure unless data or architecture provides it.", "Saying CNNs are better only because they are deeper."],
+        ["Why did Transformers replace many RNNs?", "Tests sequence modeling trade-offs.", "Self-attention gives direct paths between tokens and parallelizes across sequence positions. RNNs process sequentially and struggle with long-range dependencies.", "Ignoring attention's quadratic sequence cost."],
+        ["What is attention doing conceptually?", "Tests representation reasoning.", "Each token forms a query, compares it with keys, and uses the resulting weights to mix values. It is content-dependent information routing.", "Calling attention a database lookup without explaining Q, K, V."],
+        ["Why divide attention scores by sqrt(d_k)?", "Tests variance scaling.", "Dot products grow in variance with dimension. Dividing by sqrt(d_k) keeps logits in a range where softmax does not saturate too early.", "Saying it is just normalization."],
+        ["What is mixed precision training?", "Tests performance and numerical stability.", "It uses lower precision such as FP16 or BF16 for speed and memory, while keeping sensitive parts like master weights or reductions stable. Loss scaling may be needed for FP16.", "Using FP16 without checking overflow/underflow."],
+        ["How do you diagnose overfitting in a neural network?", "Tests experiment reading.", "Training loss improves while validation loss worsens or plateaus. Use more data, augmentation, regularization, early stopping, simpler models, or better validation splits.", "Only lowering learning rate."],
+        ["How do you check whether backprop implementation is correct?", "Tests debugging fundamentals.", "Use finite-difference gradient checking on a tiny model, compare with autograd, test shapes, overfit a tiny dataset, and inspect gradient norms.", "Testing only final accuracy."]
+      ],
+      "llm-transformers": [
+        ["Why is self-attention O(L^2)?", "Tests complexity awareness.", "Every token compares with every other token, producing an L by L attention matrix per head. This dominates memory and compute for long contexts.", "Ignoring batch, heads, and hidden size in real costs."],
+        ["What is KV cache?", "Tests inference optimization.", "During autoregressive decoding, past keys and values do not change. KV cache stores them so each new token only computes attention against cached history instead of recomputing all previous tokens.", "Thinking it reduces prefill cost."],
+        ["What is tokenization and why are tokens not words?", "Tests LLM input pipeline.", "Tokenizers split text into subword units for vocabulary efficiency and open-vocabulary handling. A word can be one token, many tokens, or share pieces with other words.", "Assuming token count equals word count."],
+        ["What is BPE?", "Tests tokenizer mechanics.", "Byte Pair Encoding starts from small units and repeatedly merges the most frequent adjacent pairs. The learned merges create common subwords while keeping rare words representable.", "Thinking BPE understands meaning."],
+        ["Pretraining vs instruction tuning?", "Tests training stages.", "Pretraining learns next-token prediction over broad corpora. Instruction tuning adapts the model to follow prompts and formats using supervised examples.", "Calling instruction tuning the main source of language knowledge."],
+        ["What is RLHF?", "Tests alignment pipeline.", "RLHF trains a reward model from human preferences, then optimizes the policy to produce outputs preferred by that reward model, often with a KL penalty to stay near the base model.", "Saying RLHF directly optimizes human happiness."],
+        ["What is DPO?", "Tests modern alignment alternatives.", "DPO uses preference pairs to optimize the policy directly relative to a reference model, avoiding an explicit reward model and PPO loop.", "Saying DPO is just supervised fine-tuning."],
+        ["Explain LoRA.", "Tests parameter-efficient finetuning.", "LoRA freezes base weights and trains low-rank matrices whose product approximates an update to selected weight matrices. It is efficient because useful task updates often have low intrinsic rank.", "Saying LoRA compresses the model at inference by default."],
+        ["QLoRA vs LoRA?", "Tests memory trade-offs.", "QLoRA stores the frozen base model in quantized form and trains LoRA adapters, reducing memory enough for larger models. It trades some complexity and quantization constraints for accessibility.", "Confusing QLoRA with quantized inference only."],
+        ["What are scaling laws?", "Tests research-level intuition.", "Scaling laws describe predictable relationships between loss, parameters, data, and compute. They guide whether to spend budget on larger models or more tokens.", "Treating bigger model as always better regardless of data."],
+        ["What is temperature sampling?", "Tests generation control.", "Temperature rescales logits before sampling. Low temperature makes outputs more deterministic; high temperature increases diversity and risk. Temperature zero approximates greedy decoding.", "Thinking temperature changes model knowledge."],
+        ["Top-k vs nucleus sampling?", "Tests decoding trade-offs.", "Top-k samples from the k most likely tokens. Nucleus sampling chooses the smallest set whose cumulative probability exceeds p, adapting set size to uncertainty.", "Using both without understanding their interaction."],
+        ["What is RAG?", "Tests retrieval-augmented systems.", "RAG retrieves relevant external documents and conditions generation on them. It improves freshness and grounding, but depends heavily on chunking, retrieval quality, and evaluation.", "Assuming RAG automatically prevents hallucinations."],
+        ["Why does hallucination happen?", "Tests probabilistic generation limits.", "LLMs generate likely text, not verified truth. Hallucinations arise from missing context, ambiguous prompts, weak retrieval, training priors, and lack of grounded verification.", "Blaming only bad prompts."],
+        ["How would you evaluate an LLM application?", "Tests applied ML judgment.", "Use task-specific datasets, human review where needed, retrieval metrics for RAG, safety checks, latency/cost tracking, and regression tests for prompt or model changes.", "Relying only on a few manual prompts."]
+      ]
+    };
+
+    function renderGroup(id) {
+      const root = document.getElementById(id);
+      groups[id].forEach((item, index) => {
+        const [question, tested, answer, mistake] = item;
+        const card = document.createElement("article");
+        card.className = "exercise-card";
+        card.innerHTML = `
+          <div class="exercise-label">Question ${index + 1}</div>
+          <h3>${question}</h3>
+          <p><strong>What this tests:</strong> ${tested}</p>
+          <details>
+            <summary>Show model answer</summary>
+            <div class="solution">
+              <p><strong>Strong answer:</strong> ${answer}</p>
+              <p><strong>Common mistake:</strong> ${mistake}</p>
+            </div>
+          </details>
+        `;
+        root.appendChild(card);
+      });
+    }
+
+    Object.keys(groups).forEach(renderGroup);
+  </script>
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

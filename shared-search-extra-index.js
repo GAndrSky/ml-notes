@@ -246,5 +246,21 @@ window.__mlNotesSearchExtraIndex = [
     summary: "Interview framework and worked examples for recommendation, fraud, search, moderation and RAG assistant.",
     headings: "9.5 System Design Interview | Framework | Recommendation | Fraud Detection | Search | Moderation | RAG",
     content: "ml system design interview recommendation fraud detection semantic search image moderation rag assistant framework"
+  },
+  {
+    path: "job_prep/01_interview_question_bank.html",
+    title: "Interview Question Bank",
+    section: "Job Prep",
+    summary: "60 ML interview questions across fundamentals, deep learning and LLMs with model answers and common mistakes.",
+    headings: "Interview Question Bank | ML Fundamentals | Deep Learning | LLM Transformers | Model Answers | Common Mistakes",
+    content: "interview question bank ml fundamentals deep learning llm transformers model answers common mistakes bias variance regularization backprop adamw lora rlhf dpo rag"
+  },
+  {
+    path: "job_prep/02_ml_system_design.html",
+    title: "ML System Design Framework",
+    section: "Job Prep",
+    summary: "Practical ML system design interview framework with five worked examples: recommendation, fraud, semantic search, image moderation and RAG assistant.",
+    headings: "ML System Design Framework | Recommendation System | Fraud Detection | Semantic Search | Image Moderation | RAG Assistant",
+    content: "ml system design interview framework recommendation fraud detection semantic search image moderation rag assistant metrics serving monitoring data pipeline candidate generation ranking reranking retrieval"
   }
 ];

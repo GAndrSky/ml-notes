@@ -136,6 +136,15 @@
         { path: "09_mlops_deployment/04_ml_system_design_patterns.html", label: "9.4 ML System Design" },
         { path: "09_mlops_deployment/05_interview_prep_system_design.html", label: "9.5 System Design Interview" }
       ]
+    },
+    {
+      id: "job-prep",
+      label: "Job Prep",
+      title: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u043a \u0441\u043e\u0431\u0435\u0441\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044f\u043c",
+      pages: [
+        { path: "job_prep/01_interview_question_bank.html", label: "Interview Question Bank" },
+        { path: "job_prep/02_ml_system_design.html", label: "ML System Design Framework" }
+      ]
     }
   ];
 
@@ -148,7 +157,8 @@
     llm: "#d497b8",
     generative: "#d58f79",
     "training-practice": "#97a9d6",
-    mlops: "#6ea5ff"
+    mlops: "#6ea5ff",
+    "job-prep": "#82d0b6"
   };
 
   var visitedStorageKey = "ml_notes_visited";
@@ -539,6 +549,13 @@
         depth: "Solid",
         tldr: "MLOps connects models to reproducible experiments, deployment, monitoring, and system design decisions.",
         why: "For ML engineer roles, knowing how to train a model is not enough: you must track experiments, serve models, package environments, and reason about production tradeoffs."
+      },
+      "job-prep": {
+        time: "120-180 min",
+        job: "High",
+        depth: "Solid",
+        tldr: "Interview prep converts course knowledge into clear answers, derivations, tradeoffs, and system-design reasoning.",
+        why: "A strong ML engineer interview answer is not a definition: it shows assumptions, failure modes, practical tradeoffs, and the ability to explain why the method works."
       }
     };
 
