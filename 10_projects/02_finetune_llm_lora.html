@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10.2 Project: Fine-tune an LLM with LoRA</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Project 10.2: fine-tune an LLM with LoRA using Hugging Face, PEFT, evaluation, merge/export, and deployment checklist." />
+  <meta property="og:title" content="10.2 LoRA Fine-tuning Project - ML notes" />
+  <meta property="og:description" content="A practical LoRA fine-tuning pipeline: data formatting, adapters, training, evaluation, export, and gotchas." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/02_finetune_llm_lora.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 10</span>
+        <span class="tag active">Project</span>
+        <span class="tag">LLM</span>
+        <span class="tag">LoRA</span>
+        <span class="tag">PEFT</span>
+      </div>
+      <h1>10.2 Project: Fine-tune an LLM with LoRA</h1>
+      <p class="muted">Build a complete parameter-efficient fine-tuning pipeline: prepare an instruction dataset, train LoRA adapters, evaluate behavior, export artifacts, and document failure modes.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>LoRA freezes the base model and trains small low-rank update matrices. This project teaches the practical workflow: data quality, prompt format, adapter placement, hyperparameters, evaluation, and safe export.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Project scope</h2>
+      <div class="grid-2">
+        <div class="success">
+          <strong>Deliverables</strong>
+          <ul>
+            <li>A small instruction dataset in a documented format.</li>
+            <li>A training script using Transformers, Datasets, and PEFT.</li>
+            <li>A saved LoRA adapter with config and tokenizer.</li>
+            <li>An evaluation notebook with before/after examples.</li>
+            <li>A README explaining limits, cost, and failure cases.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Scope control</strong>
+          <ul>
+            <li>Start with a small model and a tiny dataset.</li>
+            <li>Do not claim the model learned facts from 50 examples.</li>
+            <li>Measure style and task-following changes separately from knowledge.</li>
+            <li>Keep a held-out validation set of prompts.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Core idea</h2>
+      <div class="formula" data-no-tex>W' = W + DeltaW, where DeltaW = B A and rank(DeltaW) << rank(W)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">frozen base weight</span><span class="fa-desc">Original pretrained model matrix, not updated during LoRA training.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">DeltaW</span><span class="fa-name">learned update</span><span class="fa-desc">Task-specific change added to the base weight.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">down projection</span><span class="fa-desc">Small matrix that maps from original dimension into rank r.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">up projection</span><span class="fa-desc">Small matrix that maps from rank r back to output dimension.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">r</span><span class="fa-name">LoRA rank</span><span class="fa-desc">Controls adapter capacity; common values are 4, 8, 16, 32, 64.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> instead of changing all model weights, learn a small structured correction in the directions that matter for the task.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> keep the whole book unchanged and add a thin task-specific annotation layer.</div>
+      </div>
+      <div class="formula" data-no-tex>trainable_params = r * (d_in + d_out) instead of d_in * d_out</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Numeric example</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">d_in</span><span class="fa-name">input width</span><span class="fa-desc">For example 4096 in a transformer projection.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">d_out</span><span class="fa-name">output width</span><span class="fa-desc">For example 4096 in the same projection.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">r</span><span class="fa-name">rank</span><span class="fa-desc">If r=16, trainable params are 16*(4096+4096)=131k instead of 16.7M.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the trainable part becomes tiny compared with the original matrix.</div>
+        <div class="formula-anatomy__analogy"><strong>Practical meaning:</strong> you can fine-tune larger models on smaller GPUs because optimizer state is stored only for adapters.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 1 - dataset format</h2>
+      <p>For instruction tuning, data format often matters more than rank or learning rate. Keep examples consistent and aligned with how you will prompt the model at inference.</p>
+      <pre><code class="language-python"># What it does: creates a tiny instruction dataset in chat format.
+# Input shapes: list[dict] with instruction/input/output strings
+# Output shapes: Hugging Face Dataset with one text column
+from datasets import Dataset
+
+rows = [
+    {
+        "instruction": "Explain gradient descent to a beginner.",
+        "input": "",
+        "output": "Gradient descent repeatedly moves parameters in the direction that reduces loss."
+    },
+    {
+        "instruction": "Convert the note into three bullet points.",
+        "input": "Adam keeps moving averages of gradients and squared gradients.",
+        "output": "- Adam tracks gradient direction\n- Adam tracks gradient scale\n- Adam adapts step sizes per parameter"
+    },
+]
+
+def format_example(row):
+    return {
+        "text": (
+            "### Instruction:\n" + row["instruction"].strip() +
+            "\n\n### Input:\n" + row["input"].strip() +
+            "\n\n### Response:\n" + row["output"].strip()
+        )
+    }
+
+dataset = Dataset.from_list([format_example(row) for row in rows])
+print(dataset[0]["text"])
+
+# Gotchas:
+# 1. Keep train and inference prompt formats consistent.
+# 2. Do not mix contradictory answer styles in a tiny dataset.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 2 - configure LoRA</h2>
+      <pre><code class="language-python"># What it does: wraps a causal LM with LoRA adapters.
+# Input shapes: tokenized batch input_ids=(B,L), labels=(B,L)
+# Output shapes: model returns loss=scalar and logits=(B,L,V)
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import LoraConfig, get_peft_model, TaskType
+
+model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token
+
+model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
+
+lora_config = LoraConfig(
+    task_type=TaskType.CAUSAL_LM,
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+)
+
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+
+# Gotchas:
+# 1. target_modules depend on model architecture; inspect module names if this fails.
+# 2. Larger r increases capacity but also memory and overfitting risk.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 3 - train</h2>
+      <pre><code class="language-python"># What it does: trains LoRA adapters with Hugging Face Trainer.
+# Input shapes: dataset["text"] tokenized to input_ids=(B,L)
+# Output shapes: saved adapter files in output_dir
+from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
+
+def tokenize(batch):
+    return tokenizer(
+        batch["text"],
+        truncation=True,
+        max_length=512,
+        padding=False,
+    )
+
+tokenized = dataset.map(tokenize, batched=True, remove_columns=["text"])
+collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+
+args = TrainingArguments(
+    output_dir="outputs/lora-ml-notes-demo",
+    per_device_train_batch_size=1,
+    gradient_accumulation_steps=8,
+    learning_rate=2e-4,
+    num_train_epochs=3,
+    logging_steps=1,
+    save_strategy="epoch",
+    fp16=False,
+    bf16=True,
+    report_to=[],
+)
+
+trainer = Trainer(
+    model=model,
+    args=args,
+    train_dataset=tokenized,
+    data_collator=collator,
+)
+trainer.train()
+model.save_pretrained("outputs/lora-adapter")
+tokenizer.save_pretrained("outputs/lora-adapter")
+
+# Gotchas:
+# 1. If bf16 is unsupported, set bf16=False and use fp16 only with care.
+# 2. Tiny datasets can quickly overfit style without improving task ability.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 4 - evaluate before and after</h2>
+      <p>Do not evaluate only by looking at one pretty answer. Build a small fixed set of prompts and compare base model vs adapted model using the same decoding settings.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Qualitative eval</h3>
+          <ul>
+            <li>Does the model follow the target format?</li>
+            <li>Does it avoid hallucinating unsupported details?</li>
+            <li>Does it preserve useful base-model ability?</li>
+            <li>Does it become too repetitive or too short?</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Quantitative eval</h3>
+          <ul>
+            <li>Held-out loss on validation prompts.</li>
+            <li>Exact format compliance for structured outputs.</li>
+            <li>Human preference labels for before/after answers.</li>
+            <li>Latency and memory if adapter is used in serving.</li>
+          </ul>
+        </div>
+      </div>
+      <pre><code class="language-python"># What it does: generates a response from the LoRA-adapted model.
+# Input shapes: prompt tokens input_ids=(1,L)
+# Output shapes: generated tokens=(1,L_new)
+import torch
+
+prompt = "### Instruction:\nExplain LoRA in two sentences.\n\n### Input:\n\n### Response:\n"
+inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+with torch.no_grad():
+    generated = model.generate(
+        **inputs,
+        max_new_tokens=80,
+        do_sample=False,
+        temperature=None,
+        pad_token_id=tokenizer.eos_token_id,
+    )
+
+print(tokenizer.decode(generated[0], skip_special_tokens=True))
+
+# Gotchas:
+# 1. Use identical decoding settings when comparing base and adapted models.
+# 2. Greedy decoding is stable for tests; sampling is useful for product behavior checks.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 5 - export and document</h2>
+      <p>For a portfolio project, the README matters. It should make the experiment reproducible and honest.</p>
+      <div class="grid-2">
+        <div class="insight-card">
+          <h3>README checklist</h3>
+          <ul>
+            <li>Base model and license.</li>
+            <li>Dataset source, size, filtering, and examples.</li>
+            <li>Hardware, training time, and peak memory.</li>
+            <li>Hyperparameters and adapter target modules.</li>
+            <li>Before/after examples and failure cases.</li>
+          </ul>
+        </div>
+        <div class="insight-card">
+          <h3>Export options</h3>
+          <ul>
+            <li>Save adapter only for PEFT loading.</li>
+            <li>Merge adapter into base weights for simpler inference.</li>
+            <li>Quantize for deployment only after checking quality.</li>
+            <li>Keep tokenizer and prompt template versioned.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <p class="warn"><strong>Do not skip exercises.</strong> LoRA projects fail most often because of poor data, weak evaluation, or unrealistic claims.</p>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational - data</div>
+          <h3>Create 50 high-quality examples</h3>
+          <p>Build a tiny instruction dataset for one narrow behavior, such as converting ML notes into interview answers.</p>
+          <details><summary>Show solution</summary><p>Use one prompt format, consistent output style, and a validation split. Keep examples narrow enough that you can judge success manually.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate - training</div>
+          <h3>Run LoRA with two ranks</h3>
+          <p>Train with r=8 and r=32. Compare train loss, validation behavior, and output style.</p>
+          <details><summary>Show solution</summary><p>Higher rank can fit more task-specific behavior but can overfit small data. Use the held-out prompts to decide, not train loss alone.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate - evaluation</div>
+          <h3>Build a before/after eval table</h3>
+          <p>For 10 held-out prompts, compare base and adapted answers side by side with notes.</p>
+          <details><summary>Show solution</summary><p>Track format compliance, correctness, concision, hallucination, and whether the answer follows the intended style.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard - ablation</div>
+          <h3>Change target modules</h3>
+          <p>Train one adapter on q/v only and one on q/k/v/o. Compare behavior and trainable parameter count.</p>
+          <details><summary>Show solution</summary><p>More target modules increase capacity and cost. On tiny data, the difference may be hard to measure unless the task is clear and evaluation is fixed.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard - deployment</div>
+          <h3>Serve the adapter locally</h3>
+          <p>Load the base model plus adapter and expose one `/generate` endpoint with FastAPI.</p>
+          <details><summary>Show solution</summary><p>Keep model loading outside the request handler, validate max_new_tokens, log latency, and return both answer and generation settings.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain why LoRA reduces trainable parameters?</li>
+        <li>Can you compute trainable parameters for a LoRA-adapted matrix?</li>
+        <li>Can you describe the full pipeline from raw examples to saved adapter?</li>
+        <li>Can you evaluate whether fine-tuning improved behavior or only changed style?</li>
+        <li>Can you name the main failure modes of tiny-data LoRA?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="10_projects_02_finetune_llm_lora" data-title="Project: Fine-tune an LLM with LoRA">
+        <span>I can run and explain this LoRA project:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

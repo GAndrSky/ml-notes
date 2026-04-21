@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10.1 Project: Neural Net from Scratch</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Project 10.1: implement a neural network from scratch with NumPy, manual backpropagation, gradient checking, and training checkpoints." />
+  <meta property="og:title" content="10.1 Neural Net from Scratch - ML notes" />
+  <meta property="og:description" content="Build a small MLP with NumPy, derive backprop, check gradients, and train on toy data before moving to MNIST." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/01_neural_net_from_scratch.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 10</span>
+        <span class="tag active">Project</span>
+        <span class="tag">NumPy</span>
+        <span class="tag">Backprop</span>
+        <span class="tag">Gradient Check</span>
+      </div>
+      <h1>10.1 Project: Neural Net from Scratch</h1>
+      <p class="muted">Build a small MLP without PyTorch. The point is not performance; the point is to prove that you understand forward pass, loss, backpropagation, and optimization deeply enough to reproduce them.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>You will implement a two-layer neural network using only NumPy: initialize weights, run forward pass, compute cross-entropy, derive gradients manually, verify them with finite differences, train on toy data, then extend the same structure to MNIST.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Project outcome</h2>
+      <div class="grid-2">
+        <div class="success">
+          <strong>What you should be able to explain</strong>
+          <ul>
+            <li>How matrix shapes move through a neural network.</li>
+            <li>Why softmax cross-entropy gradient becomes prediction minus target.</li>
+            <li>How each gradient is computed from cached forward values.</li>
+            <li>Why gradient checking catches silent backprop mistakes.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Do not skip</strong>
+          <ul>
+            <li>Shape checks for every matrix multiply.</li>
+            <li>Numerically stable softmax.</li>
+            <li>Finite-difference gradient check on a tiny network.</li>
+            <li>Overfitting a tiny dataset before scaling up.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Architecture</h2>
+      <div class="formula" data-no-tex>X -> Linear(W1,b1) -> ReLU -> Linear(W2,b2) -> Softmax -> CrossEntropy</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">input batch</span><span class="fa-desc">Matrix of shape (B, D), where B is batch size and D is input dimension.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">W1</span><span class="fa-name">first layer weights</span><span class="fa-desc">Matrix of shape (D, H). It maps raw features into hidden features.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">b1</span><span class="fa-name">hidden bias</span><span class="fa-desc">Vector of shape (H,), added to every object in the batch.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">W2</span><span class="fa-name">classifier weights</span><span class="fa-desc">Matrix of shape (H, C). It maps hidden features into class logits.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">classes</span><span class="fa-desc">Number of target classes.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the first layer learns useful features, ReLU keeps positive evidence, and the second layer turns features into class scores.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> first summarize raw notes into concepts, then use those concepts to choose an answer.</div>
+      </div>
+      <div class="formula" data-no-tex>logits = ReLU(X W1 + b1) W2 + b2</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Dimensions check</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">XW1</span><span class="fa-name">(B,D)(D,H)</span><span class="fa-desc">Result shape is (B,H). Each object becomes a hidden vector.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">A1W2</span><span class="fa-name">(B,H)(H,C)</span><span class="fa-desc">Result shape is (B,C). Each row contains class logits.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">b1,b2</span><span class="fa-name">broadcast bias</span><span class="fa-desc">Bias vectors are added to every row in the batch.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> every layer is a learned coordinate transformation followed by a nonlinearity.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if B=32, D=784, H=128, C=10, then logits has shape (32,10).</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 1 - forward pass</h2>
+      <pre><code class="language-python"># What it does: creates toy data and runs a 2-layer MLP forward pass.
+# Input shapes: X=(B,D), y=(B,), W1=(D,H), W2=(H,C)
+# Output shapes: logits=(B,C), probs=(B,C), loss=scalar
+import numpy as np
+
+rng = np.random.default_rng(0)
+B, D, H, C = 64, 2, 16, 3
+
+X = rng.normal(size=(B, D))
+y = ((X[:, 0] > 0).astype(int) + (X[:, 1] > 0).astype(int)) % C
+
+W1 = rng.normal(scale=np.sqrt(2 / D), size=(D, H))
+b1 = np.zeros(H)
+W2 = rng.normal(scale=np.sqrt(2 / H), size=(H, C))
+b2 = np.zeros(C)
+
+def relu(z):
+    return np.maximum(0.0, z)
+
+def softmax_stable(logits):
+    shifted = logits - logits.max(axis=1, keepdims=True)
+    exp = np.exp(shifted)
+    return exp / exp.sum(axis=1, keepdims=True)
+
+Z1 = X @ W1 + b1
+A1 = relu(Z1)
+logits = A1 @ W2 + b2
+probs = softmax_stable(logits)
+loss = -np.log(probs[np.arange(B), y] + 1e-12).mean()
+
+print(logits.shape, probs.shape, float(loss))
+
+# Gotchas:
+# 1. Do not apply softmax before subtracting max(logits), or exp can overflow.
+# 2. Check that y indexes classes and has shape (B,), not one-hot shape (B,C).</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 2 - manual backprop</h2>
+      <div class="formula" data-no-tex>dlogits = (probs - one_hot(y)) / B</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">probs</span><span class="fa-name">predicted distribution</span><span class="fa-desc">Model probabilities after softmax, shape (B,C).</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">one_hot(y)</span><span class="fa-name">target distribution</span><span class="fa-desc">Correct class is 1, all other classes are 0.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">batch size</span><span class="fa-desc">Divides gradients because the loss is averaged over the batch.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> each logit is pushed by the difference between what the model believed and what the target says.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if the correct class prob is 0.2, its gradient contribution is 0.2 - 1 = -0.8, so training raises that logit.</div>
+      </div>
+      <pre><code class="language-python"># What it does: computes manual gradients for the 2-layer MLP.
+# Input shapes: X=(B,D), Z1=(B,H), A1=(B,H), probs=(B,C), y=(B,)
+# Output shapes: dW1=(D,H), db1=(H,), dW2=(H,C), db2=(C,)
+one_hot = np.zeros_like(probs)
+one_hot[np.arange(B), y] = 1.0
+
+dlogits = (probs - one_hot) / B
+dW2 = A1.T @ dlogits
+db2 = dlogits.sum(axis=0)
+
+dA1 = dlogits @ W2.T
+dZ1 = dA1 * (Z1 > 0)
+dW1 = X.T @ dZ1
+db1 = dZ1.sum(axis=0)
+
+for name, grad in {"dW1": dW1, "db1": db1, "dW2": dW2, "db2": db2}.items():
+    print(name, grad.shape, np.linalg.norm(grad))
+
+# Gotchas:
+# 1. ReLU derivative uses Z1 > 0, not A1 > 0 if you want the exact cached pre-activation.
+# 2. Transposes are determined by shape algebra, not by trial and error.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 3 - train loop</h2>
+      <pre><code class="language-python"># What it does: trains the network with full-batch gradient descent.
+# Input shapes: parameters from previous snippets
+# Output shapes: updated parameters and printed loss
+lr = 0.1
+
+for step in range(1000):
+    Z1 = X @ W1 + b1
+    A1 = np.maximum(0.0, Z1)
+    logits = A1 @ W2 + b2
+    probs = softmax_stable(logits)
+    loss = -np.log(probs[np.arange(B), y] + 1e-12).mean()
+
+    one_hot = np.zeros_like(probs)
+    one_hot[np.arange(B), y] = 1.0
+    dlogits = (probs - one_hot) / B
+    dW2 = A1.T @ dlogits
+    db2 = dlogits.sum(axis=0)
+    dA1 = dlogits @ W2.T
+    dZ1 = dA1 * (Z1 > 0)
+    dW1 = X.T @ dZ1
+    db1 = dZ1.sum(axis=0)
+
+    W1 -= lr * dW1
+    b1 -= lr * db1
+    W2 -= lr * dW2
+    b2 -= lr * db2
+
+    if step % 200 == 0:
+        acc = (probs.argmax(axis=1) == y).mean()
+        print(step, float(loss), float(acc))
+
+# Gotchas:
+# 1. If loss does not decrease, first inspect shapes and gradient norms.
+# 2. Try to overfit 16 examples before training on larger data.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Milestone 4 - gradient check</h2>
+      <p>Gradient checking is slow but essential. You compare the analytic gradient from backprop with a finite-difference estimate. Run it on a tiny model only.</p>
+      <div class="formula" data-no-tex>grad_numeric(theta_i) = (L(theta_i + eps) - L(theta_i - eps)) / (2 eps)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">theta_i</span><span class="fa-name">one parameter</span><span class="fa-desc">A single scalar weight or bias being tested.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">eps</span><span class="fa-name">small perturbation</span><span class="fa-desc">Usually around 1e-5 for float64 checks.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">loss</span><span class="fa-desc">Scalar objective before and after nudging the parameter.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> if backprop is right, a tiny manual nudge predicts the same slope as the analytic gradient.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> check a speedometer by moving a tiny distance and measuring change directly.</div>
+      </div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <p class="warn"><strong>Do not skip exercises.</strong> The ability to reproduce this project from scratch is the test of understanding.</p>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational - derivation</div>
+          <h3>Derive dW2 and db2</h3>
+          <p>Starting from logits = A1 W2 + b2 and cross-entropy loss, derive dW2 = A1.T @ dlogits and db2 = sum(dlogits).</p>
+          <details><summary>Show solution</summary><p>The derivative of each output logit with respect to a weight W2[h,c] is A1[:,h]. Accumulating across the batch gives A1.T @ dlogits. Bias affects each row equally, so its gradient is the sum over batch.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate - coding</div>
+          <h3>Add mini-batch SGD</h3>
+          <p>Modify the training loop to sample mini-batches and train for multiple epochs.</p>
+          <details><summary>Show solution</summary><p>Shuffle indices each epoch, slice X and y by batch indices, compute gradients on the batch, and update parameters. Keep validation data separate.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate - debugging</div>
+          <h3>Overfit 16 examples</h3>
+          <p>Reduce training data to 16 examples and make the model reach near-perfect training accuracy.</p>
+          <details><summary>Show solution</summary><p>If the network cannot overfit a tiny set, the implementation is wrong or the model is too constrained. Increase hidden size, lower regularization, and inspect gradients.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard - gradient check</div>
+          <h3>Check dW1 numerically</h3>
+          <p>Pick five random entries of W1 and compare finite-difference gradients against manual backprop.</p>
+          <details><summary>Show solution</summary><p>Use float64, eps around 1e-5, and relative error abs(a-b)/max(1,abs(a),abs(b)). Errors around 1e-7 to 1e-5 are usually acceptable for tiny networks.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard - extension</div>
+          <h3>Move to MNIST</h3>
+          <p>Use the same MLP structure for flattened 28x28 images and report validation accuracy.</p>
+          <details><summary>Show solution</summary><p>Normalize pixels to [0,1], use D=784 and C=10, train with mini-batches, and compare against a PyTorch baseline only after your NumPy model learns.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you write the full forward and backward pass without looking?</li>
+        <li>Can you explain every transpose by shape algebra?</li>
+        <li>Can you derive softmax cross-entropy gradient from memory?</li>
+        <li>Can you debug a non-decreasing loss using gradient norms and tiny-data overfit?</li>
+        <li>Can you explain why gradient checking is slow but valuable?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="10_projects_01_neural_net_from_scratch" data-title="Project: Neural Net from Scratch">
+        <span>I can rebuild this project from scratch:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

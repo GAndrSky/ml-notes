@@ -262,5 +262,37 @@ window.__mlNotesSearchExtraIndex = [
     summary: "Practical ML system design interview framework with five worked examples: recommendation, fraud, semantic search, image moderation and RAG assistant.",
     headings: "ML System Design Framework | Recommendation System | Fraud Detection | Semantic Search | Image Moderation | RAG Assistant",
     content: "ml system design interview framework recommendation fraud detection semantic search image moderation rag assistant metrics serving monitoring data pipeline candidate generation ranking reranking retrieval"
+  },
+  {
+    path: "10_projects/01_neural_net_from_scratch.html",
+    title: "10.1 Project: Neural Net from Scratch",
+    section: "Block 10. Projects",
+    summary: "Build a NumPy MLP from scratch with forward pass, manual backpropagation, gradient checking, and a training loop.",
+    headings: "Neural Net from Scratch | NumPy MLP | Forward Pass | Manual Backprop | Gradient Check | Training Loop",
+    content: "project neural net from scratch numpy mlp forward pass manual backpropagation gradient checking finite differences softmax cross entropy relu mnist"
+  },
+  {
+    path: "10_projects/02_finetune_llm_lora.html",
+    title: "10.2 Project: Fine-tune an LLM with LoRA",
+    section: "Block 10. Projects",
+    summary: "Fine-tune an LLM with LoRA using Hugging Face, PEFT, instruction data, evaluation, adapter export, and deployment checklist.",
+    headings: "Fine-tune LLM with LoRA | PEFT | Instruction Dataset | Adapter Training | Evaluation | Export",
+    content: "project llm lora qlora fine tuning peft hugging face transformers instruction dataset adapters evaluation export deployment"
+  },
+  {
+    path: "06_llm/07_kv_cache_inference_optimization.html",
+    title: "6.7 KV-Cache and Inference Optimization",
+    section: "Block 6. LLM",
+    summary: "KV-cache, prefill, decode, memory scaling, batching, speculative decoding, quantization, vLLM and llama.cpp inference trade-offs.",
+    headings: "6.7 KV-Cache and Inference Optimization | Prefill | Decode | KV Memory | Speculative Decoding | Quantization",
+    content: "kv cache inference optimization prefill decode llm serving latency throughput memory batching paged attention vllm llama cpp speculative decoding quantization int8 int4"
+  },
+  {
+    path: "06_llm/09_retrieval_augmented_generation.html",
+    title: "6.9 RAG: Retrieval-Augmented Generation",
+    section: "Block 6. LLM",
+    summary: "RAG pipeline: chunking, embeddings, vector search, hybrid retrieval, reranking, grounded generation, citations and evaluation.",
+    headings: "6.9 RAG | Retrieval Augmented Generation | Chunking | Embeddings | Vector Databases | Hybrid Search | Reranking | Evaluation",
+    content: "rag retrieval augmented generation chunking embeddings vector database faiss chroma hybrid search bm25 reranking groundedness citations recall mrr ndcg evaluation"
   }
 ];

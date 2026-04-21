@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.9 RAG: Retrieval-Augmented Generation</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="RAG page: retrieval-augmented generation pipeline, chunking, embeddings, vector databases, hybrid search, reranking, evaluation, and failure modes." />
+  <meta property="og:title" content="6.9 RAG - ML notes" />
+  <meta property="og:description" content="Understand RAG as a retrieval and generation system: chunking, embeddings, vector search, reranking, grounding, and evaluation." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/09_retrieval_augmented_generation.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 6</span>
+        <span class="tag active">6.9 RAG</span>
+        <span class="tag">Retrieval</span>
+        <span class="tag">Embeddings</span>
+        <span class="tag">Evaluation</span>
+      </div>
+      <h1>6.9 RAG: Retrieval-Augmented Generation</h1>
+      <p class="muted">RAG is not a magic anti-hallucination switch. It is a system that retrieves evidence, puts it into context, and asks an LLM to answer grounded in that evidence. If retrieval fails, generation usually fails too.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>RAG combines retrieval and generation: split documents into chunks, embed them, index them, retrieve relevant chunks for a query, rerank candidates, generate an answer with citations, and evaluate both retrieval quality and answer groundedness.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Pipeline</h2>
+      <div class="formula" data-no-tex>documents -> chunks -> embeddings -> vector index -> retrieve -> rerank -> generate -> verify</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What each stage does</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">chunks</span><span class="fa-name">text units</span><span class="fa-desc">Passages small enough to retrieve and fit into model context.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">embeddings</span><span class="fa-name">dense vectors</span><span class="fa-desc">Numeric representation used for semantic similarity search.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">index</span><span class="fa-name">search structure</span><span class="fa-desc">FAISS, Chroma, pgvector, or another vector database / ANN index.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">rerank</span><span class="fa-name">second-stage scoring</span><span class="fa-desc">More expensive model reorders a smaller candidate set.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">verify</span><span class="fa-name">grounding check</span><span class="fa-desc">Checks whether answer claims are supported by retrieved evidence.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> retrieval gives the model a temporary memory; generation turns that memory into a useful answer.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> open the right pages of a textbook before answering a question instead of answering from memory.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Chunking</h2>
+      <p>Chunking is a quality bottleneck. Chunks that are too small lose context. Chunks that are too large dilute retrieval and waste context window.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Common strategies</h3>
+          <ul>
+            <li>Fixed token windows with overlap.</li>
+            <li>Paragraph or section-based chunking.</li>
+            <li>Semantic chunking by topic boundaries.</li>
+            <li>Parent-child retrieval: retrieve small chunks, return larger context.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What to preserve</h3>
+          <ul>
+            <li>Document title and section hierarchy.</li>
+            <li>Source URL or file path.</li>
+            <li>Permissions and metadata.</li>
+            <li>Timestamp or version for freshness.</li>
+          </ul>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>What this means in practice</summary>
+        <div class="intuition-content">
+          Bad chunking creates impossible retrieval problems. If a chunk contains the answer but lacks the surrounding definition, generation may be vague. If a chunk is too broad, embeddings may match the wrong part of the text. Start with simple chunking, then inspect retrieved chunks manually.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Embedding similarity</h2>
+      <div class="formula" data-no-tex>cosine(q, d) = (q dot d) / (||q|| ||d||)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">q</span><span class="fa-name">query embedding</span><span class="fa-desc">Vector representation of the user question.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">document embedding</span><span class="fa-desc">Vector representation of a chunk.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">dot</span><span class="fa-name">inner product</span><span class="fa-desc">Measures alignment between two vectors.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">||q||, ||d||</span><span class="fa-name">norms</span><span class="fa-desc">Normalize vector lengths so direction matters more than magnitude.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> chunks pointing in a similar semantic direction to the query get higher scores.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if normalized vectors have dot product 0.82, they are much closer than a chunk with score 0.21.</div>
+      </div>
+      <p>Dense retrieval is strong for paraphrases. Sparse retrieval such as BM25 is strong for exact names, IDs, error codes, and rare terms. Hybrid search often beats either one alone.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Hybrid retrieval and reranking</h2>
+      <div class="formula" data-no-tex>score = alpha * dense_score + (1 - alpha) * sparse_score</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">dense_score</span><span class="fa-name">embedding match</span><span class="fa-desc">Semantic similarity from vector search.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sparse_score</span><span class="fa-name">keyword match</span><span class="fa-desc">Lexical score from BM25 or another sparse retriever.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">alpha</span><span class="fa-name">mixing weight</span><span class="fa-desc">Controls how much semantic vs keyword matching matters.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> combine meaning-based search with exact-word search so neither failure mode dominates.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> find a book by both topic similarity and exact title words.</div>
+      </div>
+      <p>Reranking is usually a second stage: retrieve 50-200 candidates cheaply, then use a cross-encoder or LLM-based scorer on the top candidates to produce the final top-k context.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Minimal local RAG skeleton</h2>
+      <pre><code class="language-python"># What it does: builds a tiny embedding search loop with cosine similarity.
+# Input shapes: docs=list[str], query=str
+# Output shapes: top document strings ranked by similarity
+import numpy as np
+
+docs = [
+    "KV-cache stores keys and values for previous tokens during decoding.",
+    "Gradient checkpointing saves memory by recomputing activations.",
+    "RAG retrieves external context before generating an answer.",
+]
+
+def toy_embed(text, dim=64):
+    vec = np.zeros(dim, dtype=np.float32)
+    for token in text.lower().split():
+        vec[hash(token) % dim] += 1.0
+    norm = np.linalg.norm(vec) + 1e-12
+    return vec / norm
+
+doc_emb = np.stack([toy_embed(d) for d in docs])
+query = "How does retrieval augmented generation work?"
+q_emb = toy_embed(query)
+
+scores = doc_emb @ q_emb
+top_idx = scores.argsort()[::-1][:2]
+
+for i in top_idx:
+    print(float(scores[i]), docs[i])
+
+# Gotchas:
+# 1. This toy embedding is only for mechanics; use real embedding models in practice.
+# 2. Always inspect retrieved chunks before blaming the generator.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Evaluation</h2>
+      <p>RAG evaluation must separate retrieval and generation. If final answer is bad, first ask: did the system retrieve the needed evidence?</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Retrieval metrics</h3>
+          <ul>
+            <li>Recall@K: did we retrieve evidence somewhere in top K?</li>
+            <li>MRR: how early does the first relevant chunk appear?</li>
+            <li>NDCG: are more relevant chunks ranked higher?</li>
+            <li>Context precision: how much retrieved context is useful?</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Generation metrics</h3>
+          <ul>
+            <li>Answer correctness against reference.</li>
+            <li>Groundedness: claims supported by context.</li>
+            <li>Citation accuracy.</li>
+            <li>Refusal quality when evidence is missing.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="formula" data-no-tex>Recall@K = queries_with_relevant_chunk_in_top_K / total_queries</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">retrieval cutoff</span><span class="fa-desc">Number of chunks passed to evaluation or generation.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">relevant chunk</span><span class="fa-name">needed evidence</span><span class="fa-desc">A chunk that contains information required to answer the query.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">total_queries</span><span class="fa-name">eval set size</span><span class="fa-desc">Number of labeled questions in the retrieval benchmark.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> before judging the LLM, check whether the answer was even available in context.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if 80 of 100 questions retrieve supporting evidence in top 5, Recall@5 is 0.80.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Failure modes</h2>
+      <div class="grid-2">
+        <div class="warn">
+          <strong>Retrieval failures</strong>
+          <ul>
+            <li>Chunk too small or too large.</li>
+            <li>Wrong embedding model for domain language.</li>
+            <li>Metadata filters remove the right document.</li>
+            <li>Index is stale after document updates.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Generation failures</strong>
+          <ul>
+            <li>LLM ignores context and answers from priors.</li>
+            <li>Answer cites irrelevant chunks.</li>
+            <li>Prompt asks for confidence the model cannot justify.</li>
+            <li>Context contains conflicting documents.</li>
+          </ul>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Production rule</summary>
+        <div class="intuition-content">
+          Log the query, retrieved chunk IDs, scores, reranker scores, final prompt, answer, citations, latency, and user feedback. Without these logs, RAG debugging becomes guesswork.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational</div>
+          <h3>Separate retrieval from generation</h3>
+          <p>For five failed RAG answers, label each failure as retrieval failure, generation failure, or both.</p>
+          <details><summary>Show solution</summary><p>If the right evidence is absent from context, it is retrieval. If evidence is present but answer is wrong, it is generation. If conflicting chunks are retrieved and answer chooses poorly, it can be both.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Design chunking for docs</h3>
+          <p>Pick chunk size and overlap for API documentation with code examples.</p>
+          <details><summary>Show solution</summary><p>Prefer section-aware chunks and keep code blocks with their explanation. Use overlap for long sections and metadata for title, endpoint, version, and permissions.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Choose hybrid retrieval</h3>
+          <p>Explain why dense-only search may fail for error code `CUDA_ERROR_ILLEGAL_ADDRESS`.</p>
+          <details><summary>Show solution</summary><p>Exact identifiers and rare strings are often better handled by lexical search. Hybrid retrieval keeps both semantic and exact matching.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard</div>
+          <h3>Build a small eval set</h3>
+          <p>Create 30 questions with expected source chunks and compute Recall@5 manually.</p>
+          <details><summary>Show solution</summary><p>Store each query with document IDs or chunk IDs that contain the answer. Run retrieval and count how many queries include at least one gold chunk in top 5.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain why RAG does not automatically prevent hallucinations?</li>
+        <li>Can you design chunking, indexing, retrieval, reranking, and generation stages?</li>
+        <li>Can you explain dense vs sparse vs hybrid retrieval?</li>
+        <li>Can you evaluate retrieval separately from answer generation?</li>
+        <li>Can you name the logs needed to debug a RAG production issue?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="06_llm_09_retrieval_augmented_generation" data-title="RAG: Retrieval-Augmented Generation">
+        <span>I can design and debug a RAG system:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

@@ -101,7 +101,9 @@
         { path: "06_llm/03_instruction_tuning.html", label: "6.3 Instruction tuning" },
         { path: "06_llm/04_rlhf.html", label: "6.4 RLHF" },
         { path: "06_llm/05_lora_qlora.html", label: "6.5 LoRA / QLoRA" },
-        { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws" }
+        { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws" },
+        { path: "06_llm/07_kv_cache_inference_optimization.html", label: "6.7 KV-Cache / Inference" },
+        { path: "06_llm/09_retrieval_augmented_generation.html", label: "6.9 RAG" }
       ]
     },
     {
@@ -145,6 +147,15 @@
         { path: "job_prep/01_interview_question_bank.html", label: "Interview Question Bank" },
         { path: "job_prep/02_ml_system_design.html", label: "ML System Design Framework" }
       ]
+    },
+    {
+      id: "projects",
+      label: "\u0411\u043b\u043e\u043a 10",
+      title: "Projects",
+      pages: [
+        { path: "10_projects/01_neural_net_from_scratch.html", label: "10.1 NN from Scratch" },
+        { path: "10_projects/02_finetune_llm_lora.html", label: "10.2 LoRA Fine-tuning" }
+      ]
     }
   ];
 
@@ -158,7 +169,8 @@
     generative: "#d58f79",
     "training-practice": "#97a9d6",
     mlops: "#6ea5ff",
-    "job-prep": "#82d0b6"
+    "job-prep": "#82d0b6",
+    projects: "#8fd17f"
   };
 
   var visitedStorageKey = "ml_notes_visited";
@@ -556,6 +568,13 @@
         depth: "Solid",
         tldr: "Interview prep converts course knowledge into clear answers, derivations, tradeoffs, and system-design reasoning.",
         why: "A strong ML engineer interview answer is not a definition: it shows assumptions, failure modes, practical tradeoffs, and the ability to explain why the method works."
+      },
+      projects: {
+        time: "4-12 hours",
+        job: "High",
+        depth: "Deep",
+        tldr: "Projects convert isolated notes into portfolio-grade evidence: runnable code, experiments, evaluation, and documented tradeoffs.",
+        why: "A project proves that you can turn theory into an end-to-end ML artifact, debug it, evaluate it, and explain engineering decisions under constraints."
       }
     };
 
