@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.8 DPO and Alignment Alternatives</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="DPO and alignment alternatives for LLMs: preference data, reward models, PPO vs DPO, objective derivation, trade-offs and failure modes." />
+  <meta property="og:title" content="6.8 DPO and Alignment Alternatives - ML notes" />
+  <meta property="og:description" content="Understand why DPO avoids an explicit reward model and how it compares with PPO-based RLHF." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/08_dpo_alignment_alternatives.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 6</span>
+        <span class="tag active">6.8 DPO</span>
+        <span class="tag">Alignment</span>
+        <span class="tag">Preferences</span>
+        <span class="tag">RLHF</span>
+      </div>
+      <h1>6.8 DPO and Alignment Alternatives</h1>
+      <p class="muted">DPO is a preference-optimization method that fine-tunes a language model directly from chosen/rejected answer pairs. It removes the explicit reward model and PPO loop used in classic RLHF, but it does not remove the hard parts of preference data, evaluation, and safety.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>RLHF usually trains a reward model from human preferences, then optimizes the policy with PPO while staying close to a reference model. DPO folds this into a supervised-looking objective over preference pairs: increase likelihood of chosen responses relative to rejected responses, with a KL-style anchor to the reference model.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Why this matters</h2>
+      <p>Instruction tuning teaches the model the response format. Preference optimization teaches it which response is better when both are plausible. This matters for helpfulness, refusal behavior, verbosity, tone, safety, and following ambiguous user intent.</p>
+      <div class="grid-2">
+        <div class="success">
+          <strong>DPO is useful when</strong>
+          <ul>
+            <li>You have preference pairs: prompt, chosen answer, rejected answer.</li>
+            <li>You want a simpler pipeline than reward model + PPO.</li>
+            <li>You want stable fine-tuning with standard log-probabilities.</li>
+            <li>You can evaluate preference overfitting carefully.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>DPO is not magic</strong>
+          <ul>
+            <li>Bad preference data still trains bad behavior.</li>
+            <li>It can overfit style instead of improving reasoning.</li>
+            <li>It still needs a reference model and careful beta choice.</li>
+            <li>It does not guarantee safety or factuality.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Classic RLHF pipeline</h2>
+      <div class="formula" data-no-tex>SFT model -> preference data -> reward model -> PPO policy optimization</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What each stage does</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">SFT</span><span class="fa-name">supervised fine-tuning</span><span class="fa-desc">Adapts the pretrained model to follow instruction-response format.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">preferences</span><span class="fa-name">chosen vs rejected</span><span class="fa-desc">Human or AI feedback comparing two answers for the same prompt.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">reward model</span><span class="fa-name">learned scorer</span><span class="fa-desc">A model trained to assign higher scores to preferred responses.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">PPO</span><span class="fa-name">RL optimizer</span><span class="fa-desc">Optimizes the policy against reward while penalizing drift from reference behavior.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> RLHF first learns a judge, then trains the model to please that judge without moving too far from the original model.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> train a critic from human ratings, then train a writer to score well with that critic.</div>
+      </div>
+      <p>The main weakness is complexity. PPO training can be unstable, reward models can be exploited, and the whole pipeline has many moving parts.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Preference data</h2>
+      <div class="formula" data-no-tex>D = {(x, y_w, y_l)}</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">prompt</span><span class="fa-desc">The user request or conversation context.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_w</span><span class="fa-name">winner</span><span class="fa-desc">The response preferred by the labeler.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_l</span><span class="fa-name">loser</span><span class="fa-desc">The rejected response for the same prompt.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">D</span><span class="fa-name">preference dataset</span><span class="fa-desc">Collection of pairwise comparisons used for alignment training.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the model is not told the perfect answer; it is told which of two answers is better.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a coach says "answer A is better than answer B" instead of writing the final answer for you.</div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Data quality matters more than the algorithm name</summary>
+        <div class="intuition-content">
+          Preference labels must reflect the behavior you actually want. If labelers always prefer longer answers, the model can become verbose. If labels reward confident style over correctness, the model can become more persuasive but less truthful.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>DPO objective</h2>
+      <div class="formula" data-no-tex>L_DPO = - log sigma(beta * [log pi_theta(y_w|x) - log pi_theta(y_l|x) - log pi_ref(y_w|x) + log pi_ref(y_l|x)])</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">pi_theta</span><span class="fa-name">trainable policy</span><span class="fa-desc">The model being fine-tuned by DPO.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">pi_ref</span><span class="fa-name">reference policy</span><span class="fa-desc">Usually the SFT model before DPO; anchors behavior.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_w</span><span class="fa-name">chosen response</span><span class="fa-desc">The preferred answer whose relative probability should increase.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_l</span><span class="fa-name">rejected response</span><span class="fa-desc">The less preferred answer whose relative probability should decrease.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">beta</span><span class="fa-name">temperature / KL strength</span><span class="fa-desc">Controls how aggressively the policy moves away from the reference.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sigma</span><span class="fa-name">sigmoid</span><span class="fa-desc">Converts the preference margin into a probability-like training signal.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> DPO increases the trainable model's preference for the chosen answer relative to the rejected answer, after subtracting what the reference model already preferred.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if the new model prefers the winner more than the reference did, the margin is positive and loss decreases.</div>
+      </div>
+
+      <p>The reference correction is the key. DPO is not simply "make chosen more likely." It asks whether the new policy improves the chosen-vs-rejected gap compared with the reference model.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>PPO-RLHF vs DPO</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>PPO-based RLHF</h3>
+          <ul>
+            <li>Needs a separate reward model.</li>
+            <li>Generates samples during RL training.</li>
+            <li>Can optimize non-differentiable reward signals.</li>
+            <li>More moving parts and more instability.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>DPO</h3>
+          <ul>
+            <li>Uses preference pairs directly.</li>
+            <li>No explicit reward model training step.</li>
+            <li>Looks like supervised fine-tuning over pairwise data.</li>
+            <li>Simpler, but depends heavily on pair quality.</li>
+          </ul>
+        </div>
+      </div>
+      <details class="intuition-block" open>
+        <summary>Practical trade-off</summary>
+        <div class="intuition-content">
+          DPO is usually easier to run and debug than PPO-RLHF. PPO can be more flexible when you have a complex reward function or want online policy optimization, but it is harder to stabilize. For many fine-tuning workflows, DPO gives most of the practical benefit with less engineering overhead.
+        </div>
+      </details>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Minimal DPO data shape</h2>
+      <pre><code class="language-python"># What it does: shows the structure of a DPO preference example.
+# Input shapes: prompt=str, chosen=str, rejected=str
+# Output shapes: dict consumed by most DPO trainers
+example = {
+    "prompt": "Explain why KV-cache speeds up LLM decoding.",
+    "chosen": (
+        "KV-cache stores keys and values for previous tokens, so during "
+        "decoding the model only computes projections for the new token."
+    ),
+    "rejected": (
+        "KV-cache makes the model smaller and removes the need for attention."
+    ),
+}
+
+required_fields = ["prompt", "chosen", "rejected"]
+assert all(field in example for field in required_fields)
+
+# Gotchas:
+# 1. The rejected answer should be plausible, not random garbage.
+# 2. If chosen and rejected differ in many unrelated ways, the preference signal is noisy.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Alignment alternatives</h2>
+      <div class="grid-2">
+        <div class="insight-card">
+          <h3>SFT</h3>
+          <p>Best for teaching format, task style, and basic instruction following. It does not directly optimize pairwise preference.</p>
+        </div>
+        <div class="insight-card">
+          <h3>RLHF with PPO</h3>
+          <p>More flexible but more complex. Useful when a reward model or online reward is central to the training loop.</p>
+        </div>
+        <div class="insight-card">
+          <h3>DPO</h3>
+          <p>Direct pairwise preference optimization. Strong default when you have chosen/rejected pairs and want a stable pipeline.</p>
+        </div>
+        <div class="insight-card">
+          <h3>RLAIF / AI feedback</h3>
+          <p>Uses model-generated preference labels. Scales faster, but can amplify judge model biases and blind spots.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Failure modes</h2>
+      <div class="grid-2">
+        <div class="warn">
+          <strong>Data failures</strong>
+          <ul>
+            <li>Chosen answers are longer, not better.</li>
+            <li>Rejected answers are too weak, making the task easy but uninformative.</li>
+            <li>Preferences encode inconsistent policy.</li>
+            <li>Dataset does not cover refusal and edge cases.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Training failures</strong>
+          <ul>
+            <li>Beta too high: model drifts too far from reference.</li>
+            <li>Beta too low: preferences barely change behavior.</li>
+            <li>Overfitting to style markers in preference data.</li>
+            <li>Better preference score but worse factuality.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>How to evaluate DPO</h2>
+      <p>Evaluate DPO with fixed prompts, pairwise human or judge preference, safety tests, factuality tests, and regression checks against the base SFT model.</p>
+      <div class="formula" data-no-tex>win_rate = preferred_outputs_from_new_model / total_comparisons</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">win_rate</span><span class="fa-name">pairwise preference</span><span class="fa-desc">Fraction of comparisons where evaluators prefer the new model.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">new model</span><span class="fa-name">DPO policy</span><span class="fa-desc">The model after preference optimization.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">total_comparisons</span><span class="fa-name">eval pairs</span><span class="fa-desc">Number of blind comparisons against baseline or another model.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> DPO is trained from preferences, so pairwise preference is a natural evaluation signal.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if the DPO model wins 63 of 100 blind comparisons, win_rate is 0.63.</div>
+      </div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational</div>
+          <h3>Explain DPO in one minute</h3>
+          <p>Explain why DPO can train from chosen/rejected pairs without explicitly training a reward model.</p>
+          <details><summary>Show solution</summary><p>DPO uses a derived objective that compares policy log-probability margins between chosen and rejected responses against a reference model. This directly optimizes preference likelihood.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Find bad preference pairs</h3>
+          <p>Create three preference pairs where the chosen answer is longer but not better. Explain why they are dangerous.</p>
+          <details><summary>Show solution</summary><p>The model may learn verbosity as a shortcut for preference instead of learning correctness, helpfulness, or safety.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Choose DPO or PPO</h3>
+          <p>For a small company fine-tuning a support assistant from 5k preference pairs, choose DPO or PPO and justify.</p>
+          <details><summary>Show solution</summary><p>DPO is usually the better first choice: simpler, more stable, no reward model/PPO loop, and well matched to offline preference pairs.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard</div>
+          <h3>Design an evaluation set</h3>
+          <p>Design 50 prompts to detect whether DPO improved helpfulness but harmed factuality or refusal behavior.</p>
+          <details><summary>Show solution</summary><p>Include normal helpful prompts, factual QA with known answers, ambiguous prompts, harmful prompts, and refusal boundary cases. Compare against SFT baseline blindly.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain DPO vs PPO-RLHF without buzzwords?</li>
+        <li>Can you describe the role of the reference model in DPO?</li>
+        <li>Can you identify when preference data is low quality?</li>
+        <li>Can you explain why DPO can improve style while hurting factuality?</li>
+        <li>Can you design an evaluation protocol for an aligned model?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="06_llm_08_dpo_alignment_alternatives" data-title="DPO and Alignment Alternatives">
+        <span>I can explain DPO and alignment trade-offs:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

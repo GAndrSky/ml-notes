@@ -288,6 +288,14 @@ window.__mlNotesSearchExtraIndex = [
     content: "kv cache inference optimization prefill decode llm serving latency throughput memory batching paged attention vllm llama cpp speculative decoding quantization int8 int4"
   },
   {
+    path: "06_llm/08_dpo_alignment_alternatives.html",
+    title: "6.8 DPO and Alignment Alternatives",
+    section: "Block 6. LLM",
+    summary: "DPO preference optimization, chosen/rejected pairs, reference model, beta, PPO-RLHF comparison, evaluation and alignment failure modes.",
+    headings: "6.8 DPO and Alignment Alternatives | Preference Data | DPO Objective | PPO RLHF | Reference Model | Evaluation",
+    content: "dpo direct preference optimization alignment alternatives preference pairs chosen rejected reference model beta ppo rlhf reward model sft win rate evaluation"
+  },
+  {
     path: "06_llm/09_retrieval_augmented_generation.html",
     title: "6.9 RAG: Retrieval-Augmented Generation",
     section: "Block 6. LLM",

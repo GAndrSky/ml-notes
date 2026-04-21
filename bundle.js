@@ -103,6 +103,7 @@
         { path: "06_llm/05_lora_qlora.html", label: "6.5 LoRA / QLoRA" },
         { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws" },
         { path: "06_llm/07_kv_cache_inference_optimization.html", label: "6.7 KV-Cache / Inference" },
+        { path: "06_llm/08_dpo_alignment_alternatives.html", label: "6.8 DPO / Alignment" },
         { path: "06_llm/09_retrieval_augmented_generation.html", label: "6.9 RAG" }
       ]
     },
