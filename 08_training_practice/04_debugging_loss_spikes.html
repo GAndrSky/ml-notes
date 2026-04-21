@@ -5,22 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>8.4 Debugging Loss Spikes</title>
   <link rel="stylesheet" href="../shared-nav.css" />
-  <style>
-    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
-    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
-    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
-    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
-    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
-    @media (max-width:780px){.page{padding:18px 14px 54px}h1{font-size:1.7rem}}
-  </style>
   <link rel="stylesheet" href="../shared-theme.css" />
-  <meta name="description" content="8.4 Debugging Loss Spikes - interactive ML notes with formulas, visualizations, and code." />
-  <meta property="og:title" content="8.4 Debugging Loss Spikes - ML notes" />
-  <meta property="og:description" content="8.4 Debugging Loss Spikes - interactive ML notes with formulas, visualizations, and code." />
+  <meta name="description" content="Debugging loss spikes: NaN, Inf, exploding gradients, bad batches, scheduler bugs, mixed precision and systematic ML debugging." />
+  <meta property="og:title" content="8.4 Debugging Loss Spikes — ML notes" />
+  <meta property="og:description" content="Чек-лист для резких всплесков loss, NaN и нестабильного обучения." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/04_debugging_loss_spikes.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
@@ -28,257 +16,124 @@
   <div class="page">
     <div class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Блок 8 • Практика обучения</span>
-        <span class="tag done">✓ 8.3 Profiling</span>
-        <span class="tag active">▶ 8.4 Loss spikes</span>
+        <span class="tag tag-block">Блок 8 · Практика обучения</span>
+        <span class="tag done">8.3 Profiling</span>
+        <span class="tag active">8.4 Loss spikes</span>
+        <span class="tag">9.1 Tracking</span>
       </div>
       <h1>8.4 Debugging Loss Spikes</h1>
-      <p class="muted">Loss spikes — одна из самых неприятных проблем в реальном training loop. Они могут идти от данных, precision, optimizer state, плохих batch-ей, scheduler-а или просто от скрытого NaN в пайплайне.</p>
-    </div>
-    <div class="card">
-      <h2>Первый чек-лист</h2>
-      <div class="formula" data-no-tex>1. проверить batch, на котором произошёл spike
-2. посмотреть grad norm
-3. проверить lr / scheduler step
-4. посмотреть AMP / scaler
-5. проверить NaN / Inf в activations и loss
-6. сравнить train и eval paths</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">∇</span><span class="fa-name">градиент</span><span class="fa-desc">Направление самого быстрого роста функции по параметрам.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <div class="success">Лучший дебаг здесь — не “покрутить всё понемногу”, а быстро локализовать: это один плохой batch, системная нестабильность оптимизации или инфраструктурный баг.</div>
-    </div>
-<!-- frontier-deepening:start:8-4-spike-taxonomy -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-4-spike-taxonomy">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Loss spike нужно классифицировать до исправления</h3>
-    <p>Spike может быть data issue, numerical issue, optimizer issue или distributed issue. Если сразу уменьшать lr, можно скрыть проблему в данных. Если сразу чистить данные, можно пропустить FP16 overflow.</p>
-    <p>Правильный первый шаг - определить, воспроизводится ли spike на том же batch, той же seed, одной GPU и без AMP. Это быстро сужает класс причин.</p>
-    <ul>
-      <li>Воспроизводится на том же batch - ищи данные или deterministic bug.</li>
-      <li>Пропадает без AMP - ищи overflow/underflow.</li>
-      <li>Появляется только distributed - ищи sync, sharding или batch composition.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-    <div class="card">
-      <h2>Почему spikes так неприятны</h2>
-      <p>Loss spike — это не диагноз, а симптом. Он может означать и временный выход в плохой режим, и момент, когда optimizer state уже физически портится настолько, что модель потом не возвращается. Главное различие здесь между “шумным, но обратимым” и “разрушительным” spike.</p>
-      <div class="formula" data-no-tex>Короткий spike:
-loss вырос
-но модель быстро восстановилась
-
-Разрушительный spike:
-loss вырос
-gradients / optimizer state испортились
-дальше кривая уже не возвращается в прежний режим</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">∇</span><span class="fa-name">градиент</span><span class="fa-desc">Направление самого быстрого роста функции по параметрам.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <div class="warn">Именно поэтому важно смотреть не только на один скачок loss, но и на то, что произошло со step time, grad norm, scaler и validation после него.</div>
-    </div>
-    <div class="card">
-      <h2>Типовые причины</h2>
-      <div class="info">Слишком большой learning rate, пропущенный gradient clipping, overflow в FP16, нестабильная loss-функция, грязные данные, рассыпающийся scheduler, неверная маска или неправильное label shift в LM.</div>
-      <div class="warn">Если spikes редкие и короткие, это ещё не всегда катастрофа. Но если после них модель не восстанавливается, значит причина уже бьёт по самим параметрам или optimizer state.</div>
+      <p class="muted">Loss spike — это симптом, а не диагноз. Причина может быть в данных, learning rate, mixed precision, exploding gradients, scheduler, augmentation, distributed sync или баге в loss.</p>
     </div>
 
-    <div class="card">
-      <h2>Как быстро разделить причины по типам</h2>
-      <div class="grid-2">
-        <div>
-          <h3>Данные</h3>
-          <div class="formula" data-no-tex>- один плохой batch
-- сломанные targets
-- outlier lengths
-- неверная маска
-- испорченный preprocessing</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">То, что формула получает на вход.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">преобразование</span><span class="fa-desc">Правило, которое меняет вход и возвращает результат.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает зависимость одной величины от другой.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    </div>
-        <div>
-          <h3>Оптимизация / числа</h3>
-          <div class="formula" data-no-tex>- learning rate слишком высокий
-- scheduler дал резкий jump
-- grad clipping отсутствует
-- FP16 overflow
-- unstable loss term</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">∇</span><span class="fa-name">градиент</span><span class="fa-desc">Направление самого быстрого роста функции по параметрам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    </div>
-      </div>
-      <p>Такое разделение полезно не ради красоты. Оно помогает сократить пространство поиска: если spike воспроизводится только на одном batch, почти наверняка проблема в данных. Если он приходит после конкретного scheduler event, причина уже ближе к optimizer stack.</p>
-    </div>
-<!-- frontier-deepening:start:8-4-binary-search -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-4-binary-search">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Binary search по training loop быстрее случайных правок</h3>
-    <p>Раздели step на участки: load batch, forward, loss, backward, clipping, optimizer step, scheduler step. Проверяй NaN/Inf и нормы после каждого участка.</p>
-    <p>Так можно найти первый момент, где значение стало плохим. Последний видимый NaN почти никогда не является первопричиной.</p>
-    <ul>
-      <li>Проверяй inputs и labels до forward.</li>
-      <li>Проверяй logits и loss до backward.</li>
-      <li>Проверяй gradient norms до optimizer step.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-    <div class="card">
-      <h2>Что логировать, чтобы не дебажить вслепую</h2>
-      <div class="formula" data-no-tex>- global grad norm
-- max / min logits
-- отдельные компоненты loss
-- scaler state в AMP
-- learning rate по шагам
-- identifier batch-а
-- first layer with NaN / Inf</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">∇</span><span class="fa-name">градиент</span><span class="fa-desc">Направление самого быстрого роста функции по параметрам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает диапазон и превращает произведения вероятностей в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <div class="success">Самый полезный практический приём: сохранить контекст первого плохого шага. Один batch-id и один снимок grad/logit stats часто дают больше пользы, чем час случайного тюнинга hyperparameters.</div>
-    </div>
-<!-- frontier-deepening:start:8-4-logging-invariants -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-4-logging-invariants">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Логи должны показывать инварианты, а не только loss</h3>
-    <p>Loss сам по себе говорит, что стало плохо, но не говорит где. Нужны вспомогательные инварианты: диапазон logits, доля NaN/Inf, gradient norm, weight norm, lr, grad scale, batch id и длины последовательностей.</p>
-    <p>Если эти значения пишутся заранее, debugging spike занимает минуты. Если их нет, приходится воспроизводить аварию вслепую.</p>
-    <ul>
-      <li>Логируй batch metadata для воспроизведения.</li>
-      <li>Логируй lr и AMP grad scale.</li>
-      <li>Логируй top gradient norms по слоям или параметр-группам.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-<!-- theory-expansion:start -->
-    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
-      <div class="concept-walkthrough__kicker">Теоретический слой</div>
-      <h2>Loss spikes как симптом, а не диагноз</h2>
-      <p>Loss spike говорит только, что training dynamics резко ухудшилась. Он не говорит причину. Причина может быть в bad batch, learning rate, mixed precision, exploding gradients, неправильных targets, data corruption или нестабильной нормализации.</p>
-      <p>Хороший debugging строится вокруг первого плохого шага. Если поймать batch id, logits range, grad norm, loss components и precision state до/после spike, поиск становится инженерной задачей, а не случайным тюнингом.</p>
-      <p>Самый опасный подход — просто уменьшить learning rate и забыть. Иногда это маскирует data bug или NaN source, который потом вернётся на большем масштабе.</p>
-      <div class="grid-2">
-        <div class="info">
-          <h3>Как думать об этой теме</h3>
-          <ul>
-          <li>Spike может быть optimization issue, data issue, numerical issue или systems issue.</li>
-          <li>Нужно локализовать первый момент divergence, а не анализировать только финальный NaN.</li>
-          <li>Loss components важнее общего loss, если objective состоит из нескольких частей.</li>
-          </ul>
-        </div>
-        <div class="success">
-          <h3>Что проверять в практике</h3>
-          <ul>
-          <li>Логируй grad norm, logits min/max, activation stats, lr, batch id, sequence length и loss components.</li>
-          <li>Сохраняй problematic batch для воспроизведения.</li>
-          <li>Пробуй disable AMP, lower LR, gradient clipping и data validation по отдельности, чтобы не смешивать причины.</li>
-          </ul>
-        </div>
-        <div class="warn">
-          <h3>Где чаще всего ошибаются</h3>
-          <ul>
-          <li>Менять много гиперпараметров одновременно и терять причинность.</li>
-          <li>Игнорировать редкие batches: один corrupted sample может ломать training.</li>
-          <li>Смотреть только train loss без validation и без stats по logits/gradients.</li>
-          </ul>
-        </div>
-        <div class="info">
-          <h3>Как объяснить на собеседовании</h3>
-          <ul>
-          <li>Скажи, что spike — symptom, и перечисли группы причин.</li>
-          <li>Опиши минимальный debug pack: batch, lr, grad norm, logits, NaN/Inf, loss components.</li>
-          <li>Объясни, почему нужно воспроизводить первый плохой шаг.</li>
-          </ul>
-        </div>
+    <section class="card">
+      <h2>Сначала классифицируй проблему</h2>
+      <div class="grid-3">
+        <div class="warn"><strong>NaN / Inf</strong><br>Численная авария: overflow, divide by zero, bad log, invalid target.</div>
+        <div class="info"><strong>Sharp spike</strong><br>Один или несколько batch резко ломают loss, но обучение может восстановиться.</div>
+        <div class="success"><strong>Divergence</strong><br>Loss растет систематически: часто LR, optimizer, initialization или data scale.</div>
       </div>
     </section>
-<!-- theory-expansion:end -->
-<!-- step1-learning:start -->
-  <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Debugging Loss Spikes</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
-    <div class="ml-endcap-grid">
-      <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Используй тему &#171;Debugging Loss Spikes&#187;, когда обучение нужно масштабировать, ускорить, стабилизировать или отладить в реальном проекте.</li>
-        <li>Практические темы включай после появления конкретной боли: нехватка памяти, медленный dataloader, NaN, loss spikes или плохой throughput.</li>
-        <li>Отделяй инженерную проблему от ML-проблемы: иногда качество модели не меняется, потому что bottleneck в инфраструктуре.</li>
+
+    <section class="card">
+      <h2>Базовый порядок диагностики</h2>
+      <ol>
+        <li>Воспроизведи spike на минимальном subset.</li>
+        <li>Залогируй batch id, input stats, target stats, loss components.</li>
+        <li>Проверь `torch.isfinite` для inputs, logits, loss, gradients.</li>
+        <li>Сравни run с меньшим learning rate.</li>
+        <li>Отключи AMP, augmentation и distributed complexity.</li>
+        <li>Проверь grad norm и включи gradient clipping как диагностику.</li>
+      </ol>
+      <div class="formula" data-no-tex>debugging = isolate + measure + simplify + reintroduce_complexity</div>
+    </section>
+
+    <section class="card">
+      <h2>PyTorch finite checks</h2>
+      <pre><code class="language-python"># Finite checks for unstable training.
+# Input: model, batch x/y, loss after backward.
+# Output: raises error close to the real failure point.
+import torch
+
+def assert_finite(name, tensor):
+    if not torch.isfinite(tensor).all():
+        bad = tensor[~torch.isfinite(tensor)]
+        raise RuntimeError(f"{name} has non-finite values: {bad[:5]}")
+
+x, y = batch
+assert_finite("input", x)
+logits = model(x)
+assert_finite("logits", logits)
+loss = criterion(logits, y)
+assert_finite("loss", loss)
+loss.backward()
+
+for name, param in model.named_parameters():
+    if param.grad is not None:
+        assert_finite(f"grad:{name}", param.grad)
+
+grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+optimizer.step()
+
+# Gotchas:
+# 1. Clipping can hide a bug; use it with logging.
+# 2. Check targets too: invalid labels often create impossible losses.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Где чаще всего причина</h2>
+      <div class="grid-2">
+        <div class="warn"><strong>Данные</strong><br>Пустые примеры, неверные labels, outliers, different scale, broken augmentation, leakage between modalities.</div>
+        <div class="warn"><strong>Optimization</strong><br>Слишком высокий LR, warmup отсутствует, scheduler step не там, bad weight decay, exploding gradients.</div>
+        <div class="info"><strong>Numerics</strong><br>AMP overflow, log(0), softmax на огромных logits, divide by tiny variance, underflow probabilities.</div>
+        <div class="info"><strong>Distributed</strong><br>Разные batches на ranks, неправильный sampler, sync bugs, inconsistent loss reduction.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Что логировать постоянно</h2>
+      <ul>
+        <li>Train loss и отдельные loss components.</li>
+        <li>Learning rate и scheduler step.</li>
+        <li>Gradient norm до и после clipping.</li>
+        <li>Input mean/std/min/max по batch.</li>
+        <li>Logits mean/std/max и долю non-finite values.</li>
+        <li>Batch id или sample ids для воспроизведения.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Оптимизировать наугад без профилирования: сначала измерение, потом изменение.</li>
-        <li>Игнорировать воспроизводимость: без seed, версий данных и логов невозможно понять, что именно помогло.</li>
-        <li>Скрывать нестабильность усреднением: loss spikes и NaN нужно расследовать, а не сглаживать графиком.</li>
+    </section>
+
+    <section class="card">
+      <h2>Частые ошибки</h2>
+      <ul>
+        <li>Сразу менять архитектуру вместо поиска bad batch.</li>
+        <li>Сглаживать график и терять spike.</li>
+        <li>Включать clipping без логирования grad norm.</li>
+        <li>Не сохранять batch, на котором случился NaN.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Настраивай global batch, accumulation, sharding strategy, checkpoint granularity и dataloader throughput.</li>
-        <li>Для памяти сравни activation checkpointing, mixed precision, FSDP и уменьшение sequence length.</li>
-        <li>Для отладки фиксируй минимальный воспроизводимый batch и проверяй данные до optimizer step.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../08_training_practice/03_profiling_and_performance.html">← 8.3 Profiling и Performance</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
-      </article>
-    </div>
-  </section>
-<!-- step1-learning:end -->
-</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>First response</h3><p>Loss стал NaN на step 842. Какие первые 5 действий?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Сохранить batch id, проверить finite inputs/logits/loss/grads, уменьшить LR, отключить AMP, проверить targets.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Gradient norm</h3><p>Почему нужно логировать grad norm до clipping?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Иначе clipping скрывает explosion, и ты не увидишь, что optimization нестабилен.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Distributed NaN</h3><p>NaN появляется только на 8 GPU, но не на 1 GPU. Что проверить?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Effective batch/LR, sampler, per-rank data, loss reduction, AMP scale, distributed sync, rank-specific bad batch.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Чем spike отличается от divergence?</li>
+          <li>Почему bad batch нужно сохранять?</li>
+          <li>Как AMP может вызвать NaN?</li>
+          <li>Почему clipping не является полноценным диагнозом?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни debugging loss spikes как расследование причины, а не как подбор магической настройки.</p>
+        <div class="ml-self-rating" data-topic-id="08_training_practice/04_debugging_loss_spikes.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>

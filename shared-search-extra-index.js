@@ -171,33 +171,33 @@ window.__mlNotesSearchExtraIndex = [
     path: "08_training_practice/01_distributed_training.html",
     title: "8.1 Distributed Training",
     section: "Блок 8. Практика обучения",
-    summary: "DDP, FSDP и базовая логика распределённого обучения.",
-    headings: "8.1 Distributed Training | DDP | FSDP | Sharding | Data Parallel",
-    content: "distributed training ddp fsdp sharding data parallel large model training"
+    summary: "DDP, FSDP, all-reduce, sharding, global batch и bottlenecks распределенного обучения.",
+    headings: "8.1 Distributed Training | DDP | FSDP | Sharding | Data Parallel | All Reduce",
+    content: "distributed training ddp fsdp sharding data parallel all reduce global batch large model training"
   },
   {
     path: "08_training_practice/02_gradient_checkpointing.html",
     title: "8.2 Gradient Checkpointing",
     section: "Блок 8. Практика обучения",
     summary: "Memory vs compute trade-off через recomputation activations.",
-    headings: "8.2 Gradient Checkpointing | Memory vs Compute | Recomputation",
-    content: "gradient checkpointing activation recomputation memory compute training practice"
+    headings: "8.2 Gradient Checkpointing | Memory vs Compute | Recomputation | Activations",
+    content: "gradient checkpointing activation recomputation memory compute training practice vram"
   },
   {
     path: "08_training_practice/03_profiling_and_performance.html",
-    title: "8.3 Profiling и Performance",
+    title: "8.3 Profiling and Performance",
     section: "Блок 8. Практика обучения",
-    summary: "Bottlenecks, utilization и step time в training loop.",
-    headings: "8.3 Profiling и Performance | Bottlenecks | Utilization | Step Time",
-    content: "profiling performance bottlenecks gpu utilization step time dataloader training loop"
+    summary: "Bottlenecks, GPU utilization и step time в training loop.",
+    headings: "8.3 Profiling and Performance | Bottlenecks | Utilization | Step Time | PyTorch Profiler",
+    content: "profiling performance bottlenecks gpu utilization step time dataloader training loop pytorch profiler"
   },
   {
     path: "08_training_practice/04_debugging_loss_spikes.html",
     title: "8.4 Debugging Loss Spikes",
     section: "Блок 8. Практика обучения",
-    summary: "Чек-лист для loss spikes, NaN и unstable training.",
-    headings: "8.4 Debugging Loss Spikes | NaN | Grad Norm | Unstable Training",
-    content: "loss spikes nan grad norm unstable training optimizer state debugging training"
+    summary: "Чек-лист для loss spikes, NaN, Inf и unstable training.",
+    headings: "8.4 Debugging Loss Spikes | NaN | Inf | Grad Norm | Unstable Training",
+    content: "loss spikes nan inf grad norm unstable training optimizer state debugging mixed precision bad batch"
   },
   {
     path: "04_training/09_numerical_stability.html",

@@ -5,22 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>8.2 Gradient Checkpointing</title>
   <link rel="stylesheet" href="../shared-nav.css" />
-  <style>
-    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
-    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
-    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
-    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
-    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
-    @media (max-width:780px){.page{padding:18px 14px 54px}h1{font-size:1.7rem}}
-  </style>
   <link rel="stylesheet" href="../shared-theme.css" />
-  <meta name="description" content="8.2 Gradient Checkpointing - interactive ML notes with formulas, visualizations, and code." />
-  <meta property="og:title" content="8.2 Gradient Checkpointing - ML notes" />
-  <meta property="og:description" content="8.2 Gradient Checkpointing - interactive ML notes with formulas, visualizations, and code." />
+  <meta name="description" content="Gradient checkpointing: memory vs compute trade-off, recomputation activations и практическое применение в deep learning." />
+  <meta property="og:title" content="8.2 Gradient Checkpointing — ML notes" />
+  <meta property="og:description" content="Как экономить VRAM за счет повторного вычисления activations." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/02_gradient_checkpointing.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
@@ -28,240 +16,114 @@
   <div class="page">
     <div class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Блок 8 • Практика обучения</span>
-        <span class="tag done">✓ 8.1 DDP / FSDP</span>
-        <span class="tag active">▶ 8.2 Checkpointing</span>
+        <span class="tag tag-block">Блок 8 · Практика обучения</span>
+        <span class="tag done">8.1 DDP / FSDP</span>
+        <span class="tag active">8.2 Checkpointing</span>
         <span class="tag">8.3 Profiling</span>
-        <span class="tag">8.4 Loss spikes</span>
       </div>
       <h1>8.2 Gradient Checkpointing</h1>
-      <p class="muted">Checkpointing меняет баланс “память против вычислений”: мы сохраняем не все промежуточные активации, а потом пересчитываем часть forward заново во время backward.</p>
-    </div>
-    <div class="card">
-      <h2>Идея</h2>
-      <div class="formula" data-no-tex>Без checkpointing:
-храним activations всех слоёв
-
-С checkpointing:
-храним только часть узлов
-остальное пересчитываем при backward</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <div class="success">Если память — главный bottleneck, checkpointing часто самый дешёвый способ влезть в больший batch или контекст без смены архитектуры.</div>
-    </div>
-<!-- frontier-deepening:start:8-2-activation-memory -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-2-activation-memory">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Checkpointing меняет память на дополнительный compute</h3>
-    <p>Обычный training сохраняет activations, чтобы backward мог использовать их позже. Gradient checkpointing сохраняет только часть activations, а пропущенные пересчитывает заново во время backward.</p>
-    <p>Это не меняет математический gradient, если операции детерминированы и правильно обработан RNG state. Меняется только способ организации вычислений.</p>
-    <ul>
-      <li>Память уменьшается за счёт меньшего числа сохранённых activations.</li>
-      <li>Время растёт из-за повторного forward для checkpointed blocks.</li>
-      <li>Лучше checkpoint-ить большие повторяющиеся blocks.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-    <div class="card">
-      <h2>Почему activations так быстро съедают память</h2>
-      <p>Во время forward модель создаёт не только выходы слоёв, но и промежуточные тензоры, которые потом нужны для backward. В больших Transformer-ах именно activations часто начинают доминировать над памятью параметров, особенно при длинном контексте и большом batch.</p>
-      <div class="formula" data-no-tex>Параметры:
-живут постоянно
-
-Activations:
-растут с batch size
-растут с sequence length
-растут с глубиной сети
-
-Именно activations часто убивают память первыми</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">То, что формула получает на вход.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">преобразование</span><span class="fa-desc">Правило, которое меняет вход и возвращает результат.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает зависимость одной величины от другой.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <div class="info">Checkpointing полезен именно потому, что бьёт в самый изменчивый и самый “эластичный” кусок memory budget — в промежуточные активации.</div>
-    </div>
-    <div class="card">
-      <h2>Цена</h2>
-      <div class="warn">Памяти становится меньше, но шаг обучения дольше. Ты меняешь memory wall на extra compute.</div>
-      <p>Поэтому checkpointing особенно полезен, когда ты уже упёрся в память, а не когда тебе просто хочется “немного оптимизировать всё подряд”.</p>
+      <p class="muted">Gradient checkpointing экономит память, не сохраняя часть activations во время forward. Во время backward эти activations пересчитываются. Мы платим compute, чтобы купить VRAM.</p>
     </div>
 
-    <div class="card">
-      <h2>Что именно пересчитывается и почему это работает</h2>
-      <p>Checkpointing сохраняет только некоторые “опорные” узлы графа. Когда начинается backward, недостающие промежуточные значения просто восстанавливаются повторным запуском нужной части forward. Математика не меняется: градиенты те же, меняется только путь, которым мы получаем промежуточные тензоры.</p>
-      <div class="formula" data-no-tex>Обычный режим:
-forward один раз
-backward использует сохранённые activations
+    <section class="card">
+      <h2>Почему activations занимают память</h2>
+      <p>Для backprop нужны промежуточные значения forward pass: входы слоев, outputs activations, attention tensors, normalization statistics. Чем глубже модель, длиннее sequence и больше batch, тем больше activation memory.</p>
+      <div class="formula" data-no-tex>training_memory = parameters + gradients + optimizer_state + activations</div>
+      <p>У больших моделей часто bottleneck — не параметры, а activations, особенно при длинном context или больших feature maps.</p>
+    </section>
 
-Checkpointing:
-forward один раз
-часть activations не хранится
-во время backward нужные куски forward запускаются заново</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <div class="warn">Это и объясняет главную цену: ты экономишь память не бесплатно, а за счёт повторных вычислений и более длинного шага обучения.</div>
-    </div>
-<!-- frontier-deepening:start:8-2-rng-state -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-2-rng-state">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Dropout и случайность требуют сохранения RNG-состояния</h3>
-    <p>Если checkpointed block содержит dropout, повторный forward во время backward должен использовать тот же random mask, что и original forward. Иначе backward будет соответствовать другой функции.</p>
-    <p>Фреймворки обычно умеют сохранять RNG state, но это может добавлять overhead. При нестандартных random operations стоит проверить корректность явно.</p>
-    <ul>
-      <li>Детерминированные blocks checkpoint-ить проще.</li>
-      <li>Dropout требует согласованного RNG.</li>
-      <li>Нестандартные side effects внутри forward могут ломать checkpointing.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
+    <section class="card">
+      <h2>Идея checkpointing</h2>
+      <p>Вместо сохранения всех activations мы сохраняем только некоторые checkpoints. При backward недостающие activations пересчитываются из ближайшего checkpoint. Это сохраняет математически тот же градиент, но увеличивает время step.</p>
+      <div class="formula" data-no-tex>memory_saved -> more_recompute -> slower_step</div>
+      <div class="info">Интуиция: как не хранить все черновики решения, а сохранить ключевые промежуточные результаты и восстановить детали при проверке.</div>
+    </section>
 
-    <div class="card">
-      <h2>Когда checkpointing особенно окупается</h2>
-      <div class="formula" data-no-tex>Обычно хорош, когда:
-- контекст длинный
-- batch size важен для throughput
-- модель почти помещается, но не совсем
-- extra compute ещё терпим
-
-Обычно слабее, когда:
-- compute уже bottleneck
-- память и так свободна
-- шаги и без того слишком долгие</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <p>Практический смысл такой: checkpointing почти никогда не нужен “по умолчанию”, но очень часто оказывается самым дешёвым способом сдвинуть границу возможного training regime без смены железа или архитектуры.</p>
-    </div>
-<!-- frontier-deepening:start:8-2-where-worth-it -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-2-where-worth-it">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Checkpointing особенно выгоден для activation-heavy моделей</h3>
-    <p>Если память в основном занята параметрами, checkpointing даст мало. Если память съедают activations из-за длинного контекста, большого batch или глубокой сети, выигрыш может быть большим.</p>
-    <p>Поэтому checkpointing часто используют в Transformer, diffusion U-Net и больших sequence-моделях. Но его надо измерять: иногда bottleneck смещается в compute и throughput падает слишком сильно.</p>
-    <ul>
-      <li>Полезен при длинной sequence length.</li>
-      <li>Полезен при большом batch или resolution.</li>
-      <li>Менее полезен, если memory bottleneck - optimizer states или parameters.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-<!-- theory-expansion:start -->
-    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
-      <div class="concept-walkthrough__kicker">Теоретический слой</div>
-      <h2>Gradient checkpointing как обмен памяти на compute</h2>
-      <p>Backprop требует хранить activations, потому что они нужны для вычисления градиентов. В больших моделях именно activations часто становятся главным потребителем памяти, особенно при длинном context length.</p>
-      <p>Gradient checkpointing сохраняет только часть activations, а остальные пересчитывает во время backward. Поэтому память уменьшается, но compute и wall-clock time растут.</p>
-      <p>Это не оптимизация скорости. Это способ сделать training возможным при ограниченной памяти или поднять batch/context/model size ценой дополнительных forward recomputations.</p>
+    <section class="card">
+      <h2>Когда применять</h2>
       <div class="grid-2">
-        <div class="info">
-          <h3>Как думать об этой теме</h3>
-          <ul>
-          <li>Без checkpointing храним больше, считаем меньше.</li>
-          <li>С checkpointing храним меньше, считаем часть forward повторно.</li>
-          <li>Лучшие checkpoints ставятся на границах блоков, где recompute дешёв относительно memory saved.</li>
-          </ul>
-        </div>
-        <div class="success">
-          <h3>Что проверять в практике</h3>
-          <ul>
-          <li>Измеряй peak memory и step time до/после, а не только факт запуска.</li>
-          <li>Проверяй корректность с dropout/RNG: recompute должен быть согласованным.</li>
-          <li>Комбинируй checkpointing с mixed precision, FSDP и sequence packing осторожно.</li>
-          </ul>
-        </div>
-        <div class="warn">
-          <h3>Где чаще всего ошибаются</h3>
-          <ul>
-          <li>Включить checkpointing везде и неожиданно сильно замедлить training.</li>
-          <li>Не учитывать, что memory bottleneck может быть optimizer state, а не activations.</li>
-          <li>Забыть проверить deterministic behavior при recomputation.</li>
-          </ul>
-        </div>
-        <div class="info">
-          <h3>Как объяснить на собеседовании</h3>
-          <ul>
-          <li>Объясни, какие activations нужны backward pass.</li>
-          <li>Скажи, что checkpointing удаляет часть activations и пересчитывает их.</li>
-          <li>Назови trade-off: меньше memory, больше compute.</li>
-          </ul>
-        </div>
+        <div class="success"><strong>Да</strong><br>Модель почти помещается, но OOM на backward; нужно увеличить sequence length или batch; compute дешевле дополнительной GPU memory.</div>
+        <div class="warn"><strong>Не первым делом</strong><br>Если bottleneck уже compute или dataloader, checkpointing сделает training медленнее без пользы.</div>
       </div>
     </section>
-<!-- theory-expansion:end -->
-<!-- step1-learning:start -->
-  <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Gradient Checkpointing</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
-    <div class="ml-endcap-grid">
-      <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Используй тему &#171;Gradient Checkpointing&#187;, когда обучение нужно масштабировать, ускорить, стабилизировать или отладить в реальном проекте.</li>
-        <li>Практические темы включай после появления конкретной боли: нехватка памяти, медленный dataloader, NaN, loss spikes или плохой throughput.</li>
-        <li>Отделяй инженерную проблему от ML-проблемы: иногда качество модели не меняется, потому что bottleneck в инфраструктуре.</li>
+
+    <section class="card">
+      <h2>PyTorch example</h2>
+      <pre><code class="language-python"># Activation checkpointing for a transformer-like block.
+# Input shape: x is (batch, tokens, hidden).
+# Output shape: same as x.
+import torch
+import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
+
+class Block(nn.Module):
+    def __init__(self, hidden):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.LayerNorm(hidden),
+            nn.Linear(hidden, 4 * hidden),
+            nn.GELU(),
+            nn.Linear(4 * hidden, hidden),
+        )
+
+    def forward(self, x):
+        return x + self.net(x)
+
+block = Block(hidden=768)
+x = torch.randn(2, 1024, 768, requires_grad=True)
+
+y = checkpoint(block, x, use_reentrant=False)
+loss = y.square().mean()
+loss.backward()
+
+# Gotchas:
+# 1. Inputs usually need requires_grad=True for checkpointed regions.
+# 2. Random operations inside checkpointed blocks require care.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Практические trade-offs</h2>
+      <ul>
+        <li><strong>Память падает</strong>, потому что меньше activations хранится между forward и backward.</li>
+        <li><strong>Step time растет</strong>, потому что часть forward вычисляется повторно.</li>
+        <li><strong>Debug сложнее</strong>, потому что stack traces и randomness могут быть менее очевидными.</li>
+        <li><strong>Лучший эффект</strong> обычно на глубоких repeated blocks: Transformer layers, ResNet stages, U-Net blocks.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Оптимизировать наугад без профилирования: сначала измерение, потом изменение.</li>
-        <li>Игнорировать воспроизводимость: без seed, версий данных и логов невозможно понять, что именно помогло.</li>
-        <li>Скрывать нестабильность усреднением: loss spikes и NaN нужно расследовать, а не сглаживать графиком.</li>
+    </section>
+
+    <section class="card">
+      <h2>Частые ошибки</h2>
+      <ul>
+        <li>Checkpointить слишком мелкие операции: overhead выше пользы.</li>
+        <li>Ожидать ускорения. Checkpointing почти всегда замедляет step.</li>
+        <li>Не проверять numerical equivalence на маленьком batch.</li>
+        <li>Забывать, что attention memory может требовать отдельной оптимизации вроде FlashAttention.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Настраивай global batch, accumulation, sharding strategy, checkpoint granularity и dataloader throughput.</li>
-        <li>Для памяти сравни activation checkpointing, mixed precision, FSDP и уменьшение sequence length.</li>
-        <li>Для отладки фиксируй минимальный воспроизводимый batch и проверяй данные до optimizer step.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../08_training_practice/01_distributed_training.html">← 8.1 Distributed Training</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../08_training_practice/03_profiling_and_performance.html">8.3 Profiling и Performance →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
-      </article>
-    </div>
-  </section>
-<!-- step1-learning:end -->
-</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Memory terms</h3><p>Назови 4 основные части training memory.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Parameters, gradients, optimizer state, activations.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>When to use</h3><p>OOM происходит только на backward. Почему checkpointing может помочь?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Backward требует сохраненных activations. Checkpointing уменьшает их хранение и пересчитывает при необходимости.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Design policy</h3><p>Где checkpointить 48-layer Transformer?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Обычно по крупным blocks/layers, а не по отдельным Linear/GELU. Нужно профилировать memory saved vs recompute overhead.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Почему checkpointing экономит память?</li>
+          <li>Почему он замедляет training?</li>
+          <li>Какие blocks выгоднее checkpointить?</li>
+          <li>Какие риски возникают с randomness?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни checkpointing как обмен памяти на повторные вычисления.</p>
+        <div class="ml-self-rating" data-topic-id="08_training_practice/02_gradient_checkpointing.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>

@@ -5,23 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>8.1 Distributed Training</title>
   <link rel="stylesheet" href="../shared-nav.css" />
-  <style>
-    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
-    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
-    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
-    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
-    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
-    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
-  </style>
   <link rel="stylesheet" href="../shared-theme.css" />
-  <meta name="description" content="8.1 Distributed Training - interactive ML notes with formulas, visualizations, and code." />
-  <meta property="og:title" content="8.1 Distributed Training - ML notes" />
-  <meta property="og:description" content="8.1 Distributed Training - interactive ML notes with formulas, visualizations, and code." />
+  <meta name="description" content="Distributed training: DDP, FSDP, all-reduce, sharding, global batch, communication bottlenecks и reproducibility." />
+  <meta property="og:title" content="8.1 Distributed Training — ML notes" />
+  <meta property="og:description" content="Как масштабировать обучение на несколько GPU и выбирать между DDP и FSDP." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/01_distributed_training.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
@@ -29,245 +16,127 @@
   <div class="page">
     <div class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Блок 8 • Практика обучения</span>
-        <span class="tag active">▶ 8.1 DDP / FSDP</span>
+        <span class="tag tag-block">Блок 8 · Практика обучения</span>
+        <span class="tag active">8.1 DDP / FSDP</span>
         <span class="tag">8.2 Checkpointing</span>
         <span class="tag">8.3 Profiling</span>
       </div>
       <h1>8.1 Distributed Training: DDP vs FSDP</h1>
-      <p class="muted">Когда модель или batch уже не помещаются на одну GPU, нужно распределять либо данные, либо сами параметры. Здесь разбираем основной инженерный выбор: простой Data Parallel против более агрессивного шардирования.</p>
+      <p class="muted">Distributed training нужен, когда один GPU уже не дает нужный throughput или модель, контекст, batch или optimizer state не помещаются в память. Главный trade-off: compute масштабируется, но communication, память и воспроизводимость становятся сложнее.</p>
     </div>
-    <div class="card">
-      <h2>DDP</h2>
-      <div class="formula" data-no-tex>Каждая GPU хранит полную копию модели
-каждая получает свой mini-batch
-после backward градиенты синхронизируются all-reduce</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <div class="success">DDP — обычно первый выбор: простая ментальная модель, хороший throughput и меньше шансов сломать тренировку сложной инфраструктурой.</div>
-    </div>
-<!-- frontier-deepening:start:8-1-ddp-throughput -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-1-ddp-throughput">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>DDP масштабирует batch parallelism, но платит communication cost</h3>
-    <p>В DDP каждая GPU хранит полную копию модели и считает gradients на своей части batch. Затем gradients синхронизируются через all-reduce. Поэтому compute масштабируется хорошо, пока communication не становится bottleneck.</p>
-    <p>Главный практический вопрос: достаточно ли большая работа на GPU между синхронизациями. Если batch слишком маленький или сеть медленная, GPUs ждут communication вместо вычислений.</p>
-    <ul>
-      <li>Global batch равен local batch умножить на число workers.</li>
-      <li>All-reduce синхронизирует gradients.</li>
-      <li>Gradient accumulation помогает увеличить effective batch без роста memory на один step.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
 
-    <div class="card">
-      <h2>Что на самом деле ограничивает DDP</h2>
-      <p>DDP выглядит просто, пока модель помещается на одну GPU. Как только память упирается в параметры, optimizer state или activations, data parallel уже не решает проблему. Он масштабирует throughput, но почти не помогает, если сама модель физически не влезает на один девайс.</p>
-      <div class="formula" data-no-tex>DDP ускоряет:
-throughput = больше batch за шаг
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p><strong>DDP</strong> копирует модель на каждую GPU и синхронизирует градиенты. <strong>FSDP</strong> шардирует параметры, градиенты и optimizer state между GPU. DDP проще и часто быстрее, пока модель помещается на одну карту. FSDP нужен, когда упираемся в память.</p>
+      <div class="formula" data-no-tex>global_batch = local_batch × number_of_workers × accumulation_steps</div>
+      <div class="formula" data-no-tex>DDP step = forward(local batch) -> backward(local gradients) -> all_reduce(gradients) -> optimizer_step</div>
+    </section>
 
-DDP не решает:
-параметры не помещаются
-optimizer state не помещается
-длинный context не помещается</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <div class="warn">Это важная инженерная граница: DDP хорош, когда bottleneck — время, но не когда bottleneck — память одного устройства.</div>
-    </div>
-    <div class="card">
-      <h2>FSDP</h2>
-      <div class="formula" data-no-tex>Параметры, градиенты и optimizer state
-шардируются по устройствам
-
-полная модель materialize-ится по частям
-только там, где это нужно для compute</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">То, что формула получает на вход.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">преобразование</span><span class="fa-desc">Правило, которое меняет вход и возвращает результат.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает зависимость одной величины от другой.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <div class="info">FSDP снижает memory footprint, но платит большей сложностью: больше communication, чувствительность к wrapping policy и checkpoint handling.</div>
-    </div>
-<!-- frontier-deepening:start:8-1-fsdp-sharding -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-1-fsdp-sharding">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>FSDP покупает память ценой более сложной коммуникации</h3>
-    <p>FSDP шардирует параметры, gradients и optimizer states между устройствами. Это позволяет обучать модели, которые не помещаются целиком на одну GPU, но требует собирать параметры перед вычислением слоёв и снова освобождать память.</p>
-    <p>Поэтому FSDP чувствителен к wrap policy, размеру блоков, overlap communication и checkpointing. Неправильная настройка может сэкономить память, но потерять throughput.</p>
-    <ul>
-      <li>Sharding снижает memory per GPU.</li>
-      <li>All-gather нужен перед использованием shard-нутых параметров.</li>
-      <li>Wrap granularity влияет на баланс memory и communication overhead.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-    <div class="card">
-      <h2>Почему FSDP выигрывает память, но усложняет жизнь</h2>
-      <p>FSDP шардирует не только параметры, но и градиенты с optimizer state. Это резко уменьшает memory footprint на каждом отдельном устройстве. Но выигрыш приходит ценой более сложной orchestration: нужно вовремя собрать куски модели для вычисления, а потом снова разложить их по устройствам.</p>
+    <section class="card">
+      <h2>DDP: что происходит</h2>
+      <p>В Distributed Data Parallel каждый worker хранит полную копию модели. Данные делятся между workers, каждый считает gradients на своей части batch, затем gradients усредняются через all-reduce. После этого все workers делают одинаковый optimizer step и остаются синхронизированными.</p>
       <div class="grid-3">
-        <div class="success"><strong>Память</strong><br>Сильнее всего выигрывает крупная модель, у которой параметры и optimizer state уже сами по себе давят на VRAM.</div>
-        <div class="info"><strong>Communication</strong><br>Появляется больше collectives и чувствительность к interconnect между GPU.</div>
-        <div class="warn"><strong>Complexity</strong><br>Нужно аккуратно выбирать wrapping policy, checkpoint format и порядок materialization параметров.</div>
+        <div class="info"><strong>Плюс</strong><br>Простая mental model, хороший baseline, меньше инфраструктурных сюрпризов.</div>
+        <div class="success"><strong>Где силен</strong><br>Модель помещается на одну GPU, а нужно ускорить обучение за счет большего global batch.</div>
+        <div class="warn"><strong>Ограничение</strong><br>DDP почти не уменьшает memory footprint модели на одной GPU.</div>
       </div>
-    </div>
-    <div class="card">
-      <h2>Когда что выбирать</h2>
+    </section>
+
+    <section class="card">
+      <h2>FSDP: зачем шардировать</h2>
+      <p>Fully Sharded Data Parallel делит параметры, gradients и optimizer state между устройствами. Перед вычислением конкретного блока нужные shard-ы собираются, после вычисления освобождаются. Это экономит память, но добавляет communication и усложняет checkpointing.</p>
+      <div class="formula" data-no-tex>memory_per_gpu ≈ (parameters + gradients + optimizer_state) / number_of_workers + activations</div>
+      <p>На практике FSDP стоит включать не потому, что он современнее, а когда конкретная memory-проблема уже не решается mixed precision, gradient checkpointing, меньшим batch или optimizer state optimization.</p>
+    </section>
+
+    <section class="card">
+      <h2>Как выбирать</h2>
       <div class="grid-2">
-        <div><h3>DDP</h3><p>Если модель помещается на одну GPU и bottleneck — throughput, а не память.</p></div>
-        <div><h3>FSDP</h3><p>Если модель уже не помещается целиком или хочется поднять batch/context, не меняя железо.</p></div>
-      </div>
-      <div class="warn">Частая ошибка: слишком рано идти в сложный sharding. Если DDP ещё работает, он обычно дешевле по времени команды и стабильнее по отладке.</div>
-    </div>
-
-    <div class="card">
-      <h2>Как принимать решение на практике</h2>
-      <div class="formula" data-no-tex>Если модель помещается на одну GPU:
-начинай с DDP
-
-Если модель почти помещается:
-сначала попробуй AMP + checkpointing + smaller optimizer state
-
-Если всё ещё не помещается:
-иди в FSDP / sharding
-
-Если bottleneck уже communication:
-оптимизируй topology и overlap, а не только шардирование</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает диапазон и превращает произведения вероятностей в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает, как параметры делают шаг в сторону меньшей ошибки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спускаться с горы, постоянно корректируя длину и направление шага.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если параметр θ=1.0, learning rate η=0.1, а градиент равен 3, то простой шаг даёт θ_new = 1.0 − 0.1&#183;3 = 0.7.</div>
-    </div>
-    <p>Лучший практический порядок почти всегда такой: сначала выжать простой стек до понятного предела, и только потом добавлять распределённую сложность. Это уменьшает число мест, где может сломаться обучение, и ускоряет отладку реальной причины bottleneck.</p>
-    </div>
-<!-- frontier-deepening:start:8-1-reproducibility -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-1-reproducibility">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Distributed training меняет не только скорость, но и эксперимент</h3>
-    <p>При изменении числа GPU меняется global batch, порядок данных, seed behavior, численная недетерминированность reductions и иногда learning rate schedule. Поэтому distributed run нельзя считать тем же экспериментом без проверки.</p>
-    <p>Надёжный pipeline фиксирует effective batch, schedule по optimizer steps, checkpoint format и eval protocol. Иначе можно получить другое качество и не понять, почему.</p>
-    <ul>
-      <li>Логируй global batch и число optimizer steps.</li>
-      <li>Сохраняй checkpoints совместимо с выбранной стратегией sharding.</li>
-      <li>Сравни single-GPU sanity run с distributed run на маленьком subset.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-<!-- theory-expansion:start -->
-    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
-      <div class="concept-walkthrough__kicker">Теоретический слой</div>
-      <h2>Distributed training как борьба с памятью и коммуникацией</h2>
-      <p>Distributed training нужен не только для скорости. Часто одна модель или один batch просто не помещаются на один GPU, и приходится разделять параметры, optimizer state, gradients или данные.</p>
-      <p>DDP и FSDP решают разные задачи. DDP реплицирует модель и синхронизирует градиенты, что просто и эффективно, пока модель помещается на каждую карту. FSDP шардирует параметры и optimizer state, экономя память ценой более сложной коммуникации.</p>
-      <p>Главная инженерная мысль: после некоторого масштаба bottleneck переносится с compute на communication, dataloader, synchronization и memory movement.</p>
-      <div class="grid-2">
-        <div class="info">
-          <h3>Как думать об этой теме</h3>
+        <div>
+          <h3>Начинай с DDP, если</h3>
           <ul>
-          <li>Data parallelism делит batch, model parallelism делит модель, sharding делит состояние.</li>
-          <li>All-reduce gradients стоит времени и сети, а не FLOPs GPU.</li>
-          <li>Effective batch size меняет optimization dynamics, поэтому scaling требует LR/schedule adjustments.</li>
+            <li>модель помещается на одну GPU;</li>
+            <li>нужно ускорить training throughput;</li>
+            <li>команда только строит distributed pipeline;</li>
+            <li>важна простая отладка.</li>
           </ul>
         </div>
-        <div class="success">
-          <h3>Что проверять в практике</h3>
+        <div>
+          <h3>Переходи к FSDP, если</h3>
           <ul>
-          <li>Смотри GPU utilization, step time breakdown, communication time и dataloader wait.</li>
-          <li>Проверяй, одинаковы ли random seeds, shuffling и gradients across ranks.</li>
-          <li>Следи за memory per rank: параметры, gradients, activations, optimizer state, buffers.</li>
-          </ul>
-        </div>
-        <div class="warn">
-          <h3>Где чаще всего ошибаются</h3>
-          <ul>
-          <li>Думать, что больше GPU всегда почти линейно ускоряют training.</li>
-          <li>Игнорировать network bandwidth и topology.</li>
-          <li>Сравнивать runs с разным effective batch без корректного LR scaling.</li>
-          </ul>
-        </div>
-        <div class="info">
-          <h3>Как объяснить на собеседовании</h3>
-          <ul>
-          <li>Сравни DDP и FSDP через память и коммуникацию.</li>
-          <li>Объясни all-reduce как синхронизацию градиентов.</li>
-          <li>Назови bottlenecks: communication, dataloader, memory, stragglers.</li>
+            <li>модель, optimizer state или context не помещаются;</li>
+            <li>activation checkpointing уже не хватает;</li>
+            <li>есть быстрый interconnect;</li>
+            <li>готовы управлять sharded checkpoints.</li>
           </ul>
         </div>
       </div>
     </section>
-<!-- theory-expansion:end -->
-<!-- step1-learning:start -->
-  <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Distributed Training</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
-    <div class="ml-endcap-grid">
-      <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Используй тему &#171;Distributed Training&#187;, когда обучение нужно масштабировать, ускорить, стабилизировать или отладить в реальном проекте.</li>
-        <li>Практические темы включай после появления конкретной боли: нехватка памяти, медленный dataloader, NaN, loss spikes или плохой throughput.</li>
-        <li>Отделяй инженерную проблему от ML-проблемы: иногда качество модели не меняется, потому что bottleneck в инфраструктуре.</li>
+
+    <section class="card">
+      <h2>Минимальный DDP checklist</h2>
+      <pre><code class="language-python"># DDP sanity checklist, not a full launcher.
+# Input shape: each rank receives local batch (B_local, ...).
+# Output shape: synchronized model parameters after optimizer.step().
+import torch
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+# 1. init_process_group before creating DDP wrapper
+# 2. move model to local_rank
+# 3. use DistributedSampler for train dataset
+# 4. call sampler.set_epoch(epoch) every epoch
+# 5. save checkpoints only on rank 0
+
+model = MyModel().to(local_rank)
+model = DDP(model, device_ids=[local_rank])
+
+for epoch in range(num_epochs):
+    train_sampler.set_epoch(epoch)
+    for x, y in train_loader:
+        x, y = x.to(local_rank), y.to(local_rank)
+        loss = criterion(model(x), y)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+
+# Gotchas:
+# 1. Without DistributedSampler workers may see duplicated data.
+# 2. Effective batch changes when world_size changes.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Частые ошибки</h2>
+      <ul>
+        <li>Сравнивать single-GPU и multi-GPU runs с разным effective batch без настройки learning rate.</li>
+        <li>Не логировать world size, global batch, accumulation steps и number of optimizer steps.</li>
+        <li>Считать, что больше GPU всегда ускоряют обучение линейно.</li>
+        <li>Игнорировать dataloader bottleneck: GPU ждут CPU/диск, а не считают.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Оптимизировать наугад без профилирования: сначала измерение, потом изменение.</li>
-        <li>Игнорировать воспроизводимость: без seed, версий данных и логов невозможно понять, что именно помогло.</li>
-        <li>Скрывать нестабильность усреднением: loss spikes и NaN нужно расследовать, а не сглаживать графиком.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Настраивай global batch, accumulation, sharding strategy, checkpoint granularity и dataloader throughput.</li>
-        <li>Для памяти сравни activation checkpointing, mixed precision, FSDP и уменьшение sequence length.</li>
-        <li>Для отладки фиксируй минимальный воспроизводимый batch и проверяй данные до optimizer step.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../07_generative_models/03_diffusion_models.html">← 7.3 Diffusion Models</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../08_training_practice/02_gradient_checkpointing.html">8.2 Gradient Checkpointing →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
-      </article>
-    </div>
-  </section>
-<!-- step1-learning:end -->
-</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Global batch</h3><p>Если local batch = 8, workers = 4, accumulation = 2, чему равен effective batch?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>8 × 4 × 2 = 64. Именно этот batch влияет на optimization dynamics.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>DDP vs FSDP</h3><p>Модель помещается на одну GPU, но обучение долгое. Что выбрать первым?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>DDP. Он проще, хорошо масштабирует throughput и не требует sharded checkpointing.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Debug slow scaling</h3><p>При переходе с 1 на 4 GPU ускорение только 1.7×. Назови возможные причины.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Dataloader bottleneck, маленький batch, медленный interconnect, частые sync points, logging на каждом rank, CPU preprocessing.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Чем DDP отличается от FSDP?</li>
+          <li>Почему all-reduce может стать bottleneck?</li>
+          <li>Что меняется при изменении world size?</li>
+          <li>Почему distributed run не всегда воспроизводит single-GPU run?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни DDP как командную работу нескольких GPU над одним batch.</p>
+        <div class="ml-self-rating" data-topic-id="08_training_practice/01_distributed_training.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>

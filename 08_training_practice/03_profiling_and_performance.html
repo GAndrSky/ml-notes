@@ -3,24 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8.3 Profiling и Performance</title>
+  <title>8.3 Profiling and Performance</title>
   <link rel="stylesheet" href="../shared-nav.css" />
-  <style>
-    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
-    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
-    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
-    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
-    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
-    @media (max-width:780px){.page{padding:18px 14px 54px}h1{font-size:1.7rem}}
-  </style>
   <link rel="stylesheet" href="../shared-theme.css" />
-  <meta name="description" content="8.3 Profiling и Performance - interactive ML notes with formulas, visualizations, and code." />
-  <meta property="og:title" content="8.3 Profiling и Performance - ML notes" />
-  <meta property="og:description" content="8.3 Profiling и Performance - interactive ML notes with formulas, visualizations, and code." />
+  <meta name="description" content="Profiling ML training: GPU utilization, dataloader bottlenecks, step time breakdown, memory, torch profiler и performance checklist." />
+  <meta property="og:title" content="8.3 Profiling and Performance — ML notes" />
+  <meta property="og:description" content="Как находить bottleneck в training loop и не оптимизировать вслепую." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/03_profiling_and_performance.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
@@ -28,221 +16,112 @@
   <div class="page">
     <div class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Блок 8 • Практика обучения</span>
-        <span class="tag done">✓ 8.2 Checkpointing</span>
-        <span class="tag active">▶ 8.3 Profiling</span>
+        <span class="tag tag-block">Блок 8 · Практика обучения</span>
+        <span class="tag done">8.2 Checkpointing</span>
+        <span class="tag active">8.3 Profiling</span>
         <span class="tag">8.4 Loss spikes</span>
       </div>
-      <h1>8.3 Profiling и Performance</h1>
-      <p class="muted">Если обучение идёт медленно, нельзя лечить это вслепую. Нужно понять, где bottleneck: data loader, kernel launches, memory bandwidth, коммуникация между GPU или просто слишком маленький batch.</p>
+      <h1>8.3 Profiling and Performance</h1>
+      <p class="muted">Performance tuning начинается не с догадок, а с измерений. Нужно понять, где уходит время: загрузка данных, CPU preprocessing, transfer на GPU, forward, backward, optimizer или distributed communication.</p>
     </div>
-    <div class="card">
-      <h2>Что надо мерить</h2>
-      <div class="formula" data-no-tex>- step time
-- samples / sec или tokens / sec
-- GPU utilization
-- memory usage
-- dataloader wait time
-- communication time</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <div class="info">Главный принцип: сначала ищем bottleneck, потом оптимизируем. Иначе можно потратить день на AMP, когда проблема была в dataloader.</div>
-    </div>
-<!-- frontier-deepening:start:8-3-measure-first -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-3-measure-first">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Оптимизировать без профиля - значит угадывать bottleneck</h3>
-    <p>Медленный training step может быть вызван dataloader, CPU preprocessing, GPU kernels, communication, memory bandwidth или синхронизациями. По внешнему времени step нельзя надёжно понять причину.</p>
-    <p>Профилирование должно разделять data time, forward, backward, optimizer step, communication и eval overhead. Только после этого имеет смысл менять код.</p>
-    <ul>
-      <li>GPU utilization показывает, насколько устройство занято.</li>
-      <li>Data loader time показывает, ждёт ли GPU входные batch-и.</li>
-      <li>Memory bandwidth может быть bottleneck даже при умеренных FLOPs.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
 
-    <div class="card">
-      <h2>Почему profiling — это не “тюнинг в конце”</h2>
-      <p>У больших моделей compute-путь настолько сложный, что интуиция очень часто врёт. Кажется, что bottleneck в attention, а оказывается — в data loader. Кажется, что проблема в GPU memory, а реально step time съедает синхронизация между устройствами. Profiling важен именно потому, что он возвращает разработку из догадок в измерения.</p>
-      <div class="formula" data-no-tex>Step time =
-data loading
-+ host overhead
-+ kernel launches
-+ forward/backward compute
-+ communication
-+ sync / idle gaps</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">Обучаемые важности признаков или связей между слоями.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает, как левая величина выражается через правую часть.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула ищет знакомый локальный паттерн во входе.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вести лупу по изображению и искать совпадение с маленьким шаблоном.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Фильтр [1, −1] на фрагменте [5, 2] даёт 1&#183;5 + (−1)&#183;2 = 3: сильный отклик на перепад.</div>
-    </div>
-    <div class="warn">Если ты не разложил шаг на части, то “оптимизация производительности” почти всегда превращается в случайный набор изменений с непредсказуемым эффектом.</div>
-    </div>
-    <div class="card">
-      <h2>Типичные bottleneck-и</h2>
-      <div class="success">Input pipeline, маленькие матрицы, частые sync points, неоптимальные precision settings, плохой overlap compute и communication.</div>
-      <div class="warn">Очень частая ошибка — смотреть только на GPU memory и думать, что “если память забита, значит всё оптимально”. Это не так: модель может стоять полупустая по utilization.</div>
-    </div>
-<!-- frontier-deepening:start:8-3-cpu-gpu-overlap -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-3-cpu-gpu-overlap">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Хороший pipeline перекрывает CPU, GPU и IO</h3>
-    <p>Пока GPU считает текущий batch, CPU должен готовить следующий. Если preprocessing, decoding или augmentations идут последовательно перед каждым step, GPU простаивает.</p>
-    <p>DataLoader workers, pinned memory, prefetching и перенос данных non_blocking помогают перекрыть подготовку и вычисления. Но слишком много workers тоже может перегрузить CPU или диск.</p>
-    <ul>
-      <li>num_workers тюнится под CPU и storage.</li>
-      <li>pin_memory ускоряет transfer host-to-device.</li>
-      <li>prefetch_factor помогает держать очередь batch-ей.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
+    <section class="card">
+      <h2>Главная формула step time</h2>
+      <div class="formula" data-no-tex>step_time = data_loading + host_to_device + forward + backward + optimizer + synchronization + logging</div>
+      <p>Если оптимизировать не тот компонент, training почти не ускорится. Поэтому сначала измерение, потом изменение.</p>
+    </section>
 
-    <div class="card">
-      <h2>Как читать bottleneck-и по симптомам</h2>
+    <section class="card">
+      <h2>Что смотреть первым</h2>
       <div class="grid-3">
-        <div class="info"><strong>Низкий GPU utilization</strong><br>Часто намекает на input bottleneck, маленький batch, слишком частые sync points или слишком мелкие kernels.</div>
-        <div class="success"><strong>Высокая память, но медленно</strong><br>Память может быть заполнена activations и параметрами, но compute всё равно простаивает. Полная VRAM не равна хорошему throughput.</div>
-        <div class="warn"><strong>Хороший одиночный GPU, плохой multi-GPU</strong><br>Часто признак того, что communication или sharding overhead уже начали съедать выигрыш от масштаба.</div>
-      </div>
-      <p>Хороший profiling почти всегда начинается не с “как ускорить”, а с вопроса “что именно сейчас доминирует в step time и почему”.</p>
-    </div>
-
-    <div class="card">
-      <h2>Практический порядок оптимизации</h2>
-      <div class="formula" data-no-tex>1. Зафиксировать baseline step time
-2. Разбить его на data / compute / communication
-3. Найти самый крупный кусок
-4. Менять только одну гипотезу за раз
-5. Повторно измерять после каждого изменения</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">То, что формула получает на вход.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">преобразование</span><span class="fa-desc">Правило, которое меняет вход и возвращает результат.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">=</span><span class="fa-name">связь</span><span class="fa-desc">Показывает зависимость одной величины от другой.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула связывает несколько величин и показывает, как они влияют друг на друга.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как панель с несколькими ручками, каждая из которых меняет общий результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если один множитель равен 2, а вход увеличился с 3 до 4, вклад этой части вырос с 6 до 8.</div>
-    </div>
-    <p>Это скучнее, чем “сразу включить все оптимизации”, но именно так команды не теряют недели на ложные ускорения. У performance всегда есть локальный главный bottleneck — задача profiling в том, чтобы его назвать, а не просто чувствовать.</p>
-    </div>
-<!-- frontier-deepening:start:8-3-kernel-fusion -->
-  <section class="concept-walkthrough" data-frontier-deepening="8-3-kernel-fusion">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Мелкие операции могут проигрывать из-за launch overhead</h3>
-    <p>На GPU много маленьких kernels часто хуже, чем один крупный fused kernel. Даже если FLOPs мало, каждый запуск kernel имеет overhead, а промежуточные tensors нужно читать и писать в память.</p>
-    <p>Поэтому torch.compile, fused optimizers, fused attention и vectorized operations могут ускорять код без изменения математики модели.</p>
-    <ul>
-      <li>Ищи частые маленькие kernels в profiler trace.</li>
-      <li>Избегай Python loops по элементам или токенам.</li>
-      <li>Проверяй, что оптимизация не меняет численную стабильность.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-
-<!-- theory-expansion:start -->
-    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
-      <div class="concept-walkthrough__kicker">Теоретический слой</div>
-      <h2>Profiling как поиск настоящего bottleneck, а не угадывание</h2>
-      <p>Performance optimization без профилирования почти всегда превращается в гадание. Training step состоит из dataloader, host-to-device transfer, forward, backward, optimizer step, communication и logging. Узкое место может быть в любом из этих сегментов.</p>
-      <p>Главная задача profiling — не получить красивый граф, а отделить compute-bound проблему от memory-bound, input-bound или communication-bound проблемы.</p>
-      <p>Для больших моделей важно смотреть не только average step time. Нужны variance, spikes, GPU idle gaps, kernel fragmentation и synchronization points.</p>
-      <div class="grid-2">
-        <div class="info">
-          <h3>Как думать об этой теме</h3>
-          <ul>
-          <li>GPU utilization низкий не всегда означает слабую модель: возможно, CPU/dataloader не успевает кормить GPU.</li>
-          <li>Много маленьких kernels может быть хуже одного крупного fused kernel.</li>
-          <li>Синхронизации скрывают latency и ломают параллелизм.</li>
-          </ul>
-        </div>
-        <div class="success">
-          <h3>Что проверять в практике</h3>
-          <ul>
-          <li>Разделяй data time, compute time, communication time и logging/checkpoint time.</li>
-          <li>Проверяй batch size, num_workers, pinned memory, prefetch, sequence padding и kernel fusion.</li>
-          <li>Сравнивай throughput в tokens/sec или samples/sec, а не только loss/sec.</li>
-          </ul>
-        </div>
-        <div class="warn">
-          <h3>Где чаще всего ошибаются</h3>
-          <ul>
-          <li>Оптимизировать Python-код, когда bottleneck в GPU kernels или communication.</li>
-          <li>Смотреть только среднее время шага и игнорировать spikes.</li>
-          <li>Добавлять слишком частый logging/evaluation/checkpointing и портить throughput.</li>
-          </ul>
-        </div>
-        <div class="info">
-          <h3>Как объяснить на собеседовании</h3>
-          <ul>
-          <li>Скажи, что profiling начинается с breakdown training step.</li>
-          <li>Объясни difference between compute-bound, memory-bound, input-bound, communication-bound.</li>
-          <li>Приведи пример: если GPU idle, проверь dataloader и host-to-device transfer.</li>
-          </ul>
-        </div>
+        <div class="info"><strong>GPU utilization</strong><br>Если низкая, GPU ждет данные, CPU или synchronization.</div>
+        <div class="success"><strong>Step time</strong><br>Стабильный breakdown показывает, где bottleneck.</div>
+        <div class="warn"><strong>Memory</strong><br>Пики memory важнее среднего значения: OOM случается на максимуме.</div>
       </div>
     </section>
-<!-- theory-expansion:end -->
-<!-- step1-learning:start -->
-  <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Profiling и Performance</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
-    <div class="ml-endcap-grid">
-      <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Используй тему &#171;Profiling и Performance&#187;, когда обучение нужно масштабировать, ускорить, стабилизировать или отладить в реальном проекте.</li>
-        <li>Практические темы включай после появления конкретной боли: нехватка памяти, медленный dataloader, NaN, loss spikes или плохой throughput.</li>
-        <li>Отделяй инженерную проблему от ML-проблемы: иногда качество модели не меняется, потому что bottleneck в инфраструктуре.</li>
+
+    <section class="card">
+      <h2>PyTorch profiler</h2>
+      <pre><code class="language-python"># PyTorch profiler for a training loop.
+# Input: train_loader returns x, y batches.
+# Output: trace files viewable in TensorBoard.
+import torch
+from torch.profiler import profile, ProfilerActivity, schedule, tensorboard_trace_handler
+
+with profile(
+    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    schedule=schedule(wait=1, warmup=1, active=3),
+    on_trace_ready=tensorboard_trace_handler("./profiler_logs"),
+    record_shapes=True,
+    profile_memory=True,
+) as prof:
+    for step, (x, y) in enumerate(train_loader):
+        x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
+        optimizer.zero_grad(set_to_none=True)
+        loss = criterion(model(x), y)
+        loss.backward()
+        optimizer.step()
+        prof.step()
+        if step > 8:
+            break
+
+# Gotchas:
+# 1. Skip warmup steps; first steps include one-time overhead.
+# 2. Profiling itself adds overhead, so profile short windows.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Dataloader bottlenecks</h2>
+      <p>Очень часто GPU простаивает не из-за модели, а из-за данных. Симптомы: sawtooth utilization, CPU на 100%, высокий time между steps, ускорение при `num_workers` tuning.</p>
+      <ul>
+        <li>Увеличь `num_workers` и включи `pin_memory=True`.</li>
+        <li>Сократи тяжелые transforms в Python.</li>
+        <li>Кэшируй preprocessing, если он deterministic.</li>
+        <li>Проверь скорость диска и network storage.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Оптимизировать наугад без профилирования: сначала измерение, потом изменение.</li>
-        <li>Игнорировать воспроизводимость: без seed, версий данных и логов невозможно понять, что именно помогло.</li>
-        <li>Скрывать нестабильность усреднением: loss spikes и NaN нужно расследовать, а не сглаживать графиком.</li>
+    </section>
+
+    <section class="card">
+      <h2>Performance checklist</h2>
+      <div class="grid-2">
+        <div class="success"><strong>Быстрые wins</strong><br>AMP/BF16, larger batch if memory allows, fused optimizer, compiled transforms, меньше logging внутри step.</div>
+        <div class="info"><strong>Глубже</strong><br>torch.compile, FlashAttention, better kernels, distributed overlap, async data prefetch.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Частые ошибки</h2>
+      <ul>
+        <li>Смотреть только average step time и игнорировать p95/p99.</li>
+        <li>Профилировать один первый batch, где много cold-start overhead.</li>
+        <li>Логировать изображения/большие tensors каждый step.</li>
+        <li>Менять несколько вещей одновременно и не понимать, что помогло.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Настраивай global batch, accumulation, sharding strategy, checkpoint granularity и dataloader throughput.</li>
-        <li>Для памяти сравни activation checkpointing, mixed precision, FSDP и уменьшение sequence length.</li>
-        <li>Для отладки фиксируй минимальный воспроизводимый batch и проверяй данные до optimizer step.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../08_training_practice/02_gradient_checkpointing.html">← 8.2 Gradient Checkpointing</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../08_training_practice/04_debugging_loss_spikes.html">8.4 Debugging Loss Spikes →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
-      </article>
-    </div>
-  </section>
-<!-- step1-learning:end -->
-</div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Step breakdown</h3><p>Назови основные компоненты step time.</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Data loading, transfer, forward, backward, optimizer, sync, logging.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Low GPU utilization</h3><p>GPU utilization 35%. Какие 5 вещей проверишь?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Dataloader workers, CPU transforms, disk/network IO, batch size, synchronization/logging, host-to-device transfer.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Experiment design</h3><p>Как проверить, что `num_workers=8` лучше `num_workers=4`?</p><details class="ml-exercise-solution"><summary>Show solution</summary><p>Фиксируй модель, batch, seed, dataset, warmup. Измерь несколько окон step time и GPU utilization, сравни median и p95.</p></details></article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <div class="ml-checkpoint-card">
+        <ul class="ml-checkpoint-list">
+          <li>Почему нельзя оптимизировать без profiler?</li>
+          <li>Как отличить data bottleneck от compute bottleneck?</li>
+          <li>Почему first batch не репрезентативен?</li>
+          <li>Какие метрики performance стоит логировать?</li>
+        </ul>
+        <p><strong>Rubber duck:</strong> объясни profiler как рентген training loop.</p>
+        <div class="ml-self-rating" data-topic-id="08_training_practice/03_profiling_and_performance.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
+      </div>
+    </section>
+  </div>
   <script src="../bundle.js" defer></script>
 </body>
 </html>
