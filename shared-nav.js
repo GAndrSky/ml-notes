@@ -1118,6 +1118,11 @@
 
   ensureScript("shared-advanced-notes.js", "data-ml-advanced-script", placeBottomPager);
 
+  ensureScript("shared-study-practice.js", "data-ml-study-practice-script", function () {
+    initSelfRatings();
+    placeBottomPager();
+  });
+
   ensureScript("shared-endcap-notes.js", "data-ml-endcap-script", placeBottomPager);
   ensureScript("shared-interactive-guides.js", "data-ml-interactive-guides-script", placeBottomPager);
 
