@@ -1249,25 +1249,74 @@ print(np.array(traj)[-5:])
       <div class="formula-anatomy__analogy"><strong>Analogy:</strong> check road curvature along your route, not for the entire country.</div>
     </div>
 
-    <details class="intuition-block">
-      <summary>Natural gradient and Fisher information</summary>
+    <details class="intuition-block" open>
+      <summary>Fisher information: geometry of model behavior</summary>
       <div class="intuition-content">
-        Ordinary gradient measures steepest descent in parameter coordinates. Natural gradient measures steepest descent in distribution space: it asks how much changing parameters changes the model's output distribution. The Fisher information matrix acts like a metric tensor for this space. This explains why the same Euclidean parameter step can be tiny for one model behavior and huge for another.
+        Fisher information measures how sensitive the model distribution is to parameter changes. If a tiny parameter move strongly changes predicted probabilities, Fisher is large in that direction. If the same move barely changes the output distribution, Fisher is small. This matters because two equally sized parameter updates can have completely different effects on the model's behavior.
       </div>
     </details>
-    <div class="formula" data-no-tex>theta_new = theta - eta F^{-1} grad L(theta)</div>
+    <div class="formula" data-no-tex>F(theta) = E_x,y [ grad_theta log p_theta(y|x) grad_theta log p_theta(y|x)^T ]</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">F</span><span class="fa-name">Fisher information</span><span class="fa-desc">Local geometry of the model distribution with respect to parameters.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">F^{-1}</span><span class="fa-name">geometry correction</span><span class="fa-desc">Rescales gradient by sensitivity of the distribution.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">grad L</span><span class="fa-name">ordinary gradient</span><span class="fa-desc">Direction of fastest loss increase in parameter coordinates.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">eta</span><span class="fa-name">step size</span><span class="fa-desc">Controls how far to move after geometry correction.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">F(theta)</span><span class="fa-name">Fisher matrix</span><span class="fa-desc">Local metric of how model probabilities react to parameter movement.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">p_theta(y|x)</span><span class="fa-name">model distribution</span><span class="fa-desc">Probability assigned by the model to label or token y for input x.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">grad log p</span><span class="fa-name">score function</span><span class="fa-desc">Direction in parameter space that increases log-probability of the observed outcome.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">E</span><span class="fa-name">expectation</span><span class="fa-desc">Average over data and labels, so Fisher describes typical local sensitivity.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">outer product</span><span class="fa-name">rank-1 curvature</span><span class="fa-desc">grad log p times its transpose records pairwise parameter interactions.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> natural gradient takes steps that are small in model behavior, not merely small in raw parameter values.</div>
-      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> adjust a sensitive microscope knob more carefully than a coarse volume knob.</div>
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> Fisher says which parameter directions are behaviorally sensitive, not just numerically large.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> turning a steering wheel by one centimeter matters more than moving a seat by one centimeter; Fisher measures that sensitivity.</div>
+      <div class="formula-anatomy__example"><strong>Numeric example:</strong> if grad log p = [2, 0.5], one sample contributes [[4, 1], [1, 0.25]] to Fisher.</div>
     </div>
+
+    <details class="intuition-block">
+      <summary>Why Fisher is connected to KL divergence</summary>
+      <div class="intuition-content">
+        KL divergence measures how different two probability distributions are. Around the current parameters, the KL between the old model and the slightly updated model is approximately a quadratic form with Fisher in the middle. So Fisher acts like the curvature of distribution space.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>KL(p_theta || p_{theta + delta}) approx 1/2 delta^T F(theta) delta</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">KL</span><span class="fa-name">distribution distance</span><span class="fa-desc">How much the new model distribution differs from the old one.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">delta</span><span class="fa-name">parameter step</span><span class="fa-desc">Small movement from theta to theta + delta.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">delta^T F delta</span><span class="fa-name">quadratic form</span><span class="fa-desc">Behavioral size of the update measured by Fisher geometry.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> Euclidean step size asks "how far did parameters move"; Fisher step size asks "how much did the model's predictions change".</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> one step on flat ground and one step near a cliff have the same physical length but different consequences.</div>
+    </div>
+
+    <details class="intuition-block" open>
+      <summary>Natural gradient: steepest descent in distribution space</summary>
+      <div class="intuition-content">
+        Ordinary gradient is steepest descent under the assumption that parameter coordinates are equally meaningful. Natural gradient changes the question: find the update that improves loss most while keeping the distributional change small. This gives an update preconditioned by the inverse Fisher matrix.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>theta_new = theta - eta F(theta)^{-1} grad L(theta)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">theta_new</span><span class="fa-name">updated parameters</span><span class="fa-desc">Weights after taking a geometry-aware optimization step.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">eta</span><span class="fa-name">step size</span><span class="fa-desc">Controls how far to move after Fisher correction.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">F^{-1}</span><span class="fa-name">inverse Fisher</span><span class="fa-desc">Downscales sensitive directions and upscales insensitive directions.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">grad L</span><span class="fa-name">ordinary gradient</span><span class="fa-desc">Loss slope in raw parameter coordinates.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> natural gradient tries to make updates equally meaningful in model-output space, not in raw weight space.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> adjust a sensitive microscope knob more carefully than a coarse volume knob.</div>
+      <div class="formula-anatomy__example"><strong>Numeric example:</strong> if F is diagonal [100, 1], the first coordinate is very sensitive, so F^{-1} scales its gradient by 1/100 while leaving the second mostly unchanged.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Connection to Adam, RMSProp, and K-FAC</summary>
+      <div class="intuition-content">
+        Adam and RMSProp are not exact natural-gradient methods, but they share the preconditioning idea: rescale each coordinate by an estimate of gradient magnitude. This is like using a diagonal, noisy, optimizer-friendly proxy for geometry. K-FAC goes closer to natural gradient by approximating Fisher blocks in neural network layers. The practical message is that many modern optimizers are attempts to make gradient descent less naive about scale and curvature.
+      </div>
+    </details>
   </section>
 <!-- phase4-go-deeper:end -->
 
@@ -1282,6 +1331,8 @@ print(np.array(traj)[-5:])
           <li>How does the chain rule make backpropagation possible?</li>
           <li>Why does learning rate depend on curvature?</li>
           <li>What does the Hessian reveal about minima, maxima, and saddle points?</li>
+          <li>Why does Fisher information measure model-behavior sensitivity rather than raw parameter distance?</li>
+          <li>How is natural gradient different from ordinary gradient descent?</li>
           <li>How is numerical differentiation different from autograd?</li>
         </ol>
       </article>
@@ -1290,6 +1341,7 @@ print(np.array(traj)[-5:])
         <ol class="ml-checkpoint-list">
           <li>Explain gradient descent as walking downhill on a loss surface.</li>
           <li>Explain the chain rule using a three-step computation graph.</li>
+          <li>Explain natural gradient as "small steps in prediction space" rather than "small steps in weight space".</li>
         </ol>
         <div class="ml-self-rating" data-topic-id="01_math/02_calculus">
           <span class="ml-self-rating__label">I can explain this:</span>

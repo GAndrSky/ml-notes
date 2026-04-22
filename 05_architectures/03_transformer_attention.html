@@ -38,6 +38,85 @@ canvas{border-radius:6px;display:block}
 .tok-inactive{background:#161b22;border:1px solid var(--border);color:var(--muted)}
 .tok-active{background:rgba(245,158,11,.2);border:1px solid var(--amber);color:var(--amber)}
 .tok-ctx{background:rgba(96,165,250,.15);border:1px solid var(--blue);color:var(--blue)}
+.attention-input{
+  width:100%;
+  min-height:78px;
+  resize:vertical;
+  background:#0d1117;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  font:inherit;
+  line-height:1.5;
+}
+.attention-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.mini-btn{
+  min-height:36px;
+  border:1px solid var(--border);
+  background:#0d1117;
+  color:var(--muted);
+  border-radius:999px;
+  padding:7px 11px;
+  cursor:pointer;
+}
+.mini-btn:hover{border-color:var(--blue);color:var(--blue)}
+.attention-heatmap{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#0d1117;
+  margin-top:12px;
+}
+.attention-grid{
+  display:grid;
+  min-width:max-content;
+}
+.attention-cell{
+  min-width:62px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-right:1px solid rgba(48,54,61,.72);
+  border-bottom:1px solid rgba(48,54,61,.72);
+  font-size:.78rem;
+  color:var(--text);
+  position:relative;
+}
+.attention-cell.is-head{
+  background:#111827;
+  color:var(--muted);
+  font-weight:700;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+.attention-cell.is-row-head{
+  background:#111827;
+  color:var(--blue);
+  font-weight:700;
+  position:sticky;
+  left:0;
+  z-index:1;
+}
+.attention-cell.is-selected-row{outline:1px solid rgba(96,165,250,.65);outline-offset:-1px}
+.attention-cell.is-selected-col{box-shadow:inset 0 0 0 1px rgba(245,158,11,.55)}
+.attention-readout{
+  background:#0d1117;
+  border:1px solid var(--border);
+  border-left:3px solid var(--blue);
+  border-radius:10px;
+  padding:12px 14px;
+  margin-top:12px;
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.65;
+}
+.attention-readout strong{color:var(--text)}
+.attention-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.attention-flow .step-box{margin:0}
+@media (max-width:780px){.attention-flow{grid-template-columns:1fr}.attention-cell{min-width:54px}}
 
   /* ml-notes 2.11 shell override */
   body{
@@ -159,15 +238,17 @@ canvas{border-radius:6px;display:block}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">Query</span><span class="fa-desc">Запрос текущего токена: какую информацию он ищет в контексте.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">Key</span><span class="fa-desc">Ключи всех токенов: по каким признакам их можно найти.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">Value</span><span class="fa-desc">Содержимое токенов, которое будет смешано по весам attention.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">QKᵀ</span><span class="fa-name">scores</span><span class="fa-desc">Матрица совместимости: насколько каждый query похож на каждый key.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">√dₖ</span><span class="fa-name">масштаб</span><span class="fa-desc">Стабилизирует logits, чтобы softmax не становился слишком резким.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">softmax</span><span class="fa-name">нормировка</span><span class="fa-desc">Превращает scores в вероятностные веса, сумма по строке равна 1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый токен собирает новую репрезентацию как взвешенную смесь информации из других токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: запрос сравнивается с заголовками документов, а затем возвращается содержимое наиболее релевантных документов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если токен даёт веса [0.7, 0.2, 0.1], то 70% нового представления приходит от первого value, 20% от второго и 10% от третьего.</div>
     </div>
     <p>Q ∈ ℝ<sup>L×dₖ</sup>, K ∈ ℝ<sup>S×dₖ</sup>, V ∈ ℝ<sup>S×dᵥ</sup> → выход ∈ ℝ<sup>L×dᵥ</sup></p>
 
@@ -232,12 +313,26 @@ canvas{border-radius:6px;display:block}
 
 <!-- ===== 3. ИНТЕРАКТИВ ===== -->
 <div id="t-viz" class="tab-content">
-<h2>Интерактивная визуализация Attention</h2>
+<h2>Интерактивная визуализация Attention на тексте</h2>
 <div class="card">
-<p class="muted">Нажмите на токен, чтобы увидеть его веса attention ко всем остальным</p>
+<p class="muted">Введите предложение или выберите пример. Затем нажмите на query-токен: строка heatmap покажет, как он распределяет attention по key-токенам.</p>
+<textarea id="attn-text" class="attention-input" spellcheck="false">The cat sat on the mat because it was tired</textarea>
+<div class="attention-actions">
+  <button class="mini-btn" type="button" data-attn-example="The cat sat on the mat because it was tired">coreference: it</button>
+  <button class="mini-btn" type="button" data-attn-example="Gradient descent updates weights using the loss signal">ML sentence</button>
+  <button class="mini-btn" type="button" data-attn-example="A transformer reads tokens in parallel with self attention">Transformer</button>
+  <button class="mini-btn" type="button" data-attn-random>Пересчитать projections</button>
+</div>
 <div id="tok-row" style="margin:12px 0;display:flex;flex-wrap:wrap;gap:4px"></div>
-<canvas id="attn-canvas" width="800" height="320" style="width:100%;margin-top:8px"></canvas>
-<div id="attn-info" style="margin-top:10px;font-size:.88em;font-family:'Courier New',monospace;line-height:1.8;color:var(--muted)"></div>
+<div id="attention-heatmap" class="attention-heatmap" aria-label="Attention heatmap"></div>
+<div id="attn-info" class="attention-readout"></div>
+<div class="attention-flow">
+  <div class="step-box"><span class="sn">1.</span><strong>Tokenize</strong><br>слова становятся токенами.</div>
+  <div class="step-box"><span class="sn">2.</span><strong>QKᵀ</strong><br>каждый query сравнивается со всеми keys.</div>
+  <div class="step-box"><span class="sn">3.</span><strong>softmax</strong><br>scores превращаются в веса с суммой 1.</div>
+  <div class="step-box"><span class="sn">4.</span><strong>A·V</strong><br>values смешиваются в новый contextual vector.</div>
+</div>
+<div class="info-box">Важно: это учебная симуляция attention weights, а не запуск настоящей LLM в браузере. Она показывает механику Q/K/V и softmax без тяжёлой модели и CDN-зависимостей.</div>
 </div>
 
 <h2>Калькулятор Attention</h2>
@@ -608,86 +703,138 @@ function softmax(arr){const m=Math.max(...arr);const e=arr.map(v=>Math.exp(v-m))
 drawSoftmaxEffect();
 
 // ---- ATTENTION INTERACTIVE ----
-const SENTENCE=['The','cat','sat','on','the','mat'];
-const N=SENTENCE.length;
-// Pre-compute plausible attention weights per query token
-const ATTN_WEIGHTS=[
-  [0.40,0.25,0.10,0.08,0.10,0.07],
-  [0.20,0.35,0.18,0.07,0.12,0.08],
-  [0.12,0.15,0.38,0.12,0.10,0.13],
-  [0.08,0.07,0.15,0.35,0.18,0.17],
-  [0.18,0.10,0.08,0.12,0.35,0.17],
-  [0.07,0.08,0.12,0.18,0.22,0.33],
-];
+let attnTokens=[];
+let attnWeights=[];
 let selTok=0;
+let attnSeed=3;
 function initAttn(){
-  const row=document.getElementById('tok-row');if(!row)return;
+  const row=document.getElementById('tok-row');
+  const input=document.getElementById('attn-text');
+  if(!row||!input)return;
+  attnTokens=tokenizeAttention(input.value).slice(0,12);
+  if(attnTokens.length===0)attnTokens=['attention'];
+  selTok=Math.min(selTok,attnTokens.length-1);
+  attnWeights=buildAttentionWeights(attnTokens,attnSeed);
   row.innerHTML='';
-  SENTENCE.forEach((t,i)=>{
-    const b=document.createElement('div');
+  attnTokens.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.type='button';
     b.className='tok '+(i===selTok?'tok-active':'tok-inactive');
-    b.textContent=t;b.onclick=()=>{selTok=i;initAttn();drawAttn();};
+    b.textContent=t;
+    b.onclick=()=>{selTok=i;drawAttn();};
     row.appendChild(b);
   });
   drawAttn();
 }
+function tokenizeAttention(text){
+  return (text.match(/[A-Za-zА-Яа-яЁё0-9]+|[.,!?;:]/g)||[]).filter(Boolean);
+}
+function tokenVector(token,pos,seed){
+  const lower=token.toLowerCase();
+  const chars=Array.from(lower).reduce((s,ch)=>s+ch.charCodeAt(0),0);
+  return [
+    Math.sin(chars*0.071+seed),
+    Math.cos(chars*0.043+pos),
+    /^(the|a|an|и|в|на|по|для)$/i.test(lower)?0.7:-0.2,
+    /^(it|he|she|they|он|она|они|это)$/i.test(lower)?0.9:-0.1,
+    Math.sin((pos+1)*0.9),
+    lower.length/12
+  ];
+}
+function dot(a,b){return a.reduce((s,v,i)=>s+v*b[i],0);}
+function buildAttentionWeights(tokens,seed){
+  const vectors=tokens.map((t,i)=>tokenVector(t,i,seed));
+  return tokens.map((qTok,i)=>{
+    const q=vectors[i];
+    const scores=tokens.map((kTok,j)=>{
+      const distance=Math.abs(i-j);
+      let score=dot(q,vectors[j])/Math.sqrt(q.length);
+      score+=i===j?0.55:0;
+      score+=distance===1?0.28:0;
+      score+=qTok.toLowerCase()===kTok.toLowerCase()&&i!==j?0.65:0;
+      score+=/^(it|he|she|they|он|она|они|это)$/i.test(qTok)&&j<i?0.38/(distance||1):0;
+      score+=/[.,!?;:]/.test(kTok)?-0.25:0;
+      return score;
+    });
+    return softmax(scores);
+  });
+}
 function drawAttn(){
-  const cv=document.getElementById('attn-canvas');if(!cv)return;
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,800,320);
-  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,800,320);
-  const w=ATTN_WEIGHTS[selTok];
-  const bw=Math.floor(750/N)-6;const px=25;
-  // Tokens row (source)
-  SENTENCE.forEach((t,i)=>{
-    const x=px+i*(750/N);
-    const alpha=w[i];
-    ctx.fillStyle=`rgba(245,158,11,${0.1+alpha*0.85})`;
-    ctx.strokeStyle=i===selTok?'#f59e0b':'rgba(245,158,11,0.3)';
-    ctx.lineWidth=i===selTok?2:1;
-    roundRect(ctx,x,220,bw,36,8);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#e6edf3';ctx.font='bold 12px system-ui';ctx.textAlign='center';
-    ctx.fillText(t,x+bw/2,243);
-    ctx.fillStyle='#f59e0b';ctx.font='11px system-ui';
-    ctx.fillText(w[i].toFixed(2),x+bw/2,258);
+  const heatmap=document.getElementById('attention-heatmap');
+  const info=document.getElementById('attn-info');
+  if(!heatmap||!info||!attnTokens.length)return;
+  const n=attnTokens.length;
+  const w=attnWeights[selTok];
+  const grid=document.createElement('div');
+  grid.className='attention-grid';
+  grid.style.gridTemplateColumns=`92px repeat(${n}, minmax(62px, 1fr))`;
+
+  const corner=document.createElement('div');
+  corner.className='attention-cell is-head';
+  corner.textContent='Q \\ K';
+  grid.appendChild(corner);
+  attnTokens.forEach((tok,j)=>{
+    const cell=document.createElement('div');
+    cell.className='attention-cell is-head '+(j===selTok?'is-selected-col':'');
+    cell.textContent=tok;
+    grid.appendChild(cell);
   });
-  // Query token (selected)
-  const qx=px+selTok*(750/N);
-  ctx.fillStyle='rgba(96,165,250,0.2)';ctx.strokeStyle='#60a5fa';ctx.lineWidth=2;
-  roundRect(ctx,qx,40,bw,36,8);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#60a5fa';ctx.font='bold 12px system-ui';ctx.textAlign='center';
-  ctx.fillText(SENTENCE[selTok],qx+bw/2,63);
-  ctx.fillStyle='#60a5fa';ctx.font='10px system-ui';ctx.fillText('Query',qx+bw/2,78);
-  // Attention lines
-  SENTENCE.forEach((t,i)=>{
-    const alpha=w[i];if(alpha<0.03)return;
-    const x=px+i*(750/N)+bw/2;
-    const kx=px+selTok*(750/N)+bw/2;
-    ctx.strokeStyle=`rgba(245,158,11,${alpha*1.2})`;ctx.lineWidth=alpha*6;
-    ctx.beginPath();ctx.moveTo(kx,76);ctx.quadraticCurveTo((kx+x)/2,150,x,220);ctx.stroke();
+
+  attnTokens.forEach((qTok,i)=>{
+    const head=document.createElement('button');
+    head.type='button';
+    head.className='attention-cell is-row-head '+(i===selTok?'is-selected-row':'');
+    head.textContent=qTok;
+    head.onclick=()=>{selTok=i;initAttn();};
+    grid.appendChild(head);
+    attnWeights[i].forEach((value,j)=>{
+      const alpha=Math.max(0.08,Math.min(1,value*4.5));
+      const cell=document.createElement('button');
+      cell.type='button';
+      cell.className='attention-cell '+(i===selTok?'is-selected-row ':'')+(j===selTok?'is-selected-col':'');
+      cell.style.background=`rgba(245,158,11,${alpha})`;
+      cell.style.color=value>0.22?'#0d1117':'#e6edf3';
+      cell.textContent=value.toFixed(2);
+      cell.title=`Query "${qTok}" -> Key "${attnTokens[j]}": ${value.toFixed(3)}`;
+      cell.onclick=()=>{selTok=i;initAttn();};
+      grid.appendChild(cell);
+    });
   });
-  // Softmax bar chart
-  const chartX=550,chartY=10,chartH=180,chartW=220;
-  ctx.fillStyle='#161b22';ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;
-  roundRect(ctx,chartX,chartY,chartW,chartH,8);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#8b949e';ctx.font='10px system-ui';ctx.textAlign='center';
-  ctx.fillText(`Веса Attention (Query: "${SENTENCE[selTok]}")`,chartX+chartW/2,chartY+14);
-  const bh2=12;const gap=4;
-  SENTENCE.forEach((t,i)=>{
-    const y=chartY+22+i*(bh2+gap);
-    const blen=w[i]*(chartW-80);
-    ctx.fillStyle='#21262d';ctx.fillRect(chartX+60,y,chartW-80,bh2);
-    ctx.fillStyle=`rgba(245,158,11,${0.3+w[i]*0.7})`;ctx.fillRect(chartX+60,y,blen,bh2);
-    ctx.fillStyle='#e6edf3';ctx.font='10px system-ui';ctx.textAlign='right';
-    ctx.fillText(t,chartX+56,y+10);
-    ctx.fillStyle='#f59e0b';ctx.textAlign='left';
-    ctx.fillText(w[i].toFixed(2),chartX+64+blen,y+10);
-  });
-  // Info
+  heatmap.innerHTML='';
+  heatmap.appendChild(grid);
+
   const maxI=w.indexOf(Math.max(...w));
-  document.getElementById('attn-info').textContent=
-    `"${SENTENCE[selTok]}" уделяет наибольшее внимание "${SENTENCE[maxI]}" (${(w[maxI]*100).toFixed(0)}%). Энтропия: H=${(-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0)).toFixed(2)} бит`;
+  const entropy=-w.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);
+  const top=w.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v).slice(0,3)
+    .map(x=>`"${attnTokens[x.i]}" ${Math.round(x.v*100)}%`).join(', ');
+  info.innerHTML=
+    `<strong>Selected query:</strong> "${attnTokens[selTok]}". `+
+    `Strongest key: <strong>"${attnTokens[maxI]}"</strong> (${Math.round(w[maxI]*100)}%). `+
+    `Top attention: ${top}. Entropy H=${entropy.toFixed(2)} bit. `+
+    `A low entropy row means focused attention; high entropy means the token spreads context broadly.`;
+}
+function setupAttentionControls(){
+  const input=document.getElementById('attn-text');
+  if(input){
+    input.addEventListener('input',()=>{selTok=0;initAttn();});
+  }
+  document.querySelectorAll('[data-attn-example]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(!input)return;
+      input.value=btn.getAttribute('data-attn-example');
+      selTok=0;
+      initAttn();
+    });
+  });
+  document.querySelectorAll('[data-attn-random]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      attnSeed+=1;
+      initAttn();
+    });
+  });
 }
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+setupAttentionControls();
 initAttn();
 
 // ---- ATTN CALCULATOR ----
