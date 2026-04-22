@@ -23,6 +23,15 @@
     }
   }
 
+  function readSelfRatings() {
+    try {
+      var parsed = JSON.parse(window.localStorage.getItem("ml_notes_self_rating") || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
   function dispatchProgressChanged(paths) {
     window.dispatchEvent(
       new window.CustomEvent("ml-notes-progress-changed", {
@@ -97,6 +106,34 @@
     var progressLabel = hero && hero.querySelector(".hero-progress__label");
     var progressBar = hero && hero.querySelector(".hero-progress__bar span");
     var totalLessons = Number(courseData.totalLessons || document.querySelectorAll("[data-lesson-card]").length || 0);
+    var progressDashboard = document.querySelector("[data-progress-dashboard]");
+    var progressTotal = progressDashboard && progressDashboard.querySelector("[data-progress-total]");
+    var progressRevisitCount = progressDashboard && progressDashboard.querySelector("[data-progress-revisit-count]");
+    var progressRemaining = progressDashboard && progressDashboard.querySelector("[data-progress-remaining]");
+    var progressBlocks = progressDashboard && progressDashboard.querySelector("[data-progress-blocks]");
+    var progressRevisit = progressDashboard && progressDashboard.querySelector("[data-progress-revisit]");
+
+    function initTrackSelector() {
+      var root = document.querySelector("[data-track-selector]");
+      if (!root) {
+        return;
+      }
+
+      var tabs = Array.prototype.slice.call(root.querySelectorAll("[data-track-tab]"));
+      var panels = Array.prototype.slice.call(root.querySelectorAll("[data-track-panel]"));
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var key = tab.dataset.trackTab;
+          tabs.forEach(function (item) {
+            item.classList.toggle("is-active", item === tab);
+          });
+          panels.forEach(function (panel) {
+            panel.classList.toggle("is-active", panel.dataset.trackPanel === key);
+          });
+        });
+      });
+    }
 
     if (heroTitle) {
       heroTitle.textContent = "\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0439 ML-\u043a\u043e\u043d\u0441\u043f\u0435\u043a\u0442";
@@ -149,6 +186,91 @@
 
       if (progressBar) {
         progressBar.style.width = progressPercent + "%";
+      }
+
+      refreshProgressDashboard(paths);
+    }
+
+    function refreshProgressDashboard(paths) {
+      if (!progressDashboard || !Array.isArray(courseData.sections)) {
+        return;
+      }
+
+      var ratings = readSelfRatings();
+      var visitedSet = {};
+      paths.forEach(function (path) {
+        visitedSet[path] = true;
+      });
+
+      var ratedGood = 0;
+      var revisitItems = [];
+      var allPages = [];
+
+      courseData.sections.forEach(function (section) {
+        (section.pages || []).forEach(function (page) {
+          allPages.push(page);
+          var rating = Number(ratings[page.path] || 0);
+          if (rating >= 3) {
+            ratedGood += 1;
+          } else if (rating > 0 && rating < 3) {
+            revisitItems.push({ page: page, rating: rating });
+          }
+        });
+      });
+
+      var total = allPages.length || totalLessons || 0;
+      var understandingPercent = total ? Math.round((ratedGood / total) * 100) : 0;
+      var unratedOrWeak = Math.max(0, total - ratedGood);
+      var remainingHours = Math.ceil((unratedOrWeak * 75) / 60);
+
+      if (progressTotal) {
+        progressTotal.textContent = understandingPercent + "%";
+      }
+
+      if (progressRevisitCount) {
+        progressRevisitCount.textContent = String(revisitItems.length);
+      }
+
+      if (progressRemaining) {
+        progressRemaining.textContent = remainingHours + "h";
+      }
+
+      if (progressBlocks) {
+        progressBlocks.innerHTML = courseData.sections.map(function (section) {
+          var pages = section.pages || [];
+          var blockGood = pages.filter(function (page) {
+            return Number(ratings[page.path] || 0) >= 3;
+          }).length;
+          var blockVisited = pages.filter(function (page) {
+            return !!visitedSet[page.path];
+          }).length;
+          var blockPercent = pages.length ? Math.round((blockGood / pages.length) * 100) : 0;
+          var title = section.title || section.id || "Block";
+
+          return (
+            '<article class="progress-block-card">' +
+              "<strong>" + title + "</strong>" +
+              '<div class="progress-block-card__bar"><span style="width:' + blockPercent + '%"></span></div>' +
+              "<small>" + blockGood + "/" + pages.length + " explainable · " + blockVisited + " visited</small>" +
+            "</article>"
+          );
+        }).join("");
+      }
+
+      if (progressRevisit) {
+        if (!revisitItems.length) {
+          progressRevisit.innerHTML =
+            '<article class="revisit-item"><strong>No weak self-ratings yet</strong><small>Rate topics with 1-2 when they need a second pass.</small></article>';
+        } else {
+          progressRevisit.innerHTML = revisitItems.slice(0, 12).map(function (item) {
+            return (
+              '<a class="revisit-item" href="' + item.page.path + '">' +
+                "<strong>" + item.page.label + "</strong>" +
+                "<small>Self-rating: " + item.rating + "/5 · revisit before moving deeper</small>" +
+              "</a>"
+            );
+          }).join("");
+        }
       }
     }
 
@@ -206,6 +328,11 @@
       refreshUi(paths);
     });
 
+    window.addEventListener("ml-notes-self-rating-changed", function () {
+      refreshUi(readVisitedPaths());
+    });
+
+    initTrackSelector();
     refreshUi(readVisitedPaths());
   }
 

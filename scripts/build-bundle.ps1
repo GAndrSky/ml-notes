@@ -20,7 +20,7 @@ $bundleParts = foreach ($relativePath in $sourceFiles) {
 }
 
 $bundlePath = Join-Path $repoRoot "bundle.js"
-Set-Content -LiteralPath $bundlePath -Value ($bundleParts -join "`r`n") -Encoding UTF8
+Set-Content -LiteralPath $bundlePath -Value ($bundleParts -join "`r`n").TrimEnd() -Encoding UTF8 -NoNewline
 
 Write-Host "Bundle rebuilt:" -ForegroundColor Green
 Write-Host " - bundle.js"
