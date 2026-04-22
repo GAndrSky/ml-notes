@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10.4 Project: RAG Application</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Project 10.4: build a retrieval-augmented generation application with chunking, embeddings, vector search, generation, citations, and evaluation." />
+  <meta property="og:title" content="10.4 RAG Application Project - ML notes" />
+  <meta property="og:description" content="End-to-end RAG app: chunk, embed, retrieve, rerank, generate, cite, evaluate." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/04_rag_application.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 10</span>
+        <span class="tag active">Project 10.4</span>
+        <span class="tag">RAG</span>
+        <span class="tag">LLM App</span>
+      </div>
+      <h1>10.4 Project: RAG Application</h1>
+      <p class="muted">Build a document question-answering system with retrieval, citations, evaluation, and failure analysis.</p>
+    </section>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>A RAG app is not "LLM plus vector database". It is an information retrieval system plus a generation layer. Most quality problems come from chunking, retrieval recall, reranking, context assembly, and evaluation.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../06_llm/09_retrieval_augmented_generation.html">6.9 RAG</a>, <a href="../05_architectures/11_contrastive_learning_clip.html">5.11 Contrastive</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>10-20 hours</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High</span></div>
+      <div class="meta-card"><strong>Portfolio value</strong><span>High</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Deliverables</h2>
+      <ul>
+        <li>Document ingestion pipeline with metadata.</li>
+        <li>Chunking strategy and rationale.</li>
+        <li>Embedding index with reproducible rebuild script.</li>
+        <li>Retrieval + optional reranking.</li>
+        <li>Answer generation with citations.</li>
+        <li>Evaluation set with retrieval and answer-quality metrics.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Pipeline</h2>
+      <div class="formula" data-no-tex>documents -> chunks -> embeddings -> vector index -> top-k retrieval -> context -> LLM answer + citations</div>
+      <p><strong>What to notice:</strong> if the answer is wrong, first check whether the correct chunk was retrieved. Generation cannot fix missing evidence.</p>
+    </section>
+
+    <section class="card">
+      <h2>Retrieval objective</h2>
+      <div class="formula" data-no-tex>score(q, d_i) = cosine(embed(q), embed(d_i))</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">q</span><span class="fa-name">query</span><span class="fa-desc">User question or rewritten search query.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">d_i</span><span class="fa-name">chunk</span><span class="fa-desc">One candidate document fragment.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">embed</span><span class="fa-name">embedding model</span><span class="fa-desc">Maps text into a vector space where similarity approximates relevance.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">cosine</span><span class="fa-name">similarity</span><span class="fa-desc">Compares vector directions, usually after normalization.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> retrieval finds chunks whose meaning points in the same direction as the question.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> library search returns pages most semantically aligned with your question.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Runnable toy retrieval</h2>
+      <pre><code class="language-python"># What it does: toy vector retrieval with cosine similarity
+# Input shapes: query=(d,), docs=(N,d)
+# Output shape: top indices=(k,)
+import numpy as np
+
+def normalize(x):
+    return x / (np.linalg.norm(x, axis=-1, keepdims=True) + 1e-9)
+
+docs = np.array([[1,0], [0,1], [0.8,0.2]], dtype=float)
+query = np.array([1,0.1], dtype=float)
+scores = normalize(docs) @ normalize(query[None, :]).T
+top = np.argsort(scores[:, 0])[::-1][:2]
+print(top, scores[top, 0])
+# Gotchas: semantic embeddings are not magic; evaluate recall on real questions.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Evaluation</h2>
+      <table>
+        <thead><tr><th>Layer</th><th>Metric</th><th>Question answered</th></tr></thead>
+        <tbody>
+          <tr><td>Retrieval</td><td>Recall@k</td><td>Did we retrieve evidence?</td></tr>
+          <tr><td>Ranking</td><td>MRR / nDCG</td><td>Is evidence near the top?</td></tr>
+          <tr><td>Generation</td><td>Groundedness</td><td>Is the answer supported by context?</td></tr>
+          <tr><td>Product</td><td>Human rating</td><td>Is the answer useful?</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Chunking by fixed length without preserving section boundaries.</li>
+        <li>Using only answer quality while ignoring retrieval recall.</li>
+        <li>Stuffing too much context and reducing answer focus.</li>
+        <li>Not storing metadata, making citations impossible.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Foundational</summary><div class="intuition-content">Create 10 evaluation questions and mark which document chunk should answer each one.</div></details>
+      <details class="intuition-block"><summary>Intermediate</summary><div class="intuition-content">Implement Recall@k for a small set of query-to-relevant-doc labels.</div></details>
+      <details class="intuition-block"><summary>Hard</summary><div class="intuition-content">Compare fixed-size chunking with heading-aware chunking on the same documents.</div></details>
+      <details class="intuition-block"><summary>Coding</summary><div class="intuition-content">Build a minimal FastAPI endpoint that returns answer plus source chunk IDs.</div></details>
+      <details class="intuition-block"><summary>Interview</summary><div class="intuition-content">Explain how you debug hallucinations in a RAG system.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What is the difference between retrieval failure and generation failure?</li>
+        <li>Why does chunking strategy affect answer quality?</li>
+        <li>What does Recall@k measure?</li>
+        <li>How do citations change the product contract?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

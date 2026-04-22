@@ -4,27 +4,220 @@
     <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Интерактивный ML-конспект</title>
-  <meta name="description" content="Интерактивный ML-конспект: 80 тем, формулы, визуализации, код и подготовка к ML-интервью — от математики до LLM, diffusion, MLOps и проектов." />
+  <meta name="description" content="Интерактивный ML-конспект: 87 тем, формулы, визуализации, код и подготовка к ML-интервью — от математики до LLM, diffusion, MLOps и проектов." />
   <meta property="og:title" content="Интерактивный ML-конспект" />
   <meta property="og:description" content="Интерактивный курс по ML: математика, классическое ML, нейросети, архитектуры, LLM и generative models." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/index.html" />
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="shared-theme.css" />
+  <style>
+    .index-control-panel {
+      margin: 22px 0;
+      border: 1px solid rgba(126, 184, 184, 0.28);
+      border-radius: 24px;
+      background: rgba(12, 17, 28, 0.82);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, 0.28);
+      padding: 24px;
+    }
+
+    .index-control-panel__head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .index-control-panel__eyebrow {
+      display: block;
+      color: #7eb8b8;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .index-control-panel h2 {
+      color: #e8eaf0;
+      margin: 0;
+      font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+    }
+
+    .index-control-panel__note {
+      color: #8b90a0;
+      margin: 0;
+      max-width: 520px;
+      line-height: 1.65;
+    }
+
+    .track-selector__tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .track-selector__tab {
+      min-height: 44px;
+      border: 1px solid #2a2d3a;
+      border-radius: 999px;
+      background: #111827;
+      color: #cbd6e6;
+      padding: 10px 16px;
+      cursor: pointer;
+      font: inherit;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .track-selector__tab:hover,
+    .track-selector__tab.is-active {
+      transform: translateY(-1px);
+      border-color: #7eb8b8;
+      background: rgba(126, 184, 184, 0.12);
+      color: #e8eaf0;
+    }
+
+    .track-panel {
+      display: none;
+    }
+
+    .track-panel.is-active {
+      display: block;
+    }
+
+    .track-grid,
+    .progress-block-grid,
+    .revisit-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .track-grid {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .track-topic,
+    .progress-block-card,
+    .revisit-item {
+      border: 1px solid #2a2d3a;
+      border-radius: 16px;
+      background: #101722;
+      padding: 14px;
+      text-decoration: none;
+      color: #e8eaf0;
+    }
+
+    .track-topic {
+      display: grid;
+      gap: 6px;
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+
+    .track-topic:hover {
+      transform: translateY(-2px);
+      border-color: #7eb87e;
+    }
+
+    .track-topic small,
+    .progress-block-card small,
+    .revisit-item small {
+      color: #8b90a0;
+      line-height: 1.45;
+    }
+
+    .track-topic__badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .track-topic__badges span {
+      border: 1px solid #2a2d3a;
+      border-radius: 999px;
+      color: #a9b8cc;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+    }
+
+    .progress-dashboard__summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .progress-stat {
+      border: 1px solid #2a2d3a;
+      border-radius: 18px;
+      background: #101722;
+      padding: 16px;
+    }
+
+    .progress-stat strong {
+      display: block;
+      color: #e8eaf0;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .progress-stat span {
+      color: #8b90a0;
+      font-size: 0.84rem;
+    }
+
+    .progress-block-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .progress-block-card__bar {
+      height: 7px;
+      border-radius: 999px;
+      background: #252836;
+      margin: 10px 0 8px;
+      overflow: hidden;
+    }
+
+    .progress-block-card__bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #6c8ebf, #7eb8b8);
+    }
+
+    .revisit-list {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    @media (max-width: 720px) {
+      .index-control-panel {
+        padding: 18px;
+        border-radius: 18px;
+      }
+
+      .index-control-panel__head,
+      .progress-dashboard__summary {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+    }
+  </style>
 </head>
 <body class="ml-index-theme">
   <div class="wrap">
         <section class="hero">
       <div class="hero-kicker">Machine Learning Notes</div>
       <h1>Интерактивный ML-конспект</h1>
-      <p class="hero-subtitle">80 тем от математики до LLM, generative models, MLOps, interview prep и практических проектов. Короткие конспекты, интерактивы, код и плотные теоретические разборы.</p>
+      <p class="hero-subtitle">87 тем от математики до LLM, generative models, MLOps, interview prep и практических проектов. Короткие конспекты, интерактивы, код и плотные теоретические разборы.</p>
       <div class="hero-metrics">
         <span>11 разделов</span>
-        <span>80 тем</span>
+        <span>87 тем</span>
         <span>формулы, код, интерактивы и проекты</span>
       </div>
       <div class="hero-progress">
         <div class="hero-progress__meta">
-          <span class="hero-progress__count">Изучено: 0 из 80</span>
+          <span class="hero-progress__count">Изучено: 0 из 87</span>
           <span class="hero-progress__label">0% курса</span>
         </div>
         <div class="hero-progress__bar"><span></span></div>
@@ -55,7 +248,7 @@
         </svg>
         <a class="mindmap-node mindmap-node--core" href="#block-1">
           <span>ML Notes</span>
-          <small>80 тем</small>
+          <small>87 тем</small>
         </a>
         <a class="mindmap-node mindmap-node--math" href="#block-1" style="--x: 22%; --y: 18%;">Математика</a>
         <a class="mindmap-node mindmap-node--classic" href="#block-2" style="--x: 50%; --y: 13%;">Classic ML</a>
@@ -73,13 +266,70 @@
         <div class="mindmap-preview__kicker">Выберите узел</div>
         <h3>Карта курса</h3>
         <p>Наведи курсор или перейди фокусом на тему, чтобы увидеть описание и список связанных конспектов.</p>
-        <div class="mindmap-preview__count">11 разделов · 80 тем</div>
+        <div class="mindmap-preview__count">11 разделов · 87 тем</div>
         <ul class="mindmap-preview__list">
           <li>Математика</li>
           <li>Классическое ML</li>
           <li>Нейросети и LLM</li>
         </ul>
       </aside>
+    </section>
+
+    <section class="index-control-panel track-selector" id="learning-tracks" data-track-selector>
+      <div class="index-control-panel__head">
+        <div>
+          <span class="index-control-panel__eyebrow">Learning tracks</span>
+          <h2>Choose the path for this session</h2>
+        </div>
+        <p class="index-control-panel__note">Fast Track prioritizes interview-critical topics. Research Foundation keeps the full deep path and marks where extra theory matters most.</p>
+      </div>
+      <div class="track-selector__tabs" role="tablist" aria-label="Learning track selector">
+        <button class="track-selector__tab is-active" type="button" data-track-tab="job">Fast Track to Job</button>
+        <button class="track-selector__tab" type="button" data-track-tab="research">Research Foundation</button>
+      </div>
+      <div class="track-panel is-active" data-track-panel="job">
+        <div class="track-grid">
+          <a class="track-topic" href="01_math/01_linear_algebra.html"><strong>1.1 Linear Algebra</strong><small>75 min · interview core</small><span class="track-topic__badges"><span>High</span><span>Shapes</span></span></a>
+          <a class="track-topic" href="01_math/02_calculus.html"><strong>1.2 Calculus</strong><small>90 min · gradients and optimization</small><span class="track-topic__badges"><span>High</span><span>Derivation</span></span></a>
+          <a class="track-topic" href="02_classic_ml/03_linear_regression.html"><strong>2.3 Linear Regression</strong><small>60 min · bias/variance baseline</small><span class="track-topic__badges"><span>High</span><span>Interview</span></span></a>
+          <a class="track-topic" href="02_classic_ml/05_logistic_regression.html"><strong>2.5 Logistic Regression</strong><small>75 min · probabilities and thresholds</small><span class="track-topic__badges"><span>High</span><span>Interview</span></span></a>
+          <a class="track-topic" href="02_classic_ml/10_decision_trees.html"><strong>2.10 Decision Trees</strong><small>70 min · splits, impurity, overfit</small><span class="track-topic__badges"><span>High</span><span>Classic ML</span></span></a>
+          <a class="track-topic" href="02_classic_ml/12_boosting.html"><strong>2.12 Boosting</strong><small>90 min · XGBoost/LightGBM logic</small><span class="track-topic__badges"><span>High</span><span>Production</span></span></a>
+          <a class="track-topic" href="02_classic_ml/17_validation_and_hpo.html"><strong>2.17 Validation / HPO</strong><small>80 min · leakage and tuning</small><span class="track-topic__badges"><span>High</span><span>Practice</span></span></a>
+          <a class="track-topic" href="03_neural_basics/04_loss_functions.html"><strong>3.4 Loss Functions</strong><small>75 min · objective design</small><span class="track-topic__badges"><span>High</span><span>DL</span></span></a>
+          <a class="track-topic" href="04_training/01_backpropagation.html"><strong>4.1 Backpropagation</strong><small>120 min · must derive manually</small><span class="track-topic__badges"><span>High</span><span>Core</span></span></a>
+          <a class="track-topic" href="04_training/03_adam_adamw_lion.html"><strong>4.3 Adam / AdamW</strong><small>90 min · optimizer intuition</small><span class="track-topic__badges"><span>High</span><span>Training</span></span></a>
+          <a class="track-topic" href="05_architectures/03_transformer_attention.html"><strong>5.3 Attention</strong><small>100 min · Transformer core</small><span class="track-topic__badges"><span>High</span><span>LLM</span></span></a>
+          <a class="track-topic" href="06_llm/09_rag.html"><strong>6.9 RAG</strong><small>90 min · applied LLM systems</small><span class="track-topic__badges"><span>High</span><span>Job</span></span></a>
+        </div>
+      </div>
+      <div class="track-panel" data-track-panel="research">
+        <div class="track-grid">
+          <a class="track-topic" href="#block-1"><strong>Math foundations</strong><small>Linear algebra, calculus, probability, information theory and optimization.</small><span class="track-topic__badges"><span>Deep</span><span>Prerequisite</span></span></a>
+          <a class="track-topic" href="#block-2"><strong>Classical ML</strong><small>Model families, validation, interpretation and practical pipelines.</small><span class="track-topic__badges"><span>Solid</span><span>Applied</span></span></a>
+          <a class="track-topic" href="#block-4"><strong>Training theory</strong><small>Backprop, optimizers, scheduling, clipping, AMP and stability.</small><span class="track-topic__badges"><span>Deep</span><span>Critical</span></span></a>
+          <a class="track-topic" href="#block-5"><strong>Architectures</strong><small>CNN, RNN/LSTM, Transformer, ViT, detection, segmentation and CLIP.</small><span class="track-topic__badges"><span>Solid</span><span>Research</span></span></a>
+          <a class="track-topic" href="#block-6"><strong>LLM systems</strong><small>Tokenization, pretraining, alignment, LoRA, KV-cache, DPO and RAG.</small><span class="track-topic__badges"><span>Deep</span><span>Modern</span></span></a>
+          <a class="track-topic" href="#block-7"><strong>Generative models</strong><small>VAE, GAN, diffusion, flows and Stable Diffusion internals.</small><span class="track-topic__badges"><span>Deep</span><span>Research</span></span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="index-control-panel progress-dashboard" id="my-progress" data-progress-dashboard>
+      <div class="index-control-panel__head">
+        <div>
+          <span class="index-control-panel__eyebrow">My Progress</span>
+          <h2>Progress by understanding, not clicks</h2>
+        </div>
+        <p class="index-control-panel__note">Uses topic visits plus self-rating widgets. Ratings below 3 are treated as revisit candidates.</p>
+      </div>
+      <div class="progress-dashboard__summary">
+        <div class="progress-stat"><strong data-progress-total>0%</strong><span>rated as explainable</span></div>
+        <div class="progress-stat"><strong data-progress-revisit-count>0</strong><span>topics need revisit</span></div>
+        <div class="progress-stat"><strong data-progress-remaining>0h</strong><span>estimated focused time left</span></div>
+      </div>
+      <div class="progress-block-grid" data-progress-blocks></div>
+      <div class="revisit-list" data-progress-revisit></div>
     </section>
 
     <section class="section" id="block-1" data-block="1">
@@ -389,6 +639,21 @@
           <h3>Vision Transformer</h3>
           <p>Патчи как токены, class token, positional encoding для изображений и компромиссы ViT vs CNN.</p>
         </a>
+        <a class="card is-accent" href="05_architectures/09_object_detection.html">
+          <div class="badge">5.9</div>
+          <h3>Object Detection</h3>
+          <p>Bounding boxes, IoU, anchors, NMS, YOLO, DETR и mAP для production CV.</p>
+        </a>
+        <a class="card is-accent" href="05_architectures/10_segmentation.html">
+          <div class="badge">5.10</div>
+          <h3>Segmentation</h3>
+          <p>Semantic vs instance segmentation, U-Net, skip connections, Dice loss и mask evaluation.</p>
+        </a>
+        <a class="card is-accent" href="05_architectures/11_contrastive_learning_clip.html">
+          <div class="badge">5.11</div>
+          <h3>Contrastive Learning / CLIP</h3>
+          <p>InfoNCE, SimCLR, image-text alignment, zero-shot transfer и multimodal retrieval.</p>
+        </a>
       </div>
     </section>
     <section class="section" id="block-6" data-block="6">
@@ -558,6 +823,11 @@
           <h3>ML System Design Framework</h3>
           <p>Framework для ML system design interview и 5 worked examples: recommendations, fraud, search, moderation и RAG assistant.</p>
         </a>
+        <a class="card is-accent" href="job_prep/03_resume_portfolio_checklist.html">
+          <div class="badge">JP.3</div>
+          <h3>Resume and Portfolio Checklist</h3>
+          <p>Как оформлять ML-проекты, README, метрики, GitHub и рассказывать про ml-notes на интервью.</p>
+        </a>
       </div>
     </section>
 
@@ -576,6 +846,21 @@
           <div class="badge">10.2</div>
           <h3>Fine-tune an LLM with LoRA</h3>
           <p>Hugging Face + PEFT pipeline: instruction data, LoRA adapters, evaluation, export и deployment checklist.</p>
+        </a>
+        <a class="card is-accent" href="10_projects/03_end_to_end_cv_pipeline.html">
+          <div class="badge">10.3</div>
+          <h3>End-to-End CV Pipeline</h3>
+          <p>Dataset, training, evaluation, error analysis, export and FastAPI serving for a CV project.</p>
+        </a>
+        <a class="card is-accent" href="10_projects/04_rag_application.html">
+          <div class="badge">10.4</div>
+          <h3>RAG Application</h3>
+          <p>Chunking, embeddings, retrieval, reranking, grounded generation, citations and RAG evaluation.</p>
+        </a>
+        <a class="card is-accent" href="10_projects/05_kaggle_competition_walkthrough.html">
+          <div class="badge">10.5</div>
+          <h3>Kaggle Competition Walkthrough</h3>
+          <p>EDA, leakage-safe validation, feature engineering, boosting, ensembling and submission strategy.</p>
         </a>
       </div>
     </section>
@@ -688,7 +973,7 @@
           : "Центральный узел связывает все блоки курса в одну карту.";
         preview.querySelector(".mindmap-preview__count").textContent = section
           ? cards.length + " из " + section.querySelectorAll(".card").length + " тем показано"
-          : "11 разделов · 80 тем";
+          : "11 разделов · 87 тем";
 
         var list = preview.querySelector(".mindmap-preview__list");
         list.innerHTML = "";

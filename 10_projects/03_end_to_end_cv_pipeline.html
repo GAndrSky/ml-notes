@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10.3 Project: End-to-End CV Pipeline</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Project 10.3: build an end-to-end computer vision pipeline from dataset to model evaluation and FastAPI deployment." />
+  <meta property="og:title" content="10.3 End-to-End CV Pipeline - ML notes" />
+  <meta property="og:description" content="Dataset, training, evaluation, error analysis, export, FastAPI serving, and monitoring for CV." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/03_end_to_end_cv_pipeline.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 10</span>
+        <span class="tag active">Project 10.3</span>
+        <span class="tag">CV</span>
+        <span class="tag">Deployment</span>
+      </div>
+      <h1>10.3 Project: End-to-End CV Pipeline</h1>
+      <p class="muted">Build a portfolio-grade computer vision project: dataset, training, evaluation, error analysis, export, and FastAPI inference endpoint.</p>
+    </section>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>The goal is not just a good model. The goal is a reproducible CV system with clear data assumptions, metrics, failure cases, and a deployable inference contract.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../05_architectures/09_object_detection.html">5.9 Detection</a>, <a href="../05_architectures/10_segmentation.html">5.10 Segmentation</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>12-24 hours</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High</span></div>
+      <div class="meta-card"><strong>Portfolio value</strong><span>High if documented well</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Deliverables</h2>
+      <ul>
+        <li>Dataset card: source, labels, splits, class imbalance, known bias.</li>
+        <li>Training script with config file and deterministic split.</li>
+        <li>Metrics report: mAP/IoU/F1, latency, confusion/error cases.</li>
+        <li>Model export artifact and inference script.</li>
+        <li>FastAPI endpoint with request/response examples.</li>
+        <li>README with setup, results table, and demo images.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>System pipeline</h2>
+      <div class="formula" data-no-tex>raw images -> validation -> annotation format -> training -> evaluation -> export -> API -> monitoring</div>
+      <p><strong>What to notice:</strong> most real CV bugs happen before and after training: wrong labels, wrong coordinate format, broken preprocessing, inconsistent resize, or serving-time mismatch.</p>
+    </section>
+
+    <section class="card">
+      <h2>Model choice</h2>
+      <table>
+        <thead><tr><th>Task</th><th>Good baseline</th><th>Metric</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>Detection</td><td>YOLO-style model</td><td>mAP, latency</td><td>small objects, NMS threshold</td></tr>
+          <tr><td>Segmentation</td><td>U-Net / DeepLab-like model</td><td>Dice, mIoU</td><td>class imbalance, boundaries</td></tr>
+          <tr><td>Classification</td><td>ResNet / ViT fine-tune</td><td>F1, calibration</td><td>shortcut learning</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Runnable serving skeleton</h2>
+      <pre><code class="language-python"># What it does: minimal FastAPI inference contract for a CV model
+# Input shape: uploaded image bytes
+# Output shape: JSON with predictions
+from fastapi import FastAPI, UploadFile
+from PIL import Image
+import io
+
+app = FastAPI(title="CV Pipeline Demo")
+
+def predict(image: Image.Image):
+    # Replace with model preprocessing + inference.
+    width, height = image.size
+    return {"width": width, "height": height, "predictions": []}
+
+@app.post("/predict")
+async def predict_endpoint(file: UploadFile):
+    image = Image.open(io.BytesIO(await file.read())).convert("RGB")
+    return predict(image)
+
+# Gotchas: keep train-time and serving-time preprocessing identical;
+# validate file size and image mode in production.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Error analysis</h2>
+      <ul>
+        <li>Sort false positives by confidence: what patterns fool the model?</li>
+        <li>Sort false negatives by object size and lighting.</li>
+        <li>Check performance per class, not only global score.</li>
+        <li>Measure latency with realistic image sizes and batch size 1.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Foundational</summary><div class="intuition-content">Create a dataset card for a public CV dataset and list three possible biases.</div></details>
+      <details class="intuition-block"><summary>Intermediate</summary><div class="intuition-content">Write a preprocessing function and unit-test that output tensor shape is correct.</div></details>
+      <details class="intuition-block"><summary>Hard</summary><div class="intuition-content">Design an experiment to compare two confidence thresholds for production.</div></details>
+      <details class="intuition-block"><summary>Coding</summary><div class="intuition-content">Extend the FastAPI skeleton to return annotated image metadata.</div></details>
+      <details class="intuition-block"><summary>Interview</summary><div class="intuition-content">Explain how you would monitor drift in a deployed CV model.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What is your train/validation/test split policy?</li>
+        <li>Which metric matches the business problem?</li>
+        <li>What are the top three failure modes?</li>
+        <li>Can the model be served with acceptable latency?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

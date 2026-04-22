@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.10 Segmentation</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Image segmentation: semantic vs instance segmentation, U-Net, skip connections, Dice/IoU losses, masks, and evaluation." />
+  <meta property="og:title" content="5.10 Segmentation - ML notes" />
+  <meta property="og:description" content="Semantic segmentation, instance segmentation, U-Net, Dice loss, IoU, and practical mask pipelines." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/10_segmentation.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 5</span>
+        <span class="tag active">5.10 Segmentation</span>
+        <span class="tag">U-Net</span>
+        <span class="tag">Masks</span>
+      </div>
+      <h1>5.10 Segmentation</h1>
+      <p class="muted">Segmentation predicts a label for each pixel, not just one label for the whole image or one box for an object.</p>
+    </section>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>Segmentation is dense prediction. Semantic segmentation assigns a class to every pixel. Instance segmentation separates object identities. U-Net remains the core mental model: downsample for context, upsample for resolution, use skip connections to preserve detail.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="05_resnet_normalization.html">5.5 ResNet</a>, <a href="09_object_detection.html">5.9 Detection</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>75-100 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High for CV/medical roles</span></div>
+      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Why this matters</h2>
+      <p>Segmentation is used when exact shape matters: tumors, roads, lanes, product defects, organs, satellite parcels, document layout, clothing, and image editing. The output is not "there is a dog"; it is "these exact pixels are dog".</p>
+    </section>
+
+    <section class="card">
+      <h2>Semantic vs instance segmentation</h2>
+      <table>
+        <thead><tr><th>Task</th><th>Output</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Semantic segmentation</td><td>Class per pixel</td><td>all road pixels are "road"</td></tr>
+          <tr><td>Instance segmentation</td><td>Class plus object identity</td><td>car 1 and car 2 separated</td></tr>
+          <tr><td>Panoptic segmentation</td><td>Unified semantic + instance map</td><td>stuff classes and countable objects together</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>U-Net architecture</h2>
+      <p>U-Net has an encoder-decoder shape. The encoder compresses spatial resolution and extracts context. The decoder restores resolution. Skip connections copy high-resolution features from encoder to decoder.</p>
+      <div class="formula" data-no-tex>decoder_l = upsample(decoder_{l+1}) concat encoder_l</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">encoder_l</span><span class="fa-name">local detail</span><span class="fa-desc">High-resolution features from encoder level l.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">decoder_l</span><span class="fa-name">reconstructed feature</span><span class="fa-desc">Decoder representation at the same spatial scale.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">concat</span><span class="fa-name">channel merge</span><span class="fa-desc">Stacks features along channel dimension, preserving detail and context.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">upsample</span><span class="fa-name">resolution increase</span><span class="fa-desc">Expands lower-resolution features back toward mask size.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> deep layers know what is present; skip connections recover exactly where it is.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> combine a city map for global layout with a street-level photo for precise boundaries.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Dice coefficient and Dice loss</h2>
+      <p>Dice is common for imbalanced masks because background pixels often dominate cross-entropy.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathrm{Dice}(p,y)=\frac{2\sum_i p_i y_i+\epsilon}{\sum_i p_i+\sum_i y_i+\epsilon}">
+        Dice(p,y) = (2 sum_i p_i y_i + eps) / (sum_i p_i + sum_i y_i + eps)
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">p_i</span><span class="fa-name">predicted mask value</span><span class="fa-desc">Probability that pixel i belongs to the foreground/class.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">true mask value</span><span class="fa-desc">Ground truth label for pixel i, usually 0 or 1.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sum p_i y_i</span><span class="fa-name">soft overlap</span><span class="fa-desc">Large when predictions align with the true mask.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">stability term</span><span class="fa-desc">Prevents division by zero when masks are empty.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> Dice rewards overlap relative to total predicted and true mask size.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> two transparent cutouts are good if they cover the same shape.</div>
+        <div class="formula-anatomy__example"><strong>Numeric example:</strong> if overlap sum is 30, predicted area is 50, true area is 40, Dice = 60/90 = 0.667.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Loss choices</h2>
+      <table>
+        <thead><tr><th>Loss</th><th>Use when</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>Cross-entropy</td><td>balanced classes and calibrated pixel probabilities</td><td>background dominates</td></tr>
+          <tr><td>Dice loss</td><td>small foreground objects, medical masks</td><td>can be unstable for tiny masks</td></tr>
+          <tr><td>Focal loss</td><td>many easy background pixels</td><td>extra hyperparameters</td></tr>
+          <tr><td>Boundary loss</td><td>shape boundaries are critical</td><td>harder implementation</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Runnable code: Dice score</h2>
+      <pre><code class="language-python"># What it does: compute binary Dice score for segmentation masks
+# Input shapes: pred=(H,W), target=(H,W)
+# Output shape: scalar
+import numpy as np
+
+def dice_score(pred, target, eps=1e-7):
+    pred = pred.astype(float)
+    target = target.astype(float)
+    intersection = np.sum(pred * target)
+    return (2 * intersection + eps) / (np.sum(pred) + np.sum(target) + eps)
+
+pred = np.array([[1,1,0], [0,1,0], [0,0,0]])
+target = np.array([[1,0,0], [0,1,1], [0,0,0]])
+print(dice_score(pred, target))
+# Gotchas: threshold probabilities consistently; handle empty masks explicitly.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Using image-level labels when pixel-level masks are required.</li>
+        <li>Resizing masks with bilinear interpolation, which creates invalid class IDs.</li>
+        <li>Reporting only pixel accuracy on imbalanced masks.</li>
+        <li>Forgetting that data augmentation must transform image and mask identically.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Connections</h2>
+      <p>Detection localizes with boxes; segmentation localizes with masks. See <a href="09_object_detection.html">5.9 Object Detection</a> and <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 End-to-End CV Pipeline</a>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Type A - Derivation - Foundational</summary><div class="intuition-content">Derive Dice loss = 1 - Dice and explain why it handles class imbalance better than pixel accuracy.</div></details>
+      <details class="intuition-block"><summary>Type B - Coding - Intermediate</summary><div class="intuition-content">Implement mean IoU for a 3-class segmentation mask using NumPy.</div></details>
+      <details class="intuition-block"><summary>Type C - Conceptual - Intermediate</summary><div class="intuition-content">Why do U-Net skip connections help boundary quality?</div></details>
+      <details class="intuition-block"><summary>Type C - Interview - Hard</summary><div class="intuition-content">How would you evaluate a model for tumor segmentation when false negatives are more costly?</div></details>
+      <details class="intuition-block"><summary>Type B - Practical - Foundational</summary><div class="intuition-content">Write an augmentation function that flips image and mask together.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What is the difference between semantic and instance segmentation?</li>
+        <li>Why does U-Net concatenate encoder features into the decoder?</li>
+        <li>Why can pixel accuracy be misleading?</li>
+        <li>When would Dice loss be preferable to cross-entropy?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

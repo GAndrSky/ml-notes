@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.9 Object Detection</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Object detection: bounding boxes, IoU, anchors, NMS, YOLO, DETR, losses, metrics, and deployment tradeoffs." />
+  <meta property="og:title" content="5.9 Object Detection - ML notes" />
+  <meta property="og:description" content="Anchor boxes, IoU, NMS, YOLO, DETR, mAP, and practical detection pipeline." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/09_object_detection.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 5</span>
+        <span class="tag active">5.9 Object Detection</span>
+        <span class="tag">CV</span>
+        <span class="tag">YOLO / DETR</span>
+      </div>
+      <h1>5.9 Object Detection</h1>
+      <p class="muted">Object detection answers two questions at once: what objects are present, and where each object is located.</p>
+    </section>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>Detection is classification plus localization. The model predicts bounding boxes, class probabilities, and confidence scores. The hard parts are matching predictions to ground truth, suppressing duplicate boxes, and evaluating localization quality with IoU and mAP.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="08_vision_transformer.html">5.8 ViT</a>, <a href="../02_classic_ml/07_classification_metrics.html">2.7 Metrics</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>90-120 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High for CV roles</span></div>
+      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Why this matters</h2>
+      <p>Detection appears in autonomous driving, retail analytics, medical imaging, OCR pipelines, manufacturing inspection, moderation, sports analytics, and robotics. It is usually more production-sensitive than image classification because boxes must be spatially accurate, stable across frames, and fast enough for real-time inference.</p>
+    </section>
+
+    <section class="card">
+      <h2>Bounding boxes and IoU</h2>
+      <p>A detector usually predicts boxes as coordinates. The standard quality measure for localization is Intersection over Union.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathrm{IoU}(A,B)=\frac{|A\cap B|}{|A\cup B|}">IoU(A,B) = area(intersection) / area(union)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">predicted box</span><span class="fa-desc">Box proposed by the model.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">ground-truth box</span><span class="fa-desc">Human-labeled correct object location.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">A cap B</span><span class="fa-name">overlap</span><span class="fa-desc">Area where predicted and true boxes overlap.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">A cup B</span><span class="fa-name">union</span><span class="fa-desc">Total area covered by either box.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> IoU is high only when the predicted box covers the object and does not include too much extra area.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> two stickers on the same object should overlap almost perfectly.</div>
+        <div class="formula-anatomy__example"><strong>Numeric example:</strong> if overlap is 40 pixels and union is 80 pixels, IoU = 0.5.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Anchors, YOLO, and one-stage detection</h2>
+      <p>Anchor-based detectors start with predefined reference boxes. The network predicts offsets from anchors and class/objectness scores. YOLO-style models divide the image into prediction locations and output many candidate boxes in one forward pass.</p>
+      <div class="formula" data-no-tex>b_x = sigma(t_x) + c_x,  b_w = p_w exp(t_w)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">t_x,t_w</span><span class="fa-name">raw predictions</span><span class="fa-desc">Network outputs before box decoding.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">c_x</span><span class="fa-name">cell coordinate</span><span class="fa-desc">Grid location where the box is predicted.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">p_w</span><span class="fa-name">anchor width</span><span class="fa-desc">Prior width of the reference box.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sigma</span><span class="fa-name">sigmoid</span><span class="fa-desc">Constrains center offset into a stable range.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the detector does not invent boxes from scratch; it adjusts reference boxes.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> resize and move a template frame until it fits the object.</div>
+      </div>
+      <p><strong>YOLO tradeoff:</strong> very fast and production-friendly, but dense candidate boxes require careful confidence thresholds and NMS.</p>
+    </section>
+
+    <section class="card">
+      <h2>Non-Maximum Suppression</h2>
+      <p>NMS removes duplicate detections. Sort boxes by confidence, keep the strongest box, and suppress nearby boxes with high IoU.</p>
+      <div class="formula" data-no-tex>keep box_i if IoU(box_i, selected_box) < threshold</div>
+      <p><strong>Typical thresholds:</strong> confidence 0.25-0.5, NMS IoU 0.45-0.7. Lower NMS threshold removes more duplicates but may delete nearby objects.</p>
+    </section>
+
+    <section class="card">
+      <h2>DETR: detection as set prediction</h2>
+      <p>DETR removes anchors and NMS. It uses transformer object queries and bipartite matching between predicted boxes and ground-truth objects.</p>
+      <div class="formula" data-no-tex>loss = class_loss + lambda_box L1(box, box*) + lambda_iou GIoU(box, box*)</div>
+      <p>The key idea is that the model predicts a fixed-size set of objects, and Hungarian matching decides which prediction corresponds to which ground-truth object.</p>
+    </section>
+
+    <section class="card">
+      <h2>Metrics: mAP</h2>
+      <p>Mean Average Precision summarizes precision-recall curves across classes and IoU thresholds. COCO-style mAP averages from IoU 0.50 to 0.95, which strongly rewards precise boxes.</p>
+      <table>
+        <thead><tr><th>Metric</th><th>Meaning</th><th>What it catches</th></tr></thead>
+        <tbody>
+          <tr><td>mAP@0.5</td><td>Detection counts as correct if IoU >= 0.5</td><td>Loose localization</td></tr>
+          <tr><td>mAP@0.5:0.95</td><td>Average over stricter IoU thresholds</td><td>Box precision</td></tr>
+          <tr><td>Recall</td><td>How many objects were found</td><td>Missed detections</td></tr>
+          <tr><td>FPS / latency</td><td>Inference speed</td><td>Deployment feasibility</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Runnable code: IoU and NMS</h2>
+      <pre><code class="language-python"># What it does: compute IoU and run greedy NMS
+# Input shapes: boxes=(N,4) in xyxy format, scores=(N,)
+# Output shape: kept indices=(K,)
+import numpy as np
+
+def iou(a, b):
+    x1 = max(a[0], b[0]); y1 = max(a[1], b[1])
+    x2 = min(a[2], b[2]); y2 = min(a[3], b[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    area_a = max(0, a[2]-a[0]) * max(0, a[3]-a[1])
+    area_b = max(0, b[2]-b[0]) * max(0, b[3]-b[1])
+    return inter / (area_a + area_b - inter + 1e-9)
+
+def nms(boxes, scores, threshold=0.5):
+    order = scores.argsort()[::-1]
+    keep = []
+    while order.size:
+        i = order[0]
+        keep.append(i)
+        rest = order[1:]
+        order = rest[np.array([iou(boxes[i], boxes[j]) < threshold for j in rest])]
+    return keep
+
+boxes = np.array([[0,0,10,10], [1,1,11,11], [30,30,40,40]], dtype=float)
+scores = np.array([0.9, 0.8, 0.7])
+print(nms(boxes, scores, threshold=0.5))
+# Gotchas: use consistent box format; tune NMS threshold per dataset density.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Reporting classification accuracy instead of detection metrics.</li>
+        <li>Training on boxes with inconsistent coordinate formats.</li>
+        <li>Using one confidence threshold for all classes when class imbalance is strong.</li>
+        <li>Ignoring small-object performance and latency constraints.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Connections</h2>
+      <p>See <a href="01_cnn_convolutional_networks.html">5.1 CNN</a> for feature maps, <a href="08_vision_transformer.html">5.8 ViT</a> for transformer vision backbones, and <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 CV Pipeline</a> for a project path.</p>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Type A - Derivation - Foundational</summary><div class="intuition-content">Compute IoU for two boxes by hand and explain how false positives change precision.</div></details>
+      <details class="intuition-block"><summary>Type B - Coding - Intermediate</summary><div class="intuition-content">Extend the NMS code to class-wise NMS so boxes from different classes do not suppress each other.</div></details>
+      <details class="intuition-block"><summary>Type C - Conceptual - Hard</summary><div class="intuition-content">Explain why DETR can avoid NMS but YOLO usually still needs it.</div></details>
+      <details class="intuition-block"><summary>Type C - Interview - Intermediate</summary><div class="intuition-content">When would you choose YOLO over DETR in production?</div></details>
+      <details class="intuition-block"><summary>Type B - Evaluation - Intermediate</summary><div class="intuition-content">Write a script that counts TP/FP/FN at IoU 0.5 for one class.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What does IoU measure and why is it not the same as classification confidence?</li>
+        <li>Why does NMS remove duplicate detections?</li>
+        <li>What is the difference between anchor-based detection and DETR?</li>
+        <li>Why is mAP@0.5:0.95 stricter than mAP@0.5?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

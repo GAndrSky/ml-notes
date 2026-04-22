@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5.11 Contrastive Learning and CLIP</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Contrastive learning and CLIP: InfoNCE, SimCLR, image-text alignment, zero-shot transfer, temperature, and retrieval." />
+  <meta property="og:title" content="5.11 Contrastive Learning and CLIP - ML notes" />
+  <meta property="og:description" content="InfoNCE, SimCLR, CLIP architecture, multimodal alignment and zero-shot classification." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/11_contrastive_learning_clip.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 5</span>
+        <span class="tag active">5.11 Contrastive / CLIP</span>
+        <span class="tag">InfoNCE</span>
+        <span class="tag">Multimodal</span>
+      </div>
+      <h1>5.11 Contrastive Learning and CLIP</h1>
+      <p class="muted">Contrastive learning trains representations by pulling matching pairs together and pushing non-matching pairs apart.</p>
+    </section>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>CLIP learns a shared embedding space for images and text. Matching image-caption pairs get high cosine similarity; mismatched pairs get low similarity. This makes zero-shot classification possible by comparing an image to text prompts.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/01_linear_algebra.html">1.1 Linear Algebra</a>, <a href="03_transformer_attention.html">5.3 Attention</a>, <a href="08_vision_transformer.html">5.8 ViT</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>90-120 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High for multimodal/LLM roles</span></div>
+      <div class="meta-card"><strong>Research depth</strong><span>Deep</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Why this matters</h2>
+      <p>Contrastive learning is the backbone of modern retrieval, embedding models, multimodal systems, self-supervised visual pretraining, and CLIP-like zero-shot classifiers. It turns "labels" into relationships between examples.</p>
+    </section>
+
+    <section class="card">
+      <h2>InfoNCE loss</h2>
+      <p>For one anchor, InfoNCE makes the positive example more similar than all negatives in the batch.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L}_i=-\log\frac{\exp(s_{i,i}/\tau)}{\sum_{j=1}^{N}\exp(s_{i,j}/\tau)}">
+        L_i = -log exp(s_i,i / tau) / sum_j exp(s_i,j / tau)
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">s_i,j</span><span class="fa-name">similarity score</span><span class="fa-desc">Usually cosine similarity between anchor i and candidate j.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">i,i</span><span class="fa-name">positive pair</span><span class="fa-desc">The correct matching pair, such as an image and its caption.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">candidates</span><span class="fa-desc">All possible matches in the batch: one positive and many negatives.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">tau</span><span class="fa-name">temperature</span><span class="fa-desc">Controls how sharp the softmax distribution is.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the correct pair must win a classification problem against all other batch items.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> match a photo to the correct caption among many captions.</div>
+        <div class="formula-anatomy__example"><strong>Numeric example:</strong> if the positive similarity is much larger than negatives, its softmax probability approaches 1 and loss approaches 0.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>SimCLR: self-supervised contrastive vision</h2>
+      <p>SimCLR creates two augmented views of the same image. These two views are positives. Other images in the batch are negatives. The model learns invariances: crop, color jitter, blur, and small geometric changes should not destroy identity.</p>
+      <ul>
+        <li><strong>Encoder:</strong> CNN or ViT maps image to representation.</li>
+        <li><strong>Projection head:</strong> MLP maps representation to contrastive space.</li>
+        <li><strong>Augmentations:</strong> define what information should be ignored.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>CLIP architecture</h2>
+      <p>CLIP uses two encoders: one for images and one for text. It trains on image-caption pairs and optimizes contrastive loss in both directions: image-to-text and text-to-image.</p>
+      <div class="formula" data-no-tex>logits = normalize(image_emb) @ normalize(text_emb)^T / tau</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">image_emb</span><span class="fa-name">image embedding</span><span class="fa-desc">Vector produced by image encoder.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">text_emb</span><span class="fa-name">text embedding</span><span class="fa-desc">Vector produced by text encoder.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">@</span><span class="fa-name">matrix product</span><span class="fa-desc">Computes all image-text similarities in the batch.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">normalize</span><span class="fa-name">unit vectors</span><span class="fa-desc">Makes dot product equal cosine similarity.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> CLIP aligns image and language vectors so matching concepts point in similar directions.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> put images and sentences on the same map, then search by nearest neighbor.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Zero-shot classification</h2>
+      <p>To classify an image, encode prompts like "a photo of a cat", "a photo of a dog", "a photo of a car". Pick the text embedding most similar to the image embedding.</p>
+      <p>Prompt wording matters. CLIP is not only recognizing labels; it compares the image to natural-language descriptions.</p>
+    </section>
+
+    <section class="card">
+      <h2>Runnable code: contrastive logits</h2>
+      <pre><code class="language-python"># What it does: compute CLIP-style contrastive logits
+# Input shapes: image_emb=(B,d), text_emb=(B,d)
+# Output shape: logits=(B,B)
+import numpy as np
+
+def normalize(x, eps=1e-9):
+    return x / (np.linalg.norm(x, axis=1, keepdims=True) + eps)
+
+image_emb = np.array([[1.0, 0.0], [0.2, 0.8]])
+text_emb = np.array([[0.9, 0.1], [0.0, 1.0]])
+tau = 0.07
+logits = normalize(image_emb) @ normalize(text_emb).T / tau
+print(logits)
+# Gotchas: embeddings must be normalized; temperature strongly changes confidence.</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Thinking negatives are always true negatives. In large batches, false negatives can exist.</li>
+        <li>Ignoring augmentation design in self-supervised contrastive learning.</li>
+        <li>Assuming CLIP explanations are causal because text similarity looks intuitive.</li>
+        <li>Using cosine similarity without checking embedding normalization.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Connections</h2>
+      <p>Contrastive learning connects <a href="08_vision_transformer.html">ViT</a>, <a href="../06_llm/09_retrieval_augmented_generation.html">RAG retrieval</a>, embedding models, image search, and multimodal LLMs.</p>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Type A - Derivation - Intermediate</summary><div class="intuition-content">Show that InfoNCE is cross-entropy where the correct class is the positive pair index.</div></details>
+      <details class="intuition-block"><summary>Type B - Coding - Foundational</summary><div class="intuition-content">Implement symmetric CLIP loss using NumPy logits and cross-entropy.</div></details>
+      <details class="intuition-block"><summary>Type C - Conceptual - Intermediate</summary><div class="intuition-content">Why does batch size matter for contrastive learning?</div></details>
+      <details class="intuition-block"><summary>Type C - Interview - Hard</summary><div class="intuition-content">Explain why CLIP can do zero-shot classification but still fails on counting and spatial relations.</div></details>
+      <details class="intuition-block"><summary>Type B - Practical - Intermediate</summary><div class="intuition-content">Build a tiny image-text retrieval demo using precomputed embeddings.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What is a positive pair in InfoNCE?</li>
+        <li>Why does temperature affect contrastive training?</li>
+        <li>How does CLIP perform zero-shot classification?</li>
+        <li>Why are augmentations central in SimCLR?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>
