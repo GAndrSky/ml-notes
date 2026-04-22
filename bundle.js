@@ -687,12 +687,18 @@
       "</p>" +
       "</div>" +
       "</div>" +
-      '<div class="ml-study-header__flow">' +
-      "<span>1. Formulas</span>" +
-      "<span>2. Intuition</span>" +
-      "<span>3. Code / interactive</span>" +
-      "<span>4. Pitfalls</span>" +
-      "<span>5. Exercises / checkpoint</span>" +
+      '<div class="ml-study-header__flow" aria-label="11-step page structure">' +
+      "<span>1. TL;DR</span>" +
+      "<span>2. Prerequisites</span>" +
+      "<span>3. Why this matters</span>" +
+      "<span>4. Core theory</span>" +
+      "<span>5. Intuition</span>" +
+      "<span>6. Code / interactive</span>" +
+      "<span>7. Pitfalls</span>" +
+      "<span>8. Connections</span>" +
+      "<span>9. Exercises</span>" +
+      "<span>10. Checkpoint</span>" +
+      "<span>11. Go deeper</span>" +
       "</div>" +
       "</section>"
     );

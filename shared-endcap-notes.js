@@ -167,13 +167,79 @@
         "→ Для крупномасштабных моделей особенно важны [6.6 Scaling Laws](../06_llm/06_scaling_laws.html) и [7.3 Diffusion Models](../07_generative_models/03_diffusion_models.html).",
         "→ Численная сторона напрямую связана с [4.7 Mixed Precision](../04_training/07_mixed_precision_training.html) и [4.9 Numerical Stability](../04_training/09_numerical_stability.html)."
       ]
+    },
+    mlops: {
+      mistakes: [
+        "Treating deployment as an afterthought instead of part of the ML system design.",
+        "Logging only final metrics and losing the data, config, code version, and artifacts needed to reproduce a run.",
+        "Optimizing model quality without checking latency, throughput, monitoring, drift, and rollback constraints."
+      ],
+      apply: [
+        "Use this block when a notebook result needs to become a reproducible experiment, service, or monitored production component.",
+        "It is especially important for ML engineer roles where model quality must survive packaging, serving, data drift, and operational constraints.",
+        "The main habit is to make every model decision traceable: data version, code version, config, metric, artifact, and deployment state."
+      ],
+      links: [
+        "← Training stability starts in [4.9 Numerical Stability](../04_training/09_numerical_stability.html).",
+        "→ Production LLM systems connect directly to [6.9 RAG](../06_llm/09_retrieval_augmented_generation.html).",
+        "→ Portfolio evidence continues in [10. Projects](../10_projects/01_neural_net_from_scratch.html)."
+      ]
+    },
+    "job-prep": {
+      mistakes: [
+        "Memorizing definitions instead of preparing causal explanations, tradeoffs, and failure modes.",
+        "Answering system design questions with model names before clarifying data, scale, latency, and evaluation.",
+        "Listing projects without explaining constraints, metrics, debugging decisions, and what changed after analysis."
+      ],
+      apply: [
+        "Use this block as the conversion layer between study notes and interview-ready answers.",
+        "For every topic, the target is not recall but the ability to explain assumptions, derive the core idea, and defend tradeoffs.",
+        "The strongest answers connect math, implementation details, evaluation, and production failure modes."
+      ],
+      links: [
+        "← Core interview math starts in [1. Math](../01_math/01_linear_algebra.html).",
+        "← Practical ML grounding starts in [2. Classical ML](../02_classic_ml/01_intro_to_classical_ml.html).",
+        "→ Portfolio execution continues in [10. Projects](../10_projects/01_neural_net_from_scratch.html)."
+      ]
+    },
+    projects: {
+      mistakes: [
+        "Building a demo that runs once but cannot be reproduced, evaluated, or explained.",
+        "Skipping baselines and error analysis, which makes the final result impossible to interpret.",
+        "Documenting only the happy path instead of showing failures, constraints, tradeoffs, and next steps."
+      ],
+      apply: [
+        "Use project pages to turn theory into evidence: runnable code, clear metrics, artifacts, and a story an interviewer can inspect.",
+        "A good project should show one complete loop: problem framing, data, baseline, model, evaluation, deployment or demo, and retrospective.",
+        "The portfolio value comes from clarity and reproducibility, not from using the largest model."
+      ],
+      links: [
+        "← Choose models from [2. Classical ML](../02_classic_ml/01_intro_to_classical_ml.html), [5. Architectures](../05_architectures/01_cnn_convolutional_networks.html), or [6. LLM](../06_llm/01_tokenization_bpe.html).",
+        "← Training and debugging decisions connect to [4. Training](../04_training/01_backpropagation.html).",
+        "→ Serving and reproducibility connect to [9. MLOps](../09_mlops_deployment/01_experiment_tracking.html)."
+      ]
     }
   };
 
-  var data = byPage[pagePath] || bySection[pageMeta.sectionId];
-  if (!data) {
-    return;
-  }
+  var fallbackData = {
+    mistakes: [
+      "Reading the topic as isolated facts instead of asking what problem it solves and what assumptions it makes.",
+      "Skipping the implementation details, which hides shape errors, numerical issues, and evaluation traps.",
+      "Moving on before being able to explain the idea without looking at the page."
+    ],
+    apply: [
+      "Use this page when the concept appears in a model, training loop, evaluation pipeline, or interview explanation.",
+      "The practical test is whether you can identify when the idea helps, when it fails, and what you would measure.",
+      "Before moving on, connect the formulas to a concrete example, a code path, and at least one failure mode."
+    ],
+    links: [
+      "← Return to the course map on the [main page](../index.html) when the prerequisite chain is unclear.",
+      "→ Use adjacent previous/next navigation to keep the topic in sequence.",
+      "→ Add weak topics to My Progress by rating them below 3."
+    ]
+  };
+
+  var data = byPage[pagePath] || bySection[pageMeta.sectionId] || fallbackData;
 
   function escapeHtml(value) {
     return String(value)
