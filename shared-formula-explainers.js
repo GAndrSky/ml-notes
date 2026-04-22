@@ -9,6 +9,7 @@
     intuition:'Интуиция',
     analogy:'Аналогия',
     example:'Числовой пример',
+    dimensions:'Dimensions check',
     summary:'🧠 Что это значит на практике'
   };
 
@@ -76,8 +77,9 @@
   }
   function rowsHtml(rows){return rows.map(function(r){return '<div class="formula-anatomy__row"><span class="fa-sym">'+esc(r.sym)+'</span><span class="fa-name">'+esc(r.name)+'</span><span class="fa-desc">'+esc(r.desc)+'</span></div>';}).join('');}
   function anatomyHtml(data){
+    var dimensions=data.dimensions?'<div class="formula-anatomy__dimensions"><strong>'+UI.dimensions+':</strong> '+esc(data.dimensions)+'</div>':'';
     var example=data.example?'<div class="formula-anatomy__example"><strong>'+UI.example+':</strong> '+esc(data.example)+'</div>':'';
-    return '<div class="formula-anatomy" data-ml-generated="1"><div class="formula-anatomy__header">'+UI.header+'</div><div class="formula-anatomy__grid">'+rowsHtml(data.rows)+'</div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>'+UI.intuition+':</strong> '+esc(data.intuition)+'</div><div class="formula-anatomy__analogy"><strong>'+UI.analogy+':</strong> '+esc(data.analogy)+'</div>'+example+'</div>';
+    return '<div class="formula-anatomy" data-ml-generated="1"><div class="formula-anatomy__header">'+UI.header+'</div><div class="formula-anatomy__grid">'+rowsHtml(data.rows)+'</div>'+dimensions+'<hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>'+UI.intuition+':</strong> '+esc(data.intuition)+'</div><div class="formula-anatomy__analogy"><strong>'+UI.analogy+':</strong> '+esc(data.analogy)+'</div>'+example+'</div>';
   }
   function detailsHtml(text){return '<details class="intuition-block" data-ml-generated="1"><summary>'+UI.summary+'</summary><div class="intuition-content">'+esc(text)+'</div></details>';}
 
@@ -383,6 +385,34 @@
     if(kind==='linear'){return {intuition:'Формула собирает в одной записи влияния входов на итоговый результат.',analogy:'Как таблица влияния, где видно, какой фактор за что отвечает.',example:'Если вес признака 2, значение признака 3 и bias 1, вклад будет 2·3+1=7.'};}
     return {intuition:'Формула задаёт правило преобразования входных величин в итоговую величину.',analogy:'Как рецепт: разные ингредиенты вносят разные роли, а порядок действий определяет результат.',example:'Если формула содержит сумму, каждый слагаемый добавляет свой вклад; если есть коэффициент, он усиливает или ослабляет этот вклад.'};
   }
+  function dimensionCopy(text){
+    var low=compact(text);
+    if(/attention|qk|softmax|query|key|value|d_k|dk/.test(low)){
+      return 'Q: (L, d_k), K: (S, d_k), V: (S, d_v); QK^T -> (L, S), softmax weights -> (L, S), output -> (L, d_v).';
+    }
+    if(/conv|kernel|filter|featuremap|1x1|3x3/.test(low)){
+      return 'Image batch: (B, C_in, H, W); kernel: (C_out, C_in, kH, kW); output: (B, C_out, H_out, W_out).';
+    }
+    if(/loss|mse|bce|crossentropy|ce|logp|likelihood|elbo|kl|entropy|gini|impurity|auc|precision|recall|f1/.test(low)){
+      return 'Predictions and targets must share the same batch axis; reduction over samples/classes returns a scalar metric or scalar loss.';
+    }
+    if(/theta|θ|grad|gradient|nabla|∇|eta|η|adam|momentum|optimizer|lr|learningrate|m_t|v_t/.test(low)){
+      return 'Parameter tensor θ and gradient ∇L(θ) have the same shape; learning-rate/decay terms are scalars; updated θ keeps the original shape.';
+    }
+    if(/xw|wx|w⊤x|wtx|linear|z=|bias|matrix|matmul|svd|eigen|pca|lora|lowrank/.test(low)){
+      return 'For a linear map, X is usually (B, in_features), W maps input to output features, b broadcasts over B, and output is (B, out_features).';
+    }
+    if(/sum|Σ|sigma|mean|var|std|norm|distance|cos|dot|inner/.test(text)){
+      return 'The reduced axis disappears after sum/mean/norm; all terms combined before the reduction must have compatible shapes.';
+    }
+    if(/prob|p\(|q\(|bayes|posterior|prior|cdf|pdf|distribution|gamma|responsibility/.test(low)){
+      return 'Probabilities are scalars per event or vectors over classes/components; normalized probabilities sum to 1 along the chosen axis.';
+    }
+    if(/hidden|h_t|cell|c_t|lstm|rnn|gate|token|embedding/.test(low)){
+      return 'Sequence tensors typically use (B, T, d); hidden states keep dimension d, and gates must match the state shape elementwise.';
+    }
+    return 'Check additions for same-shaped terms, multiplications for compatible axes, and whether the result should be a scalar, vector, or tensor.';
+  }
   function genericRows(text){
     var low=text.toLowerCase(),rows=[],kind=genericCategory(text);
     function add(r){if(!rows.some(function(existing){return existing.sym===r.sym;})){rows.push(r);}}
@@ -445,7 +475,7 @@
   }
   function genericSpec(text){
     var copy=genericCopy(genericCategory(text));
-    return {rows:genericRows(text),intuition:copy.intuition,analogy:copy.analogy,example:copy.example};
+    return {rows:genericRows(text),intuition:copy.intuition,analogy:copy.analogy,example:copy.example,dimensions:dimensionCopy(text)};
   }
   function targetBlock(match){
     var blocks=all('.card,.tab-content,section,article,.intuition,.warn,.info');
@@ -465,7 +495,18 @@
       var manual=manualSpec(compact(text));
       var payload=manual||genericSpec(text);
       if(!payload.example){payload.example=genericCopy(genericCategory(text)).example;}
+      if(!payload.dimensions){payload.dimensions=dimensionCopy(text);}
       el.insertAdjacentHTML('afterend',anatomyHtml(payload));
+    });
+    all('.formula-anatomy').forEach(function(anatomy){
+      if(anatomy.querySelector('.formula-anatomy__dimensions')){return;}
+      var formula=formulaForAnatomy(anatomy);
+      var text=formula?src(formula):norm(anatomy.textContent||'');
+      var marker=document.createElement('div');
+      marker.className='formula-anatomy__dimensions';
+      marker.innerHTML='<strong>'+UI.dimensions+':</strong> '+esc(dimensionCopy(text));
+      var divider=anatomy.querySelector('.formula-anatomy__divider');
+      if(divider){anatomy.insertBefore(marker,divider);}else{anatomy.appendChild(marker);}
     });
   }
   function renderIntuitionBlocks(){

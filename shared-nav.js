@@ -1125,6 +1125,7 @@
 
   ensureScript("shared-endcap-notes.js", "data-ml-endcap-script", placeBottomPager);
   ensureScript("shared-interactive-guides.js", "data-ml-interactive-guides-script", placeBottomPager);
+  ensureScript("shared-visual-standards.js", "data-ml-visual-standards-script", placeBottomPager);
 
   if (hasFormulaExplainCandidates) {
     ensureScript("shared-formula-explainers.js", "data-ml-formula-explainer-script", placeBottomPager);
