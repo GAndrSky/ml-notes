@@ -1186,34 +1186,119 @@ print(np.array(traj)[-5:])
   </section>
 <!-- learning-exercises:end -->
 
+<!-- phase4-go-deeper:start -->
+  <section class="ml-advanced-section" data-phase4-go-deeper="calculus">
+    <h2>Go Deeper: curvature, second order methods, and natural gradient</h2>
+    <p class="muted">This section is for the research track. The goal is to connect ordinary gradients to curvature, Hessian-vector products, Fisher information, and why Adam-like methods can be interpreted as rough geometry-aware optimization.</p>
+
+    <details class="intuition-block" open>
+      <summary>Hessian matrix: what second derivatives tell you</summary>
+      <div class="intuition-content">
+        The gradient tells where loss increases fastest locally. The Hessian tells how the gradient itself changes when you move. In one dimension this is curvature; in many dimensions it is a matrix of all second partial derivatives. Positive curvature means a bowl-like direction, negative curvature means a hill-like direction, and mixed signs usually indicate a saddle point.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>H_ij = partial^2 L / (partial theta_i partial theta_j)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">H_ij</span><span class="fa-name">Hessian entry</span><span class="fa-desc">How gradient component i changes when parameter j changes.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">loss</span><span class="fa-desc">Scalar objective being minimized.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">theta_i</span><span class="fa-name">parameter i</span><span class="fa-desc">One trainable scalar in the model.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">theta_j</span><span class="fa-name">parameter j</span><span class="fa-desc">Another trainable scalar; cross terms show interaction.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> Hessian is a local map of how steepness bends in every parameter direction.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> gradient is the slope under your feet; Hessian is the shape of the terrain around you.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Why the full Hessian is impractical at scale</summary>
+      <div class="intuition-content">
+        A model with P parameters has a P by P Hessian, which means P^2 entries. A 100M parameter model would require 10^16 entries, impossible to store or manipulate directly. This is why deep learning rarely uses full Newton updates. Instead, practical methods use diagonal approximations, low-rank approximations, Kronecker-factored approximations, or Hessian-vector products.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>memory(H) = O(P^2)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Dimensions check</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">number of parameters</span><span class="fa-desc">Total trainable scalar weights and biases.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">P^2</span><span class="fa-name">matrix entries</span><span class="fa-desc">Every parameter pair gets one curvature interaction.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">O()</span><span class="fa-name">scaling</span><span class="fa-desc">Asymptotic growth when model size increases.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> second-order information is rich, but full richness is too expensive for modern networks.</div>
+      <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> P=1,000,000 already means 1,000,000,000,000 Hessian entries.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Hessian-vector products: use curvature without building H</summary>
+      <div class="intuition-content">
+        Many algorithms only need H times a vector v, not the whole Hessian. Autograd can compute this product through another differentiation pass. This makes curvature-aware methods possible without materializing the P by P matrix. HVPs are central in conjugate gradient, truncated Newton methods, influence functions, and some natural-gradient approximations.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>H v = d/d epsilon grad L(theta + epsilon v) | epsilon=0</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">H v</span><span class="fa-name">Hessian-vector product</span><span class="fa-desc">Curvature effect in direction v.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v</span><span class="fa-name">probe direction</span><span class="fa-desc">A vector in parameter space.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">tiny step</span><span class="fa-desc">Used conceptually to measure how the gradient changes along v.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> ask the Hessian one directional question instead of storing the whole curvature map.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> check road curvature along your route, not for the entire country.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Natural gradient and Fisher information</summary>
+      <div class="intuition-content">
+        Ordinary gradient measures steepest descent in parameter coordinates. Natural gradient measures steepest descent in distribution space: it asks how much changing parameters changes the model's output distribution. The Fisher information matrix acts like a metric tensor for this space. This explains why the same Euclidean parameter step can be tiny for one model behavior and huge for another.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>theta_new = theta - eta F^{-1} grad L(theta)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">F</span><span class="fa-name">Fisher information</span><span class="fa-desc">Local geometry of the model distribution with respect to parameters.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">F^{-1}</span><span class="fa-name">geometry correction</span><span class="fa-desc">Rescales gradient by sensitivity of the distribution.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">grad L</span><span class="fa-name">ordinary gradient</span><span class="fa-desc">Direction of fastest loss increase in parameter coordinates.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">eta</span><span class="fa-name">step size</span><span class="fa-desc">Controls how far to move after geometry correction.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> natural gradient takes steps that are small in model behavior, not merely small in raw parameter values.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> adjust a sensitive microscope knob more carefully than a coarse volume knob.</div>
+    </div>
+  </section>
+<!-- phase4-go-deeper:end -->
+
 <!-- learning-checkpoint:start -->
   <section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
-        <h3>Ответь без подсказок</h3>
+        <h3>Answer without hints</h3>
         <ol class="ml-checkpoint-list">
-            <li>Что именно измеряет производная в контексте ML loss?</li>
-            <li>Как цепное правило делает backprop возможным?</li>
-            <li>Почему learning rate зависит от curvature поверхности?</li>
-            <li>Что показывает Hessian и как распознать saddle point?</li>
-            <li>Чем numerical gradient отличается от autograd?</li>
+          <li>What does a derivative measure in the context of ML loss?</li>
+          <li>How does the chain rule make backpropagation possible?</li>
+          <li>Why does learning rate depend on curvature?</li>
+          <li>What does the Hessian reveal about minima, maxima, and saddle points?</li>
+          <li>How is numerical differentiation different from autograd?</li>
         </ol>
       </article>
       <article class="ml-checkpoint-card">
         <h3>Explain to a rubber duck</h3>
         <ol class="ml-checkpoint-list">
-            <li>Объясни gradient descent как спуск по рельефу loss без формул.</li>
-            <li>Объясни chain rule на примере маленькой вычислительной цепочки из трёх операций.</li>
+          <li>Explain gradient descent as walking downhill on a loss surface.</li>
+          <li>Explain the chain rule using a three-step computation graph.</li>
         </ol>
         <div class="ml-self-rating" data-topic-id="01_math/02_calculus">
-          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <span class="ml-self-rating__label">I can explain this:</span>
           <button type="button" data-rating="1">1</button>
           <button type="button" data-rating="2">2</button>
           <button type="button" data-rating="3">3</button>
           <button type="button" data-rating="4">4</button>
           <button type="button" data-rating="5">5</button>
-          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+          <span class="ml-self-rating__label" data-rating-status>No rating yet</span>
         </div>
       </article>
     </div>
@@ -1221,40 +1306,40 @@ print(np.array(traj)[-5:])
 <!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Матанализ</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <h2>How to consolidate this topic: Calculus</h2>
+    <p class="muted">Use calculus to understand how small parameter changes affect loss, why gradients flow backward, and why optimization can become unstable.</p>
     <div class="ml-endcap-grid">
       <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Когда нужно понять вывод формулы, размерности тензоров или поведение градиента, возвращайся к теме &#171;Матанализ&#187;.</li>
-        <li>Используй эту базу при чтении статей: большинство сложных моделей опираются на те же операции, только в большем масштабе.</li>
-        <li>Если интерактив показывает форму функции или матрицы, меняй один параметр за раз и связывай изменение картинки с конкретным символом в формуле.</li>
-      </ul>
+        <h3>When to use it</h3>
+        <ul class="ml-endcap-list">
+          <li>When deriving losses, gradients, optimizer updates, or backprop equations.</li>
+          <li>When debugging exploding gradients, vanishing gradients, or unstable learning rates.</li>
+          <li>When reading papers that discuss curvature, Hessians, Fisher information, or natural gradient.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Учить запись без проверки размерностей: почти все ошибки в ML-математике проявляются как несовместимые shapes.</li>
-        <li>Путать геометрический смысл с алгебраической записью: одна и та же формула может описывать поворот, проекцию, масштабирование или чувствительность.</li>
-        <li>Пропускать числовой пример: маленький расчёт на 2-3 числах часто быстрее объясняет формулу, чем длинное определение.</li>
-      </ul>
+        <h3>Typical mistakes</h3>
+        <ul class="ml-endcap-list">
+          <li>Remembering derivative rules without understanding local sensitivity.</li>
+          <li>Ignoring signs and moving in the direction of increasing loss.</li>
+          <li>Confusing scalar derivatives, gradients, Jacobians, and Hessians.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Проверяй оси, порядок умножения, нормировку и диапазоны значений.</li>
-        <li>Для градиентных тем смотри знак, масштаб шага и то, какая переменная считается входом, а какая параметром.</li>
-        <li>Для вероятностных тем проверяй, что вероятности нормированы и что условие после вертикальной черты действительно фиксировано.</li>
-      </ul>
+        <h3>What to tune or inspect</h3>
+        <ul class="ml-endcap-list">
+          <li>Gradient norms, learning rate, curvature, and update-to-weight ratio.</li>
+          <li>Whether each operation in the computation graph has a valid local derivative.</li>
+          <li>Whether the optimizer uses first-order or approximate second-order information.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../01_math/01_linear_algebra.html">← 1.1 Линейная алгебра</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../01_math/03_probability_theory.html">1.3 Теория вероятностей →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
+        <h3>Connections</h3>
+        <ul class="ml-endcap-list">
+          <li><a href="../04_training/01_backpropagation.html">4.1 Backpropagation</a> is the chain rule applied efficiently.</li>
+          <li><a href="../04_training/02_optimizers.html">4.2 Optimizers</a> turn gradients into parameter updates.</li>
+          <li><a href="../01_math/05_optimization_theory.html">1.5 Optimization Theory</a> extends gradients into landscape geometry.</li>
+        </ul>
       </article>
     </div>
   </section>

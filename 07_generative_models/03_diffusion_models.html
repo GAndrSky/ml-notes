@@ -5,328 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>7.3 Diffusion Models</title>
   <link rel="stylesheet" href="../shared-nav.css" />
-  <style>
-    :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--amber:#f59e0b;--green:#10b981;--blue:#60a5fa;--red:#ef4444}
-    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}
-    .page{max-width:920px;margin:0 auto;padding:24px 18px 64px}.hero{margin-bottom:18px;background:linear-gradient(180deg,rgba(22,27,34,.96),rgba(18,23,31,.96));border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.2)} .hero p{color:var(--muted);max-width:760px}
-    h1,h2,h3{margin:0 0 12px} h1{font-size:2rem;line-height:1.15} h2{font-size:1.28rem;color:var(--amber)} h3{font-size:1rem;color:var(--blue)}
-    p{margin:0 0 12px}.muted{color:var(--muted)} .top-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#11161d;color:var(--muted);font-size:.84rem;line-height:1;white-space:nowrap}.tag.active{color:var(--amber);border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.1)} .tag.done{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)} .tag-block{color:#c7d2fe;border-color:#374151;background:#111827}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin:14px 0;box-shadow:0 0 0 1px rgba(255,255,255,.01) inset}
-    .grid-2,.grid-3{display:grid;gap:14px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .formula{background:#0b1016;border:1px solid #222b36;border-left:4px solid var(--amber);border-radius:10px;padding:12px 14px;margin:12px 0;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;line-height:1.55;white-space:pre-wrap}
-    .info,.warn,.success{border-radius:10px;padding:12px 14px;margin:12px 0}.info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35)} .warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35)} .success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.35)}
-    .control{display:flex;align-items:center;gap:10px;margin:8px 0}.control input[type=range]{flex:1;accent-color:var(--green)}
-    canvas{display:block;width:100%;border-radius:12px;background:#0b1016;border:1px solid #222b36}
-    @media (max-width:780px){.page{padding:18px 14px 54px}.grid-2,.grid-3{grid-template-columns:1fr}h1{font-size:1.7rem}}
-  </style>
   <link rel="stylesheet" href="../shared-theme.css" />
-  <meta name="description" content="7.3 Diffusion Models - interactive ML notes with formulas, visualizations, and code." />
+  <meta name="description" content="Diffusion models: forward noising, reverse denoising, DDPM objective, score intuition and sampling." />
   <meta property="og:title" content="7.3 Diffusion Models - ML notes" />
-  <meta property="og:description" content="7.3 Diffusion Models - interactive ML notes with formulas, visualizations, and code." />
+  <meta property="og:description" content="Forward process, reverse process, DDPM objective and diffusion intuition." />
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/03_diffusion_models.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
+  <style>
+    .diffusion-stage{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .noise-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}
+    .noise-cell{height:78px;border:1px solid var(--border);border-radius:12px;background:#0b1016;position:relative;overflow:hidden}
+    .noise-cell span{position:absolute;left:8px;bottom:6px;font-size:.76rem;color:var(--muted)}
+    .score-line{height:10px;border-radius:999px;background:linear-gradient(90deg,#7eb87e,#6c8ebf,#b87eb8);margin:8px 0}
+    @media (max-width:760px){.diffusion-stage{grid-template-columns:1fr}.noise-strip{grid-template-columns:repeat(3,1fr)}}
+  </style>
 </head>
 <body>
-  <div class="page">
-    <div class="hero">
+  <main class="page">
+    <section class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Блок 7 • Generative Models</span>
-        <span class="tag done">✓ 7.1 VAE</span>
-        <span class="tag done">✓ 7.2 GAN</span>
-        <span class="tag active">▶ 7.3 Diffusion</span>
+        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag done">7.1 VAE</span>
+        <span class="tag done">7.2 GAN</span>
+        <span class="tag active">7.3 Diffusion</span>
       </div>
       <h1>7.3 Diffusion Models</h1>
-      <p class="muted">Diffusion-модели учатся не сразу генерировать объект, а постепенно удалять шум. Это делает генерацию более стабильной, чем у GAN, и при этом даёт очень высокое качество образцов.</p>
-    </div>
-    <div class="card">
-      <h2>Forward process</h2>
-      <div class="formula" data-render-tex data-tex-source="q(x_t \mid x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t}\,x_{t-1}, \beta_t I)">q(x_t | x_{t-1}) = N(x_t; sqrt(1-β_t) x_{t-1}, β_t I)</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
-    </div>
-    <p>На каждом шаге мы чуть-чуть портим данные гауссовым шумом. После многих шагов исходный объект превращается почти в чистый шум.</p>
-    </div>
-<!-- frontier-deepening:start:7-3-forward-schedule -->
-  <section class="concept-walkthrough" data-frontier-deepening="7-3-forward-schedule">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Noise schedule задаёт учебную программу denoising</h3>
-    <p>Forward process постепенно разрушает данные шумом. Если шум добавляется слишком резко, reverse model получает слишком сложную задачу. Если слишком медленно, training и sampling становятся дорогими.</p>
-    <p>Schedule определяет, какие уровни corrupted data модель увидит и насколько равномерно она научится denoise на разных signal-to-noise regimes.</p>
-    <ul>
-      <li>Ранние шаги сохраняют много структуры изображения.</li>
-      <li>Поздние шаги почти полностью шумовые.</li>
-      <li>SNR schedule влияет на то, какие детали модель учит лучше.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-    <div class="card">
-      <h2>Closed form для шума на любом шаге</h2>
-      <p>Красивая часть DDPM в том, что forward process можно свернуть в одну формулу: не обязательно добавлять шум пошагово, чтобы получить <code>x_t</code>. Можно сразу сэмплировать его из исходного объекта <code>x_0</code> и одного гауссова шума.</p>
-      <div class="formula" data-render-tex data-tex-source="q(x_t \mid x_0) = \mathcal{N}\!\left(x_t;\sqrt{\bar{\alpha}_t}\,x_0,\,(1-\bar{\alpha}_t)I\right)">q(x_t | x_0) = N(x_t; sqrt(ᾱ_t)x_0, (1-ᾱ_t)I)</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
-    </div>
-    <p>Это очень важный практический шаг: именно благодаря ему diffusion удобно обучать случайным образом выбранным уровням шума, не раскручивая каждый раз всю длинную цепочку вперёд.</p>
-    </div>
-    <div class="card">
-      <h2>Reverse process</h2>
-      <div class="formula" data-render-tex data-tex-source="p_\theta(x_{t-1}\mid x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t,t), \Sigma_\theta(x_t,t))">p_θ(x_{t-1}|x_t) = N(x_{t-1}; μ_θ(x_t,t), Σ_θ(x_t,t))</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
-    </div>
-    <p>Модель учится делать обратное: по шумной версии объекта предсказывать, как шаг за шагом двигаться обратно к данным.</p>
-    </div>
-    <div class="card">
-      <h2>Почему objective часто сводят к noise prediction</h2>
-      <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{simple} = \mathbb{E}_{x_0,\varepsilon,t}\left[\|\varepsilon - \varepsilon_\theta(x_t, t)\|^2\right]">L_simple = E || ε - ε_θ(x_t, t) ||²</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
-    </div>
-    <p>На практике очень удобно учить сеть не напрямую предсказывать весь <code>x_{t-1}</code>, а угадывать добавленный шум. Это даёт стабильный и простой objective.</p>
-      <div class="info">Именно поэтому diffusion часто воспринимают как “денойзер, обученный на многих уровнях шума”.</div>
-    </div>
-<!-- frontier-deepening:start:7-3-noise-prediction -->
-  <section class="concept-walkthrough" data-frontier-deepening="7-3-noise-prediction">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Предсказание шума превращает reverse process в supervised denoising</h3>
-    <p>В DDPM мы знаем, какой шум epsilon добавили к x_0 на шаге t. Поэтому можно обучать сеть предсказывать этот шум по noisy sample и timestep. Это даёт простой MSE objective вместо прямого моделирования сложного reverse distribution.</p>
-    <p>Интуитивно модель учится говорить: какая часть текущего sample является шумом, который нужно убрать, чтобы приблизиться к данным.</p>
-    <ul>
-      <li>x_t - зашумлённый sample.</li>
-      <li>t сообщает уровень шума.</li>
-      <li>epsilon prediction даёт направление denoising.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-    <div class="card">
-      <h2>От variational bound к DDPM objective</h2>
-      <p>Исторически diffusion-модели выводятся как variational модель с латентной цепочкой. Полный training objective состоит из набора KL-термов по шагам цепочки. Но после аккуратных упрощений оказывается, что большая часть практической силы сидит в гораздо более удобной задаче — предсказании шума.</p>
-      <div class="formula" data-no-tex>Полная идея:
-максимизируем lower bound на log p_θ(x_0)
+      <p class="muted">Diffusion learns generation as iterative denoising: corrupt real data with controlled noise, then train a model to reverse that corruption step by step.</p>
+    </section>
 
-После упрощений:
-учим сеть восстанавливать ε
-по шумному x_t и номеру шага t
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/03_probability_theory.html">1.3 Probability</a>, <a href="../03_neural_basics/04_loss_functions.html">3.4 Loss</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>70-90 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>Medium for general ML, High for GenAI roles</span></div>
+      <div class="meta-card"><strong>Depth</strong><span>Solid</span></div>
+    </section>
 
-Практический выигрыш:
-простая MSE-цель,
-стабильный градиент,
-удобное обучение</div>
-    <p>Это один из тех случаев, где инженерная форма objective выглядит проще, чем исходный вывод, но не теряет его смысла: модель всё ещё учится аппроксимировать обратную динамику распределения данных.</p>
-    </div>
-    <div class="card">
-      <h2>Интерактивная интуиция</h2>
-      <div class="control"><span>Шаг t</span><input id="step" type="range" min="0" max="100" value="0" oninput="drawDiffusion()" /><strong id="stepVal">0</strong></div>
-      <canvas id="diffCanvas" width="860" height="250"></canvas>
-<!-- step1-viz:start -->
-    <div class="classic-viz-note" data-step1-viz-explainer="1">
-      <div class="classic-viz-note__kicker">Как читать интерактив</div>
-      <h3>Что менять и как интерпретировать</h3>
-      <ul class="ml-explainer-list">
-        <li>Смотри, как шум превращается в структуру или как latent перемещение меняет объект.</li>
-        <li>Если картинка улучшается, проверь diversity: модель могла просто сузить набор вариантов.</li>
-        <li>Интерактивы здесь полезны как проверка процесса генерации по шагам, а не только финального результата.</li>
-      </ul>
-    </div>
-<!-- step1-viz:end -->
-<div id="diffSummary" class="success"></div>
-    </div>
-    <div class="card">
-      <h2>Почему diffusion победил</h2>
-      <div class="grid-3">
-        <div class="success"><strong>Стабильность</strong><br>Обучение менее хрупкое, чем у GAN.</div>
-        <div class="info"><strong>Качество</strong><br>Очень сильные результаты на изображениях, аудио и видео.</div>
-        <div class="warn"><strong>Цена</strong><br>Сэмплирование часто медленнее, потому что идёт во многих шагах.</div>
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>A diffusion model does not map random noise to an image in one jump. It learns many small denoising steps, where each step removes a predictable amount of noise from the current sample.</p>
+    </section>
+
+    <section class="card">
+      <h2>Forward process: destroy data in a controlled way</h2>
+      <p>The forward process is fixed, not learned. At each timestep it adds a small amount of Gaussian noise. After many steps, the sample becomes almost pure noise.</p>
+      <div class="formula" data-render-tex data-tex-source="q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\sqrt{1-\beta_t}\,x_{t-1},\beta_t I\right)">
+        q(x_t | x_{t-1}) = N(x_t; sqrt(1-beta_t) x_{t-1}, beta_t I)
       </div>
-    </div>
-<!-- frontier-deepening:start:7-3-guidance-sampling -->
-  <section class="concept-walkthrough" data-frontier-deepening="7-3-guidance-sampling">
-    <div class="concept-walkthrough__kicker">Теория глубже</div>
-    <h3>Качество diffusion сильно зависит от sampler и guidance</h3>
-    <p>Обученная denoising model задаёт локальные шаги, но итоговая генерация зависит от того, как мы идём от шума к данным. Число шагов, sampler, classifier-free guidance и schedule меняют trade-off между качеством, разнообразием и скоростью.</p>
-    <p>Слишком сильный guidance может сделать samples красивее, но менее разнообразными или с артефактами. Слишком слабый guidance хуже следует условию prompt.</p>
-    <ul>
-      <li>Больше sampling steps обычно повышает качество, но замедляет inference.</li>
-      <li>Guidance scale усиливает следование условию.</li>
-      <li>Sampler выбирает численный путь reverse process.</li>
-    </ul>
-  </section>
-<!-- frontier-deepening:end -->
-    <div class="card">
-      <h2>Связь со score matching</h2>
-      <p>Есть ещё один очень полезный взгляд: diffusion можно понимать как обучение полю направлений, которое показывает, как двигаться от зашумлённого объекта обратно к области высокой плотности данных. В этом смысле diffusion тесно связан со score matching, где модель оценивает градиент лог-плотности.</p>
-      <div class="formula" data-render-tex data-tex-source="s_\theta(x_t, t) \approx \nabla_{x_t} \log p_t(x_t)">s_θ(x_t, t) ≈ ∇_{x_t} log p_t(x_t)</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
-    </div>
-    <p>Интуитивно это значит следующее: модель учится не просто “рисовать картинку”, а понимать, в каком направлении локально растёт правдоподобие данных. Именно поэтому diffusion выглядит таким устойчивым: он строит генерацию как длинную последовательность маленьких, локально осмысленных исправлений шума.</p>
-    </div>
-  </div>
-  <script>
-    function drawDiffusion() {
-      const step = Number(document.getElementById("step").value);
-      document.getElementById("stepVal").textContent = String(step);
-      const canvas = document.getElementById("diffCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
-      ctx.clearRect(0,0,w,h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0,0,w,h);
-      const bars = 60;
-      for(let i=0;i<bars;i++){
-        const x = 20 + i * 13;
-        const clean = Math.sin(i / 6) * 40 + 70;
-        const noise = (Math.sin(i * 7.1 + step) + Math.cos(i * 4.2 + step * 0.2)) * step * 0.7;
-        const height = Math.max(6, clean + noise);
-        ctx.fillStyle = "rgb(" + Math.min(255, 80 + step) + ",165,250)";
-        ctx.fillRect(x, h - 28 - height, 9, height);
-      }
-      let text = "Ранние шаги: сигнал ещё хорошо виден.";
-      if(step > 35) text = "Средний режим: структура данных ещё есть, но шум уже доминирует локально.";
-      if(step > 75) text = "Поздний режим: объект почти растворился в шуме, и задача reverse model — восстановить траекторию назад.";
-      document.getElementById("diffSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
-    }
-    drawDiffusion();
-  </script>
-  <script src="../bundle.js" defer></script>
-
-
-<!-- theory-expansion:start -->
-    <section class="concept-walkthrough theory-expansion" data-theory-expansion="1">
-      <div class="concept-walkthrough__kicker">Теоретический слой</div>
-      <h2>Diffusion как обучение обратного процесса удаления шума</h2>
-      <p>Diffusion models превращают генерацию в последовательность простых denoising-задач. Forward process постепенно добавляет шум к данным, а neural network учится идти назад: предсказывать шум, чистый sample или velocity.</p>
-      <p>Сила diffusion в том, что обучение становится стабильнее adversarial игры: модель получает supervised-like сигнал на каждом noise level. Цена — sampling обычно требует много шагов, хотя современные samplers сильно ускоряют процесс.</p>
-      <p>Для подготовки важно понимать три слоя: noise schedule, prediction target и sampler. Они вместе определяют качество, скорость и устойчивость генерации.</p>
-      <div class="grid-2">
-        <div class="info">
-          <h3>Как думать об этой теме</h3>
-          <ul>
-          <li>Forward process фиксирован и разрушает данные до шума.</li>
-          <li>Reverse process обучается и постепенно восстанавливает структуру.</li>
-          <li>Score matching intuition: модель учится направлению, куда надо двигаться от шума к data manifold.</li>
-          </ul>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">noisy sample</span><span class="fa-desc">Data point after t noise steps: image, audio, latent vector or embedding.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">x_{t-1}</span><span class="fa-name">previous sample</span><span class="fa-desc">Slightly cleaner version from the previous timestep.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">beta_t</span><span class="fa-name">noise schedule</span><span class="fa-desc">Small positive value controlling how much noise is added at step t.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">I</span><span class="fa-name">identity covariance</span><span class="fa-desc">Noise is independent across dimensions in the basic DDPM formulation.</span></div>
         </div>
-        <div class="success">
-          <h3>Что проверять в практике</h3>
-          <ul>
-          <li>Проверяй noise schedule: слишком агрессивный schedule усложняет denoising.</li>
-          <li>Сравнивай ε-prediction, x0-prediction и v-prediction для конкретной архитектуры.</li>
-          <li>Оцени sampler steps, guidance scale и diversity вместе, потому что они конфликтуют.</li>
-          </ul>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> the process slowly washes structure out of the data while keeping the corruption mathematically trackable.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like adding fog to a photo in many tiny steps until only fog remains.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if beta_t = 0.01, the step keeps about sqrt(0.99) = 0.995 of the previous signal and injects 1% noise variance.</div>
+      </div>
+      <details class="intuition-block">
+        <summary>Что это значит на практике</summary>
+        <div class="intuition-content">The schedule is a curriculum. Early timesteps teach the model to recover fine details from light corruption. Late timesteps teach it to create global structure from heavy noise.</div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Closed form: sample any noise level directly</h2>
+      <p>DDPM has a useful closed form: instead of applying every small noising step, we can sample x_t directly from x_0 and one Gaussian noise draw.</p>
+      <div class="formula" data-render-tex data-tex-source="x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon,\quad \varepsilon \sim \mathcal{N}(0,I)">
+        x_t = sqrt(alpha_bar_t) x_0 + sqrt(1-alpha_bar_t) epsilon
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">x_0</span><span class="fa-name">clean data</span><span class="fa-desc">Original training example before corruption.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">alpha_bar_t</span><span class="fa-name">remaining signal</span><span class="fa-desc">Cumulative product of alpha values; decreases as t grows.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">Gaussian noise</span><span class="fa-desc">Random noise sampled from a standard normal distribution.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sqrt(...)</span><span class="fa-name">variance scaling</span><span class="fa-desc">Keeps total variance controlled while signal is replaced by noise.</span></div>
         </div>
-        <div class="warn">
-          <h3>Где чаще всего ошибаются</h3>
-          <ul>
-          <li>Думать, что больше denoising steps всегда лучше: после точки насыщения растёт цена, а качество почти не меняется.</li>
-          <li>Ставить слишком высокий guidance и получать красивые, но менее разнообразные samples.</li>
-          <li>Путать training objective и sampling algorithm: модель одна, samplers могут быть разные.</li>
-          </ul>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> x_t is a weighted mixture of real signal and random noise.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like blending a clean photo with static using a slider.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if alpha_bar_t = 0.25, then x_t keeps 0.5 of the clean signal and adds sqrt(0.75) ≈ 0.866 noise scale.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Reverse process: learn to remove noise</h2>
+      <p>The reverse process is learned. A neural network receives a noisy sample and timestep, then predicts how to move one step toward cleaner data.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{simple}=\mathbb{E}_{x_0,\varepsilon,t}\left[\|\varepsilon-\varepsilon_\theta(x_t,t)\|_2^2\right]">
+        L_simple = E || epsilon - epsilon_theta(x_t, t) ||^2
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">true noise</span><span class="fa-desc">The exact noise that was added to create x_t during training.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon_theta</span><span class="fa-name">predicted noise</span><span class="fa-desc">Neural network output; theta are trainable weights.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">timestep</span><span class="fa-desc">Tells the network how noisy the input is.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">||.||_2^2</span><span class="fa-name">MSE penalty</span><span class="fa-desc">Large mistakes in noise prediction are penalized quadratically.</span></div>
         </div>
-        <div class="info">
-          <h3>Как объяснить на собеседовании</h3>
-          <ul>
-          <li>Опиши forward noising и learned reverse denoising.</li>
-          <li>Объясни, почему задача обучения стабильнее GAN.</li>
-          <li>Добавь trade-off: качество и controllability против стоимости sampling.</li>
-          </ul>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> if the model can identify the noise, it can subtract it and recover structure.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like learning the hiss in an audio recording so you can remove it.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if true noise is [0.3, -0.1] and prediction is [0.2, 0.0], the squared error is 0.01 + 0.01 = 0.02.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Interactive: signal versus noise</h2>
+      <div class="diffusion-stage">
+        <div>
+          <label class="control">Noise step t <input id="diffStep" type="range" min="0" max="100" value="30" /></label>
+          <div id="diffReadout" class="success"></div>
+          <p class="muted">Move the slider: left means mostly clean data; right means mostly noise. Sampling starts from the right side and repeatedly denoises back to the left.</p>
+        </div>
+        <div>
+          <div class="score-line" id="diffScore"></div>
+          <div class="noise-strip" id="noiseStrip"></div>
         </div>
       </div>
     </section>
-<!-- theory-expansion:end -->
-<!-- step1-learning:start -->
-  <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Diffusion Models</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
-    <div class="ml-endcap-grid">
-      <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Используй тему &#171;Diffusion Models&#187;, когда нужно понять, как модель порождает новые объекты, а не только предсказывает метку.</li>
-        <li>Генеративные модели требуют оценки и качества samples, и структуры latent/noise process.</li>
-        <li>Сравнивай модели по задаче: likelihood, diversity, controllability и sample quality не всегда улучшаются вместе.</li>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Thinking diffusion directly predicts pixels from pure noise in one step. It predicts local denoising directions.</li>
+        <li>Ignoring the timestep embedding. The same noisy image means different things depending on noise level.</li>
+        <li>Confusing DDPM training with sampling. Training can use random timesteps; sampling must run a reverse chain.</li>
       </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Судить только по красивым примерам: нужны diversity checks, failure cases и стабильные метрики.</li>
-        <li>Путать latent space с реальным смысловым пространством: близость в latent не всегда означает семантическую близость.</li>
-        <li>Игнорировать баланс обучения: GAN, VAE и diffusion ломаются по разным причинам.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Настраивай latent dimension, noise schedule, regularization, guidance, architecture capacity и learning rate.</li>
-        <li>Для GAN следи за балансом generator/discriminator и признаками mode collapse.</li>
-        <li>Для diffusion оцени schedule, number of steps, prediction target и sampler.</li>
-      </ul>
-      </article>
-      <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../07_generative_models/02_generative_adversarial_networks.html">← 7.2 GAN</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../08_training_practice/01_distributed_training.html">8.1 Distributed Training →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
-      </article>
-    </div>
-  </section>
-<!-- step1-learning:end -->
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>Why is the forward process fixed instead of learned?</li>
+        <li>What does alpha_bar_t measure?</li>
+        <li>Why is noise prediction easier than directly predicting x_{t-1}?</li>
+        <li>How does the timestep help the denoiser?</li>
+      </ol>
+      <details class="intuition-block">
+        <summary>Rubber duck prompt</summary>
+        <div class="intuition-content">Explain diffusion as a training curriculum where the model learns to clean data at many corruption levels.</div>
+      </details>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var slider = document.getElementById("diffStep");
+      var readout = document.getElementById("diffReadout");
+      var score = document.getElementById("diffScore");
+      var strip = document.getElementById("noiseStrip");
+      if (!slider || !readout || !score || !strip) return;
+
+      function render() {
+        var t = Number(slider.value);
+        var signal = Math.max(0, 1 - t / 100);
+        var noise = 1 - signal;
+        readout.textContent = "signal ≈ " + signal.toFixed(2) + ", noise ≈ " + noise.toFixed(2);
+        score.style.opacity = String(0.35 + signal * 0.65);
+        strip.innerHTML = "";
+        for (var i = 0; i < 6; i += 1) {
+          var level = Math.min(1, noise + i * 0.08);
+          var cell = document.createElement("div");
+          cell.className = "noise-cell";
+          cell.style.background =
+            "radial-gradient(circle at " + (30 + i * 9) + "% " + (30 + i * 7) + "%, rgba(126,184,126," + (0.3 * (1 - level)) + "), transparent 32%)," +
+            "linear-gradient(135deg, rgba(108,142,191," + (0.25 * (1 - level)) + "), rgba(184,126,184," + (0.35 * level) + "))," +
+            "#0b1016";
+          cell.innerHTML = "<span>t+" + i + "</span>";
+          strip.appendChild(cell);
+        }
+      }
+
+      slider.addEventListener("input", render);
+      render();
+    })();
+  </script>
+  <script src="../bundle.js" defer></script>
 </body>
 </html>

@@ -1043,34 +1043,111 @@ print(cross_entropy(logits, y))
   </section>
 <!-- learning-exercises:end -->
 
+<!-- phase4-go-deeper:start -->
+  <section class="ml-advanced-section" data-phase4-go-deeper="information-theory">
+    <h2>Go Deeper: mutual information, bottlenecks, and rate-distortion</h2>
+    <p class="muted">This section connects information theory to representation learning, feature selection, VAEs, contrastive learning, and compression. The research-track question is: what information should a model keep, discard, or transmit?</p>
+
+    <details class="intuition-block" open>
+      <summary>Mutual information: shared information between variables</summary>
+      <div class="intuition-content">
+        Mutual information measures how much knowing one variable reduces uncertainty about another. Unlike correlation, it can capture nonlinear dependence. In representation learning, it helps formalize whether a learned representation keeps information about labels, inputs, or nuisance factors.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>I(X;Y) = H(X) - H(X | Y)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">I(X;Y)</span><span class="fa-name">mutual information</span><span class="fa-desc">Information shared between X and Y.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H(X)</span><span class="fa-name">entropy of X</span><span class="fa-desc">Uncertainty about X before observing Y.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H(X|Y)</span><span class="fa-name">conditional entropy</span><span class="fa-desc">Remaining uncertainty about X after observing Y.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X,Y</span><span class="fa-name">random variables</span><span class="fa-desc">Could be input, label, latent representation, or predicted output.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> if Y tells you a lot about X, their mutual information is high.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> knowing a person's city reduces uncertainty about their commute time more than knowing their favorite color.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Information bottleneck principle</summary>
+      <div class="intuition-content">
+        The information bottleneck idea says a representation Z should keep information about target Y while discarding unnecessary information about input X. This gives a formal language for useful compression: keep predictive structure, remove nuisance details. It connects to regularization, invariance, representation learning, and some interpretations of deep networks.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>minimize I(X;Z) - beta I(Z;Y)</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">input</span><span class="fa-desc">Raw data with useful signal and nuisance variation.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Z</span><span class="fa-name">representation</span><span class="fa-desc">Latent features learned by a model.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Y</span><span class="fa-name">target</span><span class="fa-desc">Label or objective-relevant variable.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">I(X;Z)</span><span class="fa-name">compression penalty</span><span class="fa-desc">How much input information is retained in Z.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">I(Z;Y)</span><span class="fa-name">predictive information</span><span class="fa-desc">How much target information Z preserves.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">beta</span><span class="fa-name">trade-off</span><span class="fa-desc">Controls prediction versus compression.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> learn the smallest representation that still predicts what matters.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a good exam cheat sheet keeps concepts needed for the test and removes decorative details.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Rate-distortion theory</summary>
+      <div class="intuition-content">
+        Rate-distortion theory formalizes the trade-off between compression rate and reconstruction quality. In ML, this idea appears in autoencoders, VAEs, quantization, representation compression, and lossy data storage. The central question is: how many bits are needed to preserve a useful level of fidelity?
+      </div>
+    </details>
+    <div class="formula" data-no-tex>R(D) = min I(X;Z) subject to E[d(X, X_hat)] <= D</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">R(D)</span><span class="fa-name">minimum rate</span><span class="fa-desc">Smallest information budget needed for distortion level D.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">D</span><span class="fa-name">distortion budget</span><span class="fa-desc">Allowed reconstruction error.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d(X,X_hat)</span><span class="fa-name">distortion measure</span><span class="fa-desc">How bad the reconstruction is compared with original input.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Z</span><span class="fa-name">compressed code</span><span class="fa-desc">Representation used to reconstruct X.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">I(X;Z)</span><span class="fa-name">information rate</span><span class="fa-desc">How much information the code carries about the input.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> better reconstruction needs more information; stronger compression accepts more distortion.</div>
+      <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> a tiny JPEG file saves bits by allowing artifacts; a large PNG keeps more detail.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Connection to VAEs and beta-VAE</summary>
+      <div class="intuition-content">
+        A VAE balances reconstruction quality and latent compression through its reconstruction term and KL term. Increasing the KL weight in beta-VAE pushes the latent code to carry less information, often improving disentanglement but hurting reconstruction. This is rate-distortion thinking in a deep generative model.
+      </div>
+    </details>
+  </section>
+<!-- phase4-go-deeper:end -->
+
 <!-- learning-checkpoint:start -->
   <section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
-        <h3>Ответь без подсказок</h3>
+        <h3>Answer without hints</h3>
         <ol class="ml-checkpoint-list">
-            <li>Что измеряет entropy и когда она максимальна?</li>
-            <li>Почему KL(p||q) не равно KL(q||p)?</li>
-            <li>Как cross-entropy связана с maximum likelihood?</li>
-            <li>Зачем нужен log-sum-exp trick?</li>
-            <li>Как mutual information будет отличаться от correlation?</li>
+          <li>What does entropy measure and when is it maximal?</li>
+          <li>Why is KL(p || q) not the same as KL(q || p)?</li>
+          <li>How is cross-entropy connected to maximum likelihood?</li>
+          <li>Why is the log-sum-exp trick needed?</li>
+          <li>How is mutual information different from correlation?</li>
         </ol>
       </article>
       <article class="ml-checkpoint-card">
         <h3>Explain to a rubber duck</h3>
         <ol class="ml-checkpoint-list">
-            <li>Объясни entropy как средний surprise без формул.</li>
-            <li>Объясни KL divergence как цену использования неправильной карты мира.</li>
+          <li>Explain entropy as average surprise without formulas.</li>
+          <li>Explain KL divergence as the cost of using the wrong map of the world.</li>
         </ol>
         <div class="ml-self-rating" data-topic-id="01_math/04_information_theory">
-          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <span class="ml-self-rating__label">I can explain this:</span>
           <button type="button" data-rating="1">1</button>
           <button type="button" data-rating="2">2</button>
           <button type="button" data-rating="3">3</button>
           <button type="button" data-rating="4">4</button>
           <button type="button" data-rating="5">5</button>
-          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+          <span class="ml-self-rating__label" data-rating-status>No rating yet</span>
         </div>
       </article>
     </div>
@@ -1078,40 +1155,40 @@ print(cross_entropy(logits, y))
 <!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Теория информации</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <h2>How to consolidate this topic: Information Theory</h2>
+    <p class="muted">Use information theory to understand uncertainty, compression, cross-entropy losses, KL regularization, and representation learning.</p>
     <div class="ml-endcap-grid">
       <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Когда нужно понять вывод формулы, размерности тензоров или поведение градиента, возвращайся к теме &#171;Теория информации&#187;.</li>
-        <li>Используй эту базу при чтении статей: большинство сложных моделей опираются на те же операции, только в большем масштабе.</li>
-        <li>Если интерактив показывает форму функции или матрицы, меняй один параметр за раз и связывай изменение картинки с конкретным символом в формуле.</li>
-      </ul>
+        <h3>When to use it</h3>
+        <ul class="ml-endcap-list">
+          <li>When interpreting classification loss, language-model loss, or KL terms.</li>
+          <li>When reasoning about compression, bottlenecks, and representation quality.</li>
+          <li>When comparing distributions in VAEs, distillation, RLHF, DPO, or diffusion.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Учить запись без проверки размерностей: почти все ошибки в ML-математике проявляются как несовместимые shapes.</li>
-        <li>Путать геометрический смысл с алгебраической записью: одна и та же формула может описывать поворот, проекцию, масштабирование или чувствительность.</li>
-        <li>Пропускать числовой пример: маленький расчёт на 2-3 числах часто быстрее объясняет формулу, чем длинное определение.</li>
-      </ul>
+        <h3>Typical mistakes</h3>
+        <ul class="ml-endcap-list">
+          <li>Treating KL as a symmetric distance metric.</li>
+          <li>Forgetting that entropy depends on the whole distribution, not only the most likely class.</li>
+          <li>Using unstable softmax or log computations instead of log-sum-exp.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Проверяй оси, порядок умножения, нормировку и диапазоны значений.</li>
-        <li>Для градиентных тем смотри знак, масштаб шага и то, какая переменная считается входом, а какая параметром.</li>
-        <li>Для вероятностных тем проверяй, что вероятности нормированы и что условие после вертикальной черты действительно фиксировано.</li>
-      </ul>
+        <h3>What to tune or inspect</h3>
+        <ul class="ml-endcap-list">
+          <li>Temperature, label smoothing, KL weight, entropy regularization, and compression strength.</li>
+          <li>Whether distributions are compared in the correct direction.</li>
+          <li>Whether loss is measured in bits, nats, or averaged token/object units.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../01_math/03_probability_theory.html">← 1.3 Теория вероятностей</a> — повторить предыдущий контекст перед этой темой.</li>
-        <li><a href="../02_classic_ml/01_intro_to_classical_ml.html">2.1 Введение в классическое ML →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
+        <h3>Connections</h3>
+        <ul class="ml-endcap-list">
+          <li><a href="../03_neural_basics/04_loss_functions.html">3.4 Loss Functions</a> uses cross-entropy directly.</li>
+          <li><a href="../07_generative_models/01_variational_autoencoders.html">7.1 VAE</a> uses KL as a latent regularizer.</li>
+          <li><a href="../06_llm/08_dpo_alignment_alternatives.html">6.8 DPO</a> relies on reference-model KL-style control.</li>
+        </ul>
       </article>
     </div>
   </section>

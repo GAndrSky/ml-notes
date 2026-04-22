@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.22 Time Series Fundamentals</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Time series fundamentals for ML: stationarity, autocorrelation, ARIMA intuition, seasonal decomposition, rolling features, validation and leakage." />
+  <meta property="og:title" content="2.22 Time Series Fundamentals - ML notes" />
+  <meta property="og:description" content="Learn time series basics: trend, seasonality, stationarity, autocorrelation, ARIMA, rolling features and time-aware validation." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/22_time_series_fundamentals.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 2</span>
+        <span class="tag active">2.22 Time Series</span>
+        <span class="tag">Stationarity</span>
+        <span class="tag">ARIMA</span>
+        <span class="tag">Validation</span>
+      </div>
+      <h1>2.22 Time Series Fundamentals</h1>
+      <p class="muted">Time series problems break many standard ML assumptions because order matters. Random train/test split can leak the future, distribution changes over time, and seasonality can look like signal even when it is only calendar structure.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>A time series is data indexed by time. The key ideas are trend, seasonality, stationarity, autocorrelation, lag features, rolling statistics, and time-aware validation. For ML, the main rule is: never let the future leak into training features or validation.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Why this matters</h2>
+      <p>Demand forecasting, sales prediction, monitoring metrics, sensor data, finance, fraud, user activity, and model drift are time series problems. A model can look excellent with random split and fail completely in production because it accidentally learned from the future.</p>
+      <div class="grid-2">
+        <div class="success">
+          <strong>Core questions</strong>
+          <ul>
+            <li>What is the forecast horizon?</li>
+            <li>How frequently is data observed?</li>
+            <li>What information is available at prediction time?</li>
+            <li>Does the pattern change over time?</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Most common failure</strong>
+          <ul>
+            <li>Using random split.</li>
+            <li>Computing rolling features with future rows.</li>
+            <li>Scaling using all data before splitting.</li>
+            <li>Evaluating one-step forecast while product needs 30-day forecast.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Components of a time series</h2>
+      <div class="formula" data-no-tex>y_t = trend_t + seasonality_t + residual_t</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">y_t</span><span class="fa-name">observed value</span><span class="fa-desc">The value of the series at time t, such as sales today.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">trend_t</span><span class="fa-name">long-term movement</span><span class="fa-desc">Slow upward or downward direction over time.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">seasonality_t</span><span class="fa-name">repeating pattern</span><span class="fa-desc">Daily, weekly, monthly, or yearly recurring structure.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">residual_t</span><span class="fa-name">unexplained part</span><span class="fa-desc">Noise and irregular effects left after trend and seasonality.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> split the signal into slow movement, repeating calendar structure, and leftover surprise.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> store sales can rise over years, spike every weekend, and still have random daily shocks.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Stationarity</h2>
+      <p>A stationary series has statistical properties that do not change over time. In practice this usually means stable mean, variance, and autocorrelation structure.</p>
+      <div class="formula" data-no-tex>E[y_t] = mu, Var(y_t) = sigma^2, Cov(y_t, y_{t-k}) depends only on k</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">E[y_t]</span><span class="fa-name">mean</span><span class="fa-desc">Average level of the series at time t.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">Var(y_t)</span><span class="fa-name">variance</span><span class="fa-desc">How much values fluctuate around the mean.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">Cov</span><span class="fa-name">covariance</span><span class="fa-desc">How values at two time points move together.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">lag</span><span class="fa-desc">Distance in time steps between two observations.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the series behaves similarly no matter where you look in time.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a machine that vibrates around the same level all year is more stationary than a growing business metric.</div>
+      </div>
+      <p>Many classical methods prefer stationarity. Differencing, detrending, log transform, and seasonal adjustment are common ways to make a series easier to model.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Autocorrelation</h2>
+      <div class="formula" data-no-tex>rho_k = Corr(y_t, y_{t-k})</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">rho_k</span><span class="fa-name">autocorrelation at lag k</span><span class="fa-desc">How strongly current values relate to values k steps ago.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_t</span><span class="fa-name">current value</span><span class="fa-desc">The value at current time t.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_{t-k}</span><span class="fa-name">lagged value</span><span class="fa-desc">The value k steps before current time.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">Corr</span><span class="fa-name">correlation</span><span class="fa-desc">Scale-free linear relationship from -1 to 1.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> autocorrelation tells how much the past predicts the present.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if daily demand has rho_7=0.8, demand this Monday is strongly related to last Monday.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>ARIMA intuition</h2>
+      <p>ARIMA models combine autoregression, differencing, and moving-average error correction.</p>
+      <div class="formula" data-no-tex>ARIMA(p,d,q) = AR(p) + differencing(d) + MA(q)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">p</span><span class="fa-name">AR order</span><span class="fa-desc">How many lagged values are used as predictors.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">differencing order</span><span class="fa-desc">How many times the series is differenced to reduce trend.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">q</span><span class="fa-name">MA order</span><span class="fa-desc">How many lagged forecast errors are modeled.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">AR/MA</span><span class="fa-name">model parts</span><span class="fa-desc">AR uses past values; MA uses past errors.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> predict from past values, remove trend, and correct systematic past mistakes.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> estimate tomorrow by looking at recent days, adjusting for growth, and remembering recent forecast errors.</div>
+      </div>
+      <p>For many production ML tasks, tree models with lag and rolling features are easier to combine with external regressors than pure ARIMA.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Feature engineering for ML</h2>
+      <div class="formula" data-no-tex>features_t = [y_{t-1}, y_{t-7}, rolling_mean(y_{t-7:t-1}), calendar_t, external_t]</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">y_{t-1}</span><span class="fa-name">recent lag</span><span class="fa-desc">Most recent known value before prediction time.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">y_{t-7}</span><span class="fa-name">seasonal lag</span><span class="fa-desc">Value from the same weekday in daily data.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">rolling_mean</span><span class="fa-name">historical average</span><span class="fa-desc">Average over past values only; must not include y_t.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">calendar_t</span><span class="fa-name">calendar features</span><span class="fa-desc">Day of week, month, holiday, hour, promo calendar.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">external_t</span><span class="fa-name">known covariates</span><span class="fa-desc">Weather forecast, price, campaign, or other known-at-time features.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> convert temporal dependence into normal tabular features while respecting time order.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> forecast demand using yesterday, last week, recent average, and known holidays.</div>
+      </div>
+      <pre><code class="language-python"># What it does: creates lag and rolling features without future leakage.
+# Input shapes: df has columns ["date", "y"]
+# Output shapes: supervised dataframe with lag features
+import pandas as pd
+
+df = pd.DataFrame({
+    "date": pd.date_range("2026-01-01", periods=30, freq="D"),
+    "y": [10, 11, 13, 12, 15, 18, 20, 11, 12, 14,
+          13, 16, 19, 21, 12, 13, 15, 14, 17, 20,
+          22, 13, 14, 16, 15, 18, 21, 23, 14, 15],
+})
+
+df = df.sort_values("date")
+df["lag_1"] = df["y"].shift(1)
+df["lag_7"] = df["y"].shift(7)
+df["rolling_7_mean"] = df["y"].shift(1).rolling(7).mean()
+df["dayofweek"] = df["date"].dt.dayofweek
+
+features = df.dropna()
+print(features.head())
+
+# Gotchas:
+# 1. Use shift(1) before rolling, otherwise y_t leaks into its own feature.
+# 2. Split by time before fitting scalers, encoders, or target transforms.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Time-aware validation</h2>
+      <div class="formula" data-no-tex>train: [1..t], validation: [t+1..t+h]</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">cutoff time</span><span class="fa-desc">Last timestamp allowed in training data.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">h</span><span class="fa-name">forecast horizon</span><span class="fa-desc">How far into the future the validation period extends.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">train</span><span class="fa-name">past data</span><span class="fa-desc">Only observations available before the cutoff.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">validation</span><span class="fa-name">future block</span><span class="fa-desc">The period used to simulate production forecasting.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> validate by pretending you are standing in the past and predicting the future.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> you cannot use next month's sales report to forecast next month.</div>
+      </div>
+      <p>Use rolling-origin validation when possible: train on older data, validate on the next horizon, move the cutoff forward, and repeat.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Metrics</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Scale-dependent</h3>
+          <ul>
+            <li>MAE: robust and interpretable in original units.</li>
+            <li>RMSE: penalizes large errors more.</li>
+            <li>WAPE: useful for aggregate business error.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Scale-free</h3>
+          <ul>
+            <li>MAPE: intuitive but breaks near zero.</li>
+            <li>SMAPE: less asymmetric than MAPE.</li>
+            <li>MASE: compares against naive baseline.</li>
+          </ul>
+        </div>
+      </div>
+      <p>Always compare against a naive baseline such as "tomorrow equals today" or "this Monday equals last Monday". If your model cannot beat that, feature engineering or validation is wrong.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Typical mistakes</h2>
+      <div class="grid-2">
+        <div class="warn">
+          <strong>Leakage mistakes</strong>
+          <ul>
+            <li>Random split across time.</li>
+            <li>Rolling windows that include current or future target.</li>
+            <li>Global normalization before time split.</li>
+            <li>Using features unknown at prediction time.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Modeling mistakes</strong>
+          <ul>
+            <li>Ignoring forecast horizon.</li>
+            <li>Ignoring calendar and known future covariates.</li>
+            <li>Trusting one validation split during regime change.</li>
+            <li>Using MAPE when true values are near zero.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational</div>
+          <h3>Find leakage</h3>
+          <p>A feature is `rolling_7_mean = y.rolling(7).mean()`. Why is this wrong for one-step forecasting?</p>
+          <details><summary>Show solution</summary><p>It includes y_t in the feature for predicting y_t. Use y.shift(1).rolling(7).mean() instead.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Choose validation</h3>
+          <p>You forecast weekly demand four weeks ahead. Design a validation split.</p>
+          <details><summary>Show solution</summary><p>Use rolling cutoffs. For each cutoff, train on past weeks and validate on the next four weeks. Average metrics across cutoffs.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard</div>
+          <h3>Baseline challenge</h3>
+          <p>Create a seasonal naive baseline for daily data with weekly seasonality and compare MAE against a tree model.</p>
+          <details><summary>Show solution</summary><p>Seasonal naive prediction is y_hat_t = y_{t-7}. If a complex model does not beat it, inspect leakage, features, horizon, and metric.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain why random split is wrong for time series?</li>
+        <li>Can you define trend, seasonality, stationarity, and autocorrelation?</li>
+        <li>Can you build lag and rolling features without leakage?</li>
+        <li>Can you design rolling-origin validation for a forecast horizon?</li>
+        <li>Can you choose a naive baseline and a metric?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="02_classic_ml_22_time_series_fundamentals" data-title="Time Series Fundamentals">
+        <span>I can design a leakage-safe time series baseline:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

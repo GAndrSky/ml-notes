@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7.5 Stable Diffusion Deep Dive</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Stable Diffusion: latent diffusion, VAE encoder/decoder, UNet denoiser, CLIP conditioning and classifier-free guidance." />
+  <meta property="og:title" content="7.5 Stable Diffusion Deep Dive - ML notes" />
+  <meta property="og:description" content="Latent diffusion, VAE, UNet, CLIP text conditioning and CFG math." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/05_stable_diffusion_deep_dive.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+  <style>
+    .pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+    .pipe-step{border:1px solid var(--border);border-radius:14px;padding:12px;background:#0b1016;min-height:112px}
+    .pipe-step strong{display:block;color:var(--accent,#7eb8b8);margin-bottom:6px}
+    @media (max-width:860px){.pipeline{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag done">7.3 Diffusion</span>
+        <span class="tag done">7.4 Flows</span>
+        <span class="tag active">7.5 Stable Diffusion</span>
+      </div>
+      <h1>7.5 Stable Diffusion Deep Dive</h1>
+      <p class="muted">Stable Diffusion is latent diffusion: it denoises compressed image latents instead of raw pixels, while text embeddings guide the generation.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="03_diffusion_models.html">7.3 Diffusion</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a>, <a href="../05_architectures/03_transformer_attention.html">5.3 Attention</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>80-110 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>High for GenAI/CV roles</span></div>
+      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+    </section>
+
+    <section class="card">
+      <h2>The full pipeline</h2>
+      <div class="pipeline">
+        <div class="pipe-step"><strong>1. Text prompt</strong><span>Tokenized and encoded by a CLIP text encoder.</span></div>
+        <div class="pipe-step"><strong>2. Random latent</strong><span>Start from Gaussian noise in compressed latent space.</span></div>
+        <div class="pipe-step"><strong>3. UNet denoiser</strong><span>Predicts noise conditioned on text and timestep.</span></div>
+        <div class="pipe-step"><strong>4. Scheduler</strong><span>Updates the latent through reverse diffusion steps.</span></div>
+        <div class="pipe-step"><strong>5. VAE decoder</strong><span>Decodes final latent into pixels.</span></div>
+      </div>
+      <p>The key engineering idea is not only diffusion. It is where diffusion happens: in a smaller latent space, which makes training and sampling much cheaper than pixel-space diffusion.</p>
+    </section>
+
+    <section class="card">
+      <h2>Latent diffusion objective</h2>
+      <p>Instead of noising an image x directly, Stable Diffusion first encodes it into a latent z with a VAE encoder. Diffusion then learns denoising in that latent space.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathcal{L}=\mathbb{E}_{z,\varepsilon,t,c}\left[\|\varepsilon-\varepsilon_\theta(z_t,t,c)\|_2^2\right]">
+        L = E || epsilon - epsilon_theta(z_t, t, c) ||^2
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">image latent</span><span class="fa-desc">Compressed representation produced by the VAE encoder.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">z_t</span><span class="fa-name">noisy latent</span><span class="fa-desc">Latent after t noise steps.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">conditioning</span><span class="fa-desc">Text embedding from the prompt, usually from a CLIP text encoder.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon_theta</span><span class="fa-name">UNet prediction</span><span class="fa-desc">Predicted noise for the current latent, timestep and text condition.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> the model learns which part of a noisy compressed image is noise, using the prompt as a guide.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like restoring a blurred sketch while reading a written description of what it should become.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if the VAE compresses 512x512x3 pixels into 64x64x4 latents, diffusion operates on about 16k values instead of 786k pixels.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Why latent space matters</h2>
+      <p>Pixel-space diffusion is expensive because every denoising step touches every pixel. Latent diffusion uses a learned compression where perceptually important structure is preserved but the spatial size is much smaller.</p>
+      <ul>
+        <li><strong>VAE encoder:</strong> image to latent. Used during training and image-to-image workflows.</li>
+        <li><strong>UNet:</strong> denoises latent variables, not RGB pixels.</li>
+        <li><strong>VAE decoder:</strong> latent to final image. Used after sampling.</li>
+      </ul>
+      <details class="intuition-block">
+        <summary>Что это значит на практике</summary>
+        <div class="intuition-content">Most generation quality comes from the denoising UNet and conditioning. The VAE controls the visual bottleneck: if the VAE cannot encode fine details, the diffusion model cannot reliably recover them at the end.</div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Text conditioning through cross-attention</h2>
+      <p>The text prompt is not just appended as a label. UNet blocks use cross-attention: image latent features ask questions, text token embeddings provide keys and values.</p>
+      <div class="formula" data-render-tex data-tex-source="\mathrm{CrossAttn}(Q_{img},K_{text},V_{text})=\mathrm{softmax}\left(\frac{Q_{img}K_{text}^{\top}}{\sqrt{d}}\right)V_{text}">
+        CrossAttn(Q_img, K_text, V_text) = softmax(Q_img K_text^T / sqrt(d)) V_text
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">Q_img</span><span class="fa-name">image queries</span><span class="fa-desc">Latent image features asking what text tokens are relevant.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">K_text</span><span class="fa-name">text keys</span><span class="fa-desc">Token descriptors used for matching image locations to words.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">V_text</span><span class="fa-name">text values</span><span class="fa-desc">Information injected into image features after attention weights are computed.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">sqrt(d)</span><span class="fa-name">scale factor</span><span class="fa-desc">Prevents attention logits from becoming too large as hidden dimension grows.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> each image region can selectively pull information from words in the prompt.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like an artist repeatedly checking different words of the brief while refining different parts of the sketch.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> a region that attends strongly to "red" and "car" receives text information that biases it toward red car-like features.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Classifier-free guidance</h2>
+      <p>CFG makes the sample follow the prompt more strongly by comparing conditional and unconditional noise predictions.</p>
+      <div class="formula" data-render-tex data-tex-source="\hat{\varepsilon}=\varepsilon_\theta(z_t,t,\varnothing)+s\left(\varepsilon_\theta(z_t,t,c)-\varepsilon_\theta(z_t,t,\varnothing)\right)">
+        eps_hat = eps_uncond + s * (eps_cond - eps_uncond)
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">eps_cond</span><span class="fa-name">conditional prediction</span><span class="fa-desc">Noise prediction when the prompt is provided.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">eps_uncond</span><span class="fa-name">unconditional prediction</span><span class="fa-desc">Noise prediction with an empty or dropped condition.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">s</span><span class="fa-name">guidance scale</span><span class="fa-desc">How aggressively the sample is pushed toward the prompt. Common values: 5-12.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">eps_hat</span><span class="fa-name">guided prediction</span><span class="fa-desc">Final noise estimate used by the scheduler step.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CFG amplifies the difference between "generic image" and "image matching this prompt".</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like turning up the prompt volume: clearer instruction, but too loud can distort the result.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if eps_uncond=1.0, eps_cond=0.7 and s=7, then eps_hat=1+7*(-0.3)=-1.1.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Common mistakes</h2>
+      <ul>
+        <li>Thinking CLIP generates the image. CLIP text embeddings condition the denoising UNet; the UNet does generation.</li>
+        <li>Ignoring the VAE bottleneck. Some artifacts come from latent compression/decoding, not from diffusion itself.</li>
+        <li>Setting CFG too high. Higher prompt adherence can reduce realism, diversity and composition quality.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Derivation: CFG direction</summary><div class="intuition-content">Rewrite CFG as eps_hat = (1-s) eps_uncond + s eps_cond. Explain why s > 1 extrapolates beyond the conditional prediction.</div></details>
+      <details class="intuition-block"><summary>Coding: toy CFG</summary><div class="intuition-content">Given two arrays eps_cond and eps_uncond, implement classifier-free guidance and test several guidance scales.</div></details>
+      <details class="intuition-block"><summary>Conceptual: latent vs pixel diffusion</summary><div class="intuition-content">Explain the computational reason latent diffusion is cheaper and the quality risk introduced by compression.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>What does the VAE do in Stable Diffusion?</li>
+        <li>Why does the UNet denoise latents instead of pixels?</li>
+        <li>How does cross-attention connect prompt tokens to image regions?</li>
+        <li>Why can too much CFG hurt generation quality?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

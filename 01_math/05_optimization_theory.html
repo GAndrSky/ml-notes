@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1.5 Optimization Theory</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Optimization theory for ML: convex vs non-convex landscapes, saddle points, sharpness, SAM, PAC learning, VC dimension and double descent." />
+  <meta property="og:title" content="1.5 Optimization Theory - ML notes" />
+  <meta property="og:description" content="A research-track bridge from calculus to training dynamics and generalization theory." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/01_math/05_optimization_theory.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 1</span>
+        <span class="tag active">1.5 Optimization Theory</span>
+        <span class="tag">Non-convex</span>
+        <span class="tag">Generalization</span>
+        <span class="tag">Double Descent</span>
+      </div>
+      <h1>1.5 Optimization Theory</h1>
+      <p class="muted">Optimization theory explains why training can work even when the loss landscape is non-convex, high-dimensional, noisy, and impossible to solve exactly.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>Classical optimization asks for global minima. Deep learning often works with non-convex landscapes, stochastic gradients, overparameterization, and approximate solutions. The key research questions are: why does optimization find useful solutions, and why do some solutions generalize better than others?</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Why this matters</h2>
+      <p>If you only know gradient descent as "move downhill", deep learning looks mysterious. Optimization theory gives language for saddle points, curvature, flatness, sharpness, stochasticity, implicit regularization, and why bigger models can sometimes generalize better.</p>
+      <div class="grid-2">
+        <div class="success">
+          <strong>Use this topic to understand</strong>
+          <ul>
+            <li>Why non-convex neural networks can still train.</li>
+            <li>Why local minima are not always the main problem.</li>
+            <li>Why learning rate, batch size, and noise affect generalization.</li>
+            <li>Why double descent breaks the classical U-shaped story.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Do not overclaim</strong>
+          <ul>
+            <li>Flat minima are useful intuition, not a complete theory.</li>
+            <li>PAC bounds are often loose for deep learning.</li>
+            <li>Convex intuition helps, but neural nets are not convex.</li>
+            <li>Double descent does not mean overfitting disappeared.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Convex vs non-convex loss</h2>
+      <div class="formula" data-no-tex>L(alpha x + (1-alpha)y) <= alpha L(x) + (1-alpha)L(y)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Convexity condition</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">loss function</span><span class="fa-desc">Objective being minimized.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">x,y</span><span class="fa-name">two parameter points</span><span class="fa-desc">Any two points in parameter space.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">alpha</span><span class="fa-name">mixing weight</span><span class="fa-desc">Number between 0 and 1 used to interpolate between x and y.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym"><=</span><span class="fa-name">bowl condition</span><span class="fa-desc">The function lies below the straight line between any two points.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> convex loss has no deceptive valleys; any local minimum is global.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a perfect bowl: if you roll downhill, you eventually reach the bottom.</div>
+      </div>
+      <p>Linear regression with squared loss is convex. Logistic regression is convex in its weights. Deep neural networks are non-convex because layers multiply parameters together, activations create piecewise structure, and many parameter settings can represent similar functions.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Local minima vs saddle points</h2>
+      <div class="formula" data-no-tex>grad L(theta*) = 0 and H has both positive and negative eigenvalues => saddle point</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">grad L</span><span class="fa-name">gradient</span><span class="fa-desc">First-order slope of loss.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">theta*</span><span class="fa-name">stationary point</span><span class="fa-desc">A point where gradient is zero or nearly zero.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">Hessian</span><span class="fa-desc">Matrix of second derivatives around theta*.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">eigenvalues</span><span class="fa-name">curvature directions</span><span class="fa-desc">Positive means bowl direction, negative means downhill escape direction.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> a saddle point is flat by first derivative, but there is still an escape direction.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a mountain pass: flat at the center, uphill in one direction and downhill in another.</div>
+      </div>
+      <p>In high dimensions, saddle points are common because there are many directions where curvature can differ. Stochastic gradient noise, momentum, and curvature can help escape saddles.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Flatness, sharpness, and SAM intuition</h2>
+      <p>Flat minima are regions where small parameter perturbations do not increase loss much. Sharp minima are sensitive: tiny parameter movement can hurt loss. Flatness is often linked to robustness and generalization, though exact definitions are subtle because neural network parameterization can rescale layers.</p>
+      <div class="formula" data-no-tex>min_theta max_{||epsilon|| <= rho} L(theta + epsilon)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">SAM-style objective</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">theta</span><span class="fa-name">parameters</span><span class="fa-desc">Weights being optimized.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">perturbation</span><span class="fa-desc">Small adversarial move in parameter space.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">rho</span><span class="fa-name">radius</span><span class="fa-desc">How far parameters may be perturbed.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">max</span><span class="fa-name">worst local loss</span><span class="fa-desc">Looks for the highest loss near current parameters.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">min</span><span class="fa-name">outer optimization</span><span class="fa-desc">Chooses parameters with low worst-case nearby loss.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> prefer solutions surrounded by low loss, not solutions that are good only at one exact point.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> choose a wide safe valley rather than balancing on a narrow spike.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>PAC learning and sample complexity</h2>
+      <p>PAC learning asks whether a model class can learn a function with high probability from finite samples. It gives language for sample complexity, hypothesis classes, and why model capacity matters.</p>
+      <div class="formula" data-no-tex>n = O((VCdim + log(1/delta)) / epsilon)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Generalization-bound shape</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">sample size</span><span class="fa-desc">How many labeled examples are needed.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">VCdim</span><span class="fa-name">capacity measure</span><span class="fa-desc">Roughly, how expressive the hypothesis class is.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">delta</span><span class="fa-name">failure probability</span><span class="fa-desc">How often the guarantee is allowed to fail.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">epsilon</span><span class="fa-name">error tolerance</span><span class="fa-desc">How close learned performance should be to desired performance.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> more expressive models usually need more data for uniform guarantees.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a more flexible story can fit more evidence, but also needs more evidence to be trusted.</div>
+      </div>
+      <p>For deep networks, classical PAC/VC bounds are often too loose to predict practice. Still, they teach the right question: how much data is needed to trust performance beyond training examples?</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Double descent</h2>
+      <p>Classical bias-variance thinking predicts test error first decreases, then increases as model capacity grows. Double descent adds another regime: after the interpolation threshold, larger overparameterized models can improve again.</p>
+      <div class="formula" data-no-tex>test error: underfit -> interpolation peak -> overparameterized descent</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the phases mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">underfit</span><span class="fa-name">too little capacity</span><span class="fa-desc">Model cannot represent the pattern well.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">interpolation peak</span><span class="fa-name">barely fits train data</span><span class="fa-desc">Model can fit training data but may be unstable and sensitive.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">descent</span><span class="fa-name">more capacity helps</span><span class="fa-desc">Overparameterized model can find smoother or simpler solutions in function space.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> capacity can hurt near the interpolation boundary, then help again when optimization has many good solutions.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a tight suit is worse than both a simple loose robe and a well-tailored flexible outfit.</div>
+      </div>
+      <p>Double descent is one reason modern deep learning does not follow the old "bigger model always overfits more" rule. Data, optimization, regularization, and architecture still determine whether the larger model helps.</p>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational</div>
+          <h3>Classify landscapes</h3>
+          <p>Explain why linear regression with MSE is convex but a two-layer neural network is not.</p>
+          <details><summary>Show solution</summary><p>MSE linear regression is quadratic in the weights. A two-layer network multiplies parameters across layers and applies nonlinear activations, creating a non-convex objective.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Saddle point diagnosis</h3>
+          <p>If gradient is near zero but Hessian has one negative eigenvalue, what does that mean?</p>
+          <details><summary>Show solution</summary><p>It is a saddle point: locally flat by first derivative, but there exists at least one downhill direction.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard</div>
+          <h3>SAM intuition</h3>
+          <p>Explain why minimizing worst-case nearby loss might improve generalization.</p>
+          <details><summary>Show solution</summary><p>It encourages parameter regions where small perturbations do not hurt loss, which often corresponds to more robust solutions and less sensitivity to noise.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you distinguish convex and non-convex objectives?</li>
+        <li>Can you explain why saddle points matter in high-dimensional optimization?</li>
+        <li>Can you explain flatness and SAM without claiming it solves generalization completely?</li>
+        <li>Can you state what PAC learning tries to bound?</li>
+        <li>Can you explain double descent and why it changes classical bias-variance intuition?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="01_math_05_optimization_theory" data-title="Optimization Theory">
+        <span>I can explain optimization theory intuitively:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>

@@ -1464,34 +1464,100 @@ print(&#39;area ratio=&#39;, polygon_area(transformed) / polygon_area(square))
   </section>
 <!-- learning-exercises:end -->
 
+<!-- phase4-go-deeper:start -->
+  <section class="ml-advanced-section" data-phase4-go-deeper="linear-algebra">
+    <h2>Go Deeper: eigenspaces, SVD, PCA, and tensor contractions</h2>
+    <p class="muted">This section connects linear algebra to representation learning and efficient neural network code. The research-track goal is to see matrices not as tables of numbers, but as transformations, decompositions, and tensor programs.</p>
+
+    <details class="intuition-block" open>
+      <summary>Eigendecomposition: directions that keep their identity</summary>
+      <div class="intuition-content">
+        An eigenvector is a direction that a matrix does not rotate into another direction. The matrix only stretches or shrinks it. This matters because many algorithms become easier when we find the coordinate system where the transformation acts independently along each axis.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>A v = lambda v</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">matrix</span><span class="fa-desc">Linear transformation applied to a vector.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v</span><span class="fa-name">eigenvector</span><span class="fa-desc">Direction preserved by A; only its length changes.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">lambda</span><span class="fa-name">eigenvalue</span><span class="fa-desc">Stretching or shrinking factor along eigenvector v.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> eigenvectors are the natural axes of a transformation.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a road that stays in the same direction after a map distortion, only becoming longer or shorter.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>SVD and PCA: separate rotation, scaling, and projection</summary>
+      <div class="intuition-content">
+        SVD decomposes any matrix into input rotation, axis-wise scaling, and output rotation. PCA uses related geometry to find directions of maximum variance in data. In ML, this explains dimensionality reduction, low-rank approximation, embeddings, matrix factorization, and why many large updates can be approximately low-rank.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>X = U Sigma V^T</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">What the symbols mean</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">data matrix</span><span class="fa-desc">Rows can be objects and columns can be features.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">U</span><span class="fa-name">left singular vectors</span><span class="fa-desc">Directions in output/object space.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Sigma</span><span class="fa-name">singular values</span><span class="fa-desc">Non-negative strengths of each component.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V^T</span><span class="fa-name">right singular vectors</span><span class="fa-desc">Directions in feature space.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> SVD rewrites a matrix as independent directions ordered by importance.</div>
+      <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> keeping only the largest 20 singular values gives a rank-20 approximation.</div>
+    </div>
+
+    <details class="intuition-block">
+      <summary>Tensor contractions and einsum</summary>
+      <div class="intuition-content">
+        Deep learning code is mostly tensor contractions: sum over shared axes and keep the remaining axes. Matrix multiplication is only the simplest case. Einstein notation makes this explicit and helps avoid shape bugs in attention, convolutions, batch operations, and multi-head projections.
+      </div>
+    </details>
+    <div class="formula" data-no-tex>Y_{b,o} = sum_i X_{b,i} W_{i,o}</div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Dimensions check</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">batch axis</span><span class="fa-desc">Kept in output; one result per object.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">input feature axis</span><span class="fa-desc">Summed out because it appears on the right but not in output.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">o</span><span class="fa-name">output feature axis</span><span class="fa-desc">Kept in output; one coordinate per output feature.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X,W,Y</span><span class="fa-name">tensors</span><span class="fa-desc">Shapes are X=(B,I), W=(I,O), Y=(B,O).</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Intuition:</strong> repeated indices are summed; unrepeated indices survive.</div>
+      <div class="formula-anatomy__analogy"><strong>Analogy:</strong> combine every input ingredient with its recipe weight, sum ingredients away, and keep the final dish type.</div>
+    </div>
+  </section>
+<!-- phase4-go-deeper:end -->
+
 <!-- learning-checkpoint:start -->
   <section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
-        <h3>Ответь без подсказок</h3>
+        <h3>Answer without hints</h3>
         <ol class="ml-checkpoint-list">
-            <li>Как по shapes понять, можно ли умножить две матрицы?</li>
-            <li>Что геометрически делает матрица с облаком точек?</li>
-            <li>Почему rank связан с количеством независимых направлений информации?</li>
-            <li>Чем eigenvectors отличаются по смыслу от singular vectors?</li>
-            <li>Почему PCA можно понимать как поиск новой системы координат?</li>
+          <li>What is the difference between a vector, matrix, and tensor in ML code?</li>
+          <li>How does a weight matrix transform a feature space geometrically?</li>
+          <li>Why does matrix multiplication require shape alignment?</li>
+          <li>What does SVD separate into directions and strengths?</li>
+          <li>Why are tensor contractions the core operation behind neural layers?</li>
         </ol>
       </article>
       <article class="ml-checkpoint-card">
         <h3>Explain to a rubber duck</h3>
         <ol class="ml-checkpoint-list">
-            <li>Объясни матрицу весов нейросети как геометрическое преобразование пространства признаков.</li>
-            <li>Объясни SVD человеку, который знает только векторы и проекции.</li>
+          <li>Explain a neural-network weight matrix as a geometric transformation.</li>
+          <li>Explain SVD to someone who only knows vectors, projections, and scaling.</li>
         </ol>
         <div class="ml-self-rating" data-topic-id="01_math/01_linear_algebra">
-          <span class="ml-self-rating__label">Я могу объяснить это:</span>
+          <span class="ml-self-rating__label">I can explain this:</span>
           <button type="button" data-rating="1">1</button>
           <button type="button" data-rating="2">2</button>
           <button type="button" data-rating="3">3</button>
           <button type="button" data-rating="4">4</button>
           <button type="button" data-rating="5">5</button>
-          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
+          <span class="ml-self-rating__label" data-rating-status>No rating yet</span>
         </div>
       </article>
     </div>
@@ -1499,39 +1565,40 @@ print(&#39;area ratio=&#39;, polygon_area(transformed) / polygon_area(square))
 <!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>Как закрепить тему: Линейная алгебра</h2>
-    <p class="muted">Этот блок связывает теорию с практическим решением: где применять идею, какие ошибки проверять и какие ручки менять в эксперименте.</p>
+    <h2>How to consolidate this topic: Linear Algebra</h2>
+    <p class="muted">Use this topic whenever a model changes shape, projects data, compresses representations, or mixes features through learned weights.</p>
     <div class="ml-endcap-grid">
       <article class="ml-endcap-card">
-        <h3>Когда применять</h3>
-      <ul class="ml-endcap-list">
-        <li>Когда нужно понять вывод формулы, размерности тензоров или поведение градиента, возвращайся к теме &#171;Линейная алгебра&#187;.</li>
-        <li>Используй эту базу при чтении статей: большинство сложных моделей опираются на те же операции, только в большем масштабе.</li>
-        <li>Если интерактив показывает форму функции или матрицы, меняй один параметр за раз и связывай изменение картинки с конкретным символом в формуле.</li>
-      </ul>
+        <h3>When to use it</h3>
+        <ul class="ml-endcap-list">
+          <li>When debugging tensor shapes in forward pass or backprop.</li>
+          <li>When reading papers that use projections, embeddings, attention, PCA, SVD, or low-rank adapters.</li>
+          <li>When checking whether a formula is valid by following dimensions instead of memorizing notation.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Типичные ошибки</h3>
-      <ul class="ml-endcap-list">
-        <li>Учить запись без проверки размерностей: почти все ошибки в ML-математике проявляются как несовместимые shapes.</li>
-        <li>Путать геометрический смысл с алгебраической записью: одна и та же формула может описывать поворот, проекцию, масштабирование или чувствительность.</li>
-        <li>Пропускать числовой пример: маленький расчёт на 2-3 числах часто быстрее объясняет формулу, чем длинное определение.</li>
-      </ul>
+        <h3>Typical mistakes</h3>
+        <ul class="ml-endcap-list">
+          <li>Multiplying matrices in the wrong order and then trying to patch shapes.</li>
+          <li>Forgetting which axis is batch, feature, channel, sequence, or head.</li>
+          <li>Treating SVD/PCA as black boxes instead of geometric decompositions.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Что тюнить</h3>
-      <ul class="ml-endcap-list">
-        <li>Проверяй оси, порядок умножения, нормировку и диапазоны значений.</li>
-        <li>Для градиентных тем смотри знак, масштаб шага и то, какая переменная считается входом, а какая параметром.</li>
-        <li>Для вероятностных тем проверяй, что вероятности нормированы и что условие после вертикальной черты действительно фиксировано.</li>
-      </ul>
+        <h3>What to tune or inspect</h3>
+        <ul class="ml-endcap-list">
+          <li>Axis order, matrix orientation, transposes, and broadcasting.</li>
+          <li>Rank, singular values, explained variance, and low-rank approximations.</li>
+          <li>Whether a tensor operation sums over the intended axis.</li>
+        </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Связи с другими темами</h3>
-      <ul class="ml-endcap-list">
-        <li><a href="../01_math/02_calculus.html">1.2 Матанализ →</a> — следующий шаг, где эта идея используется дальше.</li>
-        <li><a href="../index.html">Карта курса</a> — вернуться к общему маршруту и соседним блокам.</li>
-      </ul>
+        <h3>Connections</h3>
+        <ul class="ml-endcap-list">
+          <li><a href="../01_math/02_calculus.html">1.2 Calculus</a> uses linear algebra for gradients, Jacobians, and Hessians.</li>
+          <li><a href="../05_architectures/03_transformer_attention.html">5.3 Attention</a> is mostly matrix products and tensor reshaping.</li>
+          <li><a href="../06_llm/05_lora_qlora.html">6.5 LoRA / QLoRA</a> depends on low-rank matrix updates.</li>
+        </ul>
       </article>
     </div>
   </section>

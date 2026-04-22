@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7.4 Normalizing Flows</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Normalizing flows: change of variables, Jacobian determinant, RealNVP and flow-based generation." />
+  <meta property="og:title" content="7.4 Normalizing Flows - ML notes" />
+  <meta property="og:description" content="Change of variables, invertible neural networks, Jacobian determinant and RealNVP intuition." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/04_normalizing_flows.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag done">7.1 VAE</span>
+        <span class="tag done">7.2 GAN</span>
+        <span class="tag done">7.3 Diffusion</span>
+        <span class="tag active">7.4 Flows</span>
+      </div>
+      <h1>7.4 Normalizing Flows</h1>
+      <p class="muted">A normalizing flow turns a simple distribution into a complex one through a chain of invertible transformations with exact likelihood.</p>
+    </section>
+
+    <section class="learning-meta">
+      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/01_linear_algebra.html">1.1 Linear Algebra</a>, <a href="../01_math/03_probability_theory.html">1.3 Probability</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a></span></div>
+      <div class="meta-card"><strong>Estimated time</strong><span>70-90 min</span></div>
+      <div class="meta-card"><strong>Job relevance</strong><span>Low-Medium</span></div>
+      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Why flows exist</h2>
+      <p>VAEs give tractable training but only approximate likelihood. GANs generate sharp samples but do not give likelihood. Diffusion gives high quality but sampling is iterative. Flows occupy a different point: exact likelihood and exact sampling through an invertible map.</p>
+      <p>The price is architectural: every transformation must be invertible and must have a cheap Jacobian determinant.</p>
+    </section>
+
+    <section class="card">
+      <h2>Change of variables</h2>
+      <p>Start with a simple latent variable z, usually standard Gaussian. Apply an invertible function x = f(z). The density of x is obtained by correcting the density of z by the local volume change.</p>
+      <div class="formula" data-render-tex data-tex-source="p_X(x)=p_Z(f^{-1}(x))\left|\det\frac{\partial f^{-1}(x)}{\partial x}\right|">
+        p_X(x) = p_Z(f^{-1}(x)) | det d f^{-1}(x) / d x |
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">p_X(x)</span><span class="fa-name">data density</span><span class="fa-desc">Probability density assigned to the observed sample x.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">p_Z(z)</span><span class="fa-name">base density</span><span class="fa-desc">Simple distribution, often N(0,I), where likelihood is easy.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">f^{-1}</span><span class="fa-name">inverse map</span><span class="fa-desc">Maps data back into latent space.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">det J</span><span class="fa-name">volume correction</span><span class="fa-desc">Measures how much the transformation expands or compresses space around x.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> probability mass is conserved, but density changes when space is stretched or squeezed.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> the same amount of paint looks thinner when spread over a larger area.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if a 1D transform doubles length, local density halves because the same mass occupies twice the interval.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Log-likelihood form</h2>
+      <p>In practice we optimize log-likelihood. Products become sums, and a chain of K invertible transforms adds K log-determinant corrections.</p>
+      <div class="formula" data-render-tex data-tex-source="\log p_X(x)=\log p_Z(z)+\sum_{k=1}^{K}\log\left|\det J_k\right|">
+        log p_X(x) = log p_Z(z) + sum_k log |det J_k|
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">flow depth</span><span class="fa-desc">Number of invertible transformations in the chain.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">J_k</span><span class="fa-name">Jacobian</span><span class="fa-desc">Matrix of local derivatives for transform k.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">log |det J_k|</span><span class="fa-name">log volume change</span><span class="fa-desc">How transform k changes density locally.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">latent code</span><span class="fa-desc">The base-space representation of x after applying inverse transforms.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> likelihood is base Gaussian plausibility plus all geometric corrections.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> like tracking currency exchange through several banks, adding each fee adjustment.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if log p_Z(z)=-2.0 and two transforms add 0.4 and -0.1, then log p_X(x)=-1.7.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>RealNVP coupling layer</h2>
+      <p>A fully general invertible neural network has an expensive determinant. RealNVP solves this by splitting the vector: one part stays fixed, while the other part is scaled and shifted based on the fixed part.</p>
+      <div class="formula" data-render-tex data-tex-source="y_a=x_a,\quad y_b=x_b\odot\exp(s(x_a))+t(x_a)">
+        y_a = x_a,   y_b = x_b * exp(s(x_a)) + t(x_a)
+      </div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">Что означают символы</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">x_a, x_b</span><span class="fa-name">split input</span><span class="fa-desc">Two parts of the vector or image channels.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">s(x_a)</span><span class="fa-name">scale network</span><span class="fa-desc">Predicts how much to stretch x_b based on x_a.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">t(x_a)</span><span class="fa-name">shift network</span><span class="fa-desc">Predicts how much to move x_b based on x_a.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">odot</span><span class="fa-name">elementwise product</span><span class="fa-desc">Each dimension is scaled independently.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> keep one half stable so the other half can be transformed with an easy inverse.</div>
+        <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> holding one side of a sheet fixed while stretching and moving the other side.</div>
+        <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if x_b=2, s=log(1.5), t=-1, then y_b=2*1.5-1=2.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Flows vs VAE vs GAN vs Diffusion</h2>
+      <table>
+        <thead><tr><th>Model</th><th>Likelihood</th><th>Sampling</th><th>Main constraint</th></tr></thead>
+        <tbody>
+          <tr><td>Flow</td><td>Exact</td><td>Fast</td><td>Invertible architecture</td></tr>
+          <tr><td>VAE</td><td>Lower bound</td><td>Fast</td><td>Blurry samples possible</td></tr>
+          <tr><td>GAN</td><td>No explicit likelihood</td><td>Fast</td><td>Training instability, mode collapse</td></tr>
+          <tr><td>Diffusion</td><td>Variational/objective-based</td><td>Usually slower</td><td>Many denoising steps</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Exercises</h2>
+      <details class="intuition-block"><summary>Derivation: 1D change of variables</summary><div class="intuition-content">Show that if x = 2z and z has density p_Z, then p_X(x)=p_Z(x/2)/2. Explain why the factor 1/2 appears.</div></details>
+      <details class="intuition-block"><summary>Coding: affine coupling layer</summary><div class="intuition-content">Implement a NumPy affine coupling layer with forward, inverse and log-det-Jacobian. Test that inverse(forward(x)) returns x.</div></details>
+      <details class="intuition-block"><summary>Conceptual: why invertibility matters</summary><div class="intuition-content">Explain why exact likelihood breaks if the mapping loses information.</div></details>
+    </section>
+
+    <section class="card">
+      <h2>Checkpoint</h2>
+      <ol>
+        <li>Why does a flow need a Jacobian determinant?</li>
+        <li>Why are coupling layers easier than arbitrary neural networks?</li>
+        <li>What does exact likelihood buy you compared with GANs?</li>
+        <li>What is the main architectural limitation of flows?</li>
+      </ol>
+    </section>
+  </main>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

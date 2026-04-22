@@ -14,7 +14,8 @@
         { path: "01_math/01_linear_algebra.html", label: "1.1 \u041b\u0438\u043d\u0435\u0439\u043d\u0430\u044f \u0430\u043b\u0433\u0435\u0431\u0440\u0430" },
         { path: "01_math/02_calculus.html", label: "1.2 \u041c\u0430\u0442\u0430\u043d\u0430\u043b\u0438\u0437" },
         { path: "01_math/03_probability_theory.html", label: "1.3 \u0422\u0435\u043e\u0440\u0438\u044f \u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u0435\u0439" },
-        { path: "01_math/04_information_theory.html", label: "1.4 \u0422\u0435\u043e\u0440\u0438\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438" }
+        { path: "01_math/04_information_theory.html", label: "1.4 \u0422\u0435\u043e\u0440\u0438\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438" },
+        { path: "01_math/05_optimization_theory.html", label: "1.5 Optimization Theory" }
       ]
     },
     {
@@ -46,7 +47,9 @@
         { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 \u0412\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u044f / HPO" },
         { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 \u041d\u0435\u0441\u0431\u0430\u043b\u0430\u043d\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u043b\u0430\u0441\u0441\u044b" },
         { path: "02_classic_ml/19_model_interpretation.html", label: "2.19 \u0418\u043d\u0442\u0435\u0440\u043f\u0440\u0435\u0442\u0430\u0446\u0438\u044f" },
-        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 \u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 pipeline" }
+        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 \u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 pipeline" },
+        { path: "02_classic_ml/21_anomaly_detection.html", label: "2.21 Anomaly Detection" },
+        { path: "02_classic_ml/22_time_series_fundamentals.html", label: "2.22 Time Series" }
       ]
     },
     {
@@ -114,7 +117,9 @@
       pages: [
         { path: "07_generative_models/01_variational_autoencoders.html", label: "7.1 VAE" },
         { path: "07_generative_models/02_generative_adversarial_networks.html", label: "7.2 GAN" },
-        { path: "07_generative_models/03_diffusion_models.html", label: "7.3 Diffusion" }
+        { path: "07_generative_models/03_diffusion_models.html", label: "7.3 Diffusion" },
+        { path: "07_generative_models/04_normalizing_flows.html", label: "7.4 Normalizing Flows" },
+        { path: "07_generative_models/05_stable_diffusion_deep_dive.html", label: "7.5 Stable Diffusion" }
       ]
     },
     {

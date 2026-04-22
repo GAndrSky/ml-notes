@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2.21 Anomaly Detection</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <meta name="description" content="Anomaly detection in classical ML: thresholding, isolation forest, one-class SVM, reconstruction error, evaluation and production failure modes." />
+  <meta property="og:title" content="2.21 Anomaly Detection - ML notes" />
+  <meta property="og:description" content="Understand anomaly detection as a thresholding and ranking problem under rare labels, drift, and asymmetric costs." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/21_anomaly_detection.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">Block 2</span>
+        <span class="tag active">2.21 Anomaly Detection</span>
+        <span class="tag">Isolation Forest</span>
+        <span class="tag">One-Class SVM</span>
+        <span class="tag">Thresholding</span>
+      </div>
+      <h1>2.21 Anomaly Detection</h1>
+      <p class="muted">Anomaly detection is not just classification with rare positives. Often you have few labels, changing behavior, asymmetric costs, and a business threshold that matters more than the raw model score.</p>
+    </div>
+
+    <section class="card">
+      <h2>TL;DR</h2>
+      <p>Anomaly detection learns a score for how unusual an object is, then converts that score into an action using a threshold. The hard parts are defining "normal", handling drift, choosing threshold, and evaluating with rare or delayed labels.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Why this matters</h2>
+      <p>Anomaly detection appears in fraud, monitoring, cybersecurity, manufacturing defects, medical screening, data-quality alerts, and model monitoring. In all of these, false positives waste attention and false negatives can be expensive.</p>
+      <div class="grid-2">
+        <div class="success">
+          <strong>Use anomaly detection when</strong>
+          <ul>
+            <li>Positive labels are scarce or delayed.</li>
+            <li>You mostly know what normal looks like.</li>
+            <li>You need ranking or alerting rather than direct classification.</li>
+            <li>The anomaly type may change over time.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Be careful when</strong>
+          <ul>
+            <li>Normal behavior is highly multi-modal.</li>
+            <li>Outliers in training data are actually valid rare subgroups.</li>
+            <li>Threshold costs are not specified.</li>
+            <li>Data distribution drifts every week.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Anomaly score and threshold</h2>
+      <div class="formula" data-no-tex>is_anomaly(x) = 1 if score(x) >= tau else 0</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">object</span><span class="fa-desc">Transaction, sensor reading, user session, image, log event, or data row.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">score(x)</span><span class="fa-name">anomaly score</span><span class="fa-desc">Higher means more unusual according to the model or rule.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">tau</span><span class="fa-name">threshold</span><span class="fa-desc">Business decision boundary between normal and alert/action.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">1/0</span><span class="fa-name">decision</span><span class="fa-desc">1 means raise anomaly flag; 0 means treat as normal.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the model ranks suspiciousness; the threshold turns ranking into an action.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a smoke detector has a sensitivity knob; the same smoke score can trigger or not trigger depending on threshold.</div>
+      </div>
+      <p>Threshold choice should be based on cost, capacity, or target alert rate. For example, a fraud team may only review the top 0.5% riskiest transactions.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Isolation Forest</h2>
+      <p>Isolation Forest isolates anomalies by randomly splitting features. Unusual points tend to be separated with fewer splits because they sit in sparse regions.</p>
+      <div class="formula" data-no-tex>score(x) = 2 ^ (- E[h(x)] / c(n))</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">h(x)</span><span class="fa-name">path length</span><span class="fa-desc">Number of splits needed to isolate point x in one tree.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">E[h(x)]</span><span class="fa-name">average path length</span><span class="fa-desc">Mean path length across many random isolation trees.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">c(n)</span><span class="fa-name">normalizer</span><span class="fa-desc">Expected path length for unsuccessful search in a sample of size n.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">anomaly score</span><span class="fa-desc">Shorter paths produce larger anomaly scores.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> isolated points are easy to separate from the crowd.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if a point needs only 3 splits while most need 12, it is likely unusual.</div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Good for</h3>
+          <ul>
+            <li>Tabular data with mixed feature scales after preprocessing.</li>
+            <li>Fast unsupervised baseline.</li>
+            <li>High-dimensional sparse-ish anomalies.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Limitations</h3>
+          <ul>
+            <li>Score calibration is not a probability.</li>
+            <li>Can flag rare but valid subgroups.</li>
+            <li>Threshold still needs business tuning.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>One-Class SVM</h2>
+      <p>One-Class SVM tries to separate normal data from the origin in a feature space. Points outside the learned boundary are treated as anomalies.</p>
+      <div class="formula" data-no-tex>f(x) = sign(sum_i alpha_i K(x_i, x) - rho)</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">kernel</span><span class="fa-desc">Similarity function, often RBF for nonlinear boundaries.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">alpha_i</span><span class="fa-name">support weights</span><span class="fa-desc">Learned coefficients for support vectors.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">rho</span><span class="fa-name">offset</span><span class="fa-desc">Boundary threshold in feature space.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">decision</span><span class="fa-desc">Positive for inlier, negative for outlier in common implementations.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> learn the region occupied by normal data; anything outside is suspicious.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> draw a fence around known safe behavior and flag points outside the fence.</div>
+      </div>
+      <p>One-Class SVM can work well on moderate data, but it is sensitive to feature scaling and kernel parameters.</p>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Reconstruction-based anomaly detection</h2>
+      <p>Autoencoders or PCA can learn to reconstruct normal data. If an object reconstructs poorly, it may not follow the normal structure.</p>
+      <div class="formula" data-no-tex>score(x) = ||x - decoder(encoder(x))||^2</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">encoder</span><span class="fa-name">compressor</span><span class="fa-desc">Maps input into a lower-dimensional latent representation.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">decoder</span><span class="fa-name">reconstructor</span><span class="fa-desc">Maps latent representation back to input space.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">x - x_hat</span><span class="fa-name">reconstruction error</span><span class="fa-desc">Difference between original object and reconstructed object.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">||.||^2</span><span class="fa-name">squared norm</span><span class="fa-desc">Large errors get penalized more strongly.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> if the model only learned normal patterns, abnormal patterns are hard to reconstruct.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a stencil for normal shapes leaves obvious gaps when used on an unusual shape.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Minimal sklearn baseline</h2>
+      <pre><code class="language-python"># What it does: trains an Isolation Forest and selects top-risk anomalies.
+# Input shapes: X_train=(n_train,d), X_test=(n_test,d)
+# Output shapes: scores=(n_test,), flags=(n_test,)
+import numpy as np
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+
+rng = np.random.default_rng(0)
+normal = rng.normal(size=(500, 2))
+outliers = rng.normal(loc=5.0, scale=0.4, size=(20, 2))
+X = np.vstack([normal, outliers])
+
+model = make_pipeline(
+    StandardScaler(),
+    IsolationForest(n_estimators=200, contamination=0.04, random_state=0),
+)
+model.fit(X)
+
+# sklearn decision_function: lower means more abnormal, so negate it.
+scores = -model.decision_function(X)
+tau = np.quantile(scores, 0.96)
+flags = scores >= tau
+
+print("flagged rate:", flags.mean())
+print("top scores:", np.sort(scores)[-5:])
+
+# Gotchas:
+# 1. contamination is not the true anomaly rate unless you know it.
+# 2. Standardize features when distance or split behavior depends on scale.</code></pre>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Evaluation</h2>
+      <p>If labels exist, treat anomaly scores as a ranking and use PR-AUC, recall at fixed false-positive rate, precision at top K, or cost-weighted metrics. If labels do not exist, evaluate by review yield, alert volume, stability, and manual inspection.</p>
+      <div class="formula" data-no-tex>precision@K = true_anomalies_in_top_K / K</div>
+      <div class="formula-anatomy">
+        <div class="formula-anatomy__header">What the symbols mean</div>
+        <div class="formula-anatomy__grid">
+          <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">review capacity</span><span class="fa-desc">Number of highest-score objects a team can inspect.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">top_K</span><span class="fa-name">highest scores</span><span class="fa-desc">Objects ranked as most suspicious by the model.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">precision</span><span class="fa-name">review yield</span><span class="fa-desc">Fraction of reviewed alerts that are real anomalies.</span></div>
+        </div>
+        <hr class="formula-anatomy__divider">
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> if humans review only 100 alerts, the top 100 quality matters more than average score quality.</div>
+        <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if 37 of top 100 alerts are real anomalies, precision@100 is 0.37.</div>
+      </div>
+    </section>
+
+    <section class="ml-theory-section">
+      <h2>Typical mistakes</h2>
+      <div class="grid-2">
+        <div class="warn">
+          <strong>Modeling mistakes</strong>
+          <ul>
+            <li>Interpreting anomaly score as calibrated probability.</li>
+            <li>Training on data contaminated by known anomalies without checking.</li>
+            <li>Ignoring rare but valid populations.</li>
+            <li>Using default threshold without business cost.</li>
+          </ul>
+        </div>
+        <div class="warn">
+          <strong>Production mistakes</strong>
+          <ul>
+            <li>No alert budget or review workflow.</li>
+            <li>No drift monitoring of score distribution.</li>
+            <li>No feedback loop from reviewed alerts.</li>
+            <li>No segment-level analysis of false positives.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-exercises-section">
+      <h2>Exercises</h2>
+      <div class="ml-exercise-list">
+        <article class="exercise-card">
+          <div class="exercise-label">Foundational</div>
+          <h3>Threshold by capacity</h3>
+          <p>You can review 200 objects per day from 100k events. What percentile threshold should you start with?</p>
+          <details><summary>Show solution</summary><p>Review rate is 200/100000 = 0.002, so start near the 99.8th percentile of anomaly score.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Intermediate</div>
+          <h3>Compare methods</h3>
+          <p>When would you choose Isolation Forest over One-Class SVM?</p>
+          <details><summary>Show solution</summary><p>Use Isolation Forest as a scalable tabular baseline with fewer kernel-sensitivity issues. Use One-Class SVM for smaller, well-scaled data where a smooth boundary is useful.</p></details>
+        </article>
+        <article class="exercise-card">
+          <div class="exercise-label">Hard</div>
+          <h3>Design monitoring</h3>
+          <p>Design monitoring for anomaly detection in transaction logs where fraud patterns drift weekly.</p>
+          <details><summary>Show solution</summary><p>Track score distribution, alert volume, review precision, segment-level false positives, delayed label outcomes, and feature drift. Retrain or recalibrate threshold when distributions move.</p></details>
+        </article>
+      </div>
+    </section>
+
+    <section class="ml-checkpoint-section">
+      <h2>Learning checkpoint</h2>
+      <ul>
+        <li>Can you explain why anomaly detection is often a ranking and thresholding problem?</li>
+        <li>Can you compare Isolation Forest, One-Class SVM, and reconstruction error?</li>
+        <li>Can you choose a threshold from review capacity or cost?</li>
+        <li>Can you evaluate anomaly detection when labels are rare or delayed?</li>
+      </ul>
+      <div class="self-rating" data-topic-id="02_classic_ml_21_anomaly_detection" data-title="Anomaly Detection">
+        <span>I can design an anomaly detection baseline:</span>
+        <button data-rating="1">1</button>
+        <button data-rating="2">2</button>
+        <button data-rating="3">3</button>
+        <button data-rating="4">4</button>
+        <button data-rating="5">5</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="../bundle.js" defer></script>
+  <script src="../shared-katex.js" defer></script>
+  <script src="../shared-code-highlight.js" defer></script>
+</body>
+</html>
