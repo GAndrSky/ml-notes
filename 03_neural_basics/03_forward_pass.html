@@ -873,5 +873,61 @@ showCode('numpy', document.querySelector('#codeTabs button'));
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice">
+    <h2>Exercises: forward pass и контроль shapes</h2>
+    <p class="muted">Forward pass нужно уметь читать как цепочку тензоров: какие оси входят, какие выходят и где появляется logit/loss.</p>
+    <div class="ml-study-practice__grid">
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Derivation</span><strong>Foundational</strong></div>
+        <p>Для MLP \(X \to Z_1 \to A_1 \to Z_2\) выпиши shapes при \(X:[B, d]\), \(W_1:[d,h]\), \(b_1:[h]\), \(W_2:[h,c]\), \(b_2:[c]\).</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>\(Z_1=XW_1+b_1\) имеет shape `[B,h]`, \(A_1\) тоже `[B,h]`, \(Z_2=A_1W_2+b_2\) имеет `[B,c]`. Batch axis сохраняется на всём пути.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Coding</span><strong>Foundational</strong></div>
+        <p>Реализуй forward pass двухслойного MLP на NumPy и напечатай shapes всех промежуточных тензоров.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><pre><code class="language-python">import numpy as np
+
+B, d, h, c = 4, 3, 5, 2
+X = np.random.randn(B, d)
+W1 = np.random.randn(d, h) * 0.1
+b1 = np.zeros(h)
+W2 = np.random.randn(h, c) * 0.1
+b2 = np.zeros(c)
+
+Z1 = X @ W1 + b1
+A1 = np.maximum(0, Z1)
+logits = A1 @ W2 + b2
+print(X.shape, Z1.shape, A1.shape, logits.shape)
+</code></pre></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Conceptual</span><strong>Intermediate</strong></div>
+        <p>Почему softmax обычно не применяют вручную перед `CrossEntropyLoss` в PyTorch?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>`CrossEntropyLoss` ожидает raw logits и внутри применяет численно стабильный `log_softmax`. Если заранее применить softmax, можно ухудшить стабильность и получить неправильный масштаб градиентов.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Debugging</span><strong>Intermediate</strong></div>
+        <p>Модель выдаёт logits shape `[B]`, а задача имеет 5 классов. Что, скорее всего, неправильно в последнем слое?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Последний слой выдаёт один scalar на объект, что подходит для binary logit. Для multiclass с 5 классами logits должны иметь shape `[B,5]`.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Rubber duck</span><strong>Hard</strong></div>
+        <p>Объясни forward pass как pipeline представлений, а не как набор матричных умножений.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Каждый слой переписывает объект в новых координатах. Ранние слои ловят простые признаки, следующие комбинируют их, а последние превращают representation в logits для конкретной задачи.</p></details>
+      </article>
+    </div>
+  </section>
+
+  <section class="ml-checkpoint-section">
+    <h2>Learning checkpoint</h2>
+    <ul class="ml-study-practice__questions">
+      <li>Какие shapes должны иметь \(X\), \(W\), \(b\) и logits в dense layer?</li>
+      <li>Почему batch axis должен сохраняться через слои?</li>
+      <li>Чем logits отличаются от probabilities?</li>
+      <li>Какие intermediate tensors нужны backward pass?</li>
+    </ul>
+    <p class="ml-study-practice__rubber-duck">Rubber duck: объясни forward pass как конвейер построения representation от raw input до logits.</p>
+  </section>
+
 </body>
 </html>

@@ -894,5 +894,56 @@ drawBiasViz();
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice">
+    <h2>Exercises: проверь, что нейрон понятен не на уровне терминов</h2>
+    <p class="muted">Не пропускай упражнения: если ты можешь вывести формулу, реализовать её и объяснить ошибку в shapes, тема действительно закреплена.</p>
+    <div class="ml-study-practice__grid">
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Derivation</span><strong>Foundational</strong></div>
+        <p>Для нейрона \(z=w^Tx+b\) выпиши вручную \(\partial z/\partial w_i\), \(\partial z/\partial x_i\) и \(\partial z/\partial b\). Объясни, почему градиент по весу равен соответствующему входному признаку.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>\(\partial z/\partial w_i=x_i\), потому что \(z=\sum_i w_i x_i+b\). По входу \(\partial z/\partial x_i=w_i\), по bias \(\partial z/\partial b=1\). Вес получает тем больший градиент, чем активнее был его вход.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Coding</span><strong>Foundational</strong></div>
+        <p>Реализуй один нейрон на NumPy: вход \(X\) shape `[batch, features]`, веса `w` shape `[features]`, bias scalar. Верни logits shape `[batch]` и проверь пример на batch из 3 объектов.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><pre><code class="language-python">import numpy as np
+
+X = np.array([[1.0, 2.0], [0.0, -1.0], [3.0, 1.0]])
+w = np.array([0.5, -0.25])
+b = 0.1
+z = X @ w + b
+print(z.shape)  # (3,)
+print(z)        # [ 0.1   0.35  1.35]
+</code></pre></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Conceptual</span><strong>Intermediate</strong></div>
+        <p>Почему один нейрон без нелинейности не может решить XOR, даже если подобрать любые веса и bias?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Один нейрон задаёт одну линейную границу. XOR требует разделить два диагонально расположенных positives от двух negatives, что одной прямой в 2D невозможно. Нужна композиция нескольких границ и нелинейность.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Debugging</span><strong>Intermediate</strong></div>
+        <p>У тебя `X.shape = [32, 10]`, `w.shape = [32]`. Почему `X @ w` не является корректным нейроном и какой shape должен быть у `w`?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>`32` - это batch dimension, а не число признаков. Вес должен соответствовать признакам: `w.shape = [10]`, тогда каждый объект из batch получает свой scalar logit.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Rubber duck</span><strong>Hard</strong></div>
+        <p>Объясни вслух, почему bias не является "лишним весом", а сдвигает границу решения независимо от наклона.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Веса задают ориентацию гиперплоскости, а bias двигает её относительно начала координат. Без bias граница обязана проходить через ноль, что часто искусственно ограничивает модель.</p></details>
+      </article>
+    </div>
+  </section>
+
+  <section class="ml-checkpoint-section">
+    <h2>Learning checkpoint</h2>
+    <ul class="ml-study-practice__questions">
+      <li>Что означают \(w\), \(x\), \(b\) и \(z\) в формуле нейрона?</li>
+      <li>Почему \(w^Tx+b=0\) задаёт линейную границу?</li>
+      <li>Как batch dimension меняет вычисление, но не меняет смысл одного нейрона?</li>
+      <li>Почему несколько нейронов в слое строят новое пространство признаков?</li>
+    </ul>
+    <p class="ml-study-practice__rubber-duck">Rubber duck: объясни нейрон как систему взвешенных свидетельств для принятия решения.</p>
+  </section>
+
 </body>
 </html>

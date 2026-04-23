@@ -1120,5 +1120,57 @@ drawDeath();
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice">
+    <h2>Exercises: активации, градиенты и trainability</h2>
+    <p class="muted">Цель - не запомнить графики, а понять, как каждая активация меняет сигнал и градиент.</p>
+    <div class="ml-study-practice__grid">
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Derivation</span><strong>Foundational</strong></div>
+        <p>Выведи производную sigmoid: \(\sigma'(z)=\sigma(z)(1-\sigma(z))\). Затем посчитай её при \(\sigma(z)=0.5\) и \(\sigma(z)=0.99\).</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Из \(\sigma(z)=1/(1+e^{-z})\) получается \(\sigma'(z)=\sigma(z)(1-\sigma(z))\). При 0.5 производная 0.25, при 0.99 производная 0.0099. В насыщении градиент почти исчезает.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Coding</span><strong>Foundational</strong></div>
+        <p>Напиши NumPy-функции для ReLU, sigmoid и tanh. На массиве `[-5, -1, 0, 1, 5]` сравни выходы и объясни, где градиент будет слабым.</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><pre><code class="language-python">import numpy as np
+
+z = np.array([-5.0, -1.0, 0.0, 1.0, 5.0])
+relu = np.maximum(0.0, z)
+sigmoid = 1.0 / (1.0 + np.exp(-z))
+tanh = np.tanh(z)
+print(relu)
+print(sigmoid)
+print(tanh)
+</code></pre><p>Sigmoid и tanh насыщаются на больших по модулю значениях. ReLU сохраняет градиент справа, но слева даёт ноль.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Conceptual</span><strong>Intermediate</strong></div>
+        <p>Почему сеть без активаций между линейными слоями эквивалентна одному линейному слою?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Композиция линейных преобразований остаётся линейным преобразованием: \(W_2(W_1x+b_1)+b_2=(W_2W_1)x+(W_2b_1+b_2)\). Нелинейность нужна, чтобы глубина добавляла выразительность.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Debugging</span><strong>Intermediate</strong></div>
+        <p>Loss почти не падает, а большинство ReLU-активаций равно нулю. Какие три причины проверишь первыми?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>Проверить learning rate, initialization и распределение входов/нормализацию. Слишком большой шаг или плохой scale может загнать нейроны в отрицательную область, где ReLU не передаёт градиент.</p></details>
+      </article>
+      <article class="ml-study-practice__item">
+        <div class="ml-study-practice__item-head"><span>Rubber duck</span><strong>Hard</strong></div>
+        <p>Объясни разницу между ReLU, GELU и sigmoid без формул: что каждая функция делает с сигналом?</p>
+        <details class="ml-study-practice__solution"><summary>Show solution</summary><p>ReLU жёстко пропускает положительное и обнуляет отрицательное. GELU мягко решает, насколько сигнал похож на полезный. Sigmoid сжимает число в диапазон вероятности, но легко насыщается.</p></details>
+      </article>
+    </div>
+  </section>
+
+  <section class="ml-checkpoint-section">
+    <h2>Learning checkpoint</h2>
+    <ul class="ml-study-practice__questions">
+      <li>Почему активация нужна между линейными слоями?</li>
+      <li>Что такое saturation и почему она убивает gradient flow?</li>
+      <li>Почему ReLU может создавать dead neurons?</li>
+      <li>Когда sigmoid уместен, а когда лучше оставить logits для loss-функции?</li>
+    </ul>
+    <p class="ml-study-practice__rubber-duck">Rubber duck: объясни активацию как клапан, который решает, какой сигнал и какой градиент проходят дальше.</p>
+  </section>
+
 </body>
 </html>
