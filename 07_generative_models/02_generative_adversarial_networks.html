@@ -50,9 +50,9 @@
       <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GAN objective задаёт игру: discriminator отличает real/fake, generator учится его обманывать.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как фальшивомонетчик и эксперт: один делает подделки, другой учится их ловить.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если D(real)=0.9 и D(fake)=0.1, discriminator силён; generator должен поднять D(fake).</div>
     </div>
     <p>Дискриминатор учится распознавать “реально / фейк”, а генератор учится подделывать данные так, чтобы дискриминатор ошибался.</p>
     </div>
@@ -123,14 +123,14 @@
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">generator loss</span><span class="fa-desc">сигнал, который заставляет генератор делать samples более похожими на реальные.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">оценка discriminator-а: насколько sample похож на real data.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">real/fake sample</span><span class="fa-desc">настоящий объект из данных или сгенерированный объект generator-а.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">batch index</span><span class="fa-desc">номер sample в batch, по которому считается вклад adversarial loss.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GAN не измеряет расстояние напрямую; он обучает discriminator как адаптивный критерий реалистичности.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как экзаменатор, который меняет вопросы по мере того, как студент учится списывать.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
     </div>
     <p>Интуитивно Wasserstein distance отвечает на вопрос: сколько “работы” нужно, чтобы перетащить массу одного распределения в другое. Эта геометрическая интерпретация часто даёт более гладкую и полезную оптимизацию, чем исходная minimax-цель.</p>
@@ -242,5 +242,14 @@
 <!-- step1-learning:end -->
 </div>
   <script src="../bundle.js" defer></script>
+  <section class="ml-study-practice" data-quality-pass="gen-7-2">
+    <h2>Упражнения: GAN</h2><p class="muted">Проверка темы - понимать adversarial game, mode collapse и нестабильность обучения.</p>
+    <details><summary>[Foundational] Игроки GAN</summary><p>Что делает generator и discriminator? <strong>Решение:</strong> generator создаёт fake samples, discriminator отличает real от fake.</p></details>
+    <details><summary>[Foundational] D(fake)</summary><p>Что хочет generator сделать с D(fake)? <strong>Решение:</strong> поднять его ближе к 1, чтобы fake выглядел real.</p></details>
+    <details><summary>[Intermediate] Mode collapse</summary><p>Что такое mode collapse? <strong>Решение:</strong> generator выдаёт мало разнообразных samples, покрывая только часть data distribution.</p></details>
+    <details><summary>[Intermediate] WGAN intuition</summary><p>Почему Wasserstein distance помогает? <strong>Решение:</strong> даёт более гладкий training signal, когда distributions почти не пересекаются.</p></details>
+    <details><summary>[Hard] Equilibrium</summary><p>Что происходит в идеальном равновесии GAN? <strong>Решение:</strong> generator distribution совпадает с data distribution, discriminator не лучше случайного.</p></details>
+  </section>
+  <section class="ml-checkpoint-section" data-quality-pass="gen-7-2"><h2>Checkpoint: 7.2 GAN</h2><ul><li>Почему GAN - minimax game?</li><li>Почему обучение GAN нестабильно?</li><li>Что такое mode collapse?</li><li>Чем WGAN отличается по интуиции?</li><li>Rubber duck: объясни GAN как соревнование подделывателя и эксперта.</li></ul></section>
 </body>
 </html>

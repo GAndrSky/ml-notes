@@ -47,12 +47,12 @@
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">результирующий сдвиг весов после добавления низкоранговой LoRA-поправки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LoRA не переобучает всю матрицу, а добавляет к ней низкоранговую поправку.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как маленькая накладка на большой механизм: основная модель остаётся, меняется только компактная адаптация.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для слоя 4096x4096 полный fine-tune требует 16.7M весов, а LoRA rank 8 обучает примерно 65k параметров на две матрицы.</div>
     </div>
     <p>Мы не обновляем всю матрицу веса, а учим низкоранговую поправку. Если нужное изменение действительно живёт в маленьком подпространстве, это даёт почти то же поведение за гораздо меньшую цену.</p>
     </div>
@@ -78,12 +78,12 @@
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">результирующий сдвиг весов после добавления низкоранговой LoRA-поправки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LoRA не переобучает всю матрицу, а добавляет к ней низкоранговую поправку.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как маленькая накладка на большой механизм: основная модель остаётся, меняется только компактная адаптация.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для слоя 4096x4096 полный fine-tune требует 16.7M весов, а LoRA rank 8 обучает примерно 65k параметров на две матрицы.</div>
     </div>
     <p>Это ограничивает мощность обновления, но резко уменьшает число обучаемых параметров. Если базовая модель уже выучила хорошее представление мира, то адаптация часто и правда оказывается почти низкоранговой: нужно не переписать всё знание, а чуть повернуть его под новую задачу.</p>
     </div>
@@ -286,5 +286,15 @@ LoRA:
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice" data-quality-pass="llm-6-5">
+    <h2>Упражнения: LoRA / QLoRA</h2>
+    <p class="muted">Проверка темы - понимать low-rank update и экономию памяти.</p>
+    <details><summary>[Foundational] Rank count</summary><p>Для матрицы 4096x4096 и rank 8 оцени число LoRA-параметров A+B. <strong>Решение:</strong> 4096x8 + 8x4096 = 65536.</p></details>
+    <details><summary>[Foundational] Frozen base</summary><p>Что остаётся frozen в LoRA? <strong>Решение:</strong> базовые веса модели; обучаются только низкоранговые адаптеры.</p></details>
+    <details><summary>[Intermediate] Alpha scaling</summary><p>Зачем нужен scaling alpha/r? <strong>Решение:</strong> контролирует величину LoRA update относительно base weights.</p></details>
+    <details><summary>[Intermediate] QLoRA memory</summary><p>Что экономит QLoRA? <strong>Решение:</strong> base model хранится в quantized формате, а адаптеры обучаются в более удобной точности.</p></details>
+    <details><summary>[Hard] Limitation</summary><p>Когда LoRA может не хватить? <strong>Решение:</strong> если задача требует большой перестройки представлений, а low-rank подпространство слишком узкое.</p></details>
+  </section>
+  <section class="ml-checkpoint-section" data-quality-pass="llm-6-5"><h2>Checkpoint: 6.5 LoRA / QLoRA</h2><ul><li>Почему low-rank update экономит параметры?</li><li>Что означает rank в LoRA?</li><li>Чем LoRA отличается от full fine-tuning?</li><li>Что добавляет QLoRA?</li><li>Rubber duck: объясни LoRA как маленький обучаемый слой-поправку к большой замороженной модели.</li></ul></section>
 </body>
 </html>
