@@ -238,17 +238,15 @@ canvas{border-radius:6px;display:block}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">Query</span><span class="fa-desc">Запрос текущего токена: какую информацию он ищет в контексте.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">Key</span><span class="fa-desc">Ключи всех токенов: по каким признакам их можно найти.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">Value</span><span class="fa-desc">Содержимое токенов, которое будет смешано по весам attention.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">QKᵀ</span><span class="fa-name">scores</span><span class="fa-desc">Матрица совместимости: насколько каждый query похож на каждый key.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">√dₖ</span><span class="fa-name">масштаб</span><span class="fa-desc">Стабилизирует logits, чтобы softmax не становился слишком резким.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">softmax</span><span class="fa-name">нормировка</span><span class="fa-desc">Превращает scores в вероятностные веса, сумма по строке равна 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">queries</span><span class="fa-desc">что каждый токен ищет в остальных токенах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">keys</span><span class="fa-desc">по каким признакам токены доступны для сравнения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">values</span><span class="fa-desc">какую информацию токен отдаёт, если на него обратили внимание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√d_k</span><span class="fa-name">scale</span><span class="fa-desc">нормирует dot products, чтобы softmax не становился слишком резким.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый токен собирает новую репрезентацию как взвешенную смесь информации из других токенов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: запрос сравнивается с заголовками документов, а затем возвращается содержимое наиболее релевантных документов.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если токен даёт веса [0.7, 0.2, 0.1], то 70% нового представления приходит от первого value, 20% от второго и 10% от третьего.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> attention строит для каждого токена взвешенную смесь информации из других токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: query сравнивается с заголовками, а возвращается содержание релевантных документов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если token A даёт вес 0.7 token B и 0.3 token C, его новое представление в основном берёт value от B.</div>
     </div>
     <p>Q ∈ ℝ<sup>L×dₖ</sup>, K ∈ ℝ<sup>S×dₖ</sup>, V ∈ ℝ<sup>S×dᵥ</sup> → выход ∈ ℝ<sup>L×dᵥ</sup></p>
 
@@ -369,15 +367,15 @@ MHA(Q,K,V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">queries</span><span class="fa-desc">что каждый токен ищет в остальных токенах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">keys</span><span class="fa-desc">по каким признакам токены доступны для сравнения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">values</span><span class="fa-desc">какую информацию токен отдаёт, если на него обратили внимание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√d_k</span><span class="fa-name">scale</span><span class="fa-desc">нормирует dot products, чтобы softmax не становился слишком резким.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> attention строит для каждого токена взвешенную смесь информации из других токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: query сравнивается с заголовками, а возвращается содержание релевантных документов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если token A даёт вес 0.7 token B и 0.3 token C, его новое представление в основном берёт value от B.</div>
     </div>
     <p>Проекции: W<sub>i</sub><sup>Q</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>K</sup> ∈ ℝ<sup>d_model×d_k</sup>, W<sub>i</sub><sup>V</sup> ∈ ℝ<sup>d_model×d_v</sup></p>
 <p>Стандартно: dₖ = dᵥ = d_model / h. Для d_model=512, h=8: <span class="hl-a">dₖ = 64</span></p>
@@ -389,14 +387,15 @@ MHA(Q,K,V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">queries</span><span class="fa-desc">что каждый токен ищет в остальных токенах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">keys</span><span class="fa-desc">по каким признакам токены доступны для сравнения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">values</span><span class="fa-desc">какую информацию токен отдаёт, если на него обратили внимание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√d_k</span><span class="fa-name">scale</span><span class="fa-desc">нормирует dot products, чтобы softmax не становился слишком резким.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> attention строит для каждого токена взвешенную смесь информации из других токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: query сравнивается с заголовками, а возвращается содержание релевантных документов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если token A даёт вес 0.7 token B и 0.3 token C, его новое представление в основном берёт value от B.</div>
     </div>
     <div class="info-box"><strong>Зачем несколько голов?</strong><br>
 head 1 может учить синтаксические связи (подлежащее↔сказуемое),<br>
@@ -453,14 +452,15 @@ M[i][j] = 0   при j ≤ i</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">queries</span><span class="fa-desc">что каждый токен ищет в остальных токенах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">keys</span><span class="fa-desc">по каким признакам токены доступны для сравнения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">values</span><span class="fa-desc">какую информацию токен отдаёт, если на него обратили внимание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√d_k</span><span class="fa-name">scale</span><span class="fa-desc">нормирует dot products, чтобы softmax не становился слишком резким.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> attention строит для каждого токена взвешенную смесь информации из других токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как поиск: query сравнивается с заголовками, а возвращается содержание релевантных документов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если token A даёт вес 0.7 token B и 0.3 token C, его новое представление в основном берёт value от B.</div>
     </div>
     <p>Это нижнетреугольная матрица (lower triangular mask).</p>
 </div>
@@ -1012,6 +1012,26 @@ calcComp();
 </div>
 
 <script src="../bundle.js" defer></script>
+  <section class="ml-study-practice" data-quality-pass="arch-5-3">
+    <h2>Упражнения: Attention</h2>
+    <p class="muted">Проверка темы - уметь объяснить Q/K/V и стоимость self-attention.</p>
+    <details><summary>[Foundational] Shapes</summary><p>Если Q имеет форму \(L\times d_k\), K имеет \(S\times d_k\), какую форму имеет \(QK^T\)? <strong>Решение:</strong> \(L\times S\).</p></details>
+    <details><summary>[Foundational] Softmax weights</summary><p>Почему attention weights суммируются в 1 по строке? <strong>Решение:</strong> softmax превращает scores в распределение по keys для каждого query.</p></details>
+    <details><summary>[Intermediate] Почему делим на √d_k?</summary><p>Объясни scaling. <strong>Решение:</strong> dot products растут по variance с \(d_k\), деление стабилизирует softmax.</p></details>
+    <details><summary>[Intermediate] Causal mask</summary><p>Что делает causal mask? <strong>Решение:</strong> запрещает токену смотреть на будущие позиции.</p></details>
+    <details><summary>[Hard] Multi-head attention</summary><p>Почему несколько heads лучше одной большой? <strong>Решение:</strong> разные heads могут учить разные типы отношений и подпространства.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="arch-5-3">
+    <h2>Checkpoint: 5.3 Attention</h2>
+    <ul>
+      <li>Что означают Q, K и V?</li>
+      <li>Почему self-attention имеет \(O(L^2)\) по sequence length?</li>
+      <li>Зачем нужен attention mask?</li>
+      <li>Как attention отличается от convolution?</li>
+      <li>Rubber duck: объясни attention как механизм, где каждый токен спрашивает остальные, кто ему сейчас важен.</li>
+    </ul>
+  </section>
 </body>
 </html>
 

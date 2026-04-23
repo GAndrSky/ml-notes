@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -117,14 +117,15 @@ Backprop: один forward + один backward → O(1) по числу прох
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
     </div>
     <div class="intuition">
     💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
@@ -214,14 +215,15 @@ dz/dx = dz/dy · dy/dx</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
     </div>
     <h3 style="margin-top:14px;">Векторный случай (VJP)</h3>
       <div class="formula">z = g(y),  y = f(x),  x,y,z ∈ ℝⁿ
@@ -232,14 +234,15 @@ J = ∂y/∂x — якобиан слоя</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">На практике нам не нужен полный якобиан J — только произведение Jᵀv. Это VJP (Vector-Jacobian Product) — именно это вычисляет autograd.</p>
     </div>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
@@ -137,32 +137,30 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">logit класса i</span><span class="fa-desc">сырой score перед softmax; может быть большим положительным или отрицательным числом.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">e^{x_i}</span><span class="fa-name">экспонента score</span><span class="fa-desc">делает score положительным, но может overflow при больших logits.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Σ_j</span><span class="fa-name">сумма по классам</span><span class="fa-desc">нормирует экспоненты так, чтобы вероятности суммировались в 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">max(x)</span><span class="fa-name">максимальный logit</span><span class="fa-desc">вычитается для стабильности: самый большой exponent становится e^0=1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> stable softmax сохраняет те же вероятности, но сдвигает logits в безопасный числовой диапазон.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как измерять высоту гор относительно самой высокой вершины: форма рельефа та же, но числа становятся удобнее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для logits [1000, 999] наивный exp переполняется, а после вычитания max получаем [0, -1] и вероятности примерно [0.73, 0.27].</div>
     </div>
     <p>Наивная версия softmax опасна, если logits большие: экспоненты быстро взрываются. Поэтому перед экспонентой обычно вычитают максимум по вектору logits.</p>
       <div class="formula" data-render-tex data-tex-source="\mathrm{softmax}(x_i)=\frac{e^{x_i - \max(x)}}{\sum_j e^{x_j - \max(x)}}">\mathrm{softmax}(x_i)= e^{x_i-\max(x)} / \sum_j e^{x_j-\max(x)}</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">logit класса i</span><span class="fa-desc">сырой score перед softmax; может быть большим положительным или отрицательным числом.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">e^{x_i}</span><span class="fa-name">экспонента score</span><span class="fa-desc">делает score положительным, но может overflow при больших logits.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Σ_j</span><span class="fa-name">сумма по классам</span><span class="fa-desc">нормирует экспоненты так, чтобы вероятности суммировались в 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">max(x)</span><span class="fa-name">максимальный logit</span><span class="fa-desc">вычитается для стабильности: самый большой exponent становится e^0=1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> stable softmax сохраняет те же вероятности, но сдвигает logits в безопасный числовой диапазон.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как измерять высоту гор относительно самой высокой вершины: форма рельефа та же, но числа становятся удобнее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для logits [1000, 999] наивный exp переполняется, а после вычитания max получаем [0, -1] и вероятности примерно [0.73, 0.27].</div>
     </div>
     <div class="success">Это не меняет результат mathematically, но резко улучшает численную устойчивость, потому что теперь самый большой logit становится нулём, а все остальные — неположительными.</div>
     </div>

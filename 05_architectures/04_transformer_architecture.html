@@ -118,14 +118,15 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p>pos — позиция в последовательности, i — индекс измерения (0..d_model/2-1)</p>
 
@@ -142,14 +143,15 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p class="muted">Гибче, но не обобщается за пределы max_len. BERT: max_len=512, GPT-2: max_len=1024.</p>
 
@@ -159,15 +161,15 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p class="muted">Кодирует относительные позиции прямо в attention, обобщается за max_len.</p>
 </div>
@@ -329,18 +331,15 @@ d_ff = 4·d_model  (стандарт)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <h3>Residual + Pre-LN в формулах</h3>
 <div class="formula">Encoder слой l:
@@ -375,18 +374,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p>В seq2seq: суммируем CE по всем целевым токенам. В языковом моделировании (GPT): предсказываем следующий токен авторегрессивно.</p>
 
@@ -396,14 +392,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p class="muted">Регуляризует модель, предотвращает сверхуверенные предсказания. Связь с блоком 1.4 (label smoothing через KL).</p>
 
@@ -412,15 +409,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <div class="sr"><span>warmup steps</span><input type="range" id="lr-w" min="100" max="10000" step="100" value="4000" oninput="drawLRSchedule()"><span class="sv" id="lr-w-v">4000</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="lr-d" min="64" max="1024" step="64" value="512" oninput="drawLRSchedule()"><span class="sv" id="lr-d-v">512</span></div>
@@ -432,14 +429,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <h3>Dropout в Transformer</h3>
 <div class="step-box"><span class="sn">1.</span>После каждого Sublayer перед сложением с residual: p=0.1</div>
@@ -478,15 +476,15 @@ MQA: h голов Q, 1 голова K, 1 голова V</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p class="muted">GQA в LLaMA-3 (h=32, g=8): K,V в 4× меньше — KV-Cache в 4× меньше памяти.</p>
 
@@ -496,17 +494,15 @@ RMS(x) = √(1/d · Σ xᵢ²)   ← без вычитания среднего<
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
     </div>
     <p class="muted">Нет bias — на 7% быстрее LN, аналогичное качество.</p>
 </div>
@@ -931,6 +927,26 @@ drawArch();calcTFParams();drawResid();drawLRSchedule();
 </div>
 
 <script src="../bundle.js" defer></script>
+  <section class="ml-study-practice" data-quality-pass="arch-5-4">
+    <h2>Упражнения: Transformer Architecture</h2>
+    <p class="muted">Проверка темы - понимать блок Transformer как композицию attention, MLP, residual и normalization.</p>
+    <details><summary>[Foundational] Block order</summary><p>Назови основные части Transformer block. <strong>Решение:</strong> attention, residual, norm, MLP/FFN, residual, norm; порядок зависит от pre-norm/post-norm варианта.</p></details>
+    <details><summary>[Foundational] MLP role</summary><p>Что делает FFN после attention? <strong>Решение:</strong> нелинейно перерабатывает представление каждого токена отдельно.</p></details>
+    <details><summary>[Intermediate] Pre-norm vs post-norm</summary><p>Почему pre-norm часто стабильнее в глубоких моделях? <strong>Решение:</strong> градиенту легче проходить через residual path без нормализации после суммы.</p></details>
+    <details><summary>[Intermediate] Parameter count</summary><p>Какие матрицы в attention обычно дают много параметров? <strong>Решение:</strong> projections для Q, K, V и output projection.</p></details>
+    <details><summary>[Hard] Encoder vs decoder</summary><p>Чем encoder block отличается от decoder block? <strong>Решение:</strong> decoder использует causal self-attention и может иметь cross-attention к encoder states.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="arch-5-4">
+    <h2>Checkpoint: 5.4 Transformer Architecture</h2>
+    <ul>
+      <li>Что делает attention, а что делает MLP?</li>
+      <li>Зачем residual connections в Transformer?</li>
+      <li>Почему LayerNorm важен для стабильности?</li>
+      <li>Чем encoder-only, decoder-only и encoder-decoder модели отличаются по применению?</li>
+      <li>Rubber duck: объясни Transformer block как обмен контекстом плюс локальное мышление каждого токена.</li>
+    </ul>
+  </section>
 </body>
 </html>
 

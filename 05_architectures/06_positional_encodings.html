@@ -96,14 +96,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">pos</span><span class="fa-name">позиция токена</span><span class="fa-desc">номер токена в sequence, который нужен attention без рекуррентности.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">номер частоты</span><span class="fa-desc">разные координаты embedding кодируют позицию на разных масштабах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">sin/cos</span><span class="fa-name">периодические сигналы</span><span class="fa-desc">позволяют модели читать относительные сдвиги между позициями.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">RoPE / ALiBi</span><span class="fa-name">позиционные схемы</span><span class="fa-desc">альтернативы absolute encoding для better extrapolation и long context.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> positional encoding добавляет порядок в модель, которая иначе видит токены как набор без координат.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как номера страниц в книге: слова важны, но без порядка текст теряет смысл.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> токены на позициях 10 и 11 получают похожие, но различимые positional vectors.</div>
     </div>
     <div class="formula" data-no-tex>RoPE:
 Q, K разбиваются на пары координат
@@ -242,6 +243,26 @@ k_rot = k * cos + rotate_half(k) * sin</div></div>
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice" data-quality-pass="arch-5-6">
+    <h2>Упражнения: Positional Encodings</h2>
+    <p class="muted">Проверка темы - понимать, как Transformer получает порядок токенов.</p>
+    <details><summary>[Foundational] Зачем position?</summary><p>Почему self-attention без positional information не знает порядок? <strong>Решение:</strong> attention сравнивает токены попарно, но сам по себе не содержит координату позиции.</p></details>
+    <details><summary>[Foundational] Absolute vs relative</summary><p>Чем absolute encoding отличается от relative? <strong>Решение:</strong> absolute сообщает номер позиции, relative сообщает расстояние/отношение между позициями.</p></details>
+    <details><summary>[Intermediate] RoPE intuition</summary><p>Что делает RoPE? <strong>Решение:</strong> вращает query/key representations так, что dot product кодирует относительное смещение.</p></details>
+    <details><summary>[Intermediate] ALiBi intuition</summary><p>Почему ALiBi помогает long context extrapolation? <strong>Решение:</strong> добавляет bias по расстоянию без learned absolute table фиксированной длины.</p></details>
+    <details><summary>[Hard] Learned positions</summary><p>Какой риск у learned positional embeddings? <strong>Решение:</strong> они могут плохо extrapolate за пределы длины, виденной при обучении.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="arch-5-6">
+    <h2>Checkpoint: 5.6 Positional Encodings</h2>
+    <ul>
+      <li>Почему порядок не появляется из attention автоматически?</li>
+      <li>Чем fixed sinusoidal encoding отличается от learned?</li>
+      <li>Что RoPE кодирует через вращение?</li>
+      <li>Когда ALiBi полезен?</li>
+      <li>Rubber duck: объясни positional encoding как координатную сетку для токенов.</li>
+    </ul>
+  </section>
 </body>
 </html>
 

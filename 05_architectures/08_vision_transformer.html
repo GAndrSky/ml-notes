@@ -51,16 +51,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H,W,C</span><span class="fa-name">размер изображения</span><span class="fa-desc">высота, ширина и число каналов входной картинки.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">patch size</span><span class="fa-desc">размер квадратного фрагмента, который становится одним token.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число patches</span><span class="fa-desc">длина visual sequence после разбиения изображения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">CLS</span><span class="fa-name">classification token</span><span class="fa-desc">специальный токен, который собирает информацию для финальной классификации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ViT превращает изображение в последовательность patches и обрабатывает её как текстовые токены.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как разрезать картину на плитки и дать модели смотреть, какие плитки связаны друг с другом.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> image 224x224 с patch 16x16 даёт 14x14=196 patch tokens плюс CLS token.</div>
     </div>
     <p>ViT режет изображение на патчи размера <code>P × P</code>, распрямляет каждый патч в вектор и линейно проецирует его в embedding space. После этого картинка становится обычной последовательностью токенов.</p>
       <div class="info">Главная цена такого подхода: мы теряем жёстко зашитую локальную inductive bias CNN и должны “выучить” её на данных.</div>
@@ -238,6 +237,26 @@ logits = head(encoded[:, 0])</div></div>
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice" data-quality-pass="arch-5-8">
+    <h2>Упражнения: Vision Transformer</h2>
+    <p class="muted">Проверка темы - уметь перевести изображение в token sequence и понимать цену global attention.</p>
+    <details><summary>[Foundational] Patch count</summary><p>Сколько patches у изображения 224x224 при patch size 16? <strong>Решение:</strong> \(14\cdot14=196\) patches.</p></details>
+    <details><summary>[Foundational] Patch embedding</summary><p>Что делает patch projection? <strong>Решение:</strong> flatten patch превращается линейным слоем в d_model-dimensional token.</p></details>
+    <details><summary>[Intermediate] CLS token</summary><p>Зачем нужен CLS token? <strong>Решение:</strong> он собирает глобальную информацию через attention и используется для классификации.</p></details>
+    <details><summary>[Intermediate] ViT vs CNN</summary><p>Почему ViT обычно требует больше данных? <strong>Решение:</strong> у него слабее встроенный inductive bias локальности и translation equivariance.</p></details>
+    <details><summary>[Hard] Patch size tradeoff</summary><p>Что меняется при уменьшении patch size? <strong>Решение:</strong> больше tokens, выше spatial detail, но attention cost растёт квадратично.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="arch-5-8">
+    <h2>Checkpoint: 5.8 Vision Transformer</h2>
+    <ul>
+      <li>Как изображение превращается в sequence?</li>
+      <li>Почему patch size влияет на compute?</li>
+      <li>Чем ViT отличается от CNN по inductive bias?</li>
+      <li>Как positional encoding используется в ViT?</li>
+      <li>Rubber duck: объясни ViT как Transformer, который читает изображение по плиткам.</li>
+    </ul>
+  </section>
 </body>
 </html>
 

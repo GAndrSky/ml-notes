@@ -52,16 +52,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">sequence length</span><span class="fa-desc">число токенов; именно оно создаёт квадратичную стоимость full attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">hidden dimension</span><span class="fa-desc">размер представления токена и attention head.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">QK^T</span><span class="fa-name">attention scores</span><span class="fa-desc">матрица попарных сравнений токенов размера LxL.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">blocks / tiles</span><span class="fa-name">плиточная обработка</span><span class="fa-desc">FlashAttention считает attention кусками, уменьшая memory traffic.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт правило, по которому данные превращаются в прогноз, score или критерий выбора.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как техническая инструкция: входы, параметры и правило вместе дают измеримый результат.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если меняется один вход, смотри, как меняется итоговый score или решение модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> efficient attention пытается сохранить смысл attention, но уменьшить память, IO или число пар токенов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как читать большую таблицу по блокам, не выгружая её целиком на стол.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при L=4096 full attention имеет около 16.7M pairwise scores на одну head.</div>
     </div>
     <div class="formula" data-no-tex>Время:  O(n² d)
 Память: O(n²)
@@ -245,6 +244,26 @@ for token in sequence:
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice" data-quality-pass="arch-5-7">
+    <h2>Упражнения: Efficient Attention</h2>
+    <p class="muted">Проверка темы - понимать, что bottleneck attention часто в памяти/IO, а не только во FLOPs.</p>
+    <details><summary>[Foundational] Complexity</summary><p>Сколько attention scores у sequence length 2048? <strong>Решение:</strong> \(2048^2 \approx 4.19\) млн scores на head.</p></details>
+    <details><summary>[Foundational] Почему O(L²)?</summary><p><strong>Решение:</strong> каждый query сравнивается с каждым key.</p></details>
+    <details><summary>[Intermediate] FlashAttention</summary><p>Что оптимизирует FlashAttention? <strong>Решение:</strong> memory IO: считает attention блоками и не материализует огромную матрицу целиком.</p></details>
+    <details><summary>[Intermediate] Sparse attention</summary><p>Что теряется при sparse pattern? <strong>Решение:</strong> не все токены видят друг друга напрямую, поэтому inductive bias становится важным.</p></details>
+    <details><summary>[Hard] Longformer tradeoff</summary><p>Почему local+global attention может быть хорошим компромиссом? <strong>Решение:</strong> локальные окна ловят близкий контекст, global tokens переносят информацию через документ.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="arch-5-7">
+    <h2>Checkpoint: 5.7 Efficient Attention</h2>
+    <ul>
+      <li>Почему full attention плохо масштабируется по длине?</li>
+      <li>Что именно экономит FlashAttention?</li>
+      <li>Когда sparse attention может проиграть full attention?</li>
+      <li>Как KV-cache связан с inference, но не решает training O(L²)?</li>
+      <li>Rubber duck: объясни efficient attention как способы не строить огромную таблицу связей целиком.</li>
+    </ul>
+  </section>
 </body>
 </html>
 
