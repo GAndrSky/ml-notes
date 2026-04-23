@@ -608,6 +608,20 @@
     <div class="formula">
       \hat{p}(y=1 \mid \mathbf{x}) = \sigma(\mathbf{w}^T\mathbf{x} + b)
     </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">\hat{p}</span><span class="fa-name">оценка вероятности</span><span class="fa-desc">число от 0 до 1: насколько модель уверена, что объект относится к положительному классу.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y=1</span><span class="fa-name">положительный класс</span><span class="fa-desc">событие, которое мы хотим обнаружить: fraud, churn, болезнь, клик, spam.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\mathbf{x}</span><span class="fa-name">признаки объекта</span><span class="fa-desc">вектор входных признаков после preprocessing; важно, чтобы масштаб признаков был сопоставим.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\mathbf{w}</span><span class="fa-name">веса признаков</span><span class="fa-desc">показывают, как каждый признак сдвигает log-odds в сторону класса 1 или класса 0.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">bias</span><span class="fa-desc">базовый сдвиг вероятности, когда вклад признаков равен нулю.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\sigma</span><span class="fa-name">sigmoid</span><span class="fa-desc">переводит линейный score в вероятность, не меняя порядок объектов по уверенности.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> модель сначала считает линейный риск-score, а затем сжимает его в вероятностную шкалу.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(\mathbf{w}^T\mathbf{x}+b=2\), то \(\sigma(2)\approx0.88\): модель считает класс 1 довольно вероятным.</div>
+    </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
       <h3>Логистическая регрессия предсказывает log-odds</h3>
@@ -656,6 +670,17 @@
 
     <div class="formula">
       \sigma(z)=\frac{1}{1+e^{-z}}
+    </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">linear score</span><span class="fa-desc">сырое число до вероятности; может быть любым: отрицательным, нулевым или положительным.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">e^{-z}</span><span class="fa-name">экспонента</span><span class="fa-desc">делает переход плавным: большие положительные score дают вероятность около 1, отрицательные около 0.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1+</span><span class="fa-name">нормировка</span><span class="fa-desc">держит результат в интервале от 0 до 1, чтобы его можно было читать как вероятность.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> sigmoid превращает бесконечную числовую прямую в плавную шкалу уверенности.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> \(\sigma(0)=0.5\), \(\sigma(2)\approx0.88\), \(\sigma(-2)\approx0.12\).</div>
     </div>
     <p>
       Где
@@ -847,6 +872,17 @@
       0,& \hat{p}<t
       \end{cases}
     </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">\hat{y}</span><span class="fa-name">предсказанный класс</span><span class="fa-desc">финальное дискретное решение модели: 0 или 1 после применения порога.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\hat{p}</span><span class="fa-name">предсказанная вероятность</span><span class="fa-desc">не решение, а степень уверенности модели в положительном классе.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">threshold</span><span class="fa-desc">порог решения; выбирается по validation-метрике и цене false positive / false negative.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> logistic regression оценивает риск, а threshold превращает риск в действие.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> при \(\hat{p}=0.62\) и \(t=0.5\) получаем класс 1; при \(t=0.8\) тот же объект станет классом 0.</div>
+    </div>
     <p>
       Чаще всего берут <code>t = 0.5</code>, но это не обязано быть так.
     </p>
@@ -927,6 +963,18 @@
 
     <div class="formula">
       \ell(y,\hat{p}) = -\Big(y\log \hat{p} + (1-y)\log(1-\hat{p})\Big)
+    </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">\ell</span><span class="fa-name">loss одного объекта</span><span class="fa-desc">штраф за одно предсказание; чем он меньше, тем лучше вероятность согласуется с меткой.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">истинная метка</span><span class="fa-desc">0 или 1; выбирает, какая половина формулы активна.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\hat{p}</span><span class="fa-name">вероятность класса 1</span><span class="fa-desc">выход sigmoid; должен быть близок к 1 для \(y=1\) и близок к 0 для \(y=0\).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\log</span><span class="fa-name">логарифм</span><span class="fa-desc">сильно штрафует уверенные ошибки: \(\log(0)\) стремится к минус бесконечности.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BCE награждает уверенность только тогда, когда модель уверена в правильном классе.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(y=1\) и \(\hat{p}=0.9\), loss \(\approx0.105\); если \(\hat{p}=0.1\), loss \(\approx2.30\).</div>
     </div>
     <p>
       Для всего dataset:
@@ -1036,6 +1084,18 @@
       P(y^{(i)} \mid \mathbf{x}^{(i)}) =
       (p^{(i)})^{y^{(i)}}(1-p^{(i)})^{1-y^{(i)}}
     </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">P(y|x)</span><span class="fa-name">вероятность метки</span><span class="fa-desc">насколько правдоподобна наблюдаемая метка при признаках объекта.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">p^{(i)}</span><span class="fa-name">вероятность класса 1</span><span class="fa-desc">параметр Bernoulli-распределения для i-го объекта.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y^{(i)}</span><span class="fa-name">метка объекта</span><span class="fa-desc">если метка 1, остаётся \(p\); если метка 0, остаётся \(1-p\).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1-y</span><span class="fa-name">дополнение класса</span><span class="fa-desc">включает вероятность отрицательного класса, когда истинная метка равна 0.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> одна компактная формула выбирает вероятность того класса, который реально случился.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(y=1,p=0.8\), likelihood равен 0.8; если \(y=0,p=0.8\), likelihood равен 0.2.</div>
+    </div>
     <p>
       Логарифм правдоподобия даёт:
     </p>
@@ -1076,6 +1136,18 @@
     </div>
     <div class="formula">
       \mathbf{w}^T\mathbf{x} + b = 0
+    </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">\mathbf{w}</span><span class="fa-name">нормаль границы</span><span class="fa-desc">задаёт направление, перпендикулярное decision boundary.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\mathbf{x}</span><span class="fa-name">точка в feature space</span><span class="fa-desc">объект, который мы классифицируем.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">сдвиг границы</span><span class="fa-desc">перемещает прямую/плоскость без изменения её направления.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нейтральный score</span><span class="fa-desc">при threshold 0.5 это точка, где \(\sigma(z)=0.5\), то есть модель ровно не уверена.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> граница - это место, где модель переходит от решения 0 к решению 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(w_1=1,w_2=1,b=-3\), граница в 2D задаётся \(x_1+x_2=3\).</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1146,6 +1218,18 @@
     <div class="formula">
       P(y=k \mid \mathbf{x}) =
       \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}
+    </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">z_k</span><span class="fa-name">score класса k</span><span class="fa-desc">насколько модель склоняется к конкретному классу до нормировки.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">e^{z_k}</span><span class="fa-name">положительный вес класса</span><span class="fa-desc">экспонента делает все веса положительными и усиливает разницу между score.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\sum_j e^{z_j}</span><span class="fa-name">сумма по классам</span><span class="fa-desc">общая масса всех классов; деление на неё делает вероятности суммирующимися в 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">количество возможных категорий в multiclass-задаче.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> softmax превращает соревнование score'ов в распределение вероятностей.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> для score \([2,1,0]\) softmax примерно \([0.67,0.24,0.09]\): первый класс лидирует, но остальные не обнуляются.</div>
     </div>
     <p>
       Это softmax: превращает набор score'ов в распределение вероятностей по классам.
@@ -1229,6 +1313,18 @@
     <div class="formula">
       J(\mathbf{w},b)=\text{BCE} + \lambda \Omega(\mathbf{w})
     </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">J</span><span class="fa-name">итоговая цель</span><span class="fa-desc">то, что реально минимизирует optimizer: ошибка плюс штраф за сложность.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">BCE</span><span class="fa-name">ошибка классификации</span><span class="fa-desc">штраф за плохие вероятности на обучающих объектах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\lambda</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">чем больше значение, тем сильнее модель избегает больших весов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\Omega(w)</span><span class="fa-name">penalty</span><span class="fa-desc">мера сложности весов: L2 сглаживает, L1 может занулять признаки.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> модель должна не только объяснять train, но и делать это без слишком агрессивных коэффициентов.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если BCE=0.42, penalty=10 и \(\lambda=0.01\), итоговая цель \(J=0.52\).</div>
+    </div>
     <div class="grid-2">
       <div>
         <h3>L2 regularization</h3>
@@ -1278,6 +1374,17 @@
     <div class="formula">
       \nabla_{\mathbf{w}}\ell = (\hat{p}-y)\mathbf{x}
     </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">\nabla_w \ell</span><span class="fa-name">градиент весов</span><span class="fa-desc">показывает, как изменить каждый коэффициент, чтобы уменьшить loss.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\hat{p}-y</span><span class="fa-name">ошибка вероятности</span><span class="fa-desc">знак говорит, завысила или занизила модель вероятность класса 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">\mathbf{x}</span><span class="fa-name">масштаб признака</span><span class="fa-desc">активные признаки получают больший вклад в обновление соответствующих весов.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> вес меняется сильнее, если признак был активен именно на ошибочном объекте.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(\hat{p}=0.8,y=1,x_j=3\), вклад в градиент \((0.8-1)\cdot3=-0.6\): optimizer будет увеличивать score.</div>
+    </div>
     <div class="info">
       Это делает логистическую регрессию очень естественной для gradient-based optimization.
     </div>
@@ -1308,6 +1415,17 @@
 
     <div class="formula">
       \text{odds multiplier}=e^{w_j}
+    </div>
+    <div class="formula-anatomy">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+        <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">коэффициент признака</span><span class="fa-desc">изменение log-odds при росте признака \(x_j\) на единицу.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">e^{w_j}</span><span class="fa-name">множитель odds</span><span class="fa-desc">во сколько раз меняются шансы класса 1, а не сама вероятность.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">odds</span><span class="fa-name">шансы</span><span class="fa-desc">отношение \(p/(1-p)\): насколько класс 1 вероятнее класса 0.</span></div>
+      </div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> коэффициенты logistic regression удобнее читать как мультипликативное изменение шансов.</div>
+      <div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если \(w_j=0.7\), то \(e^{0.7}\approx2.01\): при росте признака на 1 odds примерно удваиваются.</div>
     </div>
     <div class="warn">
       Типичная ошибка:
@@ -2005,5 +2123,25 @@ proba = multi_model.predict_proba(X_val)</div>
     </div>
   </section>
 <!-- step1-learning:end -->
+  <section class="ml-study-practice" data-quality-pass="classic-2-5">
+    <h2>Упражнения: логистическая регрессия</h2>
+    <p class="muted">Главная проверка - уметь разделять score, probability, threshold, loss и business decision.</p>
+    <details><summary>[Foundational] Посчитай sigmoid руками</summary><p>Вычисли \(p=\sigma(z)\) для \(z=-2,0,2\). <strong>Решение:</strong> примерно 0.12, 0.5, 0.88.</p></details>
+    <details><summary>[Foundational] Threshold и цена ошибок</summary><p>Для fraud-задачи объясни, когда threshold лучше сделать ниже 0.5. <strong>Решение:</strong> если пропуск fraud дорогой, повышаем recall ценой большего числа false positives.</p></details>
+    <details><summary>[Intermediate] Выведи BCE из Bernoulli likelihood</summary><p>Начни с \(p^y(1-p)^{1-y}\), возьми log и поменяй знак. <strong>Решение:</strong> получится \(-[y\log p+(1-y)\log(1-p)]\).</p></details>
+    <details><summary>[Intermediate] Реализуй NumPy logistic regression</summary><p>Напиши forward sigmoid, BCE, gradient \((p-y)X\) и gradient descent. <strong>Решение:</strong> добавь clipping вероятностей, чтобы избежать \(\log(0)\).</p></details>
+    <details><summary>[Hard] Calibration vs discrimination</summary><p>Почему ROC-AUC может быть высоким, но вероятности плохими? <strong>Решение:</strong> AUC проверяет ranking, а calibration проверяет, соответствует ли 0.8 примерно 80% частоте события.</p></details>
+  </section>
+
+  <section class="ml-checkpoint-section" data-quality-pass="classic-2-5">
+    <h2>Checkpoint: 2.5 Логистическая регрессия</h2>
+    <ul>
+      <li>Что именно является линейным в logistic regression?</li>
+      <li>Почему coefficients интерпретируются через log-odds, а не напрямую через probability?</li>
+      <li>Как threshold влияет на precision и recall?</li>
+      <li>Почему BCE естественнее MSE для Bernoulli target?</li>
+      <li>Rubber duck: объясни разницу между вероятностью модели и финальным решением.</li>
+    </ul>
+  </section>
 </body>
 </html>
