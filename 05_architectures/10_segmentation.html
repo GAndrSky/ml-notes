@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/10_segmentation.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>5.10 Segmentation</h1>
       <p class="muted">Segmentation predicts a label for each pixel, not just one label for the whole image or one box for an object.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Сегментация — это классификация каждого пикселя. Semantic, Instance, Panoptic — три уровня понимания изображения. U-Net используется в медицине, автопилотах, спутниковых снимках.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Semantic vs Instance vs Panoptic segmentation — в чём разница</li>
+      <li>U-Net — skip connections между encoder и decoder</li>
+      <li>Dice loss — почему лучше BCE при дисбалансе пикселей</li>
+      <li>Mask R-CNN — как детекция и сегментация объединяются</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>CNN (5.1)</li>
+      <li>Object Detection (5.9)</li>
+      <li>U-Net architecture</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -170,7 +194,40 @@ print(dice_score(pred, target))
     <details><summary>[Hard] Boundary errors</summary><p>Почему segmentation может иметь высокий pixel accuracy и плохие границы? <strong>Решение:</strong> фон доминирует, а boundary pixels составляют малую долю, но критичны визуально/практически.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-10">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между semantic и instance segmentation?</summary>
+      <div class="ml-quiz__a"><p>Semantic segmentation: каждому пикселю присваивается класс (все «люди» — один класс). Instance segmentation: каждому объекту-экземпляру — отдельная маска (человек_1, человек_2). Panoptic segmentation объединяет оба подхода: считаемые объекты (things) + фон (stuff).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему FCN (Fully Convolutional Network) стал основой для семантической сегментации?</summary>
+      <div class="ml-quiz__a"><p>FCN заменяет полносвязные слои свёрточными, что позволяет обрабатывать изображения произвольного размера и получать пространственные карты предсказаний. Для каждого пикселя независимо предсказывается класс. Upsampling (transposed conv или bilinear) восстанавливает пространственное разрешение.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое U-Net и почему skip-connections критичны для сегментации?</summary>
+      <div class="ml-quiz__a"><p>U-Net: энкодер (downsampling) + декодер (upsampling) + skip-connections между соответствующими уровнями. Skip-connections передают fine-grained пространственную информацию (текстуры, края), потерянную при downsampling. Это позволяет точно сегментировать мелкие детали.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как Mask R-CNN расширяет Faster R-CNN для instance segmentation?</summary>
+      <div class="ml-quiz__a"><p>Mask R-CNN добавляет к Faster R-CNN третью голову: помимо классификации и regression боксов, для каждого предложенного региона предсказывает бинарную маску (14×14). RoIAlign (в отличие от RoIPool) сохраняет субпиксельную точность через билинейную интерполяцию.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-10">
     <h2>Checkpoint: 5.10 Segmentation</h2>
     <ul>
       <li>Чем segmentation отличается от detection?</li>
@@ -180,5 +237,47 @@ print(dice_score(pred, target))
       <li>Rubber duck: объясни segmentation как классификацию каждого пикселя.</li>
     </ul>
   </section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Semantic & Instance Segmentation</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй U-Net для медицинских изображений, Mask R-CNN для instance.</li>
+        <li>IoU per class и mIoU — стандартные метрики сегментации.</li>
+        <li>Skip-connections — критическая деталь архитектуры, не удаляй их для «упрощения».</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Оценивать только pixel accuracy — она вводит в заблуждение при дисбалансе классов.</li>
+        <li>Не проверять качество на редких классах (маленькие объекты, редкие категории).</li>
+        <li>Игнорировать RoIAlign в Mask R-CNN — RoIPool теряет субпиксельную точность.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Encoder backbone: ResNet-50/101 vs ViT — баланс точности и скорости.</li>
+        <li>Loss weight для разных классов при дисбалансе.</li>
+        <li>Output stride: 8 vs 16 — компромисс разрешения и скорости.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="05_architectures/01_cnn_convolutional_networks.html">← 5.1 CNN</a></li>
+        <li><a href="05_architectures/09_object_detection.html">← 5.9 Object Detection</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

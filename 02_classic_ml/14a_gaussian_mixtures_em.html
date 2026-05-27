@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/14a_gaussian_mixtures_em.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -46,25 +46,83 @@
       <h1>2.14a Gaussian Mixture Models и EM</h1>
       <p class="muted">GMM — это вероятностная версия кластеризации: вместо жёсткого “принадлежит одному кластеру” мы получаем мягкие ответственности, эллиптические кластеры и естественный мост к латентным переменным.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Gaussian Mixture Model — это soft-кластеризация: каждая точка принадлежит нескольким кластерам с некоторой вероятностью. EM-алгоритм — один из фундаментальных алгоритмов статистического ML.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как GMM отличается от k-Means — soft vs hard assignment</li>
+      <li>EM-алгоритм: E-step (posterior) и M-step (MLE параметров)</li>
+      <li>Почему EM сходится и к какому минимуму он приходит</li>
+      <li>Применения GMM: плотностная оценка и anomaly detection</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Кластеризация (2.14)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Нормальное распределение</li>
+    </ul>
+  </div>
+</div>
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Модель смеси</h2>
       <div class="formula" data-render-tex data-tex-source="p(x) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x \mid \mu_k, \Sigma_k), \qquad \sum_k \pi_k = 1">p(x) = Σ π_k N(x | μ_k, Σ_k),   Σ π_k = 1</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x)</span><span class="fa-name">плотность смеси в точке x</span><span class="fa-desc">Маргинальная вероятность объекта x — взвешенная сумма плотностей всех компонент.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число компонент смеси</span><span class="fa-desc">Гиперпараметр: сколько гауссианов в смеси. Сумма идёт по k от 1 до K.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес k-й компоненты</span><span class="fa-desc">Доля объектов, порождённых k-й компонентой. Все π_k ≥ 0, ∑π_k = 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N(x|μ_k, Σ_k)</span><span class="fa-name">плотность k-го гауссиана</span><span class="fa-desc">Насколько вероятно x при k-й компоненте с центром μ_k и ковариацией Σ_k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центр k-й компоненты</span><span class="fa-desc">Вектор средних признаков для k-й компоненты — аналог центроида в k-means.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_k</span><span class="fa-name">ковариационная матрица k-й компоненты</span><span class="fa-desc">Задаёт форму и ориентацию эллипса плотности — позволяет GMM описывать вытянутые кластеры.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_k π_k = 1</span><span class="fa-name">условие нормировки весов</span><span class="fa-desc">Веса компонент — вероятности, суммирующиеся в 1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждая точка «могла быть порождена» любой из K компонент — итоговая плотность = взвешенная сумма их вкладов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Высота горного рельефа — несколько пиков (компонент) с разными центрами и формами складываются в общий ландшафт.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> K=2, π₁=0.7, π₂=0.3; точка x близко к μ₁ → N(x|μ₁,Σ₁)=0.9, N(x|μ₂,Σ₂)=0.1 → p(x)=0.7·0.9+0.3·0.1=0.66.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -94,19 +152,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ_ik</span><span class="fa-name">responsibility объекта i за компоненту k</span><span class="fa-desc">Мягкая принадлежность: насколько k-я компонента «ответственна» за порождение объекта x_i.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(z_i=k|x_i)</span><span class="fa-name">posterior принадлежности</span><span class="fa-desc">Вероятность того, что скрытая переменная z_i (кластер объекта) равна k, при наблюдаемом x_i.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">prior-вес k-й компоненты</span><span class="fa-desc">Доля объектов из k-й компоненты по текущим параметрам — числитель: масштабирует likelihood.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N(x_i|μ_k, Σ_k)</span><span class="fa-name">likelihood объекта x_i при k-й компоненте</span><span class="fa-desc">Насколько типичен x_i для гауссиана с параметрами μ_k, Σ_k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_j π_j N(x_i|μ_j,Σ_j)</span><span class="fa-name">нормировочный знаменатель</span><span class="fa-desc">Маргинальная вероятность x_i — сумма по всем K компонентам. Гарантирует ∑_k γ_ik = 1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> E-step: для каждой точки вычисляем, насколько каждая компонента «объясняет» её, пропорционально prior × likelihood.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Пространство между двумя городами: γ_ik — вероятность «я из города k», учитывая расстояние до каждого из них и их размер.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> π₁=0.7, N(x|μ₁)=0.9, π₂=0.3, N(x|μ₂)=0.1 → γ_i1 = 0.63/0.66 ≈ 0.955; γ_i2 ≈ 0.045.</div>
     </div>
     <div class="grid-2">
         <div><h3>E-step</h3><p>Считаем <strong>responsibilities</strong>: насколько каждая компонента “объясняет” каждую точку.</p></div>
@@ -116,19 +171,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N_k</span><span class="fa-name">эффективное число объектов компоненты k</span><span class="fa-desc">Сумма responsibilities по всем объектам для компоненты k — дробное «сколько точек принадлежит k».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ_ik</span><span class="fa-name">responsibility объекта i за компоненту k</span><span class="fa-desc">Вычислена на E-шаге — мягкий вес, с которым x_i влияет на параметры k-й компоненты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">обновлённый центр k-й компоненты</span><span class="fa-desc">Взвешенное среднее всех объектов с весами γ_ik — «центроид с мягкими весами».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">i-й объект</span><span class="fa-desc">Точка данных, вносящая вклад в μ_k и Σ_k пропорционально своей responsibility γ_ik.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_k</span><span class="fa-name">обновлённая ковариация k-й компоненты</span><span class="fa-desc">Взвешенная ковариация объектов вокруг μ_k — задаёт форму эллипса компоненты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(x_i−μ_k)(x_i−μ_k)^T</span><span class="fa-name">внешнее произведение отклонения</span><span class="fa-desc">Вклад x_i в ковариационную матрицу — матрица ранга 1 от отклонения от центра.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> M-step: обновляем параметры каждой компоненты, используя всё ещё объекты, но с мягкими весами γ_ik вместо жёстких меток.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как среднее с весами: объект «на 70% в кластере 1» вносит 70% своего значения в μ₁ и 30% в μ₂.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> γ_i1=0.9, x_i=3; γ_i2=0.1 → вклад в μ₁ — 0.9·3=2.7; вклад в μ₂ — 0.1·3=0.3.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -371,7 +424,40 @@ GMM намного содержательнее.</div>
     <details><summary>[Hard] Singular covariance</summary><p>Почему GMM может сломаться на малом кластере? <strong>Решение:</strong> компонента может схлопнуться на одну точку, covariance станет плохо обусловленной; нужна regularization.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-14a">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Gaussian Mixture Model и чем она лучше k-Means?</summary>
+      <div class="ml-quiz__a"><p>GMM — вероятностная модель: данные генерируются смесью Гауссовых распределений. В отличие от жёсткого назначения k-Means, GMM даёт мягкое: каждый пример принадлежит каждому кластеру с некоторой вероятностью. Кластеры могут быть эллиптическими, а не только сферическими.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое E-шаг и M-шаг в алгоритме EM для GMM?</summary>
+      <div class="ml-quiz__a"><p>E-шаг (Expectation): при текущих параметрах вычислить «мягкое» назначение — вероятность принадлежности каждого примера каждому гауссиану. M-шаг (Maximization): обновить параметры (μ, Σ, π), максимизируя ожидаемое правдоподобие, вычисленное на E-шаге.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему EM может сойтись к плохому локальному максимуму?</summary>
+      <div class="ml-quiz__a"><p>EM гарантирует монотонный рост логарифма правдоподобия, но не гарантирует глобальный максимум. Решение зависит от начальной инициализации. Хорошая практика: запустить EM несколько раз с разными начальными параметрами и выбрать лучший результат (по log-likelihood).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбрать число компонент в GMM?</summary>
+      <div class="ml-quiz__a"><p>Используют информационные критерии: BIC = -2·log L + k·log n или AIC = -2·log L + 2k, где k — число параметров. BIC сильнее штрафует за сложность, предпочтительнее при отборе моделей. Выбирают число компонент с минимальным BIC.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-14a">
     <h2>Checkpoint: 2.14a GMM / EM</h2>
     <ul>
       <li>Что такое responsibility?</li>
@@ -381,5 +467,6 @@ GMM намного содержательнее.</div>
       <li>Rubber duck: объясни EM как чередование “угадай скрытые группы” и “переоцени параметры групп”.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

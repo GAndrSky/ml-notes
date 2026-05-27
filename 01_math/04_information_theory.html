@@ -103,7 +103,7 @@ canvas { border-radius: 8px; }
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/01_math/04_information_theory.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="math">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -116,6 +116,30 @@ canvas { border-radius: 8px; }
       <h1>1.4 Теория информации</h1>
       <p class="muted">Self-information · entropy · cross-entropy · KL-divergence · связь с likelihood, loss и обучением моделей</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Теория информации даёт ML точный инструментарий для измерения неопределённости. Энтропия, KL-дивергенция, взаимная информация — они лежат в основе loss-функций, VAE и сжатия.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Энтропия Шеннона — сколько информации несёт случайная величина</li>
+      <li>KL-дивергенция — как измерить разницу между распределениями (и почему она ≥ 0)</li>
+      <li>Cross-Entropy как loss-функция для классификации — вывод из теории информации</li>
+      <li>Mutual Information — когда использовать для feature selection</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Логарифм и его свойства</li>
+      <li>Математический анализ (1.2)</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- SECTION 1 -->
 <div class="card">
@@ -128,14 +152,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">good model</span><span class="fa-name">хорошая модель</span><span class="fa-desc">Модель, чьи предсказания близки к истинному распределению данных, т.е. имеющая высокий likelihood.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⇔</span><span class="fa-name">эквивалентность</span><span class="fa-desc">Обе стороны выражают одно и то же свойство: высокий likelihood ≡ малая неожиданность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">маленькая неожиданность</span><span class="fa-name">low surprise</span><span class="fa-desc">Self-information истинного события: -log p(x). Если модель уверена в правильном ответе, -log p мало.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">истинных данных</span><span class="fa-name">true data</span><span class="fa-desc">Наблюдения из реального распределения P; именно их вероятность модель должна ставить высокой.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Обучение = уменьшение среднего удивления модели при виде правильных ответов. Это напрямую связано с минимизацией cross-entropy.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Хороший синоптик не удивляется правильному прогнозу. Удивление = ошибка модели.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если модель ставит p(true)=0.9, сюрприз = -log(0.9) ≈ 0.1. Если p(true)=0.01, сюрприз = -log(0.01) ≈ 4.6.</div>
     </div>
     <div class="grid-3" style="margin-top:12px;">
     <div class="mini-card">
@@ -167,15 +192,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">I(x)</span><span class="fa-name">self-information события x</span><span class="fa-desc">Количество информации, которое несёт наблюдение конкретного события x. Чем реже событие, тем больше информации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x)</span><span class="fa-name">вероятность события x</span><span class="fa-desc">Как часто происходит x. Близкое к 1 — предсказуемое (мало информации), близкое к 0 — редкое (много информации).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log</span><span class="fa-name">отрицательный логарифм</span><span class="fa-desc">Обеспечивает I(x) ≥ 0 (т.к. log p(x) ≤ 0 для вероятностей). Также даёт аддитивность: I(x,y) = I(x)+I(y) при независимых x,y.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Чем удивительнее событие, тем больше информации оно несёт. «Завтра взойдёт солнце» — мало информации. «Выпал снег в июле в Москве» — много. Self-information — это количественное выражение «удивительности».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как новостная ценность: «собака укусила человека» — не новость (p велико, I мало). «Человек укусил собаку» — новость (p мало, I велико).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p(x)=0.5 → I=-log(0.5)≈0.69 нат. p(x)=0.01 → I=-log(0.01)≈4.6 нат. p(x)=1.0 → I=0 (гарантированное событие не несёт информации).</div>
     </div>
     <h3>Смысл</h3>
   <div class="step">редкое событие → большая информация</div>
@@ -192,15 +216,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">I(x, y)</span><span class="fa-name">self-information совместного события</span><span class="fa-desc">Количество информации в совместном наблюдении x и y одновременно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x, y)</span><span class="fa-name">совместная вероятность</span><span class="fa-desc">Вероятность того, что произойдут оба события x и y. Для независимых: p(x,y)=p(x)·p(y).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log p(x) - log p(y)</span><span class="fa-name">аддитивность информации</span><span class="fa-desc">Для независимых событий информация складывается: I(x,y)=I(x)+I(y). Это ключевое свойство логарифма.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Аддитивность информации — главная причина использования логарифма. Если события независимы, суммарная информация двух наблюдений равна сумме их индивидуальных self-information. Произведение вероятностей → сумма логарифмов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Две независимые монеты: «орёл на первой» = 1 бит, «орёл на второй» = 1 бит. Совместный исход «оба орла» = 2 бита. Информация сложилась.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p(x)=0.5, p(y)=0.25, независимые. I(x)=0.69, I(y)=1.39. I(x,y)=I(x)+I(y)=2.08 нат. Проверка: -log(0.5·0.25)=-log(0.125)=2.08 нат. ✓</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -242,15 +265,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P)</span><span class=”fa-name”>энтропия распределения P</span><span class=”fa-desc”>Средняя неопределённость: сколько в среднем информации несёт одно наблюдение из распределения P.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>p(x)</span><span class=”fa-name”>вероятность исхода x</span><span class=”fa-desc”>Вес события x в распределении P; используется как «частота» для взвешенного среднего.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-log p(x)</span><span class=”fa-name”>self-information исхода x</span><span class=”fa-desc”>Количество информации в конкретном наблюдении x. H(P) — это её ожидание по всем x.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-∑_x</span><span class=”fa-name”>отрицательная сумма по всем x</span><span class=”fa-desc”>Суммируем по всем возможным исходам; минус нужен, чтобы получить положительное число (p log p ≤ 0).</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> H(P) = ожидаемая self-information. Высокая энтропия = распределение «размазано», много неопределённости. Низкая = один исход доминирует, всё предсказуемо. Максимум у равномерного, минимум (0) у детерминированного.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Насколько интересно следить за игрой: если результат ясен заранее (p≈1), неинтересно (H≈0). Если любой исход одинаково вероятен, максимально интересно (H = max).</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Равномерное на 4 исходах: p(x)=0.25 → H=-4·0.25·log(0.25)=log(4)≈1.39 нат. Детерминированное: p(x)=1 → H=0.</div>
     </div>
     <p>Энтропия — это средняя self-information по распределению.</p>
 
@@ -275,17 +298,17 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(Bernoulli(p))</span><span class=”fa-name”>энтропия бинарного распределения</span><span class=”fa-desc”>Уровень неопределённости монеты с P(успех)=p. Максимален при p=0.5 (монета сбалансирована), равен 0 при p=0 или p=1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>p</span><span class=”fa-name”>вероятность события 1</span><span class=”fa-desc”>Вес исхода «успех». Вносит вклад -p log p в entropy.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>1-p</span><span class=”fa-name”>вероятность события 0</span><span class=”fa-desc”>Вес исхода «неудача». Вносит вклад -(1-p) log(1-p) в entropy.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-p log p - (1-p) log(1-p)</span><span class=”fa-name”>сумма двух вкладов</span><span class=”fa-desc”>Каждый из двух исходов добавляет свой вклад: probability × log-probability. При p=0 или p=1 соответствующий член равен 0 (0·log 0 := 0).</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> При p=0.5 оба исхода одинаково вероятны — максимальная неопределённость, H=log(2)≈0.69 нат. При p→0 или p→1 исход предсказуем — H→0. Форма кривой симметрична и выпукла.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Честная монета (p=0.5) = самый непредсказуемый броском. Гнутая монета (p≈1) = почти всегда орёл — никакого сюрприза, нет информации.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> p=0.5: H=-0.5·log(0.5)-0.5·log(0.5)=log(2)≈0.693. p=0.9: H=-0.9·log(0.9)-0.1·log(0.1)≈0.325. p=1.0: H=0.</div>
     </div>
-    <div class="warn">
+    <div class=”warn”>
     ⚠️ Энтропия измеряет не “хаос вообще”, а именно неопределённость относительно случайной величины.
   </div>
 </div>
@@ -323,16 +346,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса k внутри текущего узла, кластера или распределения.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P)</span><span class=”fa-name”>энтропия категориального распределения</span><span class=”fa-desc”>Средняя неопределённость при K возможных исходах. Максимальна для равномерного распределения, равна 0 для детерминированного.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>p_k</span><span class=”fa-name”>вероятность k-го класса</span><span class=”fa-desc”>Вес исхода k в распределении P. Все p_k ≥ 0 и ∑p_k = 1. Каждый вносит вклад -p_k log p_k в entropy.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>K</span><span class=”fa-name”>число классов</span><span class=”fa-desc”>Количество возможных исходов (например, 10 цифр, 3 вида ириса). Максимальная entropy равна log(K) для равномерного.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>∑_{k=1}^K</span><span class=”fa-name”>сумма по всем классам</span><span class=”fa-desc”>Каждый класс вносит вклад -p_k log p_k; члены с p_k=0 дают 0 (по соглашению 0·log 0 := 0).</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> H(P) показывает «размазанность» распределения по K классам. Равномерное P=[1/K,...,1/K] → H=log(K) (максимум). Один класс доминирует p_true≈1 → H≈0 (почти нет неопределённости).</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Монета с K гранями: чем равномернее выпадают грани, тем сложнее угадать следующую. H измеряет эту сложность.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> K=4, равномерное: H=-4·0.25·log(0.25)=log(4)≈1.39 нат. K=4, p=[0.97,0.01,0.01,0.01]: H≈0.15 нат — почти детерминированное.</div>
     </div>
     <p>Если у нас K классов, то entropy говорит, насколько распределение по классам “размазано”.</p>
 
@@ -362,15 +384,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P, Q)</span><span class=”fa-name”>cross-entropy</span><span class=”fa-desc”>Средняя стоимость кодирования событий из истинного мира P с помощью кодовой книги, оптимизированной для Q. Всегда H(P,Q) ≥ H(P).</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>P(x)</span><span class=”fa-name”>истинное распределение</span><span class=”fa-desc”>Как события реально распределены в мире. Используется как вес: насколько часто происходит x.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>Q(x)</span><span class=”fa-name”>модельное распределение</span><span class=”fa-desc”>Что «думает» модель о вероятности x. Определяет стоимость кодирования: -log Q(x) — длина кода для x в кодовой книге Q.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-∑_x P(x) log Q(x)</span><span class=”fa-name”>ожидаемая стоимость кода Q для данных из P</span><span class=”fa-desc”>Взвешенная сумма: насколько дорого (по Q) кодировать то, что происходит (по P).</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Если Q = P — кодовая книга оптимальна, H(P,Q) = H(P). Если Q ≠ P — платим штраф: частые по P события получают дорогой код по Q. В ML минимизируем H(P,Q) по параметрам Q.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Переводчик с русским словарём, читающий немецкий: каждое слово дольше искать (Q≠P). Если словарь немецкий (Q=P) — ищем быстро.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> P=[0.9,0.1], Q=[0.5,0.5]. H(P,Q)=-0.9·log(0.5)-0.1·log(0.5)=-log(0.5)=0.693. H(P)=-0.9·log(0.9)-0.1·log(0.1)≈0.325. Штраф=0.368.</div>
     </div>
     <p>Cross-entropy отвечает на вопрос: сколько в среднем информации нужно, если <strong>истинный мир распределён как P</strong>, а мы кодируем его распределением <strong>Q</strong>.</p>
 
@@ -395,16 +417,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P, Q)</span><span class=”fa-name”>cross-entropy</span><span class=”fa-desc”>Суммарная стоимость кодирования событий из P с помощью Q. Всегда ≥ H(P).</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P)</span><span class=”fa-name”>энтропия P</span><span class=”fa-desc”>Минимально возможная стоимость кодирования — достигается только при Q = P (оптимальная кодовая книга).</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>D_KL(P || Q)</span><span class=”fa-name”>KL-дивергенция</span><span class=”fa-desc”>«Лишние биты» из-за использования Q вместо P. Всегда ≥ 0; равна 0 только при Q = P.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Это тождество раскладывает cross-entropy на две независимые части: H(P) — неизбежная цена (энтропия данных) и D_KL — устранимый штраф за несовпадение модели с реальностью. Минимизировать H(P,Q) = минимизировать D_KL, т.к. H(P) от модели не зависит.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Общий расход на доставку = минимальная стоимость маршрута (H(P)) + переплата из-за неоптимального маршрута (KL). Минимизировать переплату — наша задача.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> P=[0.9,0.1], Q=[0.5,0.5]. H(P)≈0.325, KL≈0.368. H(P,Q)=0.325+0.368=0.693. При Q=P: H(P,P)=H(P)+0=0.325.</div>
     </div>
-    <div class="intuition">
+    <div class=”intuition”>
     💡 Эта формула очень важна: cross-entropy = собственная неопределённость истины + штраф за отличие модели от истины.
   </div>
 </div>
@@ -437,15 +459,17 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">CE(y, q)</span><span class="fa-name">бинарная кросс-энтропия</span><span class="fa-desc">Потеря для задачи бинарной классификации; усредняет сюрприз для обоих исходов (y=1 и y=0).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">истинная метка</span><span class="fa-desc">Реальный класс объекта: 0 или 1. Не предсказание, а факт из данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">q</span><span class="fa-name">предсказанная вероятность</span><span class="fa-desc">P(y=1) — выход модели (обычно сигмоиды), число от 0 до 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1-y</span><span class="fa-name">метка отрицательного класса</span><span class="fa-desc">Равна 1 при y=0; активирует второй член формулы для случая «объект не принадлежит классу».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1-q</span><span class="fa-name">вероятность класса 0</span><span class="fa-desc">P(y=0) = 1 - q; вероятность отрицательного исхода с точки зрения модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-[...]</span><span class="fa-name">знак минус</span><span class="fa-desc">Логарифм вероятности ≤ 0; минус превращает его в положительную потерю, которую нужно минимизировать.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула штрафует модель дважды: за неверную оценку класса 1 (член y·log q) и за неверную оценку класса 0 (член (1-y)·log(1-q)). При правильном предсказании оба члена малы.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как синоптик, который отвечает за прогноз обоих исходов: и «дождь», и «не дождь». Ошибка в любом направлении стоит дорого.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=1, q=0.9 → CE = -[1·log(0.9)+0·log(0.1)] = -log(0.9) ≈ 0.10. y=1, q=0.1 → CE = -log(0.1) ≈ 2.30.</div>
     </div>
     <div class="result-box" id="ceInfo"></div>
       <div class="warn" style="font-size:0.88em;">
@@ -466,14 +490,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">one-hot вектор</span><span class="fa-desc">Представление истинного класса: вектор длиной K, где каждый элемент — 0 или 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нулевые компоненты</span><span class="fa-desc">Все позиции кроме истинного класса равны 0; эти компоненты обнуляют соответствующие члены cross-entropy.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1</span><span class="fa-name">единичная компонента</span><span class="fa-desc">Позиция истинного класса равна 1; только этот член суммы выживает в формуле CE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[...]</span><span class="fa-name">вектор длиной K</span><span class="fa-desc">По одной позиции на каждый возможный класс; ровно одна из них равна 1, остальные — 0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> One-hot кодирование позволяет записать CE как простую сумму по всем классам: y_k·log q_k. Все слагаемые с y_k=0 исчезают, остаётся лишь -log q_true.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта с одной отмеченной точкой: «x здесь». Все остальные места — пусто.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 класса, истинный класс 2: y = [0, 0, 1]. q = [0.1, 0.2, 0.7] → CE = -(0·log0.1 + 0·log0.2 + 1·log0.7) = -log(0.7) ≈ 0.36.</div>
     </div>
     <p>Тогда:</p>
   <div class="formula">
@@ -482,16 +507,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_k</span><span class="fa-name">k-я компонента one-hot</span><span class="fa-desc">Равна 1 для истинного класса, 0 для всех остальных; множитель обнуляет вклад чужих классов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">q_k</span><span class="fa-name">предсказанная вероятность класса k</span><span class="fa-desc">Выход softmax для класса k; число от 0 до 1, все q_k в сумме дают 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_k</span><span class="fa-name">сумма по всем классам</span><span class="fa-desc">K слагаемых, из которых ненулевым остаётся лишь одно — для истинного класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log q_true</span><span class="fa-name">сюрприз истинного класса</span><span class="fa-desc">Единственный выживший член суммы. Чем выше q_true, тем меньше потеря; при q_true=1 loss=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Из всей суммы -∑_k y_k log q_k выживает только один член: -log q_true. Это значит, что всё обучение сводится к максимизации предсказанной вероятности правильного ответа.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Учитель проверяет только ответ на нужный вопрос — остальные не считаются.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> q_true = 0.7 → loss = -log(0.7) ≈ 0.36. q_true = 0.99 → loss ≈ 0.01. q_true = 0.01 → loss ≈ 4.6.</div>
     </div>
     <div class="step">все компоненты, кроме истинного класса, умножаются на 0</div>
   <div class="step">остаётся только лог-вероятность правильного класса</div>
@@ -512,15 +536,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D_KL(P || Q)</span><span class="fa-name">KL-дивергенция (относительная энтропия)</span><span class="fa-desc">Асимметричная мера «разности» между P и Q. Всегда ≥ 0; равна 0 только при P = Q.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x)</span><span class="fa-name">истинное распределение</span><span class="fa-desc">Вес события x в реальном мире; задаёт ожидание в формуле.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Q(x)</span><span class="fa-name">модельное распределение</span><span class="fa-desc">Что «думает» модель. Используется в знаменателе логарифма.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log(P(x)/Q(x))</span><span class="fa-name">логарифм отношения правдоподобий</span><span class="fa-desc">Поэлементный вклад в дивергенцию. Равен 0, когда P(x)=Q(x); положителен, когда P(x)>Q(x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_x</span><span class="fa-name">сумма по всем событиям</span><span class="fa-desc">Взвешенная сумма с весами P(x). Асимметрия: D_KL(P||Q) ≠ D_KL(Q||P).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> KL — это «лишние биты», которые тратятся при кодировании P с помощью Q. Если модель занижает вероятность частых событий (Q(x) «» P(x)), штраф велик. При Q=P никакого штрафа нет.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Иностранный словарь для родного языка: каждое частое слово требует длинного кода. KL — суммарная «переплата» по словарю Q при словах из языка P.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P=[0.9,0.1], Q=[0.5,0.5]. KL=0.9·log(0.9/0.5)+0.1·log(0.1/0.5)=0.9·0.588+0.1·(-1.609)≈0.529-0.161=0.368. При Q=P: KL=0.</div>
     </div>
     <p>KL показывает, насколько распределение Q неэффективно как описание мира, в котором истинно P.</p>
 
@@ -530,16 +555,17 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>D_KL(P || Q)</span><span class=”fa-name”>KL-дивергенция</span><span class=”fa-desc”>«Лишние биты» при кодировании P через Q. Всегда ≥ 0; равна 0 при Q = P.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P, Q)</span><span class=”fa-name”>cross-entropy</span><span class=”fa-desc”>Суммарная стоимость кодирования P с помощью кодовой книги Q.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P)</span><span class=”fa-name”>энтропия P</span><span class=”fa-desc”>Минимальная стоимость кодирования — нижний предел, достигается при Q = P.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(P,Q) - H(P)</span><span class=”fa-name”>разность = штраф за несовпадение</span><span class=”fa-desc”>Разность ≥ 0. Показывает, сколько «лишних бит» тратится из-за несовпадения модели Q с реальностью P.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> KL = cross-entropy минус энтропия. Если бы модель совпадала с истиной (Q=P), мы платили бы лишь H(P). Каждый «лишний бит» — ошибка модели. Минимизировать KL ≡ минимизировать cross-entropy, т.к. H(P) фиксирован.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Реальная стоимость поездки H(P,Q) минус идеальный маршрут H(P) = переплата KL. Мы минимизируем переплату, т.к. идеал от нас не зависит.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> P=[0.9,0.1], Q=[0.5,0.5]. H(P)≈0.325, H(P,Q)=0.693. D_KL=0.693-0.325=0.368. При Q=P: D_KL=0.325-0.325=0.</div>
     </div>
-    <div class="grid-2" style="margin-top:12px;">
+    <div class=”grid-2” style=”margin-top:12px;”>
     <div>
       <h3>Если P=Q</h3>
       <div class="step">KL = 0</div>
@@ -565,15 +591,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">функция потерь (loss)</span><span class="fa-desc">Число, которое минимизируется при обучении. Чем меньше L, тем лучше модель описывает данные.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_θ(true outcome)</span><span class="fa-name">предсказанная вероятность истинного исхода</span><span class="fa-desc">То, как модель с параметрами θ оценивает правильный ответ. Хорошая модель даёт значения, близкие к 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры модели</span><span class="fa-desc">Обучаемые веса; меняются при обучении так, чтобы уменьшить L.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log</span><span class="fa-name">отрицательный логарифм</span><span class="fa-desc">Превращает вероятность (0..1) в потерю (0..+∞): при p→1 loss→0, при p→0 loss→+∞.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">true outcome</span><span class="fa-name">истинный исход</span><span class="fa-desc">Наблюдаемый правильный ответ из данных: класс, токен, слово — в зависимости от задачи.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это ровно self-information истинного события по оценке модели. Минимизация L = максимизация log-likelihood = обучение модели быть «не удивлённой» правильными ответами.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Штраф предсказателю равен его удивлению от правильного ответа. Не удивляйся — получишь 0 штрафа.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p_θ(true)=0.95 → L=-log(0.95)≈0.05. p_θ(true)=0.5 → L≈0.69. p_θ(true)=0.05 → L≈3.0.</div>
     </div>
     <p>Это буквально self-information истинного события с точки зрения модели.</p>
 
@@ -609,18 +636,17 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H(p̂)</span><span class=”fa-name”>predictive entropy модели</span><span class=”fa-desc”>Неопределённость предсказания модели для конкретного объекта. Высокая H(p̂) = модель «сомневается», низкая = уверена.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>p̂_k</span><span class=”fa-name”>предсказанная вероятность класса k</span><span class=”fa-desc”>Выход softmax модели для класса k. Не истинная метка, а то, что думает модель. Все p̂_k ≥ 0 и ∑p̂_k = 1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>∑_k</span><span class=”fa-name”>сумма по всем классам</span><span class=”fa-desc”>Суммируем вклад всех K классов; члены с p̂_k≈0 дают малый вклад.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-log</span><span class=”fa-name”>отрицательный логарифм</span><span class=”fa-desc”>Делает H(p̂) ≥ 0. Берётся натуральный логарифм (нат) или log₂ (биты) — зависит от выбора единиц.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> H(p̂) измеряет «уверенность» предсказания. При p̂=[1,0,...,0] — полная уверенность, H=0. При p̂=[1/K,...,1/K] — максимальная неопределённость, H=log(K). Используется в active learning и для обнаружения OOD-примеров.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Уверенный врач ставит один диагноз (H≈0). Неуверенный перечисляет 5 равновероятных вариантов (H большой). H(p̂) — это «список дел» модели.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> K=3. p̂=[0.9,0.05,0.05]: H=-(0.9·log0.9+0.05·log0.05+0.05·log0.05)≈0.39 нат. p̂=[1/3,1/3,1/3]: H=log(3)≈1.10 нат (максимум).</div>
     </div>
-    <div class="grid-2" style="margin-top:12px;">
+    <div class=”grid-2” style=”margin-top:12px;”>
     <div>
       <h3>Низкая entropy prediction</h3>
       <div class="step">модель уверена</div>
@@ -650,15 +676,17 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_smooth</span><span class="fa-name">сглаженная метка</span><span class="fa-desc">«Мягкое» целевое распределение вместо жёсткого one-hot; используется как цель для cross-entropy при обучении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">параметр сглаживания (epsilon)</span><span class="fa-desc">Малое число, обычно 0.05–0.1. Определяет, сколько вероятности «утекает» от истинного класса к остальным.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_one-hot</span><span class="fa-name">жёсткая one-hot метка</span><span class="fa-desc">Исходный вектор с единицей на позиции истинного класса; умножается на (1-ε), чтобы уступить часть вероятности.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1-ε)</span><span class="fa-name">вес истинного класса</span><span class="fa-desc">Доля вероятности, оставленная истинному классу. При ε=0.1 истинный класс получает 0.9 вместо 1.0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε/K</span><span class="fa-name">равномерный вклад</span><span class="fa-desc">Небольшая доля ε, распределённая поровну по всем K классам. Каждый класс получает ε/K вместо 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Общее число возможных классов; делитель в ε/K обеспечивает равномерное распределение сглаживающего вклада.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость, информацию или потерю при замене одного распределения другим.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение честной и загруженной монеты: чем менее предсказуем исход, тем выше энтропия.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если распределение становится более равномерным, информационная неопределённость растёт.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вместо «я на 100% уверен в классе 2» модель учится говорить «я на 90% уверен в классе 2 и немного допускаю другие». Это снижает переуверенность и улучшает калибровку.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Не ставим 10/10 за ответ — ставим 9/10, оставляя 1 балл на сомнение. Модель становится менее самонадеянной.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> K=4, ε=0.1, истинный класс 2: y_one-hot=[0,0,1,0]. y_smooth=[0.025, 0.025, 0.925, 0.025]. Истинный класс получает 0.9+0.1/4=0.925.</div>
     </div>
     <div class="step">уменьшается переуверенность модели</div>
   <div class="step">градиенты становятся мягче</div>
@@ -1121,7 +1149,40 @@ print(cross_entropy(logits, y))
 <!-- phase4-go-deeper:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что измеряет энтропия Шеннона?</summary>
+      <div class="ml-quiz__a"><p>Энтропия H(X) = -Σ p(x)·log p(x) измеряет среднюю «неожиданность» или количество бит, необходимых для кодирования события. Максимальна при равномерном распределении, минимальна (=0) при детерминированном исходе.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем кросс-энтропия отличается от KL-дивергенции?</summary>
+      <div class="ml-quiz__a"><p>Кросс-энтропия H(p,q) = -Σ p(x)·log q(x) — стоимость кодирования истинного распределения p через приближённое q. KL-дивергенция KL(p‖q) = H(p,q) - H(p) — это «лишняя» стоимость за использование q вместо p. Минимизация кросс-энтропии при фиксированном p эквивалентна минимизации KL.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему кросс-энтропия используется как функция потерь для классификации?</summary>
+      <div class="ml-quiz__a"><p>При предсказании вероятностей классов логарифмическая функция потерь (кросс-энтропия) вытекает из принципа максимального правдоподобия: она наказывает за низкую уверенность в правильном классе, что математически эквивалентно минимизации KL между истинным и предсказанным распределениями.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое взаимная информация и где она применяется в ML?</summary>
+      <div class="ml-quiz__a"><p>Взаимная информация I(X;Y) = KL(p(x,y) ‖ p(x)p(y)) измеряет, сколько информации об одной переменной содержится в другой. В ML используется для отбора признаков (Information Gain в деревьях решений), в VAE (ELBO) и при сжатии информации в латентных представлениях.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -1193,5 +1254,6 @@ print(cross_entropy(logits, y))
     </div>
   </section>
 <!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

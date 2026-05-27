@@ -103,7 +103,7 @@ canvas { border-radius: 8px; }
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/01_math/03_probability_theory.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="math">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -116,8 +116,102 @@ canvas { border-radius: 8px; }
       <h1>1.3 Теория вероятностей</h1>
       <p class="muted">Случайные величины · распределения · likelihood · MLE · MAP · posterior · KL-дивергенция</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Вероятность — язык неопределённости. Любая ML-модель, которая предсказывает, работает с вероятностями: Bayes, MLE, KL-дивергенция. Без этого модель — чёрный ящик.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Условная вероятность и теорема Байеса — интуиция и формула</li>
+      <li>Случайные величины, распределения и их параметры</li>
+      <li>Maximum Likelihood Estimation — почему Cross-Entropy = MLE</li>
+      <li>Expectation, Variance, Covariance — что они измеряют</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Математический анализ (1.2)</li>
+      <li>Комбинаторика (желательно)</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- SECTION 1 -->
+
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Теорема Байеса — медицинский тест</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Постановка задачи</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Редкая болезнь. Тест очень точный — 99%. Тест положительный. Насколько вероятно, что вы больны?</p>
+        <div class="wt-formula">P(болезнь) = 0.01  (болеет 1% населения)
+P(+ | болен)   = 0.99  (чувствительность: 99%)
+P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Полная вероятность P(+)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>P(+) = вероятность получить положительный результат при случайном тестировании.</p>
+        <div class="wt-formula">P(+) = P(+|болен)×P(болен) + P(+|здоров)×P(здоров)
+     = 0.99×0.01        + 0.01×0.99
+     = 0.0099 + 0.0099 = 0.0198</div>
+        <div class="wt-result">Из 10 000 человек: 100 больных (99 дают +) и 9900 здоровых (99 дают ложный +) → итого 198 позитивов.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Теорема Байеса</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>P(болен|+) = P(+|болен) × P(болен) / P(+)</p>
+        <div class="wt-formula">P(болен|+) = 0.99 × 0.01 / 0.0198
+           = 0.0099 / 0.0198 = 0.50</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Вывод: base rate эффект</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>При положительном тесте вероятность болезни — всего <strong>50%</strong>, хотя тест точен на 99%!</p>
+        <p>Из 198 позитивных результатов ровно 99 — настоящие больные, ещё 99 — ложные срабатывания.</p>
+        <div class="wt-result">Это <em>base rate fallacy</em>: мы игнорируем низкий prior P(болезнь)=1%.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Практический вывод</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Интуиция нас обманывает: «тест 99% точный → 99% вероятность болезни». Байес показывает правду.</p>
+        <div class="wt-formula">β = 0 : J = E[r_φ] → игнорируем prior → 99% кажется верным
+Байес учитывает prior → P(болен|+) = 50%</div>
+        <div class="wt-result">Именно поэтому в медицине повторяют тест при редких болезнях: второй + поднимает вероятность до ~99%.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
 <div class="card">
   <h2>🎲 Зачем теория вероятностей в ML?</h2>
   <p>Машинное обучение почти всегда работает с <strong>неопределённостью</strong>: шум в данных, неизвестные параметры, вероятности классов, прогнозы, доверие модели.</p>
@@ -128,14 +222,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(y|x)</span><span class="fa-name">условное распределение выхода</span><span class="fa-desc">Вероятность (или плотность) ответа y при заданных признаках x. Это то, что предсказывает дискриминативная модель классификации или регрессии.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x)</span><span class="fa-name">распределение признаков</span><span class="fa-desc">Плотность входных данных. Нужна в генеративных моделях, которые явно моделируют, как выглядят признаки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(θ|D)</span><span class="fa-name">posterior параметров</span><span class="fa-desc">Байесовский posterior: что мы думаем о параметрах θ после наблюдения данных D. Байесовский подход работает с p(θ|D) вместо одной точечной оценки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Три главных вероятностных объекта в ML: p(y|x) — дискриминативные модели, p(x) — генеративные, p(θ|D) — байесовский взгляд на параметры.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> p(y|x) — «дать диагноз по симптомам», p(x) — «описать, как выглядят симптомы вообще», p(θ|D) — «обновить убеждение о правиле по наблюдениям».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Классификатор спама: p(y=спам|x=письмо)=0.92. Генеративная модель: p(x=данное письмо)=0.001. Байесовский: p(θ|D) — распределение весов модели после обучения.</div>
     </div>
     <div class="grid-3" style="margin-top:12px;">
     <div class="mini-card">
@@ -168,14 +262,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(A)</span><span class="fa-name">вероятность события A</span><span class="fa-desc">Число от 0 до 1 включительно. P(A)=0 — событие невозможно, P(A)=1 — событие достоверно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(Ω) = 1</span><span class="fa-name">вероятность полного пространства равна 1</span><span class="fa-desc">Ω — пространство элементарных исходов. Что-нибудь обязательно произойдёт, поэтому P(Ω)=1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(A∪B)</span><span class="fa-name">вероятность объединения несовместных событий</span><span class="fa-desc">Если события A и B несовместны (A∩B=∅), их вероятности складываются: P(A∪B)=P(A)+P(B).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A∩B = ∅</span><span class="fa-name">несовместность — пересечение пустое</span><span class="fa-desc">A и B не могут произойти одновременно. Например, монета не может быть одновременно орлом и решкой.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это три аксиомы Колмогорова. Они минимальны: любая теория вероятностей, из них вытекающая, работает корректно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как доля площади на карте: вся карта — 100%, любой регион — от 0 до 100%, непересекающиеся регионы складываются.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Бросок кубика: Ω={1,2,3,4,5,6}. A={1,2}, B={3,4}. A∩B=∅. P(A∪B)=P(A)+P(B)=2/6+2/6=4/6≈0.67.</div>
     </div>
     <h3>Случайная величина</h3>
   <p>Случайная величина X — это правило, которое каждому исходу сопоставляет число.</p>
@@ -190,14 +285,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">дискретная случайная величина</span><span class="fa-desc">Функция из пространства исходов в счётное множество чисел. X принимает конкретные значения 0, 1, 2, ... — и каждому назначена вероятность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">{0, 1, 2, ...}</span><span class="fa-name">область значений — счётное множество</span><span class="fa-desc">X может принимать только эти значения (и никакие промежуточные). Примеры: число успехов, класс объекта, количество событий.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x) = P(X=x)</span><span class="fa-name">PMF — функция вероятности</span><span class="fa-desc">p(x) — вероятность того, что X приняло значение x. Все p(x) неотрицательны и суммируются в 1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дискретная случайная величина — обобщение «результата броска кубика». PMF говорит, сколько «вероятностного веса» приходится на каждое значение.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как гистограмма: каждое значение x имеет столбик высотой p(x). Все столбики в сумме дают 1.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Бросок монеты дважды, X=число орлов. P(X=0)=0.25, P(X=1)=0.5, P(X=2)=0.25. Сумма=1. ✓</div>
     </div>
     <p class="small">Например: число орлов, класс, количество событий.</p>
     </div>
@@ -210,14 +305,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X ∈ ℝ</span><span class="fa-name">непрерывная случайная величина</span><span class="fa-desc">X принимает значения на числовой прямой или её части. В каждой отдельной точке вероятность равна 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">плотность вероятности (PDF)</span><span class="fa-desc">Заменяет PMF для непрерывных X. f(x)≥0, но может превышать 1. Вероятность считается через интеграл: P(a≤X≤b)=∫f(x)dx.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(x) → f(x)</span><span class="fa-name">переход от PMF к PDF</span><span class="fa-desc">Для непрерывных величин P(X=x)=0 в точке, поэтому вместо PMF p(x) используют плотность f(x). Вся «масса» размазана по континууму.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для непрерывных X нельзя спросить «вероятность X=3.14?» — она нулевая. Можно спросить «вероятность X ∈ [3.1, 3.2]» — это ∫f(x)dx по этому отрезку.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как плотность вещества: точка весит 0, кусок — не ноль. f(x) — «плотность вероятностного вещества» в точке x.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X~N(0,1). f(0)≈0.399 — это не вероятность! P(−0.1≤X≤0.1)≈0.399·0.2≈0.08 — вероятность считается как площадь.</div>
     </div>
     <p class="small">Например: рост, вес, температура, ошибка регрессии.</p>
     </div>
@@ -246,14 +341,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(a ≤ X ≤ b)</span><span class="fa-name">вероятность попасть в отрезок [a, b]</span><span class="fa-desc">Вероятность того, что непрерывная случайная величина X примет значение между a и b. Это единственный корректный способ задать вероятность для непрерывных X.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">плотность вероятности (PDF)</span><span class="fa-desc">Функция, описывающая «концентрацию» вероятности в точке x. f(x)≥0 и ∫f(x)dx по всей прямой = 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∫_a^b</span><span class="fa-name">интеграл — площадь под плотностью</span><span class="fa-desc">Вероятность = площадь под кривой f(x) на отрезке [a,b]. Чем шире или выше область, тем больше вероятность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">a, b</span><span class="fa-name">границы интервала</span><span class="fa-desc">Нижняя и верхняя границы «окна наблюдения». Для всей числовой прямой: a=−∞, b=+∞, тогда интеграл=1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для непрерывных случайных величин вероятность — это площадь, а не высота. Кривая f(x) — форма распределения, интеграл по отрезку — вероятность.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как площадь под графиком скорости = расстояние. Здесь площадь под f(x) = вероятность. Оба используют интеграл для «суммирования» непрерывного объекта.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X~N(0,1). P(−1≤X≤1)≈0.683 (68% правило). P(−2≤X≤2)≈0.954. P(−3≤X≤3)≈0.997.</div>
     </div>
     <div class="info">
     ℹ️ В ML чаще всего встречаются Bernoulli, Categorical, Gaussian, а ещё распределения, появляющиеся через softmax, logistic и noise assumptions.
@@ -271,14 +367,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E[X]</span><span class="fa-name">математическое ожидание — «центр тяжести»</span><span class="fa-desc">Средневзвешенное значение X. Если повторять эксперимент много раз, среднее значений сходится к E[X] по закону больших чисел.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_x x p(x)</span><span class="fa-name">среднее для дискретной X — взвешенная сумма</span><span class="fa-desc">Каждое значение x умножается на вероятность p(x) и суммируется по всем значениям. Больший вес имеют более вероятные значения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∫ x f(x) dx</span><span class="fa-name">среднее для непрерывной X — взвешенный интеграл</span><span class="fa-desc">Непрерывный аналог суммы: каждое значение x взвешивается по плотности f(x). Интеграл по всей прямой даёт «среднее».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> E[X] — «балансная точка» распределения. Дискретная и непрерывная формулы делают одно: взвешенное среднее по всем значениям X, где вес — вероятность.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как центр масс: если положить на числовую прямую «гири» весом p(x) в точках x, точка баланса — это E[X].</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Кубик: E[X]=1·(1/6)+2·(1/6)+...+6·(1/6)=3.5. X~N(μ,σ²): E[X]=μ. Bernoulli(p): E[X]=p.</div>
     </div>
     <h3>Дисперсия</h3>
   <div class="formula">
@@ -287,14 +383,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Var(X)</span><span class="fa-name">дисперсия случайной величины X</span><span class="fa-desc">Мера разброса X вокруг своего среднего. Единицы — квадрат единиц X. Для нормального распределения — это σ². Если Var(X)=0, X всегда принимает одно значение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E[X]</span><span class="fa-name">математическое ожидание — «центр тяжести»</span><span class="fa-desc">Средневзвешенное значение X по вероятностям. Для дискретного: Σ x·P(X=x). Для непрерывного: ∫ x·f(x)dx.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X - E[X]</span><span class="fa-name">отклонение от среднего</span><span class="fa-desc">На сколько X отличается от своего среднего в конкретном «исходе». Может быть положительным или отрицательным.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(X - E[X])²</span><span class="fa-name">квадрат отклонения</span><span class="fa-desc">Всегда неотрицателен. Квадрат нужен, чтобы положительные и отрицательные отклонения не гасили друг друга при усреднении.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как вероятности событий или гипотез комбинируются после наблюдения данных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как обновление уверенности врача после нового анализа: prior меняется под влиянием evidence.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если likelihood сильно поддерживает гипотезу, posterior заметно сдвигается в её сторону.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дисперсия — это «средний квадрат разброса». Чем больше Var(X), тем шире разброс значений X. В ML большой Var(параметры) → риск overfitting, малый → underfitting.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разброс стрел у лучников: E[X] — куда в среднем попадают, Var(X) — насколько кучно. Хороший лучник имеет малую дисперсию.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X берёт значения {1,3,5} с вероятностями {0.25,0.5,0.25}. E[X]=3. Var(X)=0.25·(1−3)²+0.5·(3−3)²+0.25·(5−3)²=0.25·4+0+0.25·4=2.</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -323,14 +420,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X ∈ {0, 1}</span><span class="fa-name">бинарный исход</span><span class="fa-desc">X принимает ровно два значения: 0 (неудача/отрицательный класс) и 1 (успех/положительный класс). Это простейший тип дискретной случайной величины.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X=1) = p</span><span class="fa-name">вероятность успеха</span><span class="fa-desc">p ∈ (0,1) — параметр Bernoulli распределения. В логистической регрессии модель предсказывает именно p = P(y=1|x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X=0) = 1-p</span><span class="fa-name">вероятность неудачи</span><span class="fa-desc">Дополнение к p. P(X=0)+P(X=1)=(1-p)+p=1 — гарантирует корректность распределения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Bernoulli — математическая модель одного «броска монеты» с вероятностью успеха p. Основа бинарной классификации: «email — спам (1) или нет (0)?»</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как монетка с «нечестностью» p: если p=0.7, орёл выпадает в 70% бросков. p=0.5 — честная монетка.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=0.7. P(X=1)=0.7, P(X=0)=0.3. При p=1/6: результат «6» на кубике. Сумма всегда равна 1. ✓</div>
     </div>
     <div class="formula">
     P(X=x) = p<sup>x</sup>(1-p)<sup>1-x</sup>, x ∈ {0, 1}
@@ -338,14 +435,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X=x)</span><span class="fa-name">вероятность исхода x</span><span class="fa-desc">Вероятность того, что Bernoulli-величина X приняла значение x. Так как x ∈ {0,1}, это либо P(X=0)=1-p, либо P(X=1)=p.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p^x</span><span class="fa-name">вероятность успеха в степени x</span><span class="fa-desc">Если x=1: p^1=p (вероятность успеха активна). Если x=0: p^0=1 (множитель исчезает). Трюк для записи двух случаев одной формулой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1-p)^{1-x}</span><span class="fa-name">вероятность неудачи в степени 1-x</span><span class="fa-desc">Если x=0: (1-p)^1=1-p (вероятность неудачи активна). Если x=1: (1-p)^0=1 (исчезает). В паре с p^x даёт нужную вероятность.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Компактный способ записать два случая одной формулой: «если успех — берём p, если неудача — берём 1-p». Эта запись используется в binary cross-entropy.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как переключатель: x=1 «включает» p, x=0 «включает» (1-p). Степенная форма — математический способ записать такой переключатель.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=0.7, x=1: P=0.7¹·0.3⁰=0.7. p=0.7, x=0: P=0.7⁰·0.3¹=0.3. Совпадает с определением. ✓</div>
     </div>
     <h3>Матожидание и дисперсия</h3>
   <div class="formula">
@@ -354,14 +451,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E[X] = p</span><span class="fa-name">матожидание Bernoulli равно p</span><span class="fa-desc">E[X]=1·p+0·(1-p)=p. Если повторять эксперимент много раз, доля единиц сходится к p.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Var(X) = p(1-p)</span><span class="fa-name">дисперсия Bernoulli</span><span class="fa-desc">Разброс вокруг среднего. Максимальна при p=0.5 (Var=0.25) — самая «непредсказуемая» монетка. При p→0 или p→1: Var→0, исход предсказуем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(1-p)</span><span class="fa-name">произведение вероятностей исходов</span><span class="fa-desc">Дисперсия Bernoulli равна произведению p и 1-p. Симметрична: Var(p)=Var(1-p). Достигает максимума 0.25 при p=0.5.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дисперсия максимальна при равновероятных исходах (p=0.5): тогда наименее предсказуемо. Чем сильнее p отклоняется от 0.5, тем меньше Var(X).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как неопределённость прогноза: «50% дождь» — самый неопределённый (max Var). «99% дождь» — почти нет неопределённости.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=0.5: Var=0.25 (макс). p=0.7: Var=0.7·0.3=0.21. p=0.9: Var=0.9·0.1=0.09. p=1: Var=0 (нет разброса).</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -403,16 +500,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса k внутри текущего узла, кластера или распределения.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(Y=k)</span><span class="fa-name">вероятность класса k</span><span class="fa-desc">Вероятность того, что случайная величина Y приняла значение k. В многоклассовой классификации — вероятность конкретного класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">параметр — вероятность k-го исхода</span><span class="fa-desc">p_k = P(Y=k) ∈ [0,1]. Один параметр Categorical распределения для класса k. Всего K таких параметров: p_1,...,p_K.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_k p_k = 1</span><span class="fa-name">условие нормировки</span><span class="fa-desc">Сумма вероятностей всех исходов равна 1. Softmax в нейросети обеспечивает это автоматически: exp(z_k)/∑exp(z_j).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Categorical — обобщение Bernoulli с 2 исходов на K. Bernoulli параметризован одним числом p; Categorical — вектором (p_1,...,p_K) с суммой 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как взвешенный кубик с K гранями. p_k — вероятность выпадения грани k. В сумме все вероятности = 1.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 класса: кошка/собака/птица. p_1=0.7, p_2=0.2, p_3=0.1. P(Y=кошка)=0.7. Сумма: 0.7+0.2+0.1=1. ✓</div>
     </div>
     <p>Если Bernoulli отвечает за 2 класса, то Categorical — за K классов.</p>
 
@@ -422,15 +517,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса k внутри текущего узла, кластера или распределения.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p</span><span class="fa-name">вектор вероятностей категорий</span><span class="fa-desc">Содержит K неотрицательных чисел, сумма которых равна 1. В PyTorch: выход softmax имеет именно такую форму — shape (K,) для одного примера или (B, K) для батча.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">вероятность k-й категории</span><span class="fa-desc">P(X=k) — вероятность того, что случайная величина X приняла значение k. Например, p_0=0.1, p_1=0.7, p_2=0.2 — распределение по 3 классам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число категорий</span><span class="fa-desc">Длина вектора p. В задаче классификации — число классов. Categorical — обобщение Bernoulli с 2 классов на K.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ p_k = 1</span><span class="fa-name">ограничение нормировки</span><span class="fa-desc">Все вероятности в сумме дают 1. Softmax обеспечивает это автоматически: exp(z_k) / Σ exp(z_j) при любых logits z.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как вероятности событий или гипотез комбинируются после наблюдения данных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как обновление уверенности врача после нового анализа: prior меняется под влиянием evidence.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если likelihood сильно поддерживает гипотезу, posterior заметно сдвигается в её сторону.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Categorical распределение — это обобщённая «монетка» с K сторонами. Выброс X=k означает «выпала сторона k» с вероятностью p_k. Именно это мы моделируем softmax-выходом.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как взвешенный кубик: каждая грань k выпадает с частотой p_k. После многих бросков частоты сходятся к p. В ML — это распределение по классам объекта.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Класс {кошка, собака, птица}. p=[0.7, 0.2, 0.1]. Cross-entropy потеря для истинного класса «кошка»: −log(0.7)≈0.357. Для «собаки»: −log(0.2)≈1.61.</div>
     </div>
     <div class="step">softmax превращает logits в вероятности категорий</div>
   <div class="step">cross-entropy оценивает, насколько распределение модели совпадает с истинным классом</div>
@@ -447,18 +542,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">нормально распределённая случайная величина</span><span class="fa-desc">X принимает значения на всей числовой прямой. Запись X~N(μ,σ²) означает «X имеет нормальное распределение с параметрами μ и σ²».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">математическое ожидание (среднее)</span><span class="fa-desc">Центр нормального распределения. E[X]=μ. Сдвиг μ смещает весь «колокол» вдоль оси.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия</span><span class="fa-desc">Ширина «колокола». Чем больше σ², тем шире и ниже гауссиана. Var(X)=σ². Стандартное отклонение σ=√σ².</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Нормальное распределение — самое важное в ML. Суммы многих независимых величин стремятся к нему (ЦПТ), градиентный шум часто гауссовский, веса инициализируются из N(0,σ²).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как рост людей в популяции: большинство около среднего (μ=175см), единицы сильно отклоняются. σ показывает, насколько «широко» распределение.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X~N(0,1) — стандартное нормальное. P(|X|&lt;1) ≈ 68%, P(|X|&lt;2) ≈ 95%, P(|X|&lt;3) ≈ 99.7% — правило 1-2-3 σ.</div>
     </div>
     <div class="formula">
     f(x) = 1 / √(2πσ<sup>2</sup>) · exp(-(x-μ)<sup>2</sup> / (2σ<sup>2</sup>))
@@ -466,18 +557,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">плотность вероятности в точке x</span><span class="fa-desc">Не вероятность самого x (она нулевая для непрерывной величины), а «плотность»: f(x)·dx ≈ P(X ∈ [x, x+dx]).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/√(2πσ²)</span><span class="fa-name">нормировочная константа</span><span class="fa-desc">Обеспечивает, что интеграл f(x)dx по всей прямой равен 1. Зависит только от σ, не от x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-(x-μ)²/(2σ²)</span><span class="fa-name">показатель экспоненты — квадратичное отклонение</span><span class="fa-desc">Мера того, насколько x удалён от μ в единицах σ². Этот квадратичный показатель и обеспечивает форму «колокола».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ, σ²</span><span class="fa-name">параметры распределения</span><span class="fa-desc">μ — центр колокола, σ² — ширина. Именно эти два параметра полностью задают нормальное распределение.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Пик гауссианы в x=μ: там exp(0)=1 максимален. При удалении от μ exp уменьшается «по колоколу». Логарифм log f(x) = −(x−μ)²/(2σ²) + const — квадратичная функция, её максимум = MSE-минимум.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как мишень: вероятность попасть в кольцо убывает по мере удаления от центра μ. σ — «размер мишени»: большой σ, большинство стрел далеко от центра.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> μ=0, σ=1. f(0)=1/√(2π)≈0.399 (пик). f(1)=0.399·exp(−0.5)≈0.242. f(2)=0.399·exp(−2)≈0.054. Видим быстрое убывание.</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -513,14 +601,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X,Y)</span><span class="fa-name">совместная вероятность X и Y</span><span class="fa-desc">P(X=x, Y=y) — вероятность того, что X=x И Y=y одновременно. Описывает совместное распределение, учитывая зависимость между X и Y.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">первая случайная величина</span><span class="fa-desc">Одна из двух совместно рассматриваемых величин. Например, X — признак объекта (рост пациента).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Y</span><span class="fa-name">вторая случайная величина</span><span class="fa-desc">Вторая из двух величин. Например, Y — класс или метка. P(X,Y) = полная информация об их взаимосвязи.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Совместное распределение P(X,Y) хранит полную информацию о взаимосвязи X и Y. Из него можно получить маргинальное или условное распределение.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как таблица частот: строки — значения X, столбцы — значения Y, ячейки — P(X=x, Y=y). Маргиналы — суммы по строкам/столбцам.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X=монета, Y=кубик. Если независимы: P(X=орёл, Y=6)=0.5·(1/6)≈0.083. При зависимости — ячейки таблицы будут другими.</div>
     </div>
     <h3>Условная вероятность</h3>
   <div class="formula">
@@ -529,14 +617,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(Y|X)</span><span class="fa-name">условная вероятность Y при условии X</span><span class="fa-desc">Вероятность Y после того, как мы узнали X. «Как меняется распределение Y, когда X зафиксировано?» В ML — это то, что предсказывает дискриминативная модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X,Y)</span><span class="fa-name">совместная вероятность — числитель</span><span class="fa-desc">Вероятность наблюдать X и Y одновременно. «Ограничиваем мир» до тех исходов, где X уже произошло.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(X)</span><span class="fa-name">маргинальная вероятность X — знаменатель-нормировка</span><span class="fa-desc">P(X)=∑_y P(X,Y=y). Делением на P(X) «перенормируем» на подпространство «X произошло», чтобы сумма вероятностей давала 1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> P(Y|X) = P(X,Y)/P(X) — «зум» на часть вероятностного пространства, где X уже зафиксировано. Делим на P(X), чтобы вероятности суммировались в 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Из 100 пациентов 30 курящих. Из курящих 12 больных. P(болен|курит)=12/30=0.4, а не 12/100=0.12.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(кошка, рыжий)=0.12, P(рыжий)=0.20. P(кошка|рыжий)=0.12/0.20=0.6. 60% рыжих — кошки.</div>
     </div>
     <h3>Формула Байеса</h3>
   <div class="formula">
@@ -545,14 +633,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(θ|D)</span><span class="fa-name">posterior — убеждение о θ после данных</span><span class="fa-desc">Что мы думаем о параметрах θ, увидев данные D. Цель байесовского вывода — получить распределение по θ, а не одну точечную оценку.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">likelihood — насколько θ объясняет данные</span><span class="fa-desc">При фиксированных θ, насколько вероятны наблюдённые данные D? Чем выше, тем лучше θ «подходит» к данным.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(θ)</span><span class="fa-name">prior — убеждение о θ до данных</span><span class="fa-desc">Априорное распределение: что мы знаем о θ до наблюдений. Кодирует регуляризацию: Gaussian prior соответствует L2.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D)</span><span class="fa-name">evidence — нормировочная константа</span><span class="fa-desc">P(D)=∫P(D|θ)P(θ)dθ. Не зависит от θ, поэтому при оптимизации по θ обычно игнорируется. Нужна лишь для нормировки posterior.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Байесова формула обновляет убеждение: posterior ∝ likelihood × prior. Данные «сдвигают» prior в сторону тех θ, которые лучше объясняют D.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Prior — «монетка честная (p=0.5)». После 10 орлов из 10 бросков likelihood высок для p≈1, posterior сдвигается туда.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=p Bernoulli, prior Beta(2,2). После 7 орлов из 10: posterior Beta(9,5). MAP: p̂=8/12≈0.67.</div>
     </div>
     <table>
     <tr><th>Термин</th><th>Название</th><th>Смысл</th></tr>
@@ -578,14 +667,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">вероятность данных D при фиксированных параметрах θ</span><span class="fa-desc">Если θ зафиксировано, это обычная условная вероятность: «насколько вероятны такие данные D при данной модели θ?». Данные случайны — θ нет.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D</span><span class="fa-name">набор наблюдённых данных</span><span class="fa-desc">D = {x₁,...,xₙ} — конкретные наблюдения. В этой интерпретации D — случайный объект: до наблюдения оно могло быть другим.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры модели — фиксированные</span><span class="fa-desc">При интерпретации «P(D|θ) как вероятность» θ — заданная константа. Мы спрашиваем: при этих θ насколько ожидаемы такие данные?</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Та же формула P(D|θ) читается по-разному: если θ фиксировано — вероятность данных. Если D фиксировано — likelihood (функция от θ).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Монетка (θ=p) задана. P(D|θ) — насколько вероятна именно эта последовательность орлов/решек. Монетка фиксирована, бросок случаен.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=p=0.5, D={1,0,1}. P(D|θ)=0.5·0.5·0.5=0.125. Вероятность этой последовательности при честной монетке.</div>
     </div>
     <p>Если θ фиксировано, это вероятность/плотность наблюдения данных.</p>
 
@@ -596,14 +685,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(θ; D)</span><span class="fa-name">likelihood-функция</span><span class="fa-desc">Функция от θ при фиксированных данных D. Записывается как L(θ;D), чтобы подчеркнуть: D — константа, θ — аргумент. Это не вероятность θ!</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">та же формула — другая перспектива</span><span class="fa-desc">Математически L(θ;D)=P(D|θ). Но смысл другой: данные D уже наблюдены и зафиксированы. Ищем θ, при которых эти данные наиболее правдоподобны.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры — переменный аргумент</span><span class="fa-desc">В likelihood-интерпретации θ — то, по чему мы оптимизируем. L(θ;D) — поверхность в пространстве θ. Её максимум — MLE-оценка.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Та же P(D|θ) становится likelihood, когда данные D «заморожены» и мы варьируем θ. Максимизация L по θ — поиск параметров, лучше всего объясняющих данные.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Видим след (данные D), ищем, какая обувь (θ) его оставила. Likelihood — насколько хорошо θ объясняет следы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,1,0,1,0}, Bernoulli(p). L(0.6;D)=0.6³·0.4²≈0.035. L(0.8;D)=0.8³·0.2²≈0.020. θ̂_MLE=0.6 (3 успеха из 5).</div>
     </div>
     <p>Формула та же, но теперь это функция от θ — <strong>likelihood</strong>.</p>
 
@@ -624,14 +713,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ̂_MLE</span><span class="fa-name">MLE-оценка параметров</span><span class="fa-desc">«Шляпка» означает оценку по данным. θ̂_MLE — то значение параметров, которое максимизирует правдоподобие. Одна точка в пространстве θ, не распределение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_θ</span><span class="fa-name">аргмакс по θ — поиск максимума</span><span class="fa-desc">argmax возвращает θ, при котором P(D|θ) максимален. Не само максимальное значение, а аргумент. Оптимизируем по θ, данные D зафиксированы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">likelihood — правдоподобие данных</span><span class="fa-desc">Функция от θ: насколько вероятны наблюдённые данные D при параметрах θ. MLE находит θ, делающее данные «наиболее правдоподобными».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MLE — самый распространённый способ оценить параметры: «какие θ лучше всего объясняют данные?». Из этого принципа вытекают MSE (Gaussian), BCE (Bernoulli) и другие loss-функции.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как детектив: ищем θ, который делает улики (данные) наиболее вероятными. argmax — выбрать наиболее вероятного «подозреваемого».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D: 7 орлов из 10 бросков. P(D|p)=p⁷(1-p)³. argmax: d/dp=0 → 7/p−3/(1-p)=0 → p̂=0.7.</div>
     </div>
     <p>Обычно максимизируют log-likelihood:</p>
   <div class="formula">
@@ -640,15 +729,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ̂_MLE</span><span class="fa-name">MLE-оценка в log-пространстве</span><span class="fa-desc">Тот же аргмакс, что и для P(D|θ), потому что log монотонен. argmax log P = argmax P.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_θ</span><span class="fa-name">аргмакс по θ</span><span class="fa-desc">Возвращает θ с максимальным log-likelihood. Не изменяет сам аргмакс, только делает функцию удобнее для оптимизации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">натуральный логарифм</span><span class="fa-desc">Монотонное преобразование: argmax P = argmax log P. Превращает произведение вероятностей в сумму: log∏P(xᵢ|θ)=∑log P(xᵢ|θ).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">likelihood — правдоподобие данных при θ</span><span class="fa-desc">Для i.i.d. данных: P(D|θ)=∏ᵢP(xᵢ|θ). Логарифм превращает это произведение в сумму — удобнее и численно стабильнее.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Log-likelihood численно стабильнее (нет произведения очень малых чисел), аналитически удобнее (сумма вместо произведения). Argmax не меняется при замене P на log P.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вместо умножения 0.001·0.003·0.002 лучше сложить log(0.001)+log(0.003)+log(0.002). Результат (аргмакс) тот же, вычислять проще.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25)≈−1.97. Максимум по p — при p̂=3/4=0.75.</div>
     </div>
     <h3>Почему логарифм?</h3>
   <div class="step">1. произведения превращаются в суммы</div>
@@ -664,14 +753,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D</span><span class="fa-name">датасет наблюдений</span><span class="fa-desc">Набор из n независимых наблюдений: D={x₁,...,xₙ}. Каждое xᵢ — результат одного «броска» Bernoulli: либо 0 (неудача), либо 1 (успех).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">xᵢ ∈ {0,1}</span><span class="fa-name">i-е наблюдение бинарного исхода</span><span class="fa-desc">xᵢ=1 означает «успех» (например, email — спам, пациент болен). xᵢ=0 — «неудача». Это i.i.d. выборка из Bernoulli(p).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">размер выборки</span><span class="fa-desc">Число независимых наблюдений. Чем больше n, тем точнее MLE-оценка параметра p.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как вероятности событий или гипотез комбинируются после наблюдения данных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как обновление уверенности врача после нового анализа: prior меняется под влиянием evidence.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если likelihood сильно поддерживает гипотезу, posterior заметно сдвигается в её сторону.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> D — это данные, по которым мы оцениваем неизвестный параметр p (вероятность успеха). MLE ищет то p, которое делает данные «наиболее вероятными».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка веса монеты по n броскам: D={0,1,1,0,1,...} — наблюдения, p — «нечестность» монеты. MLE скажет: «такая монета, что эти данные наиболее вероятны».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=5, D={1,0,1,1,0}. Наблюдаем 3 успеха. MLE: p̂=3/5=0.6. Проверка: P(D|p=0.6) = 0.6³·0.4² ≈ 0.0346.</div>
     </div>
     <div class="formula">
         P(D|p) = ∏<sub>i</sub> p<sup>x<sub>i</sub></sup>(1-p)<sup>1-x<sub>i</sub></sup>
@@ -679,14 +768,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|p)</span><span class="fa-name">likelihood всего датасета</span><span class="fa-desc">Совместная вероятность всех наблюдений D={x₁,...,xₙ} при параметре p. Для i.i.d. выборки — произведение индивидуальных вероятностей.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∏_i</span><span class="fa-name">произведение по всем наблюдениям</span><span class="fa-desc">Если данные независимы (i.i.d.): P(D|p)=P(x₁|p)·P(x₂|p)·...·P(xₙ|p). ∏ — обобщение умножения на n множителей.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p^{xᵢ}</span><span class="fa-name">вероятность успеха для i-го наблюдения</span><span class="fa-desc">Если xᵢ=1: p^1=p. Если xᵢ=0: p^0=1 — этот множитель исчезает. Компактная запись Bernoulli PMF.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1-p)^{1-xᵢ}</span><span class="fa-name">вероятность неудачи для i-го наблюдения</span><span class="fa-desc">Если xᵢ=0: (1-p)^1=1-p. Если xᵢ=1: (1-p)^0=1 — исчезает. В паре с p^{xᵢ} даёт P(xᵢ|p).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для i.i.d. выборки вероятности перемножаются. Максимизировать ∏P(xᵢ|p) = максимизировать ∑log P(xᵢ|p) — это и есть MLE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вероятность последовательности бросков монеты: P(орёл,решка,орёл)=p·(1-p)·p=p²(1-p). Произведение вероятностей независимых событий.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1}, p=0.6. P(D|0.6)=0.6·0.4·0.6=0.144. При p=2/3: P≈0.148. Максимум в p̂=2/3.</div>
     </div>
     <div class="formula">
         log P(D|p) = ∑<sub>i</sub> [x<sub>i</sub> log p + (1-x<sub>i</sub>) log(1-p)]
@@ -694,15 +784,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(D|p)</span><span class="fa-name">log-likelihood датасета</span><span class="fa-desc">Логарифм совместного правдоподобия. Монотонен относительно P(D|p), поэтому argmax одинаков. Сумма вместо произведения — численно стабильнее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_i</span><span class="fa-name">сумма по всем наблюдениям</span><span class="fa-desc">log∏P(xᵢ|p) = ∑log P(xᵢ|p). Произведение превращается в сумму — главное преимущество логарифма.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">xᵢ log p</span><span class="fa-name">вклад единицы (успеха)</span><span class="fa-desc">Если xᵢ=1: вклад = log p. Если xᵢ=0: вклад = 0. Этот член суммирует вклады всех «успехов» в log-likelihood.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1-xᵢ) log(1-p)</span><span class="fa-name">вклад нуля (неудачи)</span><span class="fa-desc">Если xᵢ=0: вклад = log(1-p). Если xᵢ=1: вклад = 0. Это ровно отрицательная binary cross-entropy.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> log-likelihood для Bernoulli = −(binary cross-entropy)! Минимизация BCE = максимизация log-likelihood. Это связывает вероятностный и оптимизационный взгляды.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> За каждую «единицу» добавляем log p, за каждый «ноль» — log(1-p). Чем лучше p подходит к данным, тем меньше отрицательный штраф.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25)≈−1.97. Максимальное значение при p̂=3/4.</div>
     </div>
     <div class="formula">
         p̂<sub>MLE</sub> = (1/n) ∑<sub>i</sub> x<sub>i</sub>
@@ -710,15 +800,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂_MLE</span><span class="fa-name">MLE-оценка параметра p</span><span class="fa-desc">Шляпка ^ означает «оценка по данным». MLE-оценка (maximum likelihood estimate) — то значение p, которое максимизирует правдоподобие P(D|p) по данным D.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка — усреднение по n наблюдениям</span><span class="fa-desc">Делим сумму на n, чтобы получить среднее. Такая оценка несмещённая: при n→∞ p̂→p (истинный параметр).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σᵢ xᵢ</span><span class="fa-name">сумма успехов в выборке</span><span class="fa-desc">Количество единиц в данных. Поскольку xᵢ∈{0,1}, сумма = числу «успехов». p̂ = (число успехов) / (всего наблюдений).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как вероятности событий или гипотез комбинируются после наблюдения данных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как обновление уверенности врача после нового анализа: prior меняется под влиянием evidence.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если likelihood сильно поддерживает гипотезу, posterior заметно сдвигается в её сторону.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MLE для Bernoulli — это просто эмпирическая частота: p̂ = (число единиц) / n. Это самый очевидный ответ, и оказывается, он математически оптимален — максимизирует log-likelihood.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценить вероятность дождя: «за 10 дней шёл дождь 3 раза, значит p̂=0.3». Именно это делает MLE для Bernoulli — простая эмпирическая частота.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=10, k=7 успехов. p̂=7/10=0.7. Проверка: d/dp[7·log(p)+3·log(1−p)]=0 → 7/p=3/(1−p) → p=7/10=0.7. ✓</div>
     </div>
     </div>
     <div>
@@ -770,14 +859,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ̂_MAP</span><span class="fa-name">MAP-оценка параметров</span><span class="fa-desc">Maximum A Posteriori оценка. θ, максимизирующее posterior P(θ|D). В отличие от MLE учитывает prior P(θ) — априорное убеждение о параметрах.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_θ</span><span class="fa-name">аргмакс по θ</span><span class="fa-desc">Возвращает θ с максимальным posterior. Ищем «наиболее вероятное θ» после наблюдения данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(θ|D)</span><span class="fa-name">posterior — вероятность параметров после данных</span><span class="fa-desc">Байесовский posterior. P(θ|D) ∝ P(D|θ)P(θ). MAP берёт его мод (пик), а не всё распределение.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP — компромисс между MLE и байесовским выводом. Берём «лучшую точку» posterior, учитывая prior. При слабом prior MAP → MLE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> «Данные говорят p=0.9, но prior говорил p≈0.5». MAP найдёт баланс — что-то между 0.5 и 0.9, зависит от силы prior.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Bernoulli(p), prior Beta(2,2). 7 орлов из 10. MLE: p̂=0.7. MAP: p̂=8/12≈0.67. Prior «притянул» к центру.</div>
     </div>
     <p>По Байесу:</p>
   <div class="formula">
@@ -786,14 +875,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ̂_MAP</span><span class="fa-name">MAP-оценка</span><span class="fa-desc">argmax posterior. По формуле Байеса: posterior ∝ likelihood × prior, поэтому argmax P(θ|D) = argmax P(D|θ)P(θ).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">likelihood — насколько данные объясняются θ</span><span class="fa-desc">Тот же likelihood, что в MLE. В MAP «взвешивается» prior — нельзя взять любое θ, только то, что объясняет данные и согласуется с prior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(θ)</span><span class="fa-name">prior — априорное убеждение о θ</span><span class="fa-desc">Распределение параметров до наблюдений. Gaussian prior N(0,σ²) → L2-регуляризация. Laplace prior ∝ exp(-|θ|) → L1.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP = argmax (likelihood × prior). Evidence P(D) не зависит от θ, поэтому отбрасывается при оптимизации.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Детектив с предубеждением: prior — вероятности подозреваемых, улики — likelihood. MAP выбирает максимально «вероятного по всем критериям».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=w регрессии. P(D|θ)∝exp(−MSE). Gaussian prior P(θ)∝exp(−λ||θ||²). Произведение → argmax = Ridge regression.</div>
     </div>
     <p>В логарифмах:</p>
   <div class="formula">
@@ -802,15 +891,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ̂_MAP</span><span class="fa-name">MAP-оценка в log-пространстве</span><span class="fa-desc">Тот же MAP, что argmax P(D|θ)P(θ), но с логарифмом. argmax не меняется от монотонного преобразования, зато произведение превращается в сумму.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(D|θ)</span><span class="fa-name">log-likelihood — логарифм правдоподобия данных</span><span class="fa-desc">Как в MLE: логарифм правдоподобия. Для i.i.d.: ∑log P(xᵢ|θ). В регрессии с Gaussian шумом = −MSE (с точностью до константы).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(θ)</span><span class="fa-name">log-prior — логарифм априорного распределения</span><span class="fa-desc">Штраф из prior. Gaussian prior: log P(θ)=−λ||θ||²+const → L2-регуляризация. Laplace prior → L1-регуляризация.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">+</span><span class="fa-name">сумма log-likelihood и log-prior</span><span class="fa-desc">log произведения = сумма логарифмов. MAP задача: «максимизировать log-likelihood + log-prior» = «fit − штраф за сложность».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP в log-форме = MLE + регуляризация. «argmax log P(D|θ) + log P(θ)» — именно то, что делает Ridge/Lasso: максимизируем fit, штрафуем за большие веса.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Оценка с двумя критериями: насколько объяснил данные (log-likelihood) + насколько параметры разумны (log-prior). Хорошая модель — баланс обоих.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> log P(D|θ)=−MSE, Gaussian prior: log P(θ)=−0.1||θ||². MAP: argmax(−MSE−0.1||θ||²)=argmin(MSE+0.1||θ||²) — Ridge с λ=0.1.</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -825,16 +914,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ξ_i</span><span class="fa-name">slack-переменная</span><span class="fa-desc">Насколько объект нарушает margin.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(D|θ)</span><span class="fa-name">логарифм правдоподобия (log-likelihood)</span><span class="fa-desc">Мера того, насколько хорошо модель с параметрами θ объясняет данные D. Максимизируем (не минимизируем) — поэтому знак +.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Гиперпараметр — насколько сильно штрафуем за большие θ. λ=0 → чистый MLE, λ→∞ → θ→0. Баланс между fit и простотой модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||θ||²</span><span class="fa-name">L2-норма параметров в квадрате</span><span class="fa-desc">Сумма квадратов всех параметров. Большие θ штрафуются: модель не может «переложиться» на несколько очень крупных весов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−λ||θ||²</span><span class="fa-name">штраф за сложность (L2-регуляризация)</span><span class="fa-desc">Эквивалентен Gaussian prior p(θ) ∝ exp(−λ||θ||²): MAP-оценка = аргмакс log P(D|θ) + log p(θ).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP с Gaussian prior = MLE + L2-регуляризация. «Maximize log P(D|θ) − λ||θ||²» — это MAP-задача, переформулированная как регуляризованный MLE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как подбор параметров с «ценой» за сложность: чем больше θ, тем «дороже» решение. λ — это цена за единицу сложности. Оптимум — баланс fit и economy.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=5, все xᵢ=1. MLE: θ=∞ (логарифм растёт). С λ=0.5: d/dθ[5θ − 0.5θ²]=5−θ=0 → θ=5. Регуляризация «остановила» θ на конечном значении.</div>
     </div>
     <p class="small">Это соответствует Gaussian prior на параметры. Поэтому L2 regularization можно понимать как MAP.</p>
     </div>
@@ -853,15 +941,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D_KL(P || Q)</span><span class="fa-name">KL-дивергенция от Q к P</span><span class="fa-desc">Мера несходства распределений P и Q. Всегда ≥0, равна 0 только если P=Q. Несимметрична: KL(P||Q) ≠ KL(Q||P).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x)</span><span class="fa-name">истинное распределение</span><span class="fa-desc">Распределение, относительно которого считается «информационная потеря». В ML — истинные данные или posterior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Q(x)</span><span class="fa-name">аппроксимирующее распределение</span><span class="fa-desc">Распределение-«модель». Если кодировать события из P кодом, оптимальным для Q — KL(P||Q) = «лишние биты».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log(P(x)/Q(x))</span><span class="fa-name">логарифм отношения вероятностей</span><span class="fa-desc">Локальная «разница» P и Q в точке x. Если P(x)=Q(x): log(1)=0. Если P(x)>>Q(x): большой положительный вклад.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_x</span><span class="fa-name">взвешенная сумма по всем исходам</span><span class="fa-desc">Усредняем log(P/Q) по истинному распределению P — это E_P[log P(x)/Q(x)].</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> KL(P||Q) — «штраф за ошибку модели». Если Q далека от P, штраф велик. В VAE минимизируем KL(posterior||prior), «прижимая» encoder к N(0,I).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вы навигируете по городу P, но используете карту Q. KL(P||Q) — лишние километры из-за неточной карты.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P=(0.7,0.3), Q=(0.4,0.6). KL(P||Q)=0.7·log(1.75)+0.3·log(0.5)≈0.7·0.56+0.3·(−0.69)≈0.18. KL(Q||P)≠0.18.</div>
     </div>
     <p>Для непрерывного случая:</p>
   <div class="formula">
@@ -870,15 +959,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D_KL(P || Q)</span><span class="fa-name">KL-дивергенция для непрерывных распределений</span><span class="fa-desc">То же, что дискретный KL, но для непрерывных P и Q. Сумма ∑ заменяется интегралом ∫ — та же логика, что PMF→PDF.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∫ ... dx</span><span class="fa-name">интеграл — непрерывная замена суммы</span><span class="fa-desc">Для непрерывных P, Q интегрируем по всей прямой. Это E_P[log P(x)/Q(x)] в непрерывном случае.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x)</span><span class="fa-name">истинная плотность вероятности</span><span class="fa-desc">PDF истинного распределения. В VAE — posterior q_φ(z|x), аппроксимирующий истинный posterior p(z|x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log(P(x)/Q(x))</span><span class="fa-name">логарифм отношения плотностей</span><span class="fa-desc">Поточечная мера разницы P и Q. В VAE: KL(N(μ,σ²)||N(0,1)) считается аналитически как ½(μ²+σ²−log σ²−1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Непрерывный KL работает как дискретный: E_P[log(P/Q)]. Для гауссовских есть замкнутая формула — именно это используется в VAE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Если P~N(μ₁,σ₁²) и Q~N(μ₂,σ₂²), KL зависит от расстояния между центрами и разницы дисперсий — обе характеристики отличия форм.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P~N(μ,σ²), Q~N(0,1). KL(P||Q)=½(μ²+σ²−log σ²−1). При μ=0,σ=1: KL=0. При μ=1,σ=1: KL=0.5.</div>
     </div>
     <div class="warn">
     ⚠️ KL — не метрика: она несимметрична, то есть обычно <strong>KL(P||Q) ≠ KL(Q||P)</strong>.
@@ -924,15 +1013,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">training</span><span class="fa-name">задача обучения модели</span><span class="fa-desc">Обучение = оптимизационная задача. «min −log P(D|θ)» означает: найти θ, минимизирующие отрицательное log-правдоподобие данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min_θ</span><span class="fa-name">минимизация по параметрам θ</span><span class="fa-desc">Ищем θ, при которых NLL минимален. Эквивалентно максимизации log P(D|θ) — отличаются только знаком.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log</span><span class="fa-name">отрицательный логарифм — превращает max в min</span><span class="fa-desc">Минус превращает maximization в minimization NLL. Стандартный трюк: оптимизаторы (SGD, Adam) минимизируют, поэтому нужен минус.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(D|θ)</span><span class="fa-name">likelihood — правдоподобие данных при θ</span><span class="fa-desc">Для i.i.d. данных: P(D|θ)=∏ᵢP(xᵢ|θ). NLL = −∑log P(xᵢ|θ) — это и есть loss-функция.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Обучение нейросети = минимизация NLL = максимизация log-likelihood. MSE, BCE, Cross-Entropy — всё это частные случаи −log P(D|θ) при разных шумовых предположениях.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Каждый шаг обучения делает данные «чуть правдоподобнее» при текущих параметрах. Loss падает → модель лучше объясняет данные.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Bernoulli output: −log P(D|θ)=∑−[yᵢ log p̂ᵢ+(1−yᵢ)log(1−p̂ᵢ)] = BCE. Gaussian output: −log P(D|θ) ∝ MSE.</div>
     </div>
     <div class="info">
     ℹ️ Очень важная мысль: многие loss-функции в DL — это не "магические формулы", а просто negative log-likelihood при конкретном вероятностном предположении о данных.
@@ -1445,7 +1534,40 @@ print(&#39;best p=&#39;, best_p)
 <!-- phase4-go-deeper:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что означает формула Байеса и как её читать?</summary>
+      <div class="ml-quiz__a"><p><strong>P(A|B) = P(B|A)·P(A) / P(B)</strong>: posteriori = likelihood × prior / evidence. Она позволяет «перевернуть» условную вероятность — зная, как B зависит от A, найти, как A зависит от B.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между вероятностью и правдоподобием (likelihood)?</summary>
+      <div class="ml-quiz__a"><p>Вероятность P(x|θ) — функция от данных при фиксированных параметрах θ. Правдоподобие L(θ|x) — та же функция, но рассматривается как функция от θ при фиксированных данных x. Максимизация правдоподобия (MLE) даёт оценку параметров модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «prior» в байесовском выводе и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Prior P(θ) — наши начальные убеждения о параметрах модели до просмотра данных. Он регуляризует оценку: Гауссов prior на веса соответствует L2-регуляризации, Лапласов — L1. При малом объёме данных prior сильно влияет на результат.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое центральная предельная теорема и почему она важна для ML?</summary>
+      <div class="ml-quiz__a"><p>ЦПТ: сумма большого числа независимых одинаково распределённых случайных величин стремится к нормальному распределению. В ML это обосновывает использование MSE (предполагает Гауссов шум) и делает надёжным анализ стохастических методов оптимизации.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -1517,5 +1639,7 @@ print(&#39;best p=&#39;, best_p)
     </div>
   </section>
 <!-- step1-learning:end -->
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/04_debugging_loss_spikes.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training-practice">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>8.4 Debugging Loss Spikes</h1>
       <p class="muted">Loss spike — это симптом, а не диагноз. Причина может быть в данных, learning rate, mixed precision, exploding gradients, scheduler, augmentation, distributed sync или баге в loss.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Loss spike посреди обучения — одна из самых неприятных ситуаций в ML. Понять причину — LR слишком высокий, NaN в данных, gradient explosion — означает исправить и не потерять всё обучение.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как читать loss curve и отличить spike от нормального шума</li>
+      <li>Gradient norm мониторинг — когда clipping не помогает</li>
+      <li>Инспекция NaN: torch.isnan, gradient hooks, EMA loss</li>
+      <li>Checkpoint averaging и recovery стратегии</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Gradient clipping (4.6)</li>
+      <li>Numerical stability (4.9)</li>
+      <li>Distributed training (8.1)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Сначала классифицируй проблему</h2>
@@ -120,7 +144,40 @@ optimizer.step()
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что делать, если loss вдруг резко вырос (loss spike) во время обучения?</summary>
+      <div class="ml-quiz__a"><p>Алгоритм: (1) найти checkpoint до spike — сохраняет ли он состояние? (2) логировать grad norm — был ли взрыв градиентов? (3) проверить bad batch — конкретный пример с NaN/Inf? (4) снизить lr или включить gradient clipping. Часто помогает recovery: откат и пропуск плохого батча.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как определить, что модель «застряла» в плохом локальном минимуме?</summary>
+      <div class="ml-quiz__a"><p>Признаки: loss перестал убывать, но grad norm ненулевой; val loss выше, чем должен быть по loss curve; loss oscillates вокруг plateau. Методы выхода: повысить lr временно (cyclical LR), добавить шум в веса, рестартовать с другой инициализацией, изменить архитектуру.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое dead neurons и как их обнаружить при дебаггинге?</summary>
+      <div class="ml-quiz__a"><p>Dead neuron (при ReLU): активация всегда 0, градиент не проходит. Диагностика: логировать процент нулевых активаций в каждом слое. >90% нулей — проблема. Причины: слишком большой lr, плохая инициализация. Решение: LeakyReLU, меньший lr, инициализация He.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему важно логировать не только loss, но и grad norm и learning rate?</summary>
+      <div class="ml-quiz__a"><p>Loss один не даёт полной картины: может медленно убывать из-за плохого lr, несмотря на нормальные градиенты. Grad norm показывает взрывы/затухания. LR подтверждает, что schedule работает. Вместе эти три метрики позволяют быстро диагностировать большинство проблем обучения.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -136,5 +193,47 @@ optimizer.step()
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-4-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="\theta_{t+1} = \theta_t - \eta g_t">θ_{t+1} = θ_t - η g_t</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">текущие параметры</span><span class="fa-desc">веса модели перед update.</span></div><div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага; слишком большой η часто и даёт spikes.</span></div><div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">сигнал изменения параметров на текущем batch.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> loss spike часто означает, что один update оказался слишком агрессивным для текущего масштаба gradients.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если grad norm внезапно вырос в 50 раз, тот же learning rate может выбросить модель из стабильной области loss landscape.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Отладка loss spikes</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Всегда сохраняй checkpoint перед каждым шагом с большим grad norm.</li>
+        <li>Логируй grad_norm, loss, lr на каждом шаге — не только loss.</li>
+        <li>При NaN: первым делом проверяй входные данные, не архитектуру.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Начинать с изменения архитектуры при loss spikes — сначала проверяй данные и lr.</li>
+        <li>Не проверять bf16/fp16 overflow как источник NaN.</li>
+        <li>Игнорировать накопленный bad batch — иногда достаточно его пропустить.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Gradient clipping (max_norm): стандарт 0.5-1.0 для трансформеров.</li>
+        <li>LR: временное снижение помогает при спайках.</li>
+        <li>Loss scaling (при fp16): автоматическая стратегия в torch.cuda.amp.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="04_training/06_gradient_clipping_and_stability.html">← 4.6 Clipping</a></li>
+        <li><a href="04_training/09_numerical_stability.html">← 4.9 Numerical Stability</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/09_retrieval_augmented_generation.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -25,6 +25,30 @@
       <h1>6.9 RAG: Retrieval-Augmented Generation</h1>
       <p class="muted">RAG is not a magic anti-hallucination switch. It is a system that retrieves evidence, puts it into context, and asks an LLM to answer grounded in that evidence. If retrieval fails, generation usually fails too.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>RAG решает ключевое ограничение LLM: устаревшие знания и hallucinations. Дать модели возможность «подглядывать» в документы через retrieval проще, чем переобучать модель каждый месяц.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Retrieval pipeline: chunk → embed → index → retrieve → rerank</li>
+      <li>Cosine similarity в embedding space — как найти релевантные чанки</li>
+      <li>Hybrid search: dense (embedding) + sparse (BM25) — почему гибрид лучше</li>
+      <li>Evaluation: Recall@K и RAGAS — как оценить RAG систему</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>LLM inference (6.7)</li>
+      <li>Vector embeddings</li>
+      <li>Поиск и индексирование</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -247,7 +271,40 @@ for i in top_idx:
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое RAG и какую проблему LLM он решает?</summary>
+      <div class="ml-quiz__a"><p>RAG (Retrieval-Augmented Generation) дополняет LLM внешней базой знаний. LLM страдают от hallucination (изобретают факты) и устаревших знаний (cutoff date). RAG: (1) retrieve — найти релевантные документы по запросу, (2) augment — добавить их в контекст, (3) generate — LLM отвечает с опорой на документы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как работает dense retrieval (semantic search) в RAG?</summary>
+      <div class="ml-quiz__a"><p>Документы и запрос кодируются в embeddings bi-encoder (например, SentenceBERT). Документы хранятся в vector DB (Faiss, Pinecone). При запросе: embed(query) → nearest neighbor search → top-k документов. Это семантически лучше BM25 для парафразированных запросов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое chunking стратегия и почему она важна для RAG?</summary>
+      <div class="ml-quiz__a"><p>Chunking — разбивка документов на фрагменты для индексирования. Маленькие chunks: высокая точность retrieval, но теряется контекст. Большие: больше контекста, но меньше релевантность. Оптимум зависит от embedding model и задачи. Sentence-level и paragraph-level chunking — популярные подходы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое reranking в RAG pipeline и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Первоначальный retrieval (ANN search) даёт top-k кандидатов. Reranker (cross-encoder) пересчитывает релевантность каждого кандидата к запросу более точно — он видит оба текста вместе. Это двухэтапный подход: быстрый recall первого этапа + точный precision второго.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain why RAG does not automatically prevent hallucinations?</li>
@@ -270,5 +327,47 @@ for i in top_idx:
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Retrieval-Augmented Generation</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>RAG — первый выбор для задач с актуальными или специализированными знаниями.</li>
+        <li>Начинай с BM25 baseline перед dense retrieval — иногда достаточно и быстрее.</li>
+        <li>Мониторь faithfulness метрику: генерирует ли модель только на основе retrieved контекста?</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не разделять retrieval и generation ошибки при дебаггинге — они независимы.</li>
+        <li>Chunk size выбирать произвольно — экспериментируй на своей задаче.</li>
+        <li>Не учитывать context window limit при выборе top-k chunks.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>chunk_size и overlap — подбирай под embedding model и задачу.</li>
+        <li>top_k: больше = выше recall, но шум в контексте снижает precision.</li>
+        <li>Reranker threshold: баланс precision/recall для финального набора chunks.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="06_llm/01_tokenization_bpe.html">← 6.1 Токенизация</a></li>
+        <li><a href="09_mlops_deployment/02_model_serving.html">9.2 Serving →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

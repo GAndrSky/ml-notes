@@ -111,7 +111,7 @@ canvas { border-radius: 8px; }
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/01_math/02_calculus.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="math">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -124,8 +124,109 @@ canvas { border-radius: 8px; }
       <h1>1.2 Матанализ</h1>
       <p class="muted">Производные · chain rule · gradient · Jacobian · Hessian · Taylor intuition · связь с backprop и оптимизацией</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Математический анализ — фундамент backpropagation. Производные, правило цепочки, частные производные — именно это заставляет нейронные сети учиться.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Производные и их геометрический смысл — наклон функции</li>
+      <li>Правило цепочки как основа backpropagation</li>
+      <li>Частные производные и градиент — оптимизация в многомерном пространстве</li>
+      <li>Jacobian и Hessian — когда они появляются в ML</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Школьный анализ (пределы, производные)</li>
+      <li>Понятие функции и графика</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- SECTION 1 -->
+
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Правило цепочки — производная f(x) = (2x+1)² шаг за шагом</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Задача</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Найти f'(x), где f(x) = (2x+1)². Используем правило цепочки: производную сложной функции.</p>
+        <div class="wt-formula">f(x) = (2x + 1)²</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Декомпозиция на вложенные функции</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Записываем f как композицию: f = h(g(x)).</p>
+        <div class="wt-formula">g(x) = 2x + 1   ← внутренняя функция
+h(u) = u²       ← внешняя функция
+f(x) = h(g(x))</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Производная внутренней функции g</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Дифференцируем g по x.</p>
+        <div class="wt-formula">g'(x) = d(2x+1)/dx = 2</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Производная внешней функции h</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Дифференцируем h по u (независимой переменной).</p>
+        <div class="wt-formula">h'(u) = d(u²)/du = 2u</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Правило цепочки: f'(x) = h'(g(x)) · g'(x)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Подставляем: внешняя производная в точке g(x), умноженная на производную g.</p>
+        <div class="wt-formula">f'(x) = h'(g(x)) · g'(x)
+      = 2·g(x) · 2
+      = 2·(2x+1) · 2 = 4(2x+1)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Числовая проверка при x=1</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Численно проверяем: f(1+δ) ≈ f(1) + f'(1)·δ при δ=0.001.</p>
+        <div class="wt-formula">f(1)     = (2×1+1)² = 9
+f'(1)    = 4(2×1+1) = 12
+f(1.001) = (2.002+1)² = 3.002² = 9.012
+Ожидаем:  9 + 12×0.001 = 9.012  ✓</div>
+        <div class="wt-result">Правило цепочки — это именно то, что делает backpropagation: производная сложной функции слой за слоем.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
 <div class="card">
   <h2>📈 Зачем матанализ в ML?</h2>
   <p>Обучение нейросети — это поиск таких параметров, при которых функция потерь становится минимальной. Чтобы понять, <strong>в какую сторону двигать веса</strong>, нам нужны производные.</p>
@@ -136,15 +237,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Размер добавляемого шага или поправки.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры модели</span><span class="fa-desc">Все веса и смещения сети, собранные в один вектор. Обновляем их на каждом шаге оптимизации. θ ← θ означает «перезаписать θ новым значением».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate (шаг обучения)</span><span class="fa-desc">Маленькое положительное число (типично 1e-3 или 1e-4). Контролирует, насколько сильно мы двигаемся в направлении градиента. Большой η — нестабильность, малый — медленная сходимость.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇_θ L(θ)</span><span class="fa-name">градиент loss по параметрам</span><span class="fa-desc">Вектор частных производных функции потерь по всем параметрам θ. Указывает направление наибольшего роста L — мы двигаемся в противоположную сторону (знак минус).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Gradient descent — это итеративный спуск по поверхности потерь. На каждом шаге мы чуть-чуть сдвигаем параметры туда, где loss меньше, ориентируясь на антиградиент.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как спуск в гору с закрытыми глазами: нащупываем, в какую сторону склон уходит вниз (антиградиент), и делаем маленький шаг туда.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=[0.5, −0.3], η=0.1, ∇L=[0.2, −0.4]. Новые θ: [0.5−0.1·0.2, −0.3−0.1·(−0.4)] = [0.48, −0.26].</div>
     </div>
     <div class="grid-3" style="margin-top:12px;">
     <div class="mini-card">
@@ -177,14 +277,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f'(x)</span><span class="fa-name">производная функции f в точке x</span><span class="fa-desc">Предельный наклон касательной к графику f в точке x. Показывает, с какой скоростью меняется f при бесконечно малом изменении x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h</span><span class="fa-name">приращение аргумента</span><span class="fa-desc">Малое изменение x. В определении h стремится к нулю — именно это «бесконечно малое» превращает «среднее изменение» в «мгновенное».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">lim_{h→0}</span><span class="fa-name">предел при h → 0</span><span class="fa-desc">Формальная запись: берём отношение приращений при всё меньших h и смотрим, к чему оно сходится. Если предел существует, функция дифференцируема в точке x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(f(x+h) - f(x)) / h</span><span class="fa-name">разностное отношение</span><span class="fa-desc">Наклон секущей через точки (x, f(x)) и (x+h, f(x+h)). При h→0 секущая превращается в касательную.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Производная — это наклон касательной. Для f(x)=x² в точке x=2: f'(2)=4, то есть при малом шаге dx≈0.01 функция вырастет примерно на 0.04.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Спидометр автомобиля: он показывает мгновенную скорость — производную пройденного расстояния по времени. Средняя скорость за поездку — это разностное отношение.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=x², x=3, h=0.01. (f(3.01)−f(3))/0.01 = (9.0601−9)/0.01 = 6.01. При h→0 получим ровно f'(3)=2·3=6.</div>
     </div>
     <h3>Смысл</h3>
   <div class="step">1. насколько быстро меняется функция в точке x</div>
@@ -270,14 +371,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y = f(g(x))</span><span class="fa-name">композиция функций</span><span class="fa-desc">Внешняя функция f применяется к результату внутренней g. В нейросети это аналог применения активации к линейному преобразованию: a=relu(Wx+b).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">dy/dx</span><span class="fa-name">производная выхода по входу</span><span class="fa-desc">Полная производная y по x через всю цепочку. Это то, что нужно backprop для вычисления градиента loss по параметрам любого слоя.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">g'(x)</span><span class="fa-name">производная внутренней функции</span><span class="fa-desc">Локальная чувствительность g к x. В нейросети это, например, производная Wx+b по w — результат равен x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f'(g(x))</span><span class="fa-name">производная внешней функции в точке g(x)</span><span class="fa-desc">Локальная чувствительность f к своему аргументу, взятая в точке g(x). Для relu'=1(z&gt;0), для sigmoid'=σ(z)(1−σ(z)).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Chain rule говорит: полная чувствительность = произведение локальных чувствительностей на каждом шаге. Это и есть основа backpropagation.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как передача усиления по цепочке: если гитара усиливает в 3×, а усилитель в 5×, итоговое усиление = 15×. Chain rule — то же самое, только для производных.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=sin(x²), x=1. g(x)=x², g'(1)=2. f(u)=sin(u), f'(g(1))=cos(1)≈0.54. dy/dx=0.54·2≈1.08. Проверка: d(sin(x²))/dx=2x·cos(x²)|_{x=1}=2·0.54=1.08.</div>
     </div>
     <h3>Интуиция</h3>
   <p>Если x влияет на g, а g влияет на y, то чувствительность y к x получается как произведение локальных чувствительностей на каждом шаге.</p>
@@ -303,14 +405,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">u, v</span><span class="fa-name">промежуточные переменные</span><span class="fa-desc">u=x², v=u+1, h=sin(v). Разбиваем сложную функцию на простые узлы вычислительного графа. Каждый узел считает локальную производную.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">du/dx</span><span class="fa-name">производная u по x</span><span class="fa-desc">u=x², поэтому du/dx=2x. Это локальная производная первого узла. При x=1.2: du/dx=2.4.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">dv/du</span><span class="fa-name">производная v по u</span><span class="fa-desc">v=u+1, поэтому dv/du=1. Прибавление константы не меняет скорость роста — производная единичная.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">dh/dv</span><span class="fa-name">производная h по v</span><span class="fa-desc">h=sin(v), поэтому dh/dv=cos(v). Это локальная производная последнего узла, взятая в точке v=u+1=x²+1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">dh/dx</span><span class="fa-name">итоговая производная по x</span><span class="fa-desc">Произведение всех локальных производных: cos(x²+1)·1·2x. Backprop — это именно такой проход по цепочке узлов от выхода (h) ко входу (x).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Разбиение на узлы — это вычислительный граф. Backprop идёт справа налево и перемножает локальные производные каждого узла.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сборочная линия в обратном направлении: каждый цех передаёт «ответственность за ошибку» предыдущему, умноженную на свою локальную чувствительность.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=1.2. u=1.44, v=2.44. du/dx=2.4, dv/du=1, dh/dv=cos(2.44)≈−0.775. dh/dx=−0.775·1·2.4≈−1.86.</div>
     </div>
     <div class="intuition" style="font-size:0.88em;">
         💡 Это и есть backprop в миниатюре: сначала считаем forward, потом идём назад по графу вычислений и перемножаем локальные производные.
@@ -336,14 +440,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇f(x)</span><span class="fa-name">градиент функции f в точке x</span><span class="fa-desc">Вектор частных производных. Имеет то же измерение, что и x: если x ∈ ℝⁿ, то ∇f(x) ∈ ℝⁿ. В PyTorch доступен как tensor.grad после .backward().</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂f/∂x_i</span><span class="fa-name">частная производная по x_i</span><span class="fa-desc">Насколько быстро меняется f при изменении только i-й компоненты вектора x, остальные фиксированы. Каждая компонента градиента — это одна такая производная.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f: ℝⁿ → ℝ</span><span class="fa-name">скалярная функция многих переменных</span><span class="fa-desc">Принимает вектор x из n чисел, возвращает одно число. Loss-функция — именно такая: принимает все параметры θ, выдаёт один скаляр L.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент — это стрелка, указывающая в направлении наибольшего роста функции. Антиградиент (−∇f) указывает в направлении наибольшего убывания — туда мы и идём при gradient descent.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как компас на холмистой местности: градиент показывает, в какую сторону идти в гору. Мы же хотим вниз (минимизировать loss) — идём в обратную сторону.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x₁,x₂)=x₁²+2x₂². ∂f/∂x₁=2x₁, ∂f/∂x₂=4x₂. В точке (1,0.5): ∇f=[2, 2]. Спуск: x ← [1,0.5]−η·[2,2].</div>
     </div>
     <h3>Смысл градиента</h3>
   <div class="step">1. направление наибольшего роста функции</div>
@@ -411,16 +515,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_f(x)</span><span class="fa-name">матрица Якоби функции f</span><span class="fa-desc">Матрица всех частных производных выходов по входам. Обобщает градиент на случай, когда функция выдаёт вектор, а не скаляр. Shape: (m, n).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂f_i/∂x_j</span><span class="fa-name">производная i-го выхода по j-му входу</span><span class="fa-desc">Строка i — как меняется i-й выход f при изменении каждого x. Столбец j — насколько чувствительны все выходы к j-му входу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f: ℝⁿ → ℝᵐ</span><span class="fa-name">векторная функция</span><span class="fa-desc">Принимает n-мерный вектор, возвращает m-мерный. Softmax — пример: ℝⁿ→ℝⁿ (n→n). Линейный слой: ℝ^d_in → ℝ^d_out.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ℝ^{m×n}</span><span class="fa-name">размер матрицы Якоби</span><span class="fa-desc">m строк (по числу выходов) × n столбцов (по числу входов). Якоби скалярной функции — просто строка = транспонированный градиент.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Якоби — это лучшая линейная аппроксимация векторной функции в точке: f(x+δ) ≈ f(x) + J·δ. В backprop Якоби каждого слоя участвует в передаче градиента.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Якоби — как таблица обменных курсов: строка i показывает, насколько i-я «валюта» выхода реагирует на изменение каждой «валюты» входа.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Softmax для [2,1,0]: J — матрица 3×3. Диагональный элемент J[i,i]=p_i(1−p_i), внедиагональный J[i,j]=−p_i·p_j. Именно это умножается на входящий градиент при backprop.</div>
     </div>
     <h3>Пример</h3>
   <div class="formula">
@@ -431,14 +534,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(x,y)</span><span class="fa-name">векторная функция ℝ²→ℝ²</span><span class="fa-desc">Принимает два числа (x,y) и возвращает два числа. Первая компонента f₁=x²+y, вторая f₂=sin(xy).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x²+y</span><span class="fa-name">первая компонента выхода</span><span class="fa-desc">∂f₁/∂x=2x (меняется пропорционально x), ∂f₁/∂y=1 (меняется с единичным наклоном по y).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sin(xy)</span><span class="fa-name">вторая компонента выхода</span><span class="fa-desc">∂f₂/∂x=y·cos(xy) (скорость роста зависит от обеих переменных), ∂f₂/∂y=x·cos(xy).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Эта функция — хороший пример для Якоби: выход нелинейный, обе переменные смешаны в sin(xy). Локально f ≈ f(x₀,y₀) + J·[Δx,Δy]^T.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как рецепт с двумя ингредиентами, дающий два блюда: изменение каждого ингредиента по-своему влияет на каждое блюдо.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> (x,y)=(1,0.5). f₁=1+0.5=1.5, f₂=sin(0.5)≈0.479. Якоби: [2·1, 1; 0.5·cos(0.5), 1·cos(0.5)] = [2, 1; 0.439, 0.878].</div>
     </div>
     <div class="formula">
     J =
@@ -448,14 +551,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J[0,0] = 2x</span><span class="fa-name">∂f₁/∂x — чувствительность f₁ к x</span><span class="fa-desc">f₁=x²+y. Производная по x: 2x. При (1,0.5) равна 2 — f₁ растёт быстро при изменении x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J[0,1] = 1</span><span class="fa-name">∂f₁/∂y — чувствительность f₁ к y</span><span class="fa-desc">f₁=x²+y. Производная по y: 1. Постоянная — f₁ меняется с той же скоростью, что y, независимо от точки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J[1,0] = y·cos(xy)</span><span class="fa-name">∂f₂/∂x — чувствительность f₂ к x</span><span class="fa-desc">f₂=sin(xy). По правилу произведения и chain rule: ∂/∂x sin(xy)=y·cos(xy).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J[1,1] = x·cos(xy)</span><span class="fa-name">∂f₂/∂y — чувствительность f₂ к y</span><span class="fa-desc">∂/∂y sin(xy)=x·cos(xy). Заметьте: обе производные зависят от xy — Якоби меняется в разных точках.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матрица Якоби — это таблица «кто на кого влияет». Строки — выходы, столбцы — входы. При backprop входящий градиент умножается на J^T (транспонированный Якоби).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Якоби — как чувствительность двух термометров (выходов) к двум нагревателям (входам). Каждая ячейка — «насколько нагреватель j влияет на термометр i».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> (x,y)=(1,0.5). J=[[2,1],[0.439,0.878]]. Смещение [Δx,Δy]=[0.01,0]. J·[0.01,0]=[[0.02],[0.00439]]. Т.е. f₁ вырастет на 0.02, f₂ на ≈0.004.</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -494,15 +598,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">H_f(x)</span><span class="fa-name">матрица Гессе (Hessian)</span><span class="fa-desc">Квадратная матрица n×n вторых частных производных скалярной функции f: ℝⁿ→ℝ. Симметрична при гладком f (теорема Шварца). Описывает локальную кривизну.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂²f/∂x_i∂x_j</span><span class="fa-name">смешанная вторая производная</span><span class="fa-desc">Элемент H[i,j]: сначала дифференцируем по x_j, затем по x_i. Диагональные элементы H[i,i] = ∂²f/∂x_i² — кривизна вдоль оси i.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">i, j</span><span class="fa-name">индексы строки и столбца</span><span class="fa-desc">Пробегают от 1 до n. Матрица Гессе кодирует взаимодействие каждой пары переменных: насколько сильно изменение x_j влияет на скорость роста f по x_i.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент показывает наклон поверхности, Гессиан — кривизну. Если все собственные значения H положительны — функция выпукла (есть минимум). Если разных знаков — это седловая точка.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Градиент — как уклон трассы, Гессиан — как её кривизна (прямая или крутой поворот). Большой Гессиан означает «резкий изгиб» поверхности потерь.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x,y)=x²+2y². H=[[2,0],[0,4]]. Собственные значения 2 и 4 — оба положительны, значит (0,0) — минимум. Кривизна в направлении y вдвое сильнее, чем по x.</div>
     </div>
     <h3>Что показывает Hessian</h3>
   <div class="step">1. локальную кривизну поверхности</div>
@@ -544,14 +647,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">a, b, c</span><span class="fa-name">коэффициенты квадратичной формы</span><span class="fa-desc">f(x,y)=ax²+bxy+cy². a и c задают кривизну вдоль осей x и y, b — перекрёстное смешение. При b=0 оси независимы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2ax+by</span><span class="fa-name">∂f/∂x — первая компонента градиента</span><span class="fa-desc">Частная производная f=ax²+bxy+cy² по x. Ноль при x=0,y=0 — это стационарная точка (потенциальный минимум).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">bx+2cy</span><span class="fa-name">∂f/∂y — вторая компонента градиента</span><span class="fa-desc">Частная производная по y. Вместе с ∂f/∂x формирует вектор градиента ∇f — направление наибольшего роста f.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент квадратичной формы — линейная функция координат. Это значит, что поверхность ax²+bxy+cy² — параболический «трек», и descent по нему сходится быстро.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как наклон параболической чаши: в точке (x,y) сила «тяготения» к центру пропорциональна расстоянию от него.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> a=1, b=0, c=1.5. ∇f(1,0.5)=[2·1+0, 0+2·1.5·0.5]=[2, 1.5]. Шаг спуска с η=0.1: (1−0.2, 0.5−0.15)=(0.8, 0.35).</div>
     </div>
     <div class="formula">
         H =
@@ -561,15 +664,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">Гессиан квадратичной формы f=ax²+bxy+cy²</span><span class="fa-desc">Матрица 2×2 вторых производных. Для квадратичной формы Гессиан постоянный — кривизна одинакова в любой точке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2a, 2c</span><span class="fa-name">диагональные элементы — кривизна по осям</span><span class="fa-desc">∂²f/∂x²=2a — кривизна вдоль x. ∂²f/∂y²=2c — кривизна вдоль y. Если оба положительные — «чаша», loss уменьшается в любую сторону от минимума.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">внедиагональный элемент — перекрёстная кривизна</span><span class="fa-desc">∂²f/∂x∂y=b. Показывает взаимодействие осей. При b≠0 собственные векторы H не совпадают с осями координат — поверхность «скошена».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Гессиан квадратичной формы постоянен — это её особенность. Для нейросетей Гессиан loss меняется в каждой точке параметрического пространства.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Гессиан описывает «форму чаши»: насколько она вытянута, повёрнута, и в каком направлении труднее всего подниматься.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> a=1, b=0, c=1.5. H=[[2,0],[0,3]]. Собственные значения 2 и 3 — оба &gt;0, значит минимум в (0,0). cond(H)=3/2=1.5 — хорошо обусловленный.</div>
     </div>
     <div class="intuition" style="font-size:0.88em;">
         💡 Hessian особенно важен в теории оптимизации: он говорит не только куда идти, но и насколько "крутая" поверхность. Это связывает матанализ с Newton-type методами и curvature-aware оптимизацией.
@@ -589,14 +691,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">значение функции в базовой точке x</span><span class="fa-desc">«Стартовое» значение — точка, вокруг которой строим аппроксимацию. Это известное число, не нужно вычислять заново.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Δx</span><span class="fa-name">малое приращение аргумента</span><span class="fa-desc">Шаг в сторону от x. «Малое» означает, что линейная аппроксимация точна. При больших Δx появляется ошибка второго порядка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f'(x)</span><span class="fa-name">производная в точке x</span><span class="fa-desc">Наклон касательной. Умноженная на Δx, даёт линейную поправку: насколько вырастет функция при шаге Δx.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Taylor первого порядка говорит: «при малом шаге функция ведёт себя как прямая с наклоном f'(x)». Это основа gradient descent — мы используем линейную аппроксимацию loss.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как прогноз по скорости: если скорость 60 км/ч, то через 0.01 часа машина проедет ≈0.6 км. Точно так же f'(x)·Δx — это «скорость изменения» × «время».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=sin(x), x=0. f(0)=0, f'(0)=1. f(0.3)≈0+1·0.3=0.3. Точное значение: sin(0.3)≈0.296. Ошибка ≈0.004 (порядок Δx²).</div>
     </div>
     <h3>Для многих переменных</h3>
   <div class="formula">
@@ -605,14 +707,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Δx</span><span class="fa-name">вектор приращений</span><span class="fa-desc">Вектор в ℝⁿ — смещение от базовой точки x. В gradient descent Δx = −η∇f — шаг антиградиента.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇f(x)^T</span><span class="fa-name">транспонированный градиент (строка-вектор)</span><span class="fa-desc">Градиент как строка. Скалярное произведение ∇f(x)^T · Δx даёт предсказанное изменение функции: насколько изменится f при шаге Δx.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇f(x)^T Δx</span><span class="fa-name">линейная поправка (скалярное произведение)</span><span class="fa-desc">Скаляр — предсказанное изменение f. Если Δx = −η∇f, то поправка = −η·||∇f||² — всегда отрицательная, то есть f убывает.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Многомерный Taylor первого порядка — это обобщение «наклон × шаг»: теперь наклон — это целый вектор (градиент), шаг — вектор Δx, а их скалярное произведение даёт изменение f.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как предсказать доход по нескольким факторам: каждый фактор (Δx_i) вносит вклад пропорционально своей «значимости» (∂f/∂x_i). Сумма вкладов = полное изменение дохода.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x₁,x₂)=x₁²+2x₂², x=[1,1]. ∇f=[2,4]. Δx=[0.1,−0.1]. ∇f^T·Δx=2·0.1+4·(−0.1)=0.2−0.4=−0.2. Новое f≈(1+2)−0.2=2.8.</div>
     </div>
     <h3>Второй порядок</h3>
   <div class="formula">
@@ -621,14 +723,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇f(x)^T Δx</span><span class="fa-name">линейный член — наклон</span><span class="fa-desc">Первый порядок Taylor: предсказывает изменение по касательной. Доминирует при малых Δx.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/2 · Δx^T H Δx</span><span class="fa-name">квадратичный член — кривизна</span><span class="fa-desc">Второй порядок: учитывает «изгиб» поверхности. Δx^T H Δx — квадратичная форма: Δx «взвешивается» Гессианом H. Коэффициент 1/2 следует из интеграла Taylor.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">матрица Гессе в точке x</span><span class="fa-desc">Матрица вторых производных. Учёт H позволяет адаптировать шаг к кривизне поверхности — идея Newton-метода: Δx = −H^{-1} ∇f.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Второй порядок Taylor добавляет «парабольную» поправку к «прямолинейной» аппроксимации. Newton-метод использует именно это — минимизирует квадратичное приближение аналитически.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Первый порядок — прямая дорога. Второй порядок — учёт поворота: знаем не только наклон, но и насколько дорога изгибается, и корректируем маршрут.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=x², x=1, Δx=0.5. f'(1)=2, f''(1)=2. Taylor 2: f(1)+2·0.5+0.5·2·0.25=1+1+0.25=2.25. Точное: f(1.5)=2.25. Для квадратики 2й порядок точен!</div>
     </div>
     <div class="info">
     ℹ️ Первый порядок говорит о наклоне, второй — о кривизне. Поэтому gradient descent использует только первый порядок, а Newton-like методы — ещё и второй.
@@ -646,14 +748,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной тензор</span><span class="fa-desc">Данные, подаваемые в сеть. Forward pass — это применение функций слева направо: x → z¹ → a¹ → ...</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z^l</span><span class="fa-name">пре-активация l-го слоя</span><span class="fa-desc">Результат линейного преобразования до нелинейности: z^l = W^l a^{l-1} + b^l. Это промежуточный узел вычислительного графа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">a^l</span><span class="fa-name">активация l-го слоя</span><span class="fa-desc">Результат после нелинейности: a^l = σ(z^l). Передаётся на следующий слой как «вход».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">функция потерь (loss)</span><span class="fa-desc">Конечный скалярный выход сети. Именно с него начинается backward pass: ∂L/∂L = 1, и производная «распространяется» назад через всю цепочку.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вся нейросеть — это большая составная функция. Forward pass вычисляет её значение, backward pass — производную по всем параметрам через chain rule.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как конвейер: каждая станция (слой) обрабатывает деталь (тензор) и передаёт дальше. При обратном проходе каждая станция передаёт «ответственность за ошибку» предыдущей.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x→z¹=Wx+b=2→a¹=relu(2)=2→z²=3·2+1=7→a²=relu(7)=7→L=0.5·7²=24.5. Backprop: ∂L/∂z²=7, ∂z²/∂a¹=3, ∂a¹/∂z¹=1 (relu'>0), ∂L/∂W=7·3·1·x.</div>
     </div>
     <p>Тогда по chain rule:</p>
   <div class="formula">
@@ -662,14 +765,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂w</span><span class="fa-name">градиент loss по весу w</span><span class="fa-desc">Итоговая производная — то, что нужно для обновления w в gradient descent: w ← w − η·(∂L/∂w). Это и есть цель всего backward pass.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂a</span><span class="fa-name">чувствительность loss к активации</span><span class="fa-desc">Приходит из следующего слоя («входящий градиент»). Показывает, насколько loss растёт при увеличении активации a на 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂a/∂z</span><span class="fa-name">производная функции активации</span><span class="fa-desc">Локальная производная нелинейности в точке z. Для relu: 1(z&gt;0). Для sigmoid: σ(z)(1−σ(z)). Именно здесь возникает затухание градиента.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂z/∂w</span><span class="fa-name">производная пре-активации по весу</span><span class="fa-desc">Для z=wx+b: ∂z/∂w=x. Вход слоя является производной выхода по его весу — отсюда правило «градиент по весу = (входящий градиент) × (вход)».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как малое изменение одного аргумента меняет итоговую функцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как склон горы: производная говорит, в какую сторону поверхность растёт быстрее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если x чуть увеличивается, производная показывает, насколько быстро сдвигается выход.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Backprop — это цепочка произведений локальных производных. Каждый множитель — это «чувствительность» одного блока сети. Произведение даёт полную чувствительность loss к весу.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как бухгалтерия ответственности: если продажи упали из-за рекламы, из-за цены и из-за логистики — итоговый «убыток» делится на три сомножителя (чувствительности).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> z=wx (w=0.5, x=2, z=1). a=relu(z)=1. L=0.5a²=0.5. ∂L/∂a=1, ∂a/∂z=1, ∂z/∂w=x=2. ∂L/∂w=1·1·2=2. Обновление: w←0.5−η·2.</div>
     </div>
     <div class="step blue">forward pass строит вычислительный граф</div>
   <div class="step green">backward pass применяет chain rule от конца к началу</div>
@@ -1321,7 +1425,40 @@ print(np.array(traj)[-5:])
 <!-- phase4-go-deeper:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое цепное правило и зачем оно нужно в backpropagation?</summary>
+      <div class="ml-quiz__a"><p>Цепное правило: <strong>d/dx f(g(x)) = f'(g(x))·g'(x)</strong>. В нейросетях каждый слой — это вложенная функция, и цепное правило позволяет вычислить градиент по параметрам глубоких слоёв, перемножая локальные производные по цепочке.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем отличается частная производная от полного градиента?</summary>
+      <div class="ml-quiz__a"><p>Частная производная ∂L/∂wᵢ показывает скорость изменения функции по одному параметру при фиксированных остальных. Градиент — это вектор всех частных производных; он указывает направление наибольшего роста функции потерь.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что означает, если градиент функции потерь равен нулю?</summary>
+      <div class="ml-quiz__a"><p>Нулевой градиент означает стационарную точку — минимум, максимум или седловую точку. В глубоком обучении это чаще всего «плато» или локальный минимум, а не глобальный. SGD и его варианты помогают выбраться из плохих стационарных точек.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему функция ReLU не является дифференцируемой в точке 0, и как это решается?</summary>
+      <div class="ml-quiz__a"><p>В точке x=0 левый предел производной равен 0, правый — 1, значит классической производной нет. На практике используют субградиент: обычно полагают ReLU'(0)=0 или 0.5; это никак не влияет на сходимость, так как попасть ровно в 0 с вероятностью 1 невозможно.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -1396,5 +1533,7 @@ print(np.array(traj)[-5:])
     </div>
   </section>
 <!-- step1-learning:end -->
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

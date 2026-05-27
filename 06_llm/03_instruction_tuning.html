@@ -26,7 +26,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/03_instruction_tuning.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -39,6 +39,30 @@
       <h1>6.3 Instruction Tuning</h1>
       <p class="muted">После pre-training модель умеет продолжать текст. Instruction tuning учит её воспринимать запрос как задачу и отвечать в полезном формате: кратко, по делу, безопасно, в нужной структуре.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Предобученная LLM умеет предсказывать токены, но не следовать инструкциям. Instruction tuning — supervised fine-tuning на парах (инструкция, ответ), который делает модель полезным ассистентом.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Чем instruction tuning отличается от pretraining — формат данных и loss mask</li>
+      <li>SFT loss — почему считается только по ответу, не по промпту</li>
+      <li>Data quality > data quantity — почему 1K хороших примеров лучше 1M плохих</li>
+      <li>Chat templates — как форматируются multi-turn диалоги</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Pretraining objectives (6.2)</li>
+      <li>Трансформер (5.4)</li>
+      <li>Fine-tuning basics</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>Что именно меняется</h2>
       <div class="grid-3">
@@ -66,18 +90,19 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">позиция ответа</span><span class="fa-desc">номер target-токена в демонстрационном assistant response.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L_SFT</span><span class="fa-name">loss supervised fine-tuning</span><span class="fa-desc">Суммарная ошибка предсказания токенов ответа — математически та же cross-entropy, но теперь только на токенах assistant-response.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−</span><span class="fa-name">знак минус</span><span class="fa-desc">Превращает log-likelihood в минимизируемый loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_t</span><span class="fa-name">сумма по токенам ответа</span><span class="fa-desc">Суммируем только по токенам y_t из demonstration answer — токены инструкции x в loss обычно не входят.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p_θ(y_t|x, y_{&lt;t})</span><span class="fa-name">log-вероятность t-го токена ответа</span><span class="fa-desc">Вероятность правильного токена y_t при условии инструкции x и предыдущих токенов ответа y_{&lt;t}.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_t</span><span class="fa-name">t-й токен demonstration-ответа</span><span class="fa-desc">Правильный токен в образцовом ответе от human annotator — то, чему учится модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">инструкция (instruction)</span><span class="fa-desc">Полный текст запроса/инструкции — включается в контекст, но не в loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_{&lt;t}</span><span class="fa-name">предыдущие токены ответа</span><span class="fa-desc">Все уже сгенерированные токены ответа до позиции t — авторегрессивный контекст.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры модели</span><span class="fa-desc">Веса base LLM, которые обновляются при SFT — настраиваем, чтобы модель воспроизводила демонстрации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SFT: тот же next-token prediction, но condition теперь включает инструкцию x, и учим только на токенах образцового ответа y.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Студент учится правильно отвечать на экзаменационные вопросы, изучая эталонные ответы — не весь учебник, а только «что правильно ответить на этот вопрос».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Инструкция: «Переведи на английский: Кот». Ответ: «Cat». Loss = −log p_θ(Cat | инструкция, «») — учим именно этот токен.</div>
     </div>
     <p>Математически instruction tuning всё ещё остаётся supervised fine-tuning по токенам. Но теперь обучающие пары имеют формат “инструкция -> желаемый ответ”.</p>
       <div class="info">То есть меняется не базовая математика loss, а распределение обучающих примеров и поведение, которое модель должна воспроизводить.</div>
@@ -298,6 +323,40 @@ SFT слабее для:
     <details><summary>[Intermediate] Overfitting style</summary><p>Как SFT может ухудшить generalization? <strong>Решение:</strong> модель копирует формат/тон demos и хуже реагирует на out-of-distribution инструкции.</p></details>
     <details><summary>[Hard] SFT vs RLHF/DPO</summary><p>Что SFT не умеет хорошо оптимизировать? <strong>Решение:</strong> предпочтения между несколькими допустимыми ответами и human preference tradeoffs.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-3"><h2>Checkpoint: 6.3 Instruction Tuning</h2><ul><li>Чем SFT отличается от pretraining?</li><li>Почему chat template является частью модели в production?</li><li>Какие риски у плохих demonstrations?</li><li>Что остаётся нерешённым после SFT?</li><li>Rubber duck: объясни instruction tuning как обучение модели отвечать в нужном режиме, а не просто продолжать интернет-текст.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое instruction tuning и зачем он нужен после предобучения?</summary>
+      <div class="ml-quiz__a"><p>Предобученная LLM хорошо предсказывает следующий токен, но не умеет следовать инструкциям — она скорее «продолжает» текст. Instruction tuning дообучает модель на парах (instruction, response), учя её отвечать на запросы, а не просто продолжать документы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое supervised fine-tuning (SFT) и какие данные нужны?</summary>
+      <div class="ml-quiz__a"><p>SFT — стандартное обучение с учителем на демонстрациях: парах (instruction, desired output), собранных людьми или синтетически. Качество важнее количества: 10k хорошо написанных пар часто лучше 1M автоматически сгенерированных. InstructGPT использовал ~13k пар от человеческих аннотаторов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между chat template и системным промптом?</summary>
+      <div class="ml-quiz__a"><p>Chat template — формат разметки диалога (<|system|>...<|user|>...<|assistant|>...), специфичный для каждой модели. Системный промпт — содержимое внутри тега system: инструкции о роли, ограничениях, стиле ответа. Разные модели имеют разные шаблоны — их нужно соблюдать при инференсе.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Self-Instruct и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Self-Instruct: генерируем новые обучающие примеры (instruction, input, output) с помощью самой LLM на основе небольшого начального seed-набора. Это позволяет масштабировать данные без людских аннотаций. Alpaca обучался на 52k примеров, сгенерированных GPT-3 за $500.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-3"><h2>Checkpoint: 6.3 Instruction Tuning</h2><ul><li>Чем SFT отличается от pretraining?</li><li>Почему chat template является частью модели в production?</li><li>Какие риски у плохих demonstrations?</li><li>Что остаётся нерешённым после SFT?</li><li>Rubber duck: объясни instruction tuning как обучение модели отвечать в нужном режиме, а не просто продолжать интернет-текст.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

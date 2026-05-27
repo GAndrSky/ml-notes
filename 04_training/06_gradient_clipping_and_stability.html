@@ -43,7 +43,7 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/06_gradient_clipping_and_stability.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -59,6 +59,30 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
       <h1>4.6 Gradient Clipping и численная стабильность</h1>
       <p class="muted">Почему градиенты взрываются, как работает clip by value / norm и какие приёмы реально спасают обучение от NaN и loss spikes</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Без gradient clipping обучение трансформеров взрывается за секунды. Это одна строка кода, которая делает возможным обучение 100B-параметровых моделей.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Что такое exploding gradient и почему он случается в глубоких сетях</li>
+      <li>Как norm clipping ограничивает градиент, сохраняя его направление</li>
+      <li>Чем value clipping отличается от norm clipping</li>
+      <li>Как читать loss curve и распознать признаки нестабильности</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Backpropagation (4.1)</li>
+      <li>Оптимизаторы (4.2)</li>
+      <li>Норма вектора (1.1)</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="card">
   <h2>💥 Откуда берутся exploding gradients</h2>
@@ -67,15 +91,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂h_t</span><span class="fa-name">градиент состояния</span><span class="fa-desc">насколько loss чувствителен к hidden state на шаге или слое t.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Π</span><span class="fa-name">произведение Jacobian-ов</span><span class="fa-desc">цепочка локальных преобразований, через которую градиент проходит назад.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">||g||</span><span class="fa-name">норма градиента</span><span class="fa-desc">общий размер update-сигнала; слишком большая норма приводит к loss spikes.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">clip threshold</span><span class="fa-desc">максимально допустимый размер градиента перед optimizer step.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂h₁</span><span class="fa-name">градиент у первого шага</span><span class="fa-desc">То, что хотим вычислить при BPTT. Его норма показывает, насколько сигнал дошёл от T до 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂h_T</span><span class="fa-name">градиент у последнего шага</span><span class="fa-desc">Стартовая точка обратного прохода — обычно нормальной величины. Проблема возникает при перемножении.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Π ∂h_t/∂h_{t-1}</span><span class="fa-name">произведение Jacobian-ов</span><span class="fa-desc">T−1 матриц. Если ||∂h_t/∂h_{t-1}|| > 1 на каждом шаге → норма растёт как λ^T (взрыв).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">||...||</span><span class="fa-name">норма</span><span class="fa-desc">L2-норма вектора/матрицы. Произведение T матриц с нормой > 1 растёт экспоненциально по T.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> clipping не меняет направление большого градиента, но ограничивает его длину, чтобы update не разрушил обучение.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> ремень безопасности: он не управляет машиной, но не даёт одному резкому рывку привести к аварии.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если ||g||=100 и c=1, gradient norm clipping масштабирует весь вектор примерно в 100 раз вниз.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Backprop умножает сигнал ошибки на цепочку Jacobian-ов. При T=100 шагах даже ||J||=1.1 на каждом шаге даёт 1.1^100≈13780× рост — гарантированный взрыв градиента.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=10, ||∂h_t/∂h_{t-1}||=1.5. ||∂L/∂h₁|| ≈ ||∂L/∂h_T|| × 1.5^9 ≈ 38× больше. При T=50: × 1.5^49 ≈ 600 000×. Gradient clipping — «предохранитель» на выходе этого произведения.</div>
     </div>
     <div class="grid-3">
     <div class="warn"><h3>Симптомы</h3><p>loss резко взлетает, веса становятся огромными, появляются NaN/Inf, а optimizer перестаёт восстанавливаться.</p></div>
@@ -106,15 +129,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">g_i</span><span class="fa-name">i-й компонент градиента</span><span class="fa-desc">Скалярное значение одного измерения вектора градиента. Clip by value действует на каждый компонент отдельно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">clip(g_i, -c, c)</span><span class="fa-name">поэлементное ограничение</span><span class="fa-desc">Если g_i > c → c; если g_i &lt; −c → −c; иначе g_i без изменений. Каждый компонент независимо.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">порог обрезки</span><span class="fa-desc">Максимальное абсолютное значение компонента. Типично c=1.0 или c=0.5. Одинаков для всех компонентов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⚠ направление</span><span class="fa-name">изменяется!</span><span class="fa-desc">В отличие от clip by norm, поэлементная обрезка меняет направление вектора — это главный минус метода.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждая координата градиента обрезается независимо. Это дёшево, но изменяет направление update: g=[3, 0.1] при c=1 → [1, 0.1] — вектор повернулся, не просто уменьшился.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> g=[5.0, 0.2, −3.0], c=1.0. После clip: [1.0, 0.2, −1.0]. Исходное направление: (5, 0.2, −3)/||...||. Новое: (1, 0.2, −1)/||...|| — разные углы! Clip by norm сохранил бы (5, 0.2, −3)/5.84 без поворота.</div>
     </div>
     <p>Ограничивает каждый компонент градиента отдельно. Просто и дёшево, но сильно искажает направление вектора.</p>
     </div>
@@ -124,15 +146,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂h_t</span><span class="fa-name">градиент состояния</span><span class="fa-desc">насколько loss чувствителен к hidden state на шаге или слое t.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Π</span><span class="fa-name">произведение Jacobian-ов</span><span class="fa-desc">цепочка локальных преобразований, через которую градиент проходит назад.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">||g||</span><span class="fa-name">норма градиента</span><span class="fa-desc">общий размер update-сигнала; слишком большая норма приводит к loss spikes.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">clip threshold</span><span class="fa-desc">максимально допустимый размер градиента перед optimizer step.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">g</span><span class="fa-name">вектор градиента</span><span class="fa-desc">Полный вектор всех параметров, не отдельные компоненты. Операция применяется к вектору целиком.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">||g||₂</span><span class="fa-name">L2-норма градиента</span><span class="fa-desc">√(Σ gᵢ²) — «длина» вектора градиента. Если > c, будет масштабирован вниз.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">min(1, c/||g||₂)</span><span class="fa-name">масштабный множитель</span><span class="fa-desc">= 1 если ||g||≤c (без изменений). = c/||g|| если ||g|| > c — уменьшает норму ровно до c.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">порог нормы</span><span class="fa-desc">Максимальная допустимая L2-норма градиента. Типично 1.0 для Transformer, 0.5–5.0 для RNN.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> clipping не меняет направление большого градиента, но ограничивает его длину, чтобы update не разрушил обучение.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> ремень безопасности: он не управляет машиной, но не даёт одному резкому рывку привести к аварии.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если ||g||=100 и c=1, gradient norm clipping масштабирует весь вектор примерно в 100 раз вниз.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Clip by norm масштабирует весь вектор равномерно — направление сохраняется! Если ||g||=50 и c=1: g←g/50. Все компоненты уменьшаются в 50× пропорционально, угол вектора не меняется.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> g=[3.0, 4.0], ||g||=5.0, c=1.0. Множитель=min(1, 1/5)=0.2. g←[3.0×0.2, 4.0×0.2]=[0.6, 0.8]. ||g_new||=1.0 ✓. Направление: (3,4)/5=(0.6,0.8)/1 — одинаково ✓.</div>
     </div>
     <p>Сохраняет направление и только масштабирует длину. В DL это обычно более предпочтительный вариант.</p>
     </div>
@@ -431,7 +452,40 @@ print(norm, scale, clipped)
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как обнаружить, что происходит взрыв градиентов?</summary>
+      <div class="ml-quiz__a"><p>Признаки: NaN/Inf в loss, очень большие нормы градиентов в логах, резкие скачки loss. Диагностика: логировать ‖g‖ на каждом шаге. При gradient clipping (max_norm=1.0) смотреть, как часто норма превышает порог — частое срабатывание указывает на нестабильность архитектуры.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему skip-connections в ResNet помогают со стабильностью градиентов?</summary>
+      <div class="ml-quiz__a"><p>Skip-connections создают альтернативный путь градиента: dL/dx = dL/dy · (1 + dF/dx). Слагаемое «1» обеспечивает, что градиент всегда имеет путь к ранним слоям, даже если dF/dx мал. Это фактически устраняет проблему затухающего градиента в deep residual сетях.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое gradient norm monitoring и почему он важен при обучении LLM?</summary>
+      <div class="ml-quiz__a"><p>Логирование нормы градиента на каждом шаге позволяет обнаружить loss spikes до того, как они разрушат обучение. В LLM тренинге норма обычно стабильна; резкий скачок в 10× сигнализирует о bad batch или numerical instability. Это ключевой сигнал для ранней диагностики.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем отличается gradient clipping по норме от clipping по значению?</summary>
+      <div class="ml-quiz__a"><p>Clipping по значению: обрезает каждую компоненту градиента отдельно ([-c, c]). Это может изменить направление вектора градиента. Clipping по норме: масштабирует весь вектор, если его норма превышает порог, сохраняя направление. Clipping по норме предпочтительнее для нейросетей.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -506,5 +560,6 @@ print(norm, scale, clipped)
 </div>
 
 <script src="../bundle.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -25,7 +25,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/01_variational_autoencoders.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="generative">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -37,20 +37,127 @@
       <h1>7.1 Variational Autoencoders</h1>
       <p class="muted">VAE — это уже не просто autoencoder для реконструкции, а вероятностная генеративная модель с латентной переменной. Главная идея: учить не одну точку в latent space, а распределение, из которого потом можно сэмплировать новые объекты.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>VAE — мощный генеративный фреймворк: модель учится кодировать данные в непрерывное латентное пространство и генерировать из него. ELBO + reparameterization trick — два ключевых математических вклада.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>ELBO — зачем максимизировать нижнюю границу вместо точного likelihood</li>
+      <li>Reparameterization trick — как обойти недифференцируемое sampling</li>
+      <li>KL-дивергенция между q_φ(z|x) и p(z) — почему она регуляризует encoder</li>
+      <li>β-VAE — как усиление KL улучшает disentanglement</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Автоэнкодеры (2.15a)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Backpropagation (4.1)</li>
+    </ul>
+  </div>
+</div>
+
+    
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">VAE ELBO — вычисление на одном примере</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Вход и encoder</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Encoder принимает x и выдаёт параметры нормального распределения q_φ(z|x).</p>
+        <div class="wt-formula">x = картинка кошки
+Encoder → μ_φ(x) = 0.8,  σ_φ(x) = 0.5</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Reparameterization trick: sampling z</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Сэмплируем z не из N(μ,σ²) напрямую (не дифференцируемо!), а через ε ~ N(0,1).</p>
+        <div class="wt-formula">ε ~ N(0,1),  пусть ε = 1.2
+z = μ + σ × ε = 0.8 + 0.5 × 1.2 = 1.4</div>
+        <div class="wt-result">Градиент теперь течёт через μ и σ, минуя случайный ε.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Reconstruction term</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Decoder восстанавливает x̂ из z. Reconstruction loss = −log p_θ(x|z).</p>
+        <div class="wt-formula">z = 1.4  →  Decoder  →  x̂ ≈ нечто похожее на кошку
+−log p_θ(x|z) ≈ 2.30   (например, BCE пиксель за пикселем)</div>
+        <div class="wt-result">Чем точнее декодер, тем меньше это число. Это «цена» за сжатие x в z.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">KL-дивергенция (аналитически)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>KL(q_φ(z|x) || p(z)) считается аналитически для гауссовых распределений.</p>
+        <div class="wt-formula">KL = 0.5 × (μ² + σ² − log σ² − 1)
+   = 0.5 × (0.64 + 0.25 − log(0.25) − 1)
+   = 0.5 × (0.64 + 0.25 + 1.386 − 1) = 0.5 × 1.276 = 0.638</div>
+        <div class="wt-result">KL регуляризует encoder: он не может слишком далеко отойти от prior N(0,1).</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">ELBO = −Reconstruction − KL</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>ELBO (Evidence Lower BOund) — то, что мы максимизируем.</p>
+        <div class="wt-formula">ELBO = E_q[log p_θ(x|z)] − KL
+     = −2.30 − 0.638 = −2.938</div>
+        <div class="wt-result">Минимизируем −ELBO = 2.938. Loss → 0 когда и реконструкция, и KL малы.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Интерпретация баланса</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Два члена конкурируют: reconstruction хочет точно запомнить x, KL хочет латентное пространство похожим на N(0,1).</p>
+        <p>β-VAE усиливает вес KL, получая disentangled пространство: каждое измерение z соответствует одному семантическому фактору.</p>
+        <div class="wt-result">Именно в латентном пространстве VAE диффузионные модели (DDPM, Stable Diffusion) выполняют диффузию.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="card">
       <h2>Генеративная постановка</h2>
       <div class="formula" data-render-tex data-tex-source="p_\theta(x, z) = p(z)\, p_\theta(x \mid z)">p_θ(x, z) = p(z) p_θ(x | z)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_θ(x, z)</span><span class="fa-name">совместное распределение</span><span class="fa-desc">Вероятность пары (наблюдение x, скрытая причина z) при параметрах θ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(z)</span><span class="fa-name">prior на латентное пространство</span><span class="fa-desc">Предполагаемое распределение скрытой переменной до наблюдения данных; обычно N(0, I).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_θ(x|z)</span><span class="fa-name">likelihood / decoder</span><span class="fa-desc">Вероятность породить наблюдение x из скрытой причины z; задаётся decoder-ом с параметрами θ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">наблюдение</span><span class="fa-desc">Исходный объект из данных (изображение, текст и т.д.), который VAE учится воспроизводить и генерировать.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">латентная переменная</span><span class="fa-desc">Скрытая причина; компактное представление x в латентном пространстве, из которого decoder восстанавливает объект.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры decoder-а</span><span class="fa-desc">Обучаемые веса, определяющие, как z порождает x.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> VAE моделирует данные как порождённые скрытыми причинами. Совместное распределение раскладывается на prior (откуда берётся z) и decoder (как z становится x). Обучение = подбор θ так, чтобы правдоподобие данных было высоким.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Художник (decoder) рисует картину из идеи (z). Prior задаёт, какие идеи вообще бывают. Наблюдаем готовые картины и учим, как они были созданы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> z~N(0,I) размерности 32; decoder — нейросеть, превращающая z в 28×28 пикселей. p_θ(x|z) = N(μ_θ(z), σ²I).</div>
     </div>
     <p>Мы предполагаем простой prior на латентную переменную <code>z</code> и учим decoder, который генерирует объект <code>x</code> из этой скрытой причины.</p>
     </div>
@@ -73,15 +180,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p_θ(x)</span><span class="fa-name">лог-правдоподобие данных</span><span class="fa-desc">То, что мы хотим максимизировать. Сложно вычислить напрямую из-за интеграла по всем z.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">≥</span><span class="fa-name">нижняя граница (ELBO)</span><span class="fa-desc">ELBO — нижняя оценка. Максимизируя ELBO, мы двигаем и log p_θ(x) вверх.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E_q[log p_θ(x|z)]</span><span class="fa-name">reconstruction term</span><span class="fa-desc">Ожидаемое log-правдоподобие восстановления x из z. Поощряет decoder хорошо воспроизводить объект.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">KL(q_φ(z|x) || p(z))</span><span class="fa-name">KL term / регуляризатор</span><span class="fa-desc">Штраф за отклонение encoder-а от prior. Удерживает latent space структурированным и пригодным для sampling.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">q_φ(z|x)</span><span class="fa-name">приближающий posterior (encoder)</span><span class="fa-desc">Распределение над z, выученное encoder-ом с параметрами φ. Приближает недоступный истинный posterior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(z)</span><span class="fa-name">prior</span><span class="fa-desc">Стандартное гауссово распределение N(0, I); задаёт «правильную» форму latent space.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ELBO — это то, чем мы заменяем недоступный log p_θ(x). Два его члена конкурируют: reconstruction term хочет хорошо восстановить x, KL term хочет, чтобы latent space был похож на prior. Оба нужны для работающего VAE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Архитектор хочет дешевле построить здание (reconstruction) и вписать его в генплан города (KL). Это и есть ELBO.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> E_q[log p]=−50, KL=10 → ELBO=−60. Если улучшить encoder: KL=5 → ELBO=−55; log p_θ(x) ≥ −55.</div>
     </div>
     <p>Истинный posterior <code>p(z|x)</code> обычно неудобен. Поэтому мы вводим приближающий encoder <code>q_φ(z|x)</code> и оптимизируем нижнюю оценку правдоподобия — ELBO.</p>
       <div class="grid-2">
@@ -96,15 +205,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Что именно объясняет метод интерпретации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовый уровень</span><span class="fa-desc">Средний или ожидаемый прогноз до учёта признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">φ_i</span><span class="fa-name">вклад признака</span><span class="fa-desc">Насколько признак сдвигает прогноз относительно baseline.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p_θ(x)</span><span class="fa-name">истинное лог-правдоподобие</span><span class="fa-desc">То, что мы хотим максимизировать; равно ELBO плюс зазор (KL между приближающим и истинным posterior).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L_ELBO(x)</span><span class="fa-name">Evidence Lower BOund</span><span class="fa-desc">Нижняя оценка лог-правдоподобия; то, что мы реально оптимизируем в ходе обучения VAE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">KL(q_φ(z|x) || p_θ(z|x))</span><span class="fa-name">зазор ELBO–правдоподобие</span><span class="fa-desc">Всегда ≥ 0. Чем точнее encoder приближает истинный posterior, тем меньше этот зазор и тем ближе ELBO к log p_θ(x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">q_φ(z|x)</span><span class="fa-name">приближающий posterior (encoder)</span><span class="fa-desc">Наше параметрическое приближение к недоступному истинному posterior p_θ(z|x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p_θ(z|x)</span><span class="fa-name">истинный posterior</span><span class="fa-desc">Тот, что мы не можем вычислить напрямую: требует маргинализации по всем z, что интрактабельно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула раскладывает prediction или качество на вклады признаков, но объясняет модель, а не причинность мира.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разбор чека: видно, какие позиции дали итоговую сумму, но не почему их купили.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline 0.3, prediction 0.8 и вклад признака +0.2, этот признак поднял прогноз модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это тождество раскрывает, почему ELBO — правильная цель. log p_θ(x) = ELBO + зазор. Зазор ≥ 0, значит ELBO ≤ log p_θ(x). Максимизируя ELBO, мы одновременно тянем вверх и истинное правдоподобие, и улучшаем encoder.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценивать качество продукта через нижнюю границу отзывов. Улучшая ELBO, мы точно улучшаем модель, даже если не знаем точного значения log p_θ(x).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> log p_θ(x)=−45, KL зазор=5 → ELBO=−50. После обучения encoder лучше: зазор=1 → ELBO=−46, log p=−45 остался, но мы к нему ближе.</div>
     </div>
     <p>Так как KL-дивергенция неотрицательна, ELBO автоматически становится нижней оценкой истинного лог-правдоподобия. Получается очень удобная стратегия: вместо недоступного <code>log p_θ(x)</code> мы максимизируем то, что можем вычислить и через что можем пропустить градиент.</p>
     </div>
@@ -127,18 +237,18 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">скрытая переменная</span><span class="fa-desc">Семплированная точка в латентном пространстве; подаётся в decoder для генерации x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_φ(x)</span><span class="fa-name">среднее posterior</span><span class="fa-desc">Детерминированный выход encoder-а; задаёт центр распределения для данного объекта x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ_φ(x)</span><span class="fa-name">стандартное отклонение posterior</span><span class="fa-desc">Также выход encoder-а; задаёт «разброс» семплирования. Encoder учит и μ, и σ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⊙</span><span class="fa-name">поэлементное произведение</span><span class="fa-desc">Умножает σ на каждый элемент ε покоординатно (Hadamard product).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">стандартный шум</span><span class="fa-desc">Случайная величина из N(0, I); единственный источник случайности. Не зависит от параметров φ, что позволяет пропускать градиент через μ и σ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N(0, I)</span><span class="fa-name">стандартное нормальное распределение</span><span class="fa-desc">Нулевое среднее и единичная ковариация. Фиксированный prior; из него семплируется ε.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">φ</span><span class="fa-name">параметры encoder-а</span><span class="fa-desc">Обучаемые веса, определяющие μ_φ(x) и σ_φ(x); оптимизируются через ELBO.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Reparameterization trick: вместо «сэмплируй z» пишем z = μ + σ⊙ε. Случайность переносится в ε, а μ и σ — дифференцируемые функции. Градиент может идти сквозь всё уравнение к параметрам encoder-а φ.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как бросить кубик заранее (ε), а потом умножить на коэффициент (σ) и сдвинуть (μ). Коэффициенты обучаемы, кубик — нет.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> μ=[1.0, -0.5], σ=[0.3, 0.8], ε~N(0,I). z=[1.0+0.3·0.7, -0.5+0.8·(-1.2)]=[1.21, -1.46]. Градиент дойдёт до μ и σ.</div>
     </div>
     <p>Сэмплирование внутри сети мешает обычному backprop. Reparameterization переносит случайность в отдельную переменную <code>ε</code>, а encoder начинает выдавать детерминированные параметры распределения.</p>
     </div>
@@ -276,6 +386,41 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
     <details><summary>[Intermediate] Posterior collapse</summary><p>Что такое posterior collapse? <strong>Решение:</strong> decoder игнорирует z, а q(z|x) становится близким к prior.</p></details>
     <details><summary>[Hard] ELBO derivation</summary><p>Выведи ELBO из log p(x) через добавление q(z|x). <strong>Решение:</strong> log evidence раскладывается на ELBO + KL(q(z|x)||p(z|x)).</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="gen-7-1"><h2>Checkpoint: 7.1 VAE</h2><ul><li>Что оптимизирует ELBO?</li><li>Зачем нужен KL term?</li><li>Почему reparameterization trick важен?</li><li>Чем VAE отличается от обычного autoencoder?</li><li>Rubber duck: объясни VAE как autoencoder, который учится не точкам, а распределению скрытых кодов.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое ELBO и из каких двух частей он состоит?</summary>
+      <div class="ml-quiz__a"><p>ELBO (Evidence Lower Bound) = E[log p(x|z)] - KL(q(z|x) ‖ p(z)). Первая часть — reconstruction loss (качество восстановления). Вторая — KL-дивергенция (регуляризация латентного пространства). Максимизация ELBO = хорошее восстановление + компактное, «нормальное» латентное пространство.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое reparameterization trick и зачем он нужен в VAE?</summary>
+      <div class="ml-quiz__a"><p>Сэмплирование z ~ N(μ, σ²) недифференцируемо — через него нельзя передать градиент. Reparameterization: z = μ + σ·ε, где ε ~ N(0,1). Теперь случайность вынесена в ε (не зависит от параметров), а μ и σ — детерминированные функции входа. Градиент проходит через μ, σ.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему VAE генерирует «размытые» изображения?</summary>
+      <div class="ml-quiz__a"><p>VAE оптимизирует pixel-wise MSE reconstruction loss, который усредняет все возможные реализации неопределённости. Если одна деталь может быть несколькими способами — модель предсказывает их среднее (blur). Adversarial loss (как в VAE-GAN) или диффузионные модели решают эту проблему.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как использовать обученный VAE для генерации новых примеров?</summary>
+      <div class="ml-quiz__a"><p>Сэмплируем z ~ N(0, I) из prior, затем пропускаем через декодер: x = decoder(z). Если KL-регуляризация хорошо сработала, всё латентное пространство заполнено «осмысленными» точками и интерполяция между ними генерирует правдоподобные примеры.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-1"><h2>Checkpoint: 7.1 VAE</h2><ul><li>Что оптимизирует ELBO?</li><li>Зачем нужен KL term?</li><li>Почему reparameterization trick важен?</li><li>Чем VAE отличается от обычного autoencoder?</li><li>Rubber duck: объясни VAE как autoencoder, который учится не точкам, а распределению скрытых кодов.</li></ul></section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

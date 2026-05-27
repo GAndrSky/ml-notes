@@ -29,7 +29,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/01_tokenization_bpe.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -41,6 +41,30 @@
       <h1>6.1 Tokenization и BPE</h1>
       <p class="muted">LLM не видит “слова” напрямую. Он работает с токенами, а значит до всякого pre-training нам нужно решить, как разбить текст на кусочки так, чтобы и словарь был разумным, и редкие слова не убивали модель.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Токенизация — первый шаг любого LLM. От того, как текст разбивается на токены, зависит размер словаря, эффективность обучения и обработка редких слов. BPE — де-факто стандарт.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему символьная токенизация неэффективна, а словарная плохо обобщается</li>
+      <li>BPE: алгоритм слияния пар и как строится словарь итеративно</li>
+      <li>WordPiece и SentencePiece — отличия от BPE</li>
+      <li>Размер словаря: компромисс между покрытием и embedding matrix</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Введение в NLP</li>
+      <li>Python (для понимания алгоритма)</li>
+      <li>Понятие vocabulary</li>
+    </ul>
+  </div>
+</div>
+
 
     <div class="card">
       <h2>Почему tokenization вообще отдельная тема</h2>
@@ -78,18 +102,19 @@ e+s -> es
 es+t -> est
 l+o -> lo
 lo+w -> low</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">частота пары</span><span class="fa-desc">сколько раз соседняя пара символов или токенов встречается в корпусе.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>(a, b)</span><span class=”fa-name”>соседняя пара токенов</span><span class=”fa-desc”>два символа или субслова, стоящие рядом в корпусе. BPE считает, сколько раз каждая пара встречается, и берёт самую частую.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>-></span><span class=”fa-name”>операция слияния</span><span class=”fa-desc”>пара `a b` заменяется новым токеном `ab` во всём корпусе. Например, `e s` -> `es` означает: везде, где стояло e затем s, теперь стоит единый токен es.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>freq(a, b)</span><span class=”fa-name”>частота пары</span><span class=”fa-desc”>число вхождений пары (a, b) в текущем состоянии корпуса. На каждом шаге берём пару с максимальным freq — это жадный критерий BPE.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> BPE — жадное сжатие: самая частая пара сливается первой. За несколько сотен шагов байты превращаются в слова и морфемы без всякой лингвистической разметки.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> как ZIP-сжатие: часто повторяющийся кусок получает короткий код. BPE делает то же самое, только строит «коды» как токены словаря.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> freq(e,s)=40, freq(l,o)=12. Шаг 1: сливаем `e s` → `es` во всём корпусе. Шаг 2: считаем заново — теперь (l,o) может стать лидером. Каждый шаг уменьшает среднюю длину последовательности на freq(a,b) / размер_корпуса.</div>
     </div>
-    <div class="info">BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
+    <div class=”info”>BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
     </div>
 <!-- frontier-deepening:start:6-1-bpe-compression -->
   <section class="concept-walkthrough" data-frontier-deepening="6-1-bpe-compression">
@@ -115,12 +140,14 @@ lo+w -> low</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">bias</span><span class="fa-desc">Смещение, которое двигает порог или базовый уровень ответа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(a, b)</span><span class="fa-name">самая частая пара</span><span class="fa-desc">пара соседних токенов с максимальной частотой в текущем корпусе. Шаг 2 алгоритма: argmax_freq среди всех возможных пар.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ab</span><span class="fa-name">новый токен</span><span class="fa-desc">конкатенация a и b — добавляется в словарь (шаг 3). Словарь растёт на один токен за итерацию; обычно 30 000–50 000 merge-операций.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">num_merges</span><span class="fa-name">число слияний = размер словаря</span><span class="fa-desc">гиперпараметр BPE: задаёт итоговый размер vocab сверх базовых символов. GPT-2: 50 000 merges поверх 256 байт.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> алгоритм жадный и детерминированный: при одинаковом корпусе и числе шагов всегда даёт одни и те же merge rules. Это делает tokenizer воспроизводимым и легко сериализуемым.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> сборка пазла снизу вверх — сначала соединяем самые «прилипчивые» соседние кусочки, затем снова выбираем лучшую пару из оставшихся.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Корпус из 4 слов, vocab=[l,o,w,e,r,n,s,t,i,d]. Шаг 1: freq(e,s)=2 — максимум; добавляем `es`. Шаг 2: freq(es,t)=2 — максимум; добавляем `est`. После 30 000 шагов словарь покрывает частые морфемы, целые слова и субслова.</div>
     </div>
     <div class="warn">Важный практический момент: BPE оптимизирует компромисс между длиной последовательности и размером словаря, а не семантическую “красоту” токенов.</div>
     </div>
@@ -137,16 +164,18 @@ Subword-level:
 sequence length ↑
 coverage ↑
 reuse of frequent fragments ↑</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y / ŷ</span><span class="fa-name">истина и прогноз</span><span class="fa-desc">Сравнение правильного ответа и предсказания модели.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>vocabulary size ↑↑</span><span class=”fa-name”>размер словаря (word-level)</span><span class=”fa-desc”>при токенизации по целым словам словарь взрывается: каждая новая форма слова, имя, термин — отдельный токен. Миллионы токенов → огромная embedding matrix.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>sequence length ↑</span><span class=”fa-name”>длина последовательности (subword)</span><span class=”fa-desc”>subword-токены меньше слов → одно предложение занимает больше позиций. Цена: attention платит O(L²), и контекстное окно расходуется быстрее.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>coverage ↑</span><span class=”fa-name”>покрытие словаря</span><span class=”fa-desc”>subword-токенизатор не теряет редкие слова: любое слово разбивается на известные фрагменты. Word-level часто встречает OOV (out-of-vocabulary) токены.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>reuse ↑</span><span class=”fa-name”>переиспользование фрагментов</span><span class=”fa-desc”>один subword-токен «est» появляется в newest, latest, fastest — модель видит общий паттерн. Word-level видит три разных токена.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> subword — компромисс между двумя крайностями: char-level (полное покрытие, но очень длинные последовательности) и word-level (короткие последовательности, но OOV и огромный vocab).</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> разница между азбукой (маленький vocab, длинные записи) и стенографией (большой vocab, короткие записи). BPE находит оптимальную «стенографическую систему» для конкретного корпуса.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Word-level vocab для English Wikipedia ≈ 13M уникальных слов. BPE с 50K merges: vocab=50K, покрытие >99.9%. Слово «unhappiness»: word-level — 1 токен (редкий); BPE — «un + happi + ness» — 3 частых токена с переиспользуемой статистикой.</div>
     </div>
     <p>Именно поэтому современные LLM не “читают словами”. Они работают с кусочками, которые статистически выгодно переиспользовать по всему корпусу. Это снижает проблему редкости и даёт embeddings больше повторяемых шаблонов.</p>
     </div>
@@ -175,13 +204,14 @@ w i d es t</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">частота пары</span><span class="fa-desc">сколько раз соседняя пара символов или токенов встречается в корпусе.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(e, s)</span><span class="fa-name">выбранная пара — шаг 2</span><span class="fa-desc">в корпусе {low, lower, newest, widest} пара (e,s) встречается в newest и widest — 2 раза. Это максимум среди всех пар → выбираем её.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">es</span><span class="fa-name">новый токен — шаг 3</span><span class="fa-desc">конкатенация e и s добавляется в vocab. После шага 4: `n e w es t`, `w i d es t`. Пара (e,s) исчезла из корпуса, появился токен es.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">пересобираем корпус — шаг 4</span><span class="fa-name">применение merge rule</span><span class="fa-desc">все вхождения «e s» в корпусе заменяются на «es». Следующая итерация начинает с уже изменённого корпуса — пары пересчитываются заново.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый шаг сокращает корпус на freq(a,b) токенов. После 30K шагов частые морфемы и слова становятся едиными токенами, а rare слова всё равно разбираются из выученных фрагментов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> лего-сборка: начинаем с отдельных кирпичиков (символов), самые нужные сочетания «склеиваются» в блоки побольше — шаг за шагом появляются полезные модули.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Шаг 1: частоты — (e,s):2, (s,t):2, (l,o):2, … При ничьей BPE берёт первую в алфавитном или произвольном порядке. Шаг 2: (es,t):2 → токен est. Шаг 3: (l,o):2 → lo. Шаг 4: (lo,w):2 → low. Четыре шага — словарь вырос с 10 до 14 токенов.</div>
     </div>
     <div class="info">Если продолжать этот процесс, tokenizer начнёт строить токены вроде <code>low</code>, <code>est</code> и <code>lower</code>. Это не морфологическая истина, а статистически удобные строительные блоки текста.</div>
     </div>
@@ -231,13 +261,15 @@ Unigram:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">выигрыш разбиения</span><span class="fa-desc">насколько merge уменьшает длину корпуса и делает частый фрагмент отдельным токеном.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">BPE</span><span class="fa-name">Byte Pair Encoding</span><span class="fa-desc">жадный алгоритм: merge criterion = max freq(a,b). Детерминирован, быстрый, не оптимизирует вероятность корпуса напрямую. Используют GPT, GPT-2, GPT-3, LLaMA.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">WordPiece</span><span class="fa-name">merge по улучшению P(корпуса)</span><span class="fa-desc">выбирает пару, которая максимально увеличивает log-likelihood корпуса под языковой моделью. Чуть дороже BPE, но теоретически лучше согласован с задачей. Используют BERT, DistilBERT.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">SentencePiece</span><span class="fa-name">без предположений о пробеле</span><span class="fa-desc">работает на сырых байтах, не считает пробел границей слова. Универсален для языков без пробелов (китайский, японский) и mixed-корпусов. Используют T5, mBERT, XLM-R.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Unigram</span><span class="fa-name">обрезка большого словаря</span><span class="fa-desc">начинает с огромного vocab (все подстроки) и итеративно удаляет токены, которые минимально ухудшают P(корпуса). В отличие от BPE, может давать несколько валидных сегментаций.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> все три решают одну задачу (subword-компромисс), но разными критериями. BPE — статистическая частота, WordPiece — языковая модель, Unigram — вероятностная сегментация. На практике результаты часто похожи.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> три способа разрезать торт: BPE режет там, где торт наиболее плотный (частота), WordPiece — чтобы каждый кусок максимизировал «вкус» (likelihood), Unigram начинает с тысячи кусочков и убирает лишние.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> слово «playing». BPE → [play, ing] или [playing] (зависит от корпуса). WordPiece → [play, ##ing] (## = продолжение). SentencePiece → [▁play, ing] (▁ = начало слова). Unigram может дать [play, ing] или [pla, ying] с разными вероятностями.</div>
     </div>
     <p>Для multilingual и noisy-данных это особенно важно. BPE любит локальные частые слияния. WordPiece чуть ближе к языковой модели. SentencePiece позволяет не доверять пробелам как единственной форме сегментации, что полезно для многих языков и смешанных корпусов.</p>
     </div>
@@ -270,13 +302,14 @@ Unigram:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x / X</span><span class="fa-name">вход</span><span class="fa-desc">Данные или признаки, которые формула обрабатывает.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">context window</span><span class="fa-name">размер контекстного окна в токенах</span><span class="fa-desc">фиксирован для конкретной модели (GPT-4: 128K токенов). Чем компактнее tokenizer, тем больше реального текста помещается в одно окно — одна страница может занять 300 или 500 токенов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">скорость инференса</span><span class="fa-name">зависимость от длины последовательности</span><span class="fa-desc">attention стоит O(L²) — если tokenizer «раздул» текст на 40% больше токенов, инференс замедлится на ~(1.4)²≈2× и расход памяти (KV-cache) вырастет пропорционально.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">качество на редких словах</span><span class="fa-name">покрытие и OOV</span><span class="fa-desc">tokenizer, не знающий слово «unhappiness», разбивает его на подстроки. Хороший subword tokenizer даёт осмысленные фрагменты [un, happi, ness]; плохой — [u, n, h, a, p, …] — каждый токен теряет контекст.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> tokenizer — первый «узкое горлышко» LLM. До embeddings и attention он уже решил, сколько позиций займёт текст, насколько хорошо покрыты редкие формы и как быстро KV-cache заполнится.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> выбор системы письма для книги: иероглифы (большой «vocab», компактно), алфавит (маленький vocab, длиннее). BPE — что-то среднее, оптимизированное под конкретный корпус.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 символов английского текста → ≈250 токенов BPE (GPT-4). То же у слабого tokenizer → 400 токенов. Разница: 40% больше compute на attention, 40% быстрее заполняется context window — при 128K окне это потеря ~51K «полезных» токенов.</div>
     </div>
     <p>Если один и тот же текст распадается на 25 токенов у одного tokenizer и на 40 у другого, это влияет не только на цену, но и на то, сколько полезного контекста модель успеет увидеть.</p>
     </div>
@@ -304,12 +337,14 @@ Subword regime  -> рабочий компромисс</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w / W</span><span class="fa-name">веса</span><span class="fa-desc">элементы словаря tokenizer-а: символы, subwords или готовые merge-токены.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Меньше словарь → длиннее последовательности</span><span class="fa-name">char-level / byte-level крайность</span><span class="fa-desc">vocab из 256 байт покрывает всё, но одно слово = 4–8 токенов. Текст «unhappiness» → 12 токенов-байт; attention платит O(12²) вместо O(3²) для subword.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Больше словарь → короче последовательности</span><span class="fa-name">word-level крайность</span><span class="fa-desc">vocab из 1M слов: каждое слово — 1 токен, но embedding matrix = 1M × d_model весов. Rare слова встречаются слишком редко для хорошего обучения; OOV неизбежны.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Subword regime</span><span class="fa-name">рабочий компромисс (30K–100K)</span><span class="fa-desc">GPT-2: 50 257 токенов, GPT-4: ~100K, LLaMA: 32K. Среднее слово ≈ 1.3–1.5 токена. Редкие формы разбиваются на 2–5 токенов. Embedding matrix разумного размера.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE выбирает частые соседние фрагменты и постепенно превращает их в новые токены словаря.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжатие текста: часто повторяющиеся куски заменяются короткими кодами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если пара `l o` встречается 40 раз, а `o w` 12 раз, BPE сначала сольёт `l o`.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> vocab size — единственный гиперпараметр, который балансирует compression ratio и coverage. Оптимум зависит от языка и домена: для кода нужно больше, для одного языка — меньше.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> выбор granularity карты — мелкий масштаб (каждый дом отдельно) даёт точность, но карта огромна; крупный масштаб (только города) компактен, но теряет детали. BPE автоматически выбирает масштаб по частоте.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> English sentence «The cat sat on the mat» (27 chars). Char-level: 27 токенов (с пробелами). Word-level: 6 токенов. BPE (50K vocab): 6 токенов (все частые). Код `for i in range(len(x)):`: char-level 31 токен; BPE с code-оптимизацией: ~10 токенов.</div>
     </div>
     </div>
       <div id="code" class="tab-panel">
@@ -440,6 +475,40 @@ for step in range(num_merges):
     <details><summary>[Intermediate] Реализуй toy BPE</summary><p>Напиши цикл: посчитать пары, выбрать max, заменить в корпусе, добавить token. <strong>Решение:</strong> повторять до заданного числа merges.</p></details>
     <details><summary>[Hard] Multilingual tokenization</summary><p>Почему tokenizer может быть несправедлив к некоторым языкам? <strong>Решение:</strong> языки с меньшей долей в corpus получают более длинные token sequences и большую стоимость контекста.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-1"><h2>Checkpoint: 6.1 Tokenization</h2><ul><li>Как BPE выбирает следующий merge?</li><li>Почему токены не равны словам?</li><li>Как vocab size влияет на context cost?</li><li>Чем BPE, WordPiece и SentencePiece отличаются по интуиции?</li><li>Rubber duck: объясни tokenizer как алгоритм сжатия текста в переиспользуемые куски.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое BPE (Byte Pair Encoding) и как он строит словарь токенов?</summary>
+      <div class="ml-quiz__a"><p>BPE начинает с символьного словаря и итеративно объединяет наиболее часто встречающуюся пару символов/токенов в новый токен. Процесс повторяется до достижения нужного размера словаря (обычно 32k–100k токенов). Частые слова становятся одним токеном; редкие — разбиваются на части.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему один и тот же текст может токенизироваться по-разному в разных LLM?</summary>
+      <div class="ml-quiz__a"><p>Каждая модель обучает собственный токенизатор на своём корпусе. Разные размеры словаря, разные алгоритмы (BPE, WordPiece, Unigram LM) и разные тренировочные данные дают разные словари. «Токены не переносятся» — нельзя использовать токенизатор GPT-4 для LLaMA.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как число токенов влияет на стоимость запроса к LLM API?</summary>
+      <div class="ml-quiz__a"><p>Большинство API тарифицируют по числу tokens (input + output). Длинный системный промпт, verbose данные или неэффективная токенизация (много редких слов = много токенов) прямо увеличивают стоимость. Числа и код часто занимают больше токенов, чем кажется.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему символьные языки (китайский, японский) требуют больше токенов на то же количество информации?</summary>
+      <div class="ml-quiz__a"><p>BPE обучался в основном на английском тексте. Для иероглифов частые пары встречаются реже — каждый символ чаще остаётся отдельным токеном. Один иероглиф ≈ 1-3 токена, а один латинский символ < 1 токена. Это увеличивает длину контекста для неанглийских языков.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-1"><h2>Checkpoint: 6.1 Tokenization</h2><ul><li>Как BPE выбирает следующий merge?</li><li>Почему токены не равны словам?</li><li>Как vocab size влияет на context cost?</li><li>Чем BPE, WordPiece и SentencePiece отличаются по интуиции?</li><li>Rubber duck: объясни tokenizer как алгоритм сжатия текста в переиспользуемые куски.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -92,7 +92,7 @@ td.mono{font-family:monospace;}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/03_neural_basics/02_activation_functions.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="neural-basics">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -104,6 +104,30 @@ td.mono{font-family:monospace;}
       <h1>3.2 Функции активации</h1>
       <p class="muted">ReLU, GELU, SiLU, Sigmoid, Tanh, Softmax — формулы, производные, почему именно эти</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Функции активации — это именно то, что отделяет нейронную сеть от матричного умножения. Без них стек из 100 слоёв коллапсирует в одну линейную функцию. ReLU, GELU, Sigmoid — каждая делает своё.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему без нелинейности глубина сети бессмысленна</li>
+      <li>Как ReLU устроена и почему мёртвые нейроны — проблема</li>
+      <li>Зачем GELU вытеснил ReLU в трансформерах</li>
+      <li>Как выбрать активацию под конкретную задачу</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Перцептрон и нейрон (3.1)</li>
+      <li>Производная функции</li>
+      <li>Правило цепочки</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- SECTION 1: Зачем нужны активации -->
 <div class="card">
@@ -113,14 +137,17 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A₁, A₂</span><span class="fa-name">матрицы весов слоёв</span><span class="fa-desc">Каждая матрица — это один линейный слой без активации. A₁ — первый слой, A₂ — второй.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор</span><span class="fa-desc">Данные, подаваемые на вход сети. Проходят через оба слоя последовательно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b₁, b₂</span><span class="fa-name">bias-векторы слоёв</span><span class="fa-desc">Смещения первого и второго слоя соответственно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A₂A₁</span><span class="fa-name">произведение матриц</span><span class="fa-desc">Две матрицы перемножились в одну. Это и есть «коллапс»: сколько бы линейных слоёв мы ни поставили, результат — одна матрица.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A₂b₁+b₂</span><span class="fa-name">новый объединённый bias</span><span class="fa-desc">Оба bias также сворачиваются в один вектор. Два слоя с bias эквивалентны одному слою с другим bias.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Ax + b</span><span class="fa-name">эквивалентный один слой</span><span class="fa-desc">Вся двухслойная сеть без активаций сводится к одному матричному умножению. Глубина без нелинейности бесполезна.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Без функции активации произведение любого числа линейных слоёв — это всё равно одна линейная функция. Добавление слоёв не увеличивает выразительность модели.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как два увеличительных стекла, поставленных одно за другим без фокусировки — можно заменить одним стеклом с другим увеличением. Нелинейность — это «фокусировка» между стёклами, которая меняет суть.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> A₁=[[2,0],[0,3]], A₂=[[1,1]]. A₂A₁=[[2,3]] — одна строка. Добавь ещё 10 слоёв без активации — всё равно одна строка (матрица другого размера, но всего один линейный слой).</div>
     </div>
     <p>Сколько бы слоёв мы ни добавили — получаем <strong>одну линейную операцию</strong>. Нелинейная активация f разрывает этот коллапс.</p>
   <div class="intuition">
@@ -201,28 +228,31 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂x</span><span class="fa-name">градиент по входу слоя</span><span class="fa-desc">Насколько loss меняется при изменении входа x данного слоя. Именно это число передаётся в предыдущий слой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f′(z)</span><span class="fa-name">производная функции активации</span><span class="fa-desc">Показывает, насколько чувствителен выход активации к изменению её входа z. Это «вентиль»: большая производная пропускает градиент, малая — глушит.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">pre-activation</span><span class="fa-desc">Входное значение функции активации в данном нейроне (= w⊤x + b до применения f).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">вышестоящий градиент</span><span class="fa-name">upstream gradient</span><span class="fa-desc">Градиент, пришедший из следующего слоя (ближе к loss). Умножается на f′(z) по правилу цепочки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">·</span><span class="fa-name">поэлементное умножение</span><span class="fa-desc">Каждый нейрон умножает свой upstream gradient на свою локальную производную f′(z). Операция поэлементная, не матричная.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это chain rule в действии. Производная активации — «множитель» при передаче сигнала назад. Если f′(z) мало (например, 0.25 у насыщенного sigmoid), градиент уменьшается на каждом слое.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Телефонная связь через несколько ретрансляторов: каждый ретранслятор (слой) усиливает или ослабляет сигнал в f′(z) раз. Если каждый ослабляет в 4 раза, через 10 ретрансляторов сигнал исчезнет.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> upstream gradient = 1.0, f = sigmoid, z = 3 → σ′(3) = σ(3)·(1−σ(3)) ≈ 0.045 → ∂L/∂x = 0.045·1.0 = 0.045. Уже на одном слое потеряли 95% сигнала.</div>
     </div>
     <p style="margin-top:8px;">У sigmoid: <span class="hl-red">max(σ′) = 0.25</span>. За 10 слоёв:</p>
       <div class="formula" style="font-size:0.88em;">0.25¹⁰ ≈ <span class="hl-red">9.5 × 10⁻⁷</span> → градиент мертв</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0.25</span><span class="fa-name">максимальная производная sigmoid</span><span class="fa-desc">σ′(z) достигает пика 0.25 ровно при z=0. При любом другом z производная ещё меньше. Это верхняя граница «пропускания» градиента через один sigmoid-слой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">¹⁰</span><span class="fa-name">10 слоёв</span><span class="fa-desc">Количество слоёв в сети. При backprop градиент умножается на производную активации на каждом слое — то есть 0.25 встречается 10 раз подряд.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0.25¹⁰</span><span class="fa-name">накопленный множитель</span><span class="fa-desc">Произведение производных по всей цепочке слоёв. Это и есть vanishing gradient: градиент уменьшается экспоненциально с глубиной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">9.5 × 10⁻⁷</span><span class="fa-name">итоговая величина градиента</span><span class="fa-desc">Меньше одной миллионной от исходного. Первый слой сети получает сигнал ошибки, который в миллион раз слабее исходного — обучение практически останавливается.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый sigmoid-слой «поглощает» минимум 75% градиентного сигнала. Десять слоёв подряд — и до первого слоя доходит меньше одной миллионной исходного. Это математическая причина, почему глубокие сети с sigmoid не обучались до изобретения ReLU.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как звук через 10 закрытых дверей: каждая дверь пропускает 25% звука. После 10 дверей: 0.25¹⁰ ≈ 0.000001 — тишина. ReLU — это открытая дверь (пропускает 100% в положительной зоне).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1 слой: 0.25. 2 слоя: 0.0625. 5 слоёв: 0.00098. 10 слоёв: 9.5×10⁻⁷. 20 слоёв: ≈9×10⁻¹³ — фактически ноль на любом железе.</div>
     </div>
     <div class="warn" style="margin-top:8px;">
         ⚠️ Это главная причина, почему до 2010-х глубокие сети не обучались. Решение пришло с ReLU.
@@ -272,14 +302,16 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂w</span><span class="fa-name">градиент по весу нейрона</span><span class="fa-desc">Число, на которое обновляется вес w при шаге обучения. Если 0 — вес не меняется никогда.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">производная ReLU при z &lt; 0</span><span class="fa-desc">ReLU′(z) = 0 для всех z ≤ 0. Если нейрон всегда в отрицательной зоне, его производная всегда ноль — gradients полностью блокируются.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">upstream gradient</span><span class="fa-desc">Градиент, пришедший из следующего слоя. Может быть любым числом — но умноженный на 0, он всё равно даёт 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∀ примеров</span><span class="fa-name">«для всех обучающих примеров»</span><span class="fa-desc">Ключевое условие смерти: нейрон умирает, когда z &lt; 0 на ВСЕХ входах без исключения. Хотя бы один положительный пример «оживил» бы его.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">нейрон мёртв навсегда</span><span class="fa-name">необратимое состояние</span><span class="fa-desc">Если ∂L/∂w = 0 на каждом шаге, w не обновляется → z остаётся отрицательным → производная снова 0. Замкнутый круг без выхода.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ReLU-нейрон с z &lt; 0 — как выключенный выключатель. Он не пропускает ни forward-сигнал, ни gradient. Без gradient обновления нет → выключатель остаётся выключенным навсегда.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Работник, которого никогда не критикуют (δ=0) и никогда не хвалят (тоже 0). Без обратной связи он никогда не изменит поведение — и остаётся «мёртвым» для системы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[-2,-3], b=-5. Для любого входа x∈[0,1]: z = w⊤x + b ≤ 0+0−5 = −5 &lt; 0. ReLU′=0 → ∂L/∂w=0 → w не меняется → z всегда отрицательный. Нейрон мёртв.</div>
     </div>
     <p style="margin-top:8px;font-size:0.9em;"><span class="hl-amber">Решения:</span> Leaky ReLU, ELU, инициализация He, маленький lr, batch norm.</p>
     </div>
@@ -376,16 +408,16 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">softmax(z)ᵢ</span><span class="fa-name">вероятность i-го класса</span><span class="fa-desc">Итоговая вероятность, которую модель приписывает классу i. Число от 0 до 1, все K таких чисел в сумме дают ровно 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">zᵢ</span><span class="fa-name">logit i-го класса</span><span class="fa-desc">Сырой score для класса i — выход последнего линейного слоя. Может быть любым вещественным числом, не обязательно в [0,1].</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">eᶻⁱ</span><span class="fa-name">экспонента logit-а</span><span class="fa-desc">Превращает любое вещественное число в строго положительное. Большие logits → ещё большие экспоненты → выше вероятность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σⱼ eᶻʲ</span><span class="fa-name">нормировочная сумма</span><span class="fa-desc">Сумма экспонент по всем K классам. Делёние на неё гарантирует, что все вероятности суммируются в 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">индекс по всем классам</span><span class="fa-desc">Пробегает от 1 до K (числа классов). Сумма Σⱼ — это сумма по всем классам, включая i.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Softmax — это «конкурентное нормирование». Каждый класс «борется» за долю вероятности. Класс с бо́льшим logit получает непропорционально бо́льшую вероятность (из-за экспоненты), но сумма всегда = 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как распределение зарплат по результатам: eᶻⁱ — «очки» кандидата i, Σⱼ eᶻʲ — сумма очков всех кандидатов. Доля i = его очки / общая сумма. Лидер берёт бо́льшую долю непропорционально.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> z = [2, 1, 0] (3 класса). e² ≈ 7.39, e¹ ≈ 2.72, e⁰ = 1.0. Сумма ≈ 11.11. Вероятности: [7.39/11.11, 2.72/11.11, 1.0/11.11] ≈ [0.665, 0.245, 0.090]. Сумма = 1.0 ✓</div>
     </div>
     <p><strong>Числовая стабильность</strong>: при больших z ваш e^z переполняется. Трюк:</p>
       <div class="formula" style="font-size:0.88em;">softmax(z) = softmax(z - max(z))
@@ -393,14 +425,15 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z - max(z)</span><span class="fa-name">сдвинутый вектор logits</span><span class="fa-desc">Из каждого logit вычитается максимальный logit. После сдвига максимальный элемент становится 0, все остальные — отрицательными или нулём.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">max(z)</span><span class="fa-name">максимальный logit</span><span class="fa-desc">Наибольшее значение в векторе z. Вычитается из всех элементов — это численный трюк, не изменяющий математический результат.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">softmax(z) = softmax(z − c)</span><span class="fa-name">инвариантность к сдвигу</span><span class="fa-desc">Можно доказать: вычитание одного числа c из всех logits не меняет вероятности. Числитель и знаменатель делятся на eᶜ и сокращаются: eᶻⁱ⁻ᶜ / Σⱼ eᶻʲ⁻ᶜ = eᶻⁱ·e⁻ᶜ / (Σⱼ eᶻʲ·e⁻ᶜ) = eᶻⁱ / Σⱼ eᶻʲ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e^большое число</span><span class="fa-name">причина нестабильности</span><span class="fa-desc">float32 переполняется при e^89 ≈ 3.4×10³⁸. Если logit = 1000, e^1000 = inf — числовая ошибка. После сдвига на max: e^0 = 1 — безопасно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Математически softmax инвариантен к сдвигу всех logits на константу. Поэтому вычитаем max(z), чтобы самый большой logit стал 0, а e^0=1 — максимально безопасное число.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пересчитать проценты в рейтинге относительно лидера: вместо абсолютных очков [1000, 999, 998] считай разрывы [0, -1, -2]. Соотношение не меняется, но числа становятся управляемыми.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> z=[1000, 1001, 999]. Без трюка: e^1001 = overflow. С трюком: z−max=[−1, 0, −2]. e⁻¹≈0.368, e⁰=1, e⁻²≈0.135. Сумма≈1.503. p≈[0.245, 0.665, 0.090]. Идентично оригиналу, но без overflow.</div>
     </div>
     <h3 style="margin-top:12px;">Якобиан softmax</h3>
       <div class="formula" style="font-size:0.88em;">∂pᵢ/∂zⱼ = pᵢ(δᵢⱼ - pⱼ)
@@ -408,14 +441,16 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂pᵢ/∂zⱼ</span><span class="fa-name">элемент якобиана</span><span class="fa-desc">Насколько вероятность класса i меняется при изменении logit класса j. Softmax — векторная функция, поэтому её производная — матрица (K×K), а не вектор.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">pᵢ, pⱼ</span><span class="fa-name">вероятности классов i и j</span><span class="fa-desc">Выходы softmax: pᵢ = eᶻⁱ/Σeᶻ. Они уже вычислены в forward pass и используются повторно в производной — это эффективно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δᵢⱼ</span><span class="fa-name">дельта Кронекера</span><span class="fa-desc">Равна 1 если i=j, и 0 если i≠j. Разделяет два случая: производная pᵢ по своему собственному logit zᵢ (диагональ) и по чужому logit zⱼ (внедиагональ).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">i = j (диагональ)</span><span class="fa-name">self-derivative</span><span class="fa-desc">∂pᵢ/∂zᵢ = pᵢ(1 − pᵢ). Похоже на производную sigmoid: вероятность растёт при увеличении своего logit, но с насыщением.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">i ≠ j (внедиагональ)</span><span class="fa-name">cross-derivative</span><span class="fa-desc">∂pᵢ/∂zⱼ = −pᵢ·pⱼ. Увеличение logit класса j уменьшает вероятность класса i — они конкурируют за нормировочную сумму.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">diag(p) − p·pᵀ</span><span class="fa-name">матричная запись якобиана</span><span class="fa-desc">diag(p) — диагональная матрица из вероятностей. p·pᵀ — внешнее произведение вектора p на себя (матрица K×K). Разность даёт полный якобиан.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В отличие от ReLU или sigmoid, softmax — это векторная функция: каждый выход зависит от всех входов. Поэтому её производная — матрица, а не вектор. Это усложняет backprop, но на практике softmax+CrossEntropy упрощается до (p̂ − y)/B.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=[0.7, 0.2, 0.1]. Диагональ: [0.7·0.3, 0.2·0.8, 0.1·0.9]=[0.21, 0.16, 0.09]. Элемент [0,1]: −p₀·p₁=−0.7·0.2=−0.14 (увеличение z₁ уменьшает p₀).</div>
     </div>
     <p style="font-size:0.88em;">Матрица (K×K), не вектор — мы уже считали это в блоке 1.2 (Якобиан).</p>
       <div class="intuition" style="font-size:0.88em;">
@@ -573,6 +608,123 @@ const FN_ORDER = ['relu','leaky','sigmoid','tanh','gelu','silu'];
 const ALL_COLORS = FN_ORDER.map(k=>FNS[k].color);
 let activeFn = 'relu';
 
+// ===================== PER-FUNCTION ANATOMY =====================
+const FN_ANATOMY = {
+  relu: {
+    formula: [
+      {s:'z', n:'pre-activation', d:'Входной сигнал нейрона до активации (= w⊤x + b). Любое вещественное число.'},
+      {s:'max(0, z)', n:'оператор обрезки', d:'Берём максимум из нуля и z: если z>0 — пропускаем как есть; если z≤0 — возвращаем 0. Нелинейность возникает именно на этой границе.'},
+      {s:'0', n:'порог активации', d:'Жёсткая граница: всё отрицательное обнуляется. Именно это создаёт «мёртвую зону» и Dying ReLU, но также даёт разреженность активаций.'},
+    ],
+    fi:'ReLU пропускает положительный сигнал без изменений и полностью блокирует отрицательный. Производная = 1 в активной зоне → градиент не затухает (в отличие от sigmoid).',
+    fe:'z=2.5 → f=2.5. z=−1.3 → f=0. z=0 → f=0. Градиент: при z=2.5 → f′=1; при z=−1.3 → f′=0 (нейрон «мёртв» для этого примера).',
+    deriv: [
+      {s:'f′(z)', n:'производная ReLU', d:'Равна 1 при z>0 (пропускает градиент без изменений) и 0 при z≤0 (полностью блокирует).'},
+      {s:'𝟙[z>0]', n:'индикаторная функция', d:'Равна 1 если z>0, иначе 0. Это и есть «маска» ReLU при backprop: gradient умножается на эту маску поэлементно.'},
+      {s:'субградиент при z=0', n:'значение в точке разрыва', d:'В точке z=0 производная технически не определена. На практике autograd берёт 0 (PyTorch) — это не влияет на обучение, т.к. вероятность попасть точно в 0 мала.'},
+    ],
+    di:'Производная ReLU — двоичная маска: 1 там, где нейрон был активен в forward pass, 0 там, где нет. Backprop «запоминает» маску из forward и применяет её при backward.',
+    de:'Batch из трёх z: [1.5, −0.3, 0.8]. Маска: [1, 0, 1]. Upstream gradient: [0.5, 0.7, 0.2]. После маски: [0.5·1, 0.7·0, 0.2·1] = [0.5, 0.0, 0.2].',
+  },
+  leaky: {
+    formula: [
+      {s:'z', n:'pre-activation', d:'Входной сигнал нейрона. Может быть любым вещественным числом.'},
+      {s:'α', n:'коэффициент утечки (leak)', d:'Малое положительное число, обычно 0.01. Задаёт, какую долю отрицательного сигнала «пропустить» дальше. Гиперпараметр, задаётся вручную.'},
+      {s:'αz (при z≤0)', n:'сигнал в отрицательной зоне', d:'Вместо полного обнуления отрицательный сигнал ослабляется в 1/α раз. Это не даёт нейрону «умереть»: gradient всегда ненулевой.'},
+    ],
+    fi:'Leaky ReLU исправляет Dying ReLU проблему: в отрицательной зоне вместо нуля проходит маленький сигнал αz. Нейрон всегда получает хоть какой-то gradient и может «оживиться».',
+    fe:'α=0.01. z=3.0 → f=3.0. z=−2.0 → f=0.01·(−2.0)=−0.02. Производная при z<0: f′=α=0.01 (крошечный, но ненулевой gradient).',
+    deriv: [
+      {s:'f′(z) = 1 (z>0)', n:'производная в активной зоне', d:'Как у ReLU — пропускает gradient без изменений.'},
+      {s:'f′(z) = α (z≤0)', n:'производная в «утечной» зоне', d:'Малое α=0.01 означает, что gradient уменьшается в 100 раз, но не обнуляется. Нейрон продолжает обновляться.'},
+    ],
+    di:'Единственное отличие от ReLU — ненулевая производная при z≤0. Это достаточно, чтобы предотвратить необратимую смерть нейрона.',
+    de:'Upstream gradient = 0.8. z=−1.5 → f′=α=0.01 → передаём 0.8·0.01=0.008 (слабо, но ненулевой signal для обновления весов).',
+  },
+  sigmoid: {
+    formula: [
+      {s:'z', n:'logit', d:'Сырой линейный score нейрона (любое вещественное число). Входит в sigmoid для сжатия в (0,1).'},
+      {s:'e', n:'основание натурального логарифма', d:'Константа ≈ 2.71828. e^z растёт экспоненциально при z→+∞ и стремится к 0 при z→−∞.'},
+      {s:'e^(−z)', n:'экспонента с отрицательным аргументом', d:'При z→+∞: e^(−z)→0, знаменатель→1, sigmoid→1. При z→−∞: e^(−z)→∞, sigmoid→0. Именно это создаёт S-образную форму.'},
+      {s:'1/(1+e^(−z))', n:'sigmoid функция σ(z)', d:'Сжимает любое вещественное число в открытый интервал (0,1). Никогда не достигает точно 0 или 1.'},
+    ],
+    fi:'Sigmoid превращает любой score в «вероятность». При z=0 даёт 0.5 (неопределённость), при больших |z| насыщается около 0 или 1. Насыщение = малая производная = vanishing gradient.',
+    fe:'z=0 → σ=0.5. z=2 → σ≈0.88. z=−2 → σ≈0.12. z=5 → σ≈0.993 (насыщение). z=−5 → σ≈0.007.',
+    deriv: [
+      {s:'σ(z)', n:'значение sigmoid в точке z', d:'Производная выражается через саму функцию — удобно: уже вычислено в forward pass, повторно использовать при backward.'},
+      {s:'1−σ(z)', n:'дополнение до 1', d:'Если σ(z)=p, то 1−σ(z)=1−p. Похоже на дисперсию бернуллиевой случайной величины: p(1−p).'},
+      {s:'σ(z)·(1−σ(z))', n:'производная sigmoid', d:'Максимум = 0.25 при z=0. При насыщении (|z|>3) произведение → 0. Именно это убивает gradient в глубоких сетях.'},
+    ],
+    di:'Производная sigmoid = p·(1−p) ≤ 0.25. Каждый sigmoid-слой уменьшает gradient минимум в 4 раза. После 10 слоёв: 0.25¹⁰ ≈ 10⁻⁶.',
+    de:'z=0: σ′=0.5·0.5=0.25 (максимум). z=2: σ≈0.88, σ′=0.88·0.12≈0.106. z=4: σ≈0.982, σ′=0.982·0.018≈0.018 — уже почти ноль.',
+  },
+  tanh: {
+    formula: [
+      {s:'e^z', n:'экспонента', d:'Стремится к +∞ при z→+∞ и к 0 при z→−∞.'},
+      {s:'e^(−z)', n:'экспонента с отрицательным аргументом', d:'Обратная к e^z по поведению: мала при z>0 и велика при z<0.'},
+      {s:'(e^z − e^(−z))', n:'числитель (разность экспонент)', d:'При z>0 положителен (e^z доминирует). При z<0 отрицателен. При z=0: e⁰−e⁰=0 — функция проходит через 0.'},
+      {s:'(e^z + e^(−z))', n:'знаменатель (сумма экспонент)', d:'Всегда положителен. Нормирует числитель, удерживая результат в (−1, 1).'},
+      {s:'= 2σ(2z) − 1', n:'связь с sigmoid', d:'Tanh — это растянутый и сдвинутый sigmoid. Преимущество: симметричен вокруг нуля, что делает градиентные шаги более сбалансированными.'},
+    ],
+    fi:'Tanh — zero-centered версия sigmoid: выход в (−1,1) со средним 0. Это лучше для RNN: нет систематического сдвига активаций в одну сторону. Но насыщение (и vanishing gradient) остаётся.',
+    fe:'z=0 → tanh=0. z=1 → tanh≈0.762. z=−1 → tanh≈−0.762. z=3 → tanh≈0.995 (насыщение). z=−3 → tanh≈−0.995.',
+    deriv: [
+      {s:'1 − tanh²(z)', n:'производная tanh', d:'Выражается через саму функцию (как у sigmoid). Максимум = 1 при z=0 (вдвое лучше sigmoid!). При насыщении → 0.'},
+      {s:'tanh²(z)', n:'квадрат значения', d:'При z=0: tanh²=0, производная=1. При насыщении: tanh²→1, производная→0. Насыщение убивает gradient.'},
+    ],
+    di:'Производная tanh вдвое больше sigmoid в нуле (1 vs 0.25), что немного замедляет vanishing gradient. Но всё равно насыщается и умирает в глубоких сетях.',
+    de:'z=0: tanh′=1−0²=1 (максимум). z=1: tanh≈0.762, tanh′=1−0.762²≈0.419. z=2: tanh≈0.964, tanh′=1−0.964²≈0.071.',
+  },
+  gelu: {
+    formula: [
+      {s:'z', n:'pre-activation', d:'Входной сигнал нейрона.'},
+      {s:'Φ(z)', n:'CDF стандартного нормального распределения', d:'P(X≤z) для X~N(0,1). При z=0: Φ=0.5. При z→+∞: Φ→1. При z→−∞: Φ→0. Это «вероятность, что случайный шум меньше z».'},
+      {s:'z·Φ(z)', n:'weighted self-gate', d:'z взвешивается вероятностью Φ(z). При больших положительных z: Φ≈1, f≈z (как ReLU). При больших отрицательных: Φ≈0, f≈0. Но переход плавный.'},
+      {s:'√(2/π)', n:'нормировочная константа', d:'Часть аппроксимации tanh-ом. Возникает из свойств нормального распределения.'},
+      {s:'0.044715z³', n:'кубическая коррекция', d:'Член третьего порядка улучшает точность tanh-аппроксимации Φ(z). Подобран эмпирически для минимизации ошибки.'},
+    ],
+    fi:'GELU — «мягкий» стохастический аналог ReLU. Нейрон «решает», пропускать ли сигнал, основываясь на вероятности: большие z почти всегда пропускаются, малые — с вероятностью, убывающей плавно.',
+    fe:'z=0 → f≈0 (Φ(0)=0.5, но 0·0.5=0). z=1 → f≈0.841. z=2 → f≈1.954. z=−1 → f≈−0.159 (небольшой отрицательный bump). z=−2 → f≈−0.046.',
+    deriv: [
+      {s:'Φ(z)', n:'CDF нормального распределения', d:'Первый член производной. Растёт от 0 до 1.'},
+      {s:'φ(z)', n:'PDF нормального распределения', d:'Плотность вероятности: φ(z) = (1/√(2π))·e^(−z²/2). Колокол с пиком в нуле. Второй член производной.'},
+      {s:'z·φ(z)', n:'z × плотность', d:'Второй член по product rule: (z)′·Φ(z) + z·(Φ(z))′ = Φ(z) + z·φ(z).'},
+    ],
+    di:'Производная GELU нигде не равна точно нулю — нет мёртвой зоны. Gradient всегда течёт, хотя и затухает при больших отрицательных z. Это причина успеха GELU в Transformer-ах.',
+    de:'z=0: Φ(0)=0.5, φ(0)≈0.399, f′=0.5+0·0.399=0.5. z=1: Φ≈0.841, φ≈0.242, f′≈0.841+0.242≈1.083. z=−2: Φ≈0.023, φ≈0.054, f′≈0.023+(−2)·0.054≈−0.085 (небольшой, ненулевой).',
+  },
+  silu: {
+    formula: [
+      {s:'z', n:'pre-activation', d:'Входной сигнал нейрона.'},
+      {s:'σ(z)', n:'sigmoid от z', d:'Значение в (0,1). При z→+∞: σ→1, f≈z (как ReLU). При z→−∞: σ→0, f→0. Sigmoid играет роль «ворот» (gate).'},
+      {s:'z·σ(z)', n:'self-gated signal', d:'z умножается на свой собственный sigmoid — это называют self-gating. Нет отдельного параметра гейтинга — сам сигнал решает, насколько пропустить себя.'},
+      {s:'= z/(1+e^(−z))', n:'развёрнутая запись', d:'Эквивалентная форма: числитель z делится на знаменатель 1+e^(−z). Удобна для понимания поведения на крайних значениях.'},
+    ],
+    fi:'SiLU (Swish) — гладкая самогейтированная активация. Ключевое: нет резкой границы при z=0, небольшой «нырок» в отрицательную зону при z≈−1.28. Нигде не равна точно нулю.',
+    fe:'z=1 → σ≈0.731, f≈0.731. z=2 → σ≈0.880, f≈1.761. z=−1 → σ≈0.269, f≈−0.269. z=−1.28 → минимум≈−0.278. z=0 → f=0.',
+    deriv: [
+      {s:'σ(z)', n:'sigmoid от z', d:'Первый член производной по product rule.'},
+      {s:'z·σ(z)·(1−σ(z))', n:'z умноженный на производную sigmoid', d:'Второй член: (z)′·σ(z) = σ(z), плюс z·σ′(z) = z·σ(z)·(1−σ(z)). Нелинейность возникает из их суммы.'},
+      {s:'= f(z) + σ(z)·(1−f(z))', n:'альтернативная форма', d:'Производная выражается через саму функцию f(z) и σ(z) — эффективно при вычислении, если f и σ уже посчитаны в forward pass.'},
+    ],
+    di:'Производная SiLU нигде не равна нулю и не имеет разрывов — это делает обучение стабильнее. При z>1.5 производная > 1 (небольшое «усиление»), что помогает в глубоких сетях.',
+    de:'z=0: σ=0.5, f=0, f′=0.5+0·0.5·0.5=0.5. z=2: σ≈0.880, f≈1.761, f′=0.880+2·0.880·0.120≈1.091. z=−1: σ≈0.269, f≈−0.269, f′=0.269+(−1)·0.269·0.731≈0.072.',
+  },
+};
+
+function fnAnatomyRows(rows) {
+  return rows.map(r=>`<div class="formula-anatomy__row"><span class="fa-sym">${r.s}</span><span class="fa-name">${r.n}</span><span class="fa-desc">${r.d}</span></div>`).join('');
+}
+function fnAnatomyBlock(rows, intuition, example) {
+  return `<div class="formula-anatomy" data-static-formula-anatomy="1">
+    <div class="formula-anatomy__header">Что означают символы</div>
+    <div class="formula-anatomy__grid">${fnAnatomyRows(rows)}</div>
+    <hr class="formula-anatomy__divider">
+    <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ${intuition}</div>
+    <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ${example}</div>
+  </div>`;
+}
+
 // ===================== FN LIST =====================
 function buildFnList() {
   const el = document.getElementById('fnList');
@@ -581,20 +733,7 @@ function buildFnList() {
     return `<div class="fn-card ${k===activeFn?'active':''}" onclick="selectFn('${k}')">
       <div class="fn-name" style="color:${f.color}">${f.name}</div>
       <div class="fn-formula">${f.formula.split('\n')[0]}</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
-    </div>
+      <div class="fn-where">${f.where}</div>
     </div>`;
   }).join('');
 }
@@ -606,37 +745,15 @@ function selectFn(key) {
 }
 function buildFnDetails() {
   const f = FNS[activeFn];
+  const a = FN_ANATOMY[activeFn];
   document.getElementById('fnDetails').innerHTML = `
     <div style="color:${f.color};font-weight:700;font-size:1.1em;margin-bottom:8px;">${f.name}</div>
     <div style="font-size:0.82em;color:var(--muted);margin-bottom:4px;">Формула:</div>
     <div class="formula" style="margin:4px 0;font-size:0.85em;">${f.formula}</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
-    </div>
+    ${fnAnatomyBlock(a.formula, a.fi, a.fe)}
     <div style="font-size:0.82em;color:var(--muted);margin:8px 0 4px;">Производная:</div>
     <div class="formula" style="margin:4px 0;font-size:0.85em;">${f.deriv}</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула активации решает, какую часть входного сигнала нейрон пропустит дальше.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как клапан или диммер: одни активации жёстко режут сигнал, другие пропускают его плавно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Переход через ноль может полностью изменить, будет ли сигнал идти дальше или обнулится.</div>
-    </div>
+    ${fnAnatomyBlock(a.deriv, a.di, a.de)}
     <div style="font-size:0.82em;color:var(--muted);margin:8px 0 4px;">Выход:</div>
     <code style="color:var(--amber)">${f.range}</code>
     <div style="margin:8px 0;">
@@ -1161,7 +1278,40 @@ print(tanh)
     </div>
   </section>
 
-  <section class="ml-checkpoint-section">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему sigmoid и tanh страдают от проблемы исчезающих градиентов?</summary>
+      <div class="ml-quiz__a"><p>Производная sigmoid σ'(x) = σ(x)(1-σ(x)) ≤ 0.25, а tanh'(x) ≤ 1. В глубокой сети при backpropagation градиент умножается на эти производные на каждом слое. После 10+ слоёв произведение ≤ 0.25¹⁰ ≈ 10⁻⁶ — градиенты исчезают, и ранние слои почти не обучаются.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему ReLU стал стандартом для скрытых слоёв?</summary>
+      <div class="ml-quiz__a"><p>ReLU(x) = max(0,x) прост в вычислении, производная равна 1 при x>0 (градиент не затухает в активной зоне), создаёт разреженные активации (много нулей — эффективнее). Это позволило обучать глубокие сети, что сделало возможным прорыв 2012 года (AlexNet).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём преимущество GELU над ReLU в трансформерах?</summary>
+      <div class="ml-quiz__a"><p>GELU(x) = x·Φ(x) (где Φ — CDF нормального распределения) — гладкая, ненулевая везде. Она не имеет «мёртвых» нейронов и лучше сочетается с нормализацией в трансформерах. Empirically GELU и Swish устойчиво превосходят ReLU в языковых и vision моделях.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Swish/SiLU и почему он используется в современных LLM?</summary>
+      <div class="ml-quiz__a"><p>Swish(x) = x·σ(βx) ≈ x·σ(x) (при β=1 это SiLU). Он гладкий, небольшие отрицательные значения не блокируются полностью (в отличие от ReLU), что обеспечивает лучший поток градиентов. SiLU используется в LLaMA, Mistral и других современных моделях.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
     <h2>Learning checkpoint</h2>
     <ul class="ml-study-practice__questions">
       <li>Почему активация нужна между линейными слоями?</li>
@@ -1172,5 +1322,6 @@ print(tanh)
     <p class="ml-study-practice__rubber-duck">Rubber duck: объясни активацию как клапан, который решает, какой сигнал и какой градиент проходят дальше.</p>
   </section>
 
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

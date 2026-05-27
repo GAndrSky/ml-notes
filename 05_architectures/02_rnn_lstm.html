@@ -83,12 +83,36 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/02_rnn_lstm.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <h1>5.2 — RNN / LSTM</h1>
       <p class="muted">Блок 5 · Архитектуры · Рекуррентные сети, vanishing gradient, ворота LSTM, BPTT</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>RNN — нейронная сеть с памятью: скрытое состояние несёт информацию из прошлого. LSTM решил проблему vanishing gradient, сделав возможным обучение на длинных последовательностях.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как RNN обрабатывает последовательности через рекуррентное скрытое состояние</li>
+      <li>Почему vanishing gradient разрушает обучение глубоких RNN</li>
+      <li>LSTM gate-механизмы — forget, input, output — как они управляют памятью</li>
+      <li>Архитектуры: many-to-one, many-to-many, encoder-decoder</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Forward pass (3.3)</li>
+      <li>Backpropagation (4.1)</li>
+      <li>Функции активации (3.2)</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="tabs">
   <button class="tab active" onclick="sw('t-rnn')">Базовый RNN</button>
@@ -123,15 +147,17 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">hₜ</span><span class="fa-name">hidden state на шаге t</span><span class="fa-desc">Вектор размера H — «память» сети после обработки t-го входа. hₜ₋₁ — состояние с предыдущего шага.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">xₜ</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">Вектор размера n: токен, пиксель, временной признак или embedding на текущем шаге последовательности.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Wₕ</span><span class="fa-name">рекуррентная матрица весов</span><span class="fa-desc">Размер H×H. Отображает прошлое состояние hₜ₋₁ в новое. Одна и та же на всех шагах — parameter sharing во времени.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Wₓ</span><span class="fa-name">матрица весов входа</span><span class="fa-desc">Размер H×n. Отображает текущий вход xₜ в пространство hidden state.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">tanh</span><span class="fa-name">нелинейность</span><span class="fa-desc">Сжимает сумму в диапазон (−1,1). Производная tanh'(z)=1−tanh²(z) ∈ [0,1] — источник vanishing gradient.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">yₜ, Wᵧ</span><span class="fa-name">выход и его веса</span><span class="fa-desc">yₜ ∈ ℝᴼ — предсказание на шаге t. Wᵧ (O×H) — выходная матрица, применяется независимо для каждого шага.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> новое состояние — взвешенная смесь прошлого hₜ₋₁ и текущего входа xₜ, сжатая tanh. Одни и те же веса используются на всех T шагах.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как человек с ограниченной памятью — на каждом шаге обновляет своё понимание, смешивая старые знания с новой информацией.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H=2, n=1, t=1: hₜ = tanh(Wₕ·[0,0] + Wₓ·1 + b) = tanh(Wₓ + b). Параметров: H·H + H·n + H = 4+2+2=8 (без Wᵧ).</div>
     </div>
     <p>Параметры <span class="hl-g">Wₕ, Wₓ, b</span> — <strong>одни и те же</strong> на каждом шаге. Это и есть parameter sharing во времени.</p>
 
@@ -143,45 +169,42 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x₁..xₜ</span><span class="fa-name">входная последовательность</span><span class="fa-desc">T входных векторов: токены, слова, аудио-фреймы. RNN обрабатывает их по одному слева направо.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">единственный выход</span><span class="fa-desc">Выход берётся только после последнего шага T. Обычно = Wᵧ·hₜ. Содержит summary всей последовательности.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">длина последовательности</span><span class="fa-desc">Может быть переменной (разные предложения разной длины). RNN обрабатывает любое T с одними весами.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN «читает» всю последовательность и выдаёт один ответ после последнего токена — итоговый hidden state кодирует весь контекст.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> прочитать всё резюме кандидата и вынести одно решение: «нанять» или «отказать».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> предложение из 10 слов → 10 шагов RNN → берём h₁₀ → Linear → класс {позитив, негатив}.</div>
     </div>
     <div class="gate-desc">Классификация текста, сентимент-анализ</div></div>
   <div class="gate"><div class="gate-name hl-g">Many-to-Many</div><div class="gate-formula">x₁..xₜ → y₁..yₜ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x₁..xₜ</span><span class="fa-name">входная последовательность</span><span class="fa-desc">T входных векторов. На каждом шаге t поступает xₜ и обновляется hₜ.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y₁..yₜ</span><span class="fa-name">выходная последовательность</span><span class="fa-desc">Выход yₜ = Wᵧ·hₜ выдаётся на каждом шаге. Длина выхода = длина входа (aligned).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">длина последовательности</span><span class="fa-desc">Одинакова для входа и выхода. Каждый входной токен получает соответствующий выходной ярлык.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> для каждого входного элемента выдаётся ответ «здесь и сейчас» — с учётом всего предыдущего контекста в hₜ.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> переводчик-синхронист: слышит слово — сразу переводит, помня контекст предыдущих слов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> предложение из 5 слов → 5 шагов → 5 тегов POS (NN, VB, DT, NN, .).</div>
     </div>
     <div class="gate-desc">POS-tagging, NER, seq2seq</div></div>
   <div class="gate"><div class="gate-name hl-a">One-to-Many</div><div class="gate-formula">x₁ → y₁..yₜ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x₁</span><span class="fa-name">единственный вход</span><span class="fa-desc">Одиночный вектор: embedding изображения, seed-токен или условие. Инициализирует h₀ или подаётся только на первом шаге.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y₁..yₜ</span><span class="fa-name">генерируемая последовательность</span><span class="fa-desc">На каждом шаге t выдаётся yₜ (токен, пиксель, ноты). Длина T задаётся динамически или ограничивается стоп-токеном.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">длина генерации</span><span class="fa-desc">В отличие от Many-to-Many, длина выхода не связана с входом: вход — одна точка, выход — произвольно длинная последовательность.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> один «seed» разворачивается в последовательность: каждый шаг принимает предыдущий выход (yₜ₋₁) как новый вход вместо xₜ.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> дать художнику одно слово — и он пишет целый рассказ по нему.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> image captioning: x₁ = ResNet-embedding(224×224) → h₀ → генерация: y₁=«a», y₂=«dog», y₃=«running», y₄=&lt;EOS&gt;.</div>
     </div>
     <div class="gate-desc">Генерация текста, image captioning</div></div>
 </div>
@@ -239,15 +262,16 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂h₁</span><span class="fa-name">градиент на первом шаге</span><span class="fa-desc">То, что нужно вычислить — насколько потеря чувствительна к h₁. При затухании это стремится к 0, Wₓ и Wₕ не обновляются для дальних зависимостей.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂hₜ</span><span class="fa-name">входящий градиент</span><span class="fa-desc">Градиент, пришедший с последнего шага T (от loss). Он передаётся назад через T-1 шагов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Π_{k=2}^{T}</span><span class="fa-name">произведение T-1 Якобианов</span><span class="fa-desc">Chain rule через время: каждый шаг добавляет матричный множитель. T-1 таких умножений — источник затухания или взрыва.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">diag(1-hₖ²)</span><span class="fa-name">Якобиан tanh</span><span class="fa-desc">Производная tanh'(z)=1−tanh²(z)∈[0,1]. Диагональная матрица. При насыщении (|hₖ|≈1) значения близки к 0 — сильное затухание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Wₕᵀ</span><span class="fa-name">транспонированная рекуррентная матрица</span><span class="fa-desc">Используется при backprop (chain rule). Если сингулярные числа Wₕ малы, умножение сжимает градиент; если велики — взрывает.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый шаг назад умножает градиент на diag(tanh')·Wₕᵀ. При T=50 и норме произведения 0.8 — градиент уменьшается в 0.8⁴⁹≈0.00002×.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> ксерокопирование ксерокопии 50 раз — сигнал исчезает.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=10, каждый шаг умножает норму на 0.7: 0.7⁹≈0.04 — градиент уменьшается в 25 раз.</div>
     </div>
     <p class="muted">diag(1-hₖ²) — Якобиан tanh: tanh'(z) = 1 - tanh²(z) ∈ [0,1]</p>
 
@@ -256,15 +280,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">‖∂hₜ/∂h₁‖</span><span class="fa-name">норма суммарного Якобиана</span><span class="fa-desc">Насколько hₜ чувствительно к h₁. Если близко к 0 — дальние зависимости исчезают; если >1 — взрыв.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">λ_max</span><span class="fa-name">наибольшее сингулярное число Wₕ</span><span class="fa-desc">Characterizes norm-amplification per step from Wₕ. λ_max > 1 → potential explosion; λ_max < 1 → potential vanishing.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">max|tanh'|</span><span class="fa-name">максимум производной tanh</span><span class="fa-desc">tanh'(z)=1−tanh²(z)∈[0,1]; максимум = 1 достигается при z=0. В насыщении (|z|≫0) производная → 0 и усиливает затухание.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(T-1)</span><span class="fa-name">степень = число шагов назад</span><span class="fa-desc">Произведение умножается T-1 раз. Экспоненциальный рост или затухание в зависимости от базы λ_max·max|tanh'|.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> если произведение λ_max·max|tanh'| меньше 1, норма градиента убывает экспоненциально с глубиной T — модель «не видит» дальние шаги.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> мяч, теряющий 20% кинетической энергии при каждом отскоке: после 50 отскоков останется 0.8⁵⁰≈0.00014 от начальной энергии.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ_max=0.9, max|tanh'|=0.8 → база=0.72; T=20: 0.72¹⁹≈0.00045 — практически ноль.</div>
     </div>
     <p>где λ_max — наибольшее сингулярное число Wₕ.</p>
 
@@ -318,16 +342,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">fₜ</span><span class="fa-name">forget gate</span><span class="fa-desc">Вектор значений ∈(0,1) размером H. fₜ[i]≈0 → «забыть» i-й элемент cell state; fₜ[i]≈1 → «сохранить».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">sigmoid (не std!)</span><span class="fa-desc">σ(z)=1/(1+e⁻ᶻ) ∈(0,1). Используется для всех LSTM-gates — поэлементно задаёт «степень открытия» ворот.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wf</span><span class="fa-name">матрица весов forget gate</span><span class="fa-desc">Размер H×(H+n). Обучается определять, когда старая память больше не нужна.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[hₜ₋₁, xₜ]</span><span class="fa-name">конкатенация состояния и входа</span><span class="fa-desc">Вектор размера (H+n): сначала прошлый hidden state, затем текущий вход. Все 4 ворота LSTM используют ту же конкатенацию.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> forget gate решает, что из накопленной памяти cₜ₋₁ стоит сохранить, глядя на текущий вход и прошлое состояние.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> редактор, просматривающий черновик: «это предложение оставим, это удалим».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> fₜ=[0.1, 0.9, 0.05, 1.0] → 1-й и 3-й элементы cell state почти стёрты, 2-й и 4-й — сохранены.</div>
     </div>
     <div class="gate-desc">«Что забыть из cell state?» fₜ∈(0,1) поэлементно</div>
   </div>
@@ -337,17 +360,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">iₜ</span><span class="fa-name">input gate</span><span class="fa-desc">Вектор ∈(0,1) — «насколько много» записать. iₜ[i]≈0 → не обновляем i-й элемент; iₜ[i]≈1 → полностью записываем кандидата.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c̃ₜ</span><span class="fa-name">кандидат cell state</span><span class="fa-desc">«Что хотим записать» — вектор ∈(−1,1) из tanh. Предлагает новое содержимое; iₜ контролирует, сколько действительно запишется.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ / tanh</span><span class="fa-name">разные нелинейности</span><span class="fa-desc">σ для gate (открыть/закрыть ∈(0,1)); tanh для кандидата (содержимое ∈(−1,1)). Разделение «сколько» и «что».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wi, Wc</span><span class="fa-name">веса gate и кандидата</span><span class="fa-desc">Два разных набора весов H×(H+n). Wi обучается решать «когда писать»; Wc — «что писать».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> input gate разделяет «что предлагается» (c̃ₜ от tanh) и «сколько записываем» (iₜ от σ). Вместе они добавляют новую информацию в cell state.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> c̃ₜ — черновик записи в ежедневнике; iₜ — решение «записать полностью, частично или вовсе не записывать».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> iₜ=[0,1,0.5], c̃ₜ=[0.8,−0.3,0.6] → вклад в cₜ: [0, −0.3, 0.3]. Первый элемент не обновляется вообще.</div>
     </div>
     <div class="gate-desc">«Что записать?» iₜ — сколько, c̃ₜ — что</div>
   </div>
@@ -357,16 +378,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">oₜ</span><span class="fa-name">output gate</span><span class="fa-desc">Вектор ∈(0,1) — «насколько много» из cₜ переходит в hₜ. oₜ≈0 → скрываем cell state от внешнего мира; oₜ≈1 → полностью экспонируем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">sigmoid</span><span class="fa-desc">σ(z)∈(0,1) — как у других gates. Определяет степень «прозрачности» между cₜ и hₜ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wo</span><span class="fa-name">веса output gate</span><span class="fa-desc">H×(H+n). Обучается решать, какая часть долгосрочной памяти cₜ нужна прямо сейчас.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[hₜ₋₁, xₜ]</span><span class="fa-name">конкатенация</span><span class="fa-desc">Та же конкатенация (H+n), что и у fₜ и iₜ. Output gate учится «открываться» именно когда релевантная память нужна.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> oₜ фильтрует cₜ перед формированием hₜ: hₜ = oₜ ⊙ tanh(cₜ). Cell state — «внутренняя память»; hₜ — «то, что показывается наружу».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> ноутбук с личными записями (cₜ): output gate решает, что сегодня открыть коллеге, а что оставить для себя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> cₜ=[2,−1,3], oₜ=[1,0,0.5] → tanh(cₜ)≈[0.96,−0.76,0.99] → hₜ≈[0.96, 0, 0.50].</div>
     </div>
     <div class="gate-desc">«Что вывести в hₜ?»</div>
   </div>
@@ -378,15 +398,16 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">cₜ</span><span class="fa-name">новый cell state</span><span class="fa-desc">Долгосрочная память LSTM — «конвейерная лента». Обновляется аддитивно: старая память частично сохраняется, новая добавляется.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">fₜ ⊙ cₜ₋₁</span><span class="fa-name">взвешенная старая память</span><span class="fa-desc">Forget gate fₜ поэлементно умножает старый cell state: fₜ≈0 → стираем, fₜ≈1 → сохраняем. Нет матричного умножения → градиент течёт напрямую.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">iₜ ⊙ c̃ₜ</span><span class="fa-name">взвешенная новая информация</span><span class="fa-desc">Input gate iₜ контролирует, сколько кандидата c̃ₜ записывается. Аддитивное обновление — ключ к gradient highway.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">⊙</span><span class="fa-name">произведение Адамара</span><span class="fa-desc">Поэлементное умножение (не матричное). Каждый из H элементов умножается независимо — нет смешения между элементами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">hₜ = oₜ ⊙ tanh(cₜ)</span><span class="fa-name">hidden state из cell state</span><span class="fa-desc">Output gate oₜ фильтрует cₜ; tanh сжимает cell state в (−1,1). hₜ — это то, что видно «снаружи»; cₜ — внутренняя память.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> cₜ обновляется аддитивно (не мультипликативно через Wₕ) — поэтому ∂cₜ/∂cₜ₋₁ = fₜ, а не произведение матриц с tanh'. Это «highway» для градиента.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> записная книжка: на каждом шаге часть старых записей стираем (fₜ), часть новых добавляем (iₜ·c̃ₜ), и показываем коллеге только нужное (oₜ·tanh).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> cₜ₋₁=2, fₜ=0.9, iₜ=0.8, c̃ₜ=0.5: cₜ=0.9·2+0.8·0.5=1.8+0.4=2.2. При oₜ=0.7: hₜ=0.7·tanh(2.2)≈0.7·0.976=0.68.</div>
     </div>
     <p class="muted">⊙ — поэлементное произведение (Hadamard product)</p>
 
@@ -399,15 +420,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">4</span><span class="fa-name">число gates × матриц весов</span><span class="fa-desc">Четыре независимых набора весов: для f (forget), i (input), c̃ (candidate), o (output). Каждый обучается своей задаче.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H·H</span><span class="fa-name">рекуррентные веса одного gate</span><span class="fa-desc">Часть Wf, Wi и т.д., отвечающая за hₜ₋₁. Размер H×H для каждого из 4 gates.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H·n</span><span class="fa-name">входные веса одного gate</span><span class="fa-desc">Часть матриц весов, отвечающая за xₜ. Размер H×n для каждого gate.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">bias одного gate</span><span class="fa-desc">Вектор bias размера H на каждый из 4 gates. Итого: 4·(H²+Hn+H) = 4H(H+n+1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LSTM в 4 раза тяжелее RNN с тем же H из-за 4 независимых gate-матриц — это цена управляемой памяти.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо одного рычага управления (RNN) — четыре отдельных тумблера (f, i, c̃, o), каждый со своим контроллером.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H=128, n=32: 4·128·(128+32+1) = 512·161 = 82 432 параметра. Базовый RNN: 128·(128+32+1) = 20 608.</div>
     </div>
     <p class="muted">В 4 раза больше, чем у RNN — за каждый из 4 вентилей (f, i, c̃, o)</p>
 </div>
@@ -448,16 +469,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">rₜ</span><span class="fa-name">reset gate</span><span class="fa-desc">Вектор ∈(0,1). Контролирует, сколько прошлого hₜ₋₁ используется при вычислении кандидата h̃ₜ. rₜ≈0 → игнорировать прошлое.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">sigmoid</span><span class="fa-desc">Сжимает линейное преобразование в (0,1) — «степень открытия» ворот. Не std dev!</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wr</span><span class="fa-name">веса reset gate</span><span class="fa-desc">Матрица H×(H+n). Обучается определять, когда старый контекст мешает формированию нового кандидата.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[hₜ₋₁, xₜ]</span><span class="fa-name">конкатенация</span><span class="fa-desc">Вектор (H+n). Reset gate видит оба сигнала и решает: «этот вход требует «обнуления» истории?»</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> reset gate определяет, насколько прошлый контекст hₜ₋₁ участвует в создании нового «предложения» h̃ₜ. rₜ≈0 позволяет начать «с чистого листа».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> переключение темы в разговоре: «всё, что было сказано раньше, не важно для следующего ответа».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> rₜ=[0, 1] → в кандидате h̃ₜ первый элемент hₜ₋₁ обнулён: rₜ⊙hₜ₋₁=[0·h₁,1·h₂]=[0,h₂].</div>
     </div>
     <div class="gate-desc">«Насколько забыть прошлое при вычислении кандидата?»</div>
   </div>
@@ -467,16 +487,15 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">zₜ</span><span class="fa-name">update gate</span><span class="fa-desc">Вектор ∈(0,1). Контролирует интерполяцию: zₜ→0 → hₜ≈hₜ₋₁ (держим прошлое); zₜ→1 → hₜ≈h̃ₜ (полностью обновляемся).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">sigmoid</span><span class="fa-desc">Выход ∈(0,1) — весовой коэффициент для линейной интерполяции в следующей строке формулы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wz</span><span class="fa-name">веса update gate</span><span class="fa-desc">H×(H+n). Обучается определять, когда нужно «отпустить» прошлое и принять новое состояние.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[hₜ₋₁, xₜ]</span><span class="fa-name">конкатенация</span><span class="fa-desc">Вектор (H+n). Update gate смотрит на оба сигнала и решает: «на сколько процентов менять состояние?»</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> update gate — это «частота обновления» для каждого элемента hₜ. Он заменяет и forget gate, и input gate из LSTM одним параметром.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> термостат: «на 70% держим старую температуру, на 30% принимаем новое значение».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> zₜ=0.3, hₜ₋₁=2.0, h̃ₜ=−1.0 → hₜ=(1−0.3)·2.0+0.3·(−1.0)=1.4+(−0.3)=1.1.</div>
     </div>
     <div class="gate-desc">«Сколько старого vs нового состояния взять?»</div>
   </div>
@@ -487,15 +506,16 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">h̃ₜ</span><span class="fa-name">кандидат hidden state</span><span class="fa-desc">«Что хочет записать» GRU, если бы обновлялся полностью. tanh сжимает в (−1,1). Использует только rₜ-гейтированное прошлое.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">rₜ ⊙ hₜ₋₁</span><span class="fa-name">reset-гейтированное прошлое</span><span class="fa-desc">Reset gate rₜ фильтрует hₜ₋₁ перед кандидатом: rₜ≈0 → кандидат игнорирует прошлое; rₜ≈1 → использует полностью.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(1−zₜ) ⊙ hₜ₋₁</span><span class="fa-name">вес старого состояния</span><span class="fa-desc">Доля прошлого hₜ₋₁ в итоговом hₜ. zₜ→0 → hₜ≈hₜ₋₁ (почти не обновляемся — как большой forget gate в LSTM).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">zₜ ⊙ h̃ₜ</span><span class="fa-name">вес нового кандидата</span><span class="fa-desc">Доля кандидата h̃ₜ в итоговом hₜ. Конвекс-комбинация с (1−zₜ): сумма весов = 1, поэтому норма hₜ контролирована.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">⊙</span><span class="fa-name">произведение Адамара</span><span class="fa-desc">Поэлементное умножение. Каждый из H элементов hₜ интерполируется независимо — GRU может «помнить» одни элементы и обновлять другие.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GRU объединяет forget+input gates LSTM в один update gate zₜ через конвекс-комбинацию. Нет отдельного cell state — hₜ несёт и долго-, и краткосрочную память.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> диджей с фейдером: zₜ=0.3 → 70% старой дорожки + 30% новой.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> hₜ₋₁=1.0, h̃ₜ=−0.5, zₜ=0.8 → hₜ=(1−0.8)·1.0+0.8·(−0.5)=0.2+(−0.4)=−0.2.</div>
     </div>
     <div class="info-box"><strong>Интуиция zₜ:</strong> при zₜ→0 hₜ≈hₜ₋₁ (игнорируем вход, помним прошлое). При zₜ→1 hₜ≈h̃ₜ (полностью обновляемся).</div>
 
@@ -513,15 +533,14 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">3</span><span class="fa-name">число матриц весов</span><span class="fa-desc">Три набора: Wr (reset gate), Wz (update gate), W (candidate h̃ₜ). Меньше, чем 4 у LSTM — нет отдельного output gate и cell state.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H·(H+n)</span><span class="fa-name">размер каждой матрицы</span><span class="fa-desc">H выходов × (H+n) входов = H·H (рекуррентная часть) + H·n (входная часть). В LSTM они записаны раздельно, здесь объединены.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">bias каждого gate</span><span class="fa-desc">Вектор размера H на каждый из 3 наборов. Итого: 3·(H(H+n)+H) = 3H(H+n+1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GRU дешевле LSTM: 3H(H+n+1) против 4H(H+n+1) — экономия 25% параметров за счёт объединения forget+input gates в один update gate.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> GRU — «облегчённый LSTM»: тот же функционал памяти, но в более компактном корпусе.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H=128, n=32: GRU=3·128·161=61 824; LSTM=4·128·161=82 432. GRU на ~25% легче.</div>
     </div>
     </div>
 </div>
@@ -536,16 +555,16 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">суммарный loss</span><span class="fa-desc">Скалярная потеря по всей последовательности. Градиент ∂L/∂Wₕ вычисляется по всем T шагам суммарно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Lₜ(yₜ, ŷₜ)</span><span class="fa-name">loss на шаге t</span><span class="fa-desc">Потеря между целевым yₜ и предсказанием ŷₜ = Wᵧ·hₜ. Например, cross-entropy для языковой модели (следующий токен).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">yₜ</span><span class="fa-name">целевое значение на шаге t</span><span class="fa-desc">Ground truth: следующее слово, метка, значение временного ряда. Зависит от задачи (many-to-many, many-to-one).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷₜ</span><span class="fa-name">предсказание на шаге t</span><span class="fa-desc">Выход модели: ŷₜ = Wᵧ·hₜ (или после softmax). Зависит от hₜ, который в свою очередь зависит от Wₕ через все предыдущие шаги.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σₜ</span><span class="fa-name">сумма по времени</span><span class="fa-desc">Вклад каждого шага суммируется. Из-за этого ∂L/∂Wₕ содержит сумму по t — и для каждого t нужен backprop через k≤t шагов назад.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый шаг получает свою ошибку, а backprop «разносит» её назад через всю историю к параметрам Wₕ, Wₓ. Поэтому полный BPTT = T · T/2 операций.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> проверить всё эссе целиком и выставить общую оценку — но для обратной связи нужно объяснить каждую ошибку, начиная с самого раннего предложения.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=5, cross-entropy на каждом шаге: L=L₁+L₂+L₃+L₄+L₅. ∂L/∂Wₕ = сумма 5 вкладов, каждый из которых проходит назад на k шагов.</div>
     </div>
     <h3>Градиент по Wₕ</h3>
 <div class="formula">∂L/∂Wₕ = <span class="hl-a">Σₜ</span> ∂Lₜ/∂Wₕ
@@ -554,15 +573,16 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂Wₕ</span><span class="fa-name">суммарный градиент по рекуррентным весам</span><span class="fa-desc">Складывается из вкладов всех T шагов. Wₕ используется одинаково на каждом шаге (shared), поэтому все вклады суммируются.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂Lₜ/∂hₜ</span><span class="fa-name">градиент loss t по hₜ</span><span class="fa-desc">«С чем пришёл backprop от потери шага t?» Это начальный сигнал, который нужно распространить назад на k шагов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Π_{j=k+1}^{t} ∂hⱼ/∂hⱼ₋₁</span><span class="fa-name">цепочка Якобианов</span><span class="fa-desc">Произведение (t−k) матриц diag(tanh')·Wₕᵀ. Именно здесь происходит затухание или взрыв при большом (t−k).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂hₖ/∂Wₕ = hₖ₋₁ᵀ</span><span class="fa-name">вклад шага k</span><span class="fa-desc">На каждом шаге k, где Wₕ применялся, его вклад в потерю = hₖ₋₁ᵀ (внешнее произведение с incoming gradient).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Σ_{k=1}^{t}</span><span class="fa-name">сумма по всем прошлым шагам</span><span class="fa-desc">Wₕ влияет на hₜ через все шаги k≤t. Для T=100 и каждого t это до 100 слагаемых — O(T²) операций суммарно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> полный BPTT должен пройти от каждого шага t назад ко всем k≤t. Это дорого и страдает от затухающего градиента при больших (t−k).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> отследить ошибку в финальном отчёте обратно ко всем решениям, принятым с самого начала проекта.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=5, t=4: ∂L₄/∂Wₕ = сумма 4 слагаемых, k=1: произведение 3 Якобианов; k=4: 0 Якобианов (просто hₖ₋₁ᵀ).</div>
     </div>
     <div class="step-box"><span class="sn">Шаг 1.</span>∂hₜ/∂hₜ₋₁ = diag(1-hₜ²) · Wₕᵀ   ← Якобиан одного шага</div>
 <div class="step-box"><span class="sn">Шаг 2.</span>∂hₜ/∂h₁ = Π_{k=2}^{t} diag(1-hₖ²) · Wₕᵀ   ← произведение Якобианов</div>
@@ -575,30 +595,30 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">≈</span><span class="fa-name">приближение</span><span class="fa-desc">Truncated BPTT — приближение полного градиента. Зависимости длиннее k₂ шагов игнорируются в backprop (но не в forward pass).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k₂</span><span class="fa-name">длина окна усечения</span><span class="fa-desc">Максимальное число шагов, на которое разворачивается backprop. Обычно k₂ = 35–200. Компромисс: точность vs скорость и память.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Σ_{k=t-k₂}^{t}</span><span class="fa-name">ограниченный backprop</span><span class="fa-desc">Вместо суммы от k=1 до t — только от t−k₂ до t. Gradient не течёт дальше k₂ шагов назад.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Π ∂hⱼ/∂hⱼ₋₁</span><span class="fa-name">произведение Якобианов в окне</span><span class="fa-desc">Максимум k₂ матриц в произведении (вместо t). Уменьшает и вычислительные затраты, и степень затухания.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> обрезаем backprop до k₂ шагов назад — hidden state при этом всё равно несёт историю дальше в forward pass, но gradient туда не доходит.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> исправляешь ошибку в главе 50 книги, но изучаешь только главы 45–50 для анализа причин — более ранние не рассматриваешь.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=1000, k₂=50: backprop идёт только 50 шагов. Память forward-прохода несёт всю историю, но gradient — только последние 50 позиций.</div>
     </div>
     <h3>Gradients для LSTM через время</h3>
 <div class="formula">∂cₜ/∂cₜ₋₁ = <span class="hl-a">fₜ</span>   ← только поэлементное умножение, нет Wₕ, нет tanh'!</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">вход на шаге t</span><span class="fa-desc">текущий токен, символ, frame или временной признак.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h_t</span><span class="fa-name">hidden state</span><span class="fa-desc">краткосрочная память модели после обработки текущего шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">c_t</span><span class="fa-name">cell state</span><span class="fa-desc">долгосрочная память LSTM, которую gates умеют сохранять или обновлять.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f_t,i_t,o_t</span><span class="fa-name">gates</span><span class="fa-desc">forget/input/output gates решают, что забыть, записать и вывести.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂cₜ/∂cₜ₋₁</span><span class="fa-name">градиент cell state</span><span class="fa-desc">Насколько изменение cₜ₋₁ влияет на cₜ. По формуле cₜ = fₜ⊙cₜ₋₁ + iₜ⊙c̃ₜ: производная по cₜ₋₁ = fₜ (поэлементно).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">fₜ</span><span class="fa-name">forget gate как «шоссе»</span><span class="fa-desc">Просто поэлементное умножение на fₜ ∈(0,1). Нет матричного произведения Wₕᵀ. Нет Якобиана tanh. Gradient течёт почти без затухания при fₜ≈1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">нет Wₕ</span><span class="fa-name">нет матричного умножения</span><span class="fa-desc">В RNN: ∂hₜ/∂hₜ₋₁ = diag(tanh')·Wₕᵀ — нормы могут затухать. В LSTM через c: только fₜ — нет опасного умножения матриц.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">нет tanh'</span><span class="fa-name">нет Якобиана нелинейности</span><span class="fa-desc">Обновление cₜ аддитивно (не через tanh напрямую). tanh применяется только при переходе c→h, но gradient по c−c пути его не проходит.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RNN/LSTM обновляет память шаг за шагом, смешивая прошлое состояние с текущим входом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как чтение книги: каждая новая фраза меняет понимание предыдущего контекста.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если forget gate близок к 1, старая память почти сохраняется; если близок к 0, она стирается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> вместо произведения T матриц с tanh' (RNN) — произведение T скаляров fₜ∈(0,1). При fₜ≈1 gradient по cₜ пути практически не затухает даже через 100+ шагов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> RNN передаёт послание по испорченному телефону через 50 человек; LSTM — по прямому телефонному кабелю с регулируемым объёмом.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=50, fₜ=0.99 (постоянно): 0.99⁵⁰≈0.605 — gradient сохраняет 60%. RNN с нормой 0.8: 0.8⁵⁰≈0.000143 — практически ноль.</div>
     </div>
     <p>Это «шоссе градиента» (gradient highway) — ключевое преимущество LSTM над RNN.</p>
 
@@ -1131,7 +1151,40 @@ drawLSTMDyn();
     <details><summary>[Hard] Bidirectional RNN</summary><p>Почему bidirectional RNN нельзя напрямую использовать для causal generation? <strong>Решение:</strong> она смотрит в будущее, а causal inference должен использовать только прошлый контекст.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-2">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему простые RNN страдают от vanishing gradient?</summary>
+      <div class="ml-quiz__a"><p>При backpropagation через время (BPTT) градиент умножается на матрицу весов Wₕ на каждом шаге. Если σ_max(Wₕ) < 1 — градиент экспоненциально убывает с длиной последовательности. Это означает, что RNN не может «помнить» зависимости через 10+ шагов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как LSTM решает проблему долгосрочных зависимостей?</summary>
+      <div class="ml-quiz__a"><p>LSTM вводит cell state c — прямой «конвейер» памяти с аддитивными, а не мультипликативными обновлениями. Гейты (forget, input, output) обучаются контролировать что сохранять, добавлять и читать. Аддитивное обновление c ← f⊙c + i⊙g предотвращает vanishing gradient.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем в LSTM нужны три гейта (forget, input, output)?</summary>
+      <div class="ml-quiz__a"><p><strong>Forget gate</strong> решает, что удалить из памяти (f = σ(...)). <strong>Input gate</strong> решает, что добавить в память (i⊙g). <strong>Output gate</strong> фильтрует, что передать как hidden state (o⊙tanh(c)). Разделение позволяет независимо управлять чтением и записью в память.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём преимущества трансформеров над LSTM для длинных последовательностей?</summary>
+      <div class="ml-quiz__a"><p>Трансформер обращается к любому токену напрямую через attention за O(1) «шагов», тогда как LSTM должен «протащить» информацию через все промежуточные шаги за O(n). Трансформеры также лучше параллелизируются при обучении. Недостаток: attention O(n²) по памяти и вычислениям.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-2">
     <h2>Checkpoint: 5.2 RNN / LSTM</h2>
     <ul>
       <li>Чем hidden state отличается от cell state?</li>
@@ -1141,6 +1194,7 @@ drawLSTMDyn();
       <li>Rubber duck: объясни LSTM как блокнот с механизмом “забыть/записать/прочитать”.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

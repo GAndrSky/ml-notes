@@ -91,12 +91,36 @@ tr:last-child td{border-bottom:none}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/01_cnn_convolutional_networks.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <h1>5.1 — Свёрточные нейронные сети (CNN)</h1>
       <p class="muted">Блок 5 · Архитектуры · Полный конспект с математикой, визуализациями и кодом</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>CNN перевернула компьютерное зрение. Свёрточные слои применяют один фильтр ко всему изображению — weight sharing делает сети эффективными на пространственных данных.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как свёртка применяет фильтр к изображению и что значат stride и padding</li>
+      <li>MaxPool vs AvgPool — зачем уменьшать пространственный размер</li>
+      <li>Receptive field — как каждый нейрон «видит» всё большую область входа</li>
+      <li>Параметры свёрточного слоя и их связь с вычислительной стоимостью</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Forward pass (3.3)</li>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Основы компьютерного зрения</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="tabs" id="main-tabs">
   <button class="tab active" onclick="switchTab('t-conv')">Свёртка</button>
@@ -133,18 +157,17 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">I</span><span class="fa-name">входное изображение</span><span class="fa-desc">Двумерный (или многоканальный) массив пикселей. I[i+m, j+n] — пиксель в рецептивном окне.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">ядро (kernel)</span><span class="fa-desc">Обучаемый фильтр размером k×k. K[m,n] — вес при смещении (m,n) внутри окна.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">i, j</span><span class="fa-name">позиция выхода</span><span class="fa-desc">Координаты ячейки выходной feature map, в которую записывается результат.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">m, n</span><span class="fa-name">смещение внутри ядра</span><span class="fa-desc">Пробегают от 0 до k−1. Задают, какой пиксель входа участвует в этой позиции ядра.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σₘ Σₙ</span><span class="fa-name">суммирование по окну</span><span class="fa-desc">Dot product ядра с соответствующим патчем входа — k² умножений и сложений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">★</span><span class="fa-name">кросс-корреляция</span><span class="fa-desc">В DL так называют "свёртку" (ядро не переворачивается). Истинная свёртка → K[-m,-n], но разница несущественна при обучении.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ядро скользит по изображению и в каждой позиции вычисляет скалярное произведение с локальным патчем — один "ответ" детектора на каждое место.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как трафарет: прикладываешь его к каждому месту картинки и записываешь, насколько хорошо совпало.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> K=[[1,0],[0,-1]], I-патч=[[2,3],[4,5]] → (I★K)[i,j] = 1·2+0·3+0·4+(−1)·5 = −3.</div>
     </div>
     <p>где <span class="hl-b">I</span> — входное изображение (H×W), <span class="hl-g">K</span> — ядро (kernel) размером k×k.</p>
 <p style="margin-top:8px">Размер выхода при <em>valid</em> padding:</p>
@@ -154,15 +177,16 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H_in</span><span class="fa-name">высота входа</span><span class="fa-desc">Число строк входной feature map (или изображения).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">padding</span><span class="fa-desc">Число нулевых строк/столбцов, добавленных по краям. P=1 для 3×3 сохраняет размер при S=1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">размер ядра</span><span class="fa-desc">Сторона квадратного ядра (например, k=3). Уменьшает выход на k−1 при valid padding.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">S</span><span class="fa-name">stride (шаг)</span><span class="fa-desc">На сколько позиций ядро сдвигается за один шаг. S=2 вдвое уменьшает выход.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">⌊ ⌋</span><span class="fa-name">floor (округление вниз)</span><span class="fa-desc">Дробная часть отбрасывается — крайний патч, в который ядро не вмещается полностью, пропускается.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> сколько раз ядро помещается в дополненный вход с данным шагом — это и есть размер выхода.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как нарезать батон кусками k см с шагом S — число кусков даётся этой же формулой.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H_in=224, P=1, k=3, S=2 → ⌊(224+2−3)/2⌋+1 = ⌊223/2⌋+1 = 111+1 = 112.</div>
     </div>
     <p class="muted">P — padding, S — stride (шаг). Аналогично для W.</p>
 
@@ -177,15 +201,15 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k × k</span><span class="fa-name">пространственный размер ядра</span><span class="fa-desc">k² весов на каждую пару каналов. Для k=3: 9 весов; для k=1: 1 вес (pointwise conv).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_in</span><span class="fa-name">входные каналы</span><span class="fa-desc">Глубина входной feature map. Каждый фильтр соединён со всеми C_in каналами.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_out</span><span class="fa-name">выходные каналы</span><span class="fa-desc">Число фильтров. Каждый фильтр даёт одну выходную feature map. Bias: один скаляр на фильтр.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_out (bias)</span><span class="fa-name">смещение</span><span class="fa-desc">Опциональный bias — C_out дополнительных параметров. Часто отключают вместе с BatchNorm (bias=False).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> число параметров не зависит от H и W — один и тот же набор весов используется на всех позициях (parameter sharing).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> один трафарет для всей картины — независимо от размера холста трафарет один и тот же.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Conv2d(3→64, 3×3): 3×3×3×64 + 64 = 1728 + 64 = 1792 параметров.</div>
     </div>
     <p class="muted">Для сверхтонкого слоя Conv2d(3→64, 3×3): 3×3×3×64 + 64 = <span class="hl-a">1792</span> параметров</p>
 </div>
@@ -256,15 +280,15 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">RF_L</span><span class="fa-name">рецептивное поле слоя L</span><span class="fa-desc">Размер области входного изображения, влияющей на одну активацию слоя L.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">RF_{L-1}</span><span class="fa-name">RF предыдущего слоя</span><span class="fa-desc">Рецептивное поле, накопленное до слоя L. RF растёт рекурсивно: RF_1 = k.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">размер ядра слоя L</span><span class="fa-desc">Каждый нейрон слоя L смотрит на k соседей слоя L−1, расширяя RF на (k−1) · масштаб.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Π s_i</span><span class="fa-name">произведение страйдов</span><span class="fa-desc">Накопленный масштаб: stride каждого предыдущего слоя умножает, насколько «далеко» сдвиг на одну позицию.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый новый слой расширяет RF на (k−1), умноженное на накопленный шаг всех предыдущих страйдов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> смотришь в бинокль через несколько линз — каждая увеличивает угол обзора пропорционально своему масштабу.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 слоя Conv(k=3, s=1): RF=1+(3−1)·1+(3−1)·1+(3−1)·1=7. Один Conv(k=7, s=1): RF=7 — одинаково, но 3 слоя имеют нелинейности и меньше параметров.</div>
     </div>
     <p class="muted">k — kernel size слоя L, s<sub>i</sub> — stride слоёв до L</p>
 
@@ -339,15 +363,16 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y[i,j]</span><span class="fa-name">выходное значение</span><span class="fa-desc">Результат max pooling в позиции (i,j) выходной карты.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">max</span><span class="fa-name">максимум по окну</span><span class="fa-desc">Выбирает наибольшее значение среди k² элементов окна. Нет параметров — чисто выборочная операция.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x[i·s+m, j·s+n]</span><span class="fa-name">элемент входа</span><span class="fa-desc">Значение входной feature map в позиции, определяемой центром окна (i,j) и смещением (m,n) внутри него.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">s</span><span class="fa-name">stride</span><span class="fa-desc">Шаг скольжения окна. s=2 → выход вдвое меньше входа по каждому измерению.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m, n</span><span class="fa-name">смещение внутри окна</span><span class="fa-desc">Пробегают все позиции окна k×k. m,n ∈ {0,…,k−1}.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> max pooling сохраняет только самый сильный сигнал в каждом окне — "есть ли признак здесь?" вместо "насколько он силён в среднем?".</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> из каждого квартала города выбираешь самый высокий дом — убираешь детали, сохраняешь доминантный сигнал.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> окно 2×2: [[1,3],[4,2]] → max=4. При s=2 карта 4×4 становится 2×2.</div>
     </div>
     <h3>Average Pooling</h3>
 <div class="formula">
@@ -356,18 +381,16 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y[i,j]</span><span class="fa-name">выходное значение</span><span class="fa-desc">Среднее арифметическое k² элементов окна в позиции (i,j).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/(k²)</span><span class="fa-name">нормировка</span><span class="fa-desc">Делим на число элементов в окне k×k. Для k=2: 1/4; для k=3: 1/9.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по окну</span><span class="fa-desc">Суммирует все k² значений входа в текущем окне.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x[i·s+m, j·s+n]</span><span class="fa-name">элемент входа</span><span class="fa-desc">Значение входной карты в позиции, смещённой на (m,n) от левого верхнего угла окна (i,j).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">s</span><span class="fa-name">stride</span><span class="fa-desc">Шаг скольжения окна. Обычно s=k (непересекающиеся окна) или s=1 (скользящее среднее).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> average pooling усредняет сигнал по окну — сохраняет общий «уровень энергии» признака, но менее чувствителен к точной позиции максимума.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо лучшего студента в группе берём средний балл по группе.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> окно 2×2: [[1,3],[4,2]] → avg=(1+3+4+2)/4=2.5. MaxPool дал бы 4.</div>
     </div>
     <h3>Global Average Pooling (GAP)</h3>
 <div class="formula">
@@ -376,17 +399,16 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_c</span><span class="fa-name">выход для канала c</span><span class="fa-desc">Одно скалярное значение на канал — среднее всей пространственной карты. Форма результата: (C,).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">индекс канала</span><span class="fa-desc">GAP работает независимо для каждого из C каналов. Пространство H×W «схлопывается» отдельно для каждого.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/(H·W)</span><span class="fa-name">нормировка</span><span class="fa-desc">Делим на полное число позиций. GAP — это average pooling по всей карте сразу, без параметров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i,j}</span><span class="fa-name">сумма по пространству</span><span class="fa-desc">Суммирует все H×W значений канала c. Пример: H=W=7, C=512 → суммируем 49 чисел, получаем одно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_c[i,j]</span><span class="fa-name">элемент feature map</span><span class="fa-desc">Значение в позиции (i,j) канала c входной карты (C, H, W).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GAP превращает «где есть признак» в «насколько признак присутствует вообще» — удаляет пространственную информацию, оставляя общий отклик канала.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо карты температур по городу — одно среднее значение температуры за день.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> карта (512, 7, 7): GAP → вектор (512,). Заменяет FC-слой с 512·7·7=25088 входами — нет параметров!</div>
     </div>
     <p class="muted">GAP сворачивает карту (C, H, W) → (C,). Заменяет FC-слои в ResNet, MobileNet — <strong>нет параметров</strong>!</p>
 
@@ -401,15 +423,14 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂x[i,j]</span><span class="fa-name">градиент по входу</span><span class="fa-desc">Насколько потеря чувствительна к элементу входа x[i,j]. Нужен для передачи градиента в предыдущий слой.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂y</span><span class="fa-name">входящий градиент</span><span class="fa-desc">Градиент от следующего слоя — насколько изменилась потеря при изменении выхода max pool.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">𝟙[x[i,j] = max]</span><span class="fa-name">индикаторная функция</span><span class="fa-desc">Равна 1, если x[i,j] был максимумом в своём окне; иначе 0. Градиент проходит только через «победителя».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> max pooling — кусочно-постоянная функция. Её производная равна 0 везде, кроме максимального элемента, где она равна 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> только лучший студент в группе получает обратную связь; все остальные — нулевой градиент.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> окно [[1,3],[4,2]], max=4 на позиции (1,0). ∂L/∂y=0.5 → ∂L/∂x: только позиция (1,0) получает 0.5, остальные 0.</div>
     </div>
     <p class="muted">Градиент проходит только через максимальный элемент окна ("маршрутизация градиента").</p>
 
@@ -451,15 +472,15 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f</span><span class="fa-name">функция (слой/сеть)</span><span class="fa-desc">Отображение, которое проверяется на equivariance. Например, свёрточный слой или GAP.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">преобразование входа</span><span class="fa-desc">Например, сдвиг изображения на δ пикселей. T(x) — преобразованный вход.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T'</span><span class="fa-name">соответствующее преобразование выхода</span><span class="fa-desc">Equivariance: преобразование входа ведёт к предсказуемому преобразованию выхода. Для сдвига T'=T (feature map тоже сдвигается).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входное изображение</span><span class="fa-desc">Исходный вход до преобразования.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> equivariance = преобразование входа предсказуемо отражается в выходе; invariance = преобразование входа вообще не меняет выход.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> equivariant — переставил мебель, карта квартиры тоже изменилась; invariant — как ни переставляй, площадь квартиры та же.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> свёртка equivariant к сдвигу: сдвинь кошку на 5 пикселей → feature map тоже сдвинется на 5. GAP invariant: среднее по всей карте не зависит от позиции объекта.</div>
     </div>
     <div class="grid2">
 <div class="step-box">
@@ -489,15 +510,14 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">784 × 128</span><span class="fa-name">параметры FC-слоя</span><span class="fa-desc">Полносвязный слой: отдельный вес для каждой пары вход-выход. 28²=784 входных нейрона × 128 выходных = 100 352 параметра.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">9</span><span class="fa-name">параметры Conv(1→1, 3×3)</span><span class="fa-desc">Одно ядро 3×3 = 9 весов. Оно скользит по всем 784 позициям, используя одни и те же 9 чисел везде.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">parameter sharing</span><span class="fa-name">общие веса</span><span class="fa-desc">Ключевое свойство свёртки: одно ядро применяется ко всем пространственным позициям. Число параметров не зависит от H и W.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> FC видит все пиксели вместе и учит уникальные связи; Conv учит один детектор и применяет его везде — в 11 000× меньше параметров для этого примера.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> FC — отдельный охранник у каждого кресла в кинотеатре; Conv — один охранник с фонариком, который обходит все ряды.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 100352 / 9 ≈ 11150× экономия на параметрах при том же детекторе признаков.</div>
     </div>
     <p>Одно ядро сканирует <em>все</em> пространственные позиции — это и есть parameter sharing. Ядро учит детектор признака (например, "вертикальный край"), который работает везде в изображении.</p>
 </div>
@@ -569,15 +589,15 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k·k</span><span class="fa-name">умножений на позицию на пару каналов</span><span class="fa-desc">Каждый элемент ядра требует одного умножения с элементом входа. Для k=3: 9 умножений.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_in</span><span class="fa-name">входные каналы</span><span class="fa-desc">Каждый выходной фильтр соединён со всеми C_in входными каналами — полная связь по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_out</span><span class="fa-name">выходные каналы</span><span class="fa-desc">Число фильтров; каждый независим и стоит k·k·C_in операций. Итого умножаем на C_out.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H·W</span><span class="fa-name">пространственных позиций</span><span class="fa-desc">Ядро применяется в каждой из H·W позиций выходной карты. Пример: H=W=14 → 196 позиций.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> обычная Conv смешивает пространство и каналы одновременно — каждый выходной нейрон зависит от k×k×C_in входных значений.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> C_out поваров, каждый готовит блюдо, используя k×k×C_in ингредиентов из H×W точек.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=3, C_in=64, C_out=128, H=W=14: 9·64·128·196 ≈ 14.5M умножений.</div>
     </div>
     </div>
 <div>
@@ -586,15 +606,14 @@ tr:last-child td{border-bottom:none}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k·k·C_in·H·W</span><span class="fa-name">стоимость depthwise</span><span class="fa-desc">Для каждого из C_in каналов применяется отдельный фильтр k×k — нет смешения каналов. Стоимость: k²·C_in·H·W.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C_in·C_out·H·W</span><span class="fa-name">стоимость pointwise</span><span class="fa-desc">1×1 свёртка смешивает C_in каналов в C_out. Нет пространственного ядра (k=1), но перебирает все C_in×C_out пары.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">+</span><span class="fa-name">два независимых шага</span><span class="fa-desc">Разделение пространственной и канальной обработки: сначала depthwise (где?), затем pointwise (что смешать?).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> вместо одного дорогого шага — два дешёвых: spatial mixing (depthwise) отдельно от channel mixing (pointwise).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> сначала каждый повар обрабатывает только свои ингредиенты по рецепту, потом все смешивается в общем котле.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=3, C_in=64, C_out=128, H=W=14: depthwise = 9·64·196 ≈ 113K; pointwise = 64·128·196 ≈ 1.6M; итого ≈ 1.7M vs обычной ≈ 14.5M.</div>
     </div>
     </div>
 </div>
@@ -604,15 +623,15 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x / I</span><span class="fa-name">входная карта</span><span class="fa-desc">изображение или feature map с пространственными координатами и каналами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">K / W</span><span class="fa-name">kernel / фильтр</span><span class="fa-desc">обучаемые веса, которые скользят по входу и ищут локальный паттерн.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i,j,c</span><span class="fa-name">позиция и канал</span><span class="fa-desc">координаты пикселя/ячейки и номер feature channel.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">stride / padding</span><span class="fa-name">геометрия прохода</span><span class="fa-desc">задают, как фильтр двигается и сохраняется ли размер feature map.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1/C_out</span><span class="fa-name">вклад pointwise-шага</span><span class="fa-desc">Pointwise стоит C_in·C_out·H·W против обычного k²·C_in·C_out·H·W — экономия в k² раз по сравнению с обычным pointwise...</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1/k²</span><span class="fa-name">вклад depthwise-шага</span><span class="fa-desc">Depthwise стоит k²·C_in·H·W — в C_out раз меньше, чем у обычного Conv. При больших C_out это слагаемое мало.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">≈ 1/k²</span><span class="fa-name">асимптотика при C_out→∞</span><span class="fa-desc">При C_out≫k² слагаемое 1/C_out пренебрежимо мало и основная экономия определяется размером ядра k.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">размер ядра</span><span class="fa-desc">Для k=3: Ratio≈1/9, т.е. ~9× экономия. Именно поэтому depthwise separable conv так эффективна при k=3.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> CNN ищет один и тот же локальный паттерн во всех местах изображения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как маленький трафарет, который прикладывают ко всем участкам картинки.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> фильтр 3x3 с 16 выходными каналами превращает локальное окно в 16 признаков на каждой позиции.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> экономия растёт с k² — большое ядро даёт бо́льшую выгоду от разделения spatial и channel обработки.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> разделить работу на два специализированных этапа выгоднее тем больше, чем сложнее исходная задача (большее k).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=3, C_out=128: Ratio = 1/128 + 1/9 ≈ 0.008 + 0.111 = 0.119 → ~8.4× экономия FLOPs.</div>
     </div>
     <p class="muted">Для k=3: экономия в <span class="hl-a">~9×</span> при сохранении аналогичной выразительности.</p>
 </div>
@@ -632,18 +651,15 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂K[m,n]</span><span class="fa-name">градиент по весу ядра</span><span class="fa-desc">Насколько нужно изменить вес K[m,n] для уменьшения потери. Форма — та же, что у ядра: k×k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ[i,j]</span><span class="fa-name">входящий градиент = ∂L/∂Z[i,j]</span><span class="fa-desc">Градиент потери по выходу свёртки Z в позиции (i,j). Приходит из следующего слоя.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">I[i+m, j+n]</span><span class="fa-name">элемент входа</span><span class="fa-desc">Значение входного изображения в позиции, которая взаимодействовала с весом K[m,n] при вычислении Z[i,j].</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i,j}</span><span class="fa-name">суммирование по позициям выхода</span><span class="fa-desc">Вес K[m,n] использовался во всех H_out×W_out позициях — все их вклады суммируются.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> градиент по ядру — это кросс-корреляция входа I с градиентом δ. Та же структура, что и прямой проход, но роли переставлены.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> "насколько каждый элемент трафарета виноват в ошибке?" — складываешь вклад всех мест, где этот элемент применялся.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> δ=[[1,1],[1,1]], I-патч: K[0,0] использовался с пикселями I[0,0]=1, I[0,1]=2, I[1,0]=4, I[1,1]=5 → ∂L/∂K[0,0]=1+2+4+5=12.</div>
     </div>
     <div class="step-box"><span class="step-num">Суть:</span> ∂L/∂K — это свёртка входа I с градиентом δ (кросс-корреляция δ по I)</div>
 
@@ -654,18 +670,15 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂I[i,j]</span><span class="fa-name">градиент по входу</span><span class="fa-desc">Насколько потеря чувствительна к пикселю I[i,j]. Нужен для обновления весов предыдущего слоя.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ[i-m, j-n]</span><span class="fa-name">входящий градиент со сдвигом</span><span class="fa-desc">Пиксель I[i,j] вошёл в Z[i-m, j-n] через позицию ядра K[m,n]. Отсюда сдвиг (i-m, j-n) в аргументе δ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K[m,n]</span><span class="fa-name">вес ядра</span><span class="fa-desc">Тот же обученный фильтр, что и в прямом проходе. Использование сдвинутого δ эквивалентно свёртке с перевёрнутым ядром.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{m,n}</span><span class="fa-name">суммирование по ядру</span><span class="fa-desc">I[i,j] участвовал во всех позициях выхода, где ядро его "накрывало" — все эти вклады складываются.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop через свёртку — тоже свёртка, но с перевёрнутым ядром (transposed convolution / full convolution).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> если прямой проход — "размазать" ядро по входу, то обратный — "собрать" ошибки обратно по тем же путям.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> K=[[1,0],[-1,0]], δ=[[1,1],[1,1]] → ∂L/∂I[0,0] = δ[0,0]·K[0,0]=1·1=1; ∂L/∂I[1,0] = δ[1,0]·K[0,0]+δ[0,0]·K[1,0]=1+(−1)=0.</div>
     </div>
     <div class="step-box"><span class="step-num">Суть:</span> это полная свёртка δ с <em>повёрнутым на 180°</em> ядром K — или traspозиционная свёртка</div>
 
@@ -676,17 +689,15 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂b_c</span><span class="fa-name">градиент по bias канала c</span><span class="fa-desc">Bias b_c прибавляется к каждой из H_out×W_out позиций выходной карты канала c. Поэтому его вклад суммируется по всем позициям.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">индекс канала/фильтра</span><span class="fa-desc">У каждого из C_out фильтров свой scalar bias. Градиент считается независимо для каждого c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ_c[i,j]</span><span class="fa-name">входящий градиент канала c</span><span class="fa-desc">∂L/∂Z_c[i,j] — насколько потеря чувствительна к активации Z_c в позиции (i,j).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i,j}</span><span class="fa-name">сумма по пространству</span><span class="fa-desc">Bias одинаков для всех H_out×W_out позиций → по правилу chain rule все их градиенты складываются.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> один bias shared по всему пространству — значит, его градиент = сумма всех пространственных позиций (broadcast в прямом проходе → reduce в обратном).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> если одна константа прибавляется к 196 позициям, то её вклад в ошибку — это сумма ошибок со всех 196 мест.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H_out=W_out=4, δ_c = все единицы → ∂L/∂b_c = 16·1 = 16. Если δ_c неоднородный: просто сложить все 16 значений.</div>
     </div>
     <p class="muted">Суммируем градиент по всей пространственной карте — каждая позиция получает один и тот же bias, поэтому вклады складываются.</p>
 
@@ -1100,7 +1111,40 @@ drawEquivar();
     <details><summary>[Hard] Depthwise separable conv</summary><p>Почему MobileNet экономит параметры? <strong>Решение:</strong> spatial filtering делается отдельно по каналам, затем 1x1 conv смешивает каналы.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему свёрточные сети эффективнее полносвязных для изображений?</summary>
+      <div class="ml-quiz__a"><p>CNN используют три ключевых свойства: (1) local connectivity — каждый нейрон смотрит только на рецептивное поле, (2) weight sharing — один фильтр применяется по всему изображению (меньше параметров), (3) translation equivariance — детектор угла работает в любом месте изображения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что делает операция pooling и зачем она нужна?</summary>
+      <div class="ml-quiz__a"><p>Pooling (max или average) уменьшает пространственное разрешение, агрегируя соседние значения. Max pooling сохраняет наиболее сильный сигнал, обеспечивая инвариантность к малым сдвигам. Это снижает размерность, уменьшает вычислительную стоимость и увеличивает рецептивное поле.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое receptive field и как он растёт с глубиной?</summary>
+      <div class="ml-quiz__a"><p>Receptive field — область входного изображения, влияющая на один нейрон. После каждого свёрточного слоя 3×3 он растёт на 2 пикселя. Pooling 2×2 удваивает рецептивное поле. Dilated convolution позволяет резко увеличить рецептивное поле без потери разрешения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между 1×1 convolution и обычной?</summary>
+      <div class="ml-quiz__a"><p>1×1 свёртка не смотрит на пространственный контекст — она просто смешивает информацию по каналам для каждого пикселя. Используется для изменения числа каналов (channel bottleneck в ResNet, Inception), вычислительно дёшево. Это по сути MLP применённый к каждому пикселю отдельно.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-1">
     <h2>Checkpoint: 5.1 CNN</h2>
     <ul>
       <li>Почему convolution лучше dense layer для изображений?</li>
@@ -1110,6 +1154,7 @@ drawEquivar();
       <li>Rubber duck: объясни CNN как набор локальных детекторов, которые ищут паттерны по всей картинке.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/08_vision_transformer.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -45,21 +45,46 @@
       <h1>5.8 Vision Transformer</h1>
       <p class="muted">Как изображение превращается в последовательность токенов, зачем нужен class token, почему patch size так важен и чем ViT отличается от CNN не только технически, но и концептуально.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>ViT показал: трансформер работает и на изображениях. Разбить картинку на патчи и применить self-attention — достаточно, чтобы превзойти CNN на большом масштабе.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Patch embedding — как изображение разбивается на токены</li>
+      <li>[CLS] токен — как агрегируется глобальная информация для классификации</li>
+      <li>Position embedding для патчей — 1D vs 2D</li>
+      <li>DINO, DINOv2, CLIP — как ViT обучается без меток</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>CNN (5.1)</li>
+      <li>Transformer Attention (5.3)</li>
+      <li>Positional Encoding (5.6)</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>Patchify: картинка как последовательность</h2>
       <div class="formula" data-render-tex data-tex-source="N = \frac{H}{P}\cdot\frac{W}{P}, \qquad x_p \in \mathbb{R}^{P^2 C}">N = (H / P) · (W / P),   x_p ∈ R^(P²C)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">H,W,C</span><span class="fa-name">размер изображения</span><span class="fa-desc">высота, ширина и число каналов входной картинки.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">patch size</span><span class="fa-desc">размер квадратного фрагмента, который становится одним token.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число patches</span><span class="fa-desc">длина visual sequence после разбиения изображения.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">CLS</span><span class="fa-name">classification token</span><span class="fa-desc">специальный токен, который собирает информацию для финальной классификации.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">H, W</span><span class="fa-name">размер изображения в пикселях</span><span class="fa-desc">высота и ширина входной картинки. Стандарт — 224×224. Оба должны делиться на P нацело.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">размер патча (patch size)</span><span class="fa-desc">сторона квадратного фрагмента в пикселях. Типично P=16 или P=32. Чем меньше P — тем больше токенов и тем дороже attention.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число патчей (sequence length)</span><span class="fa-desc">количество токенов, которые подаются в Transformer. N = (H/P)·(W/P). При H=W=224, P=16: N=196.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_p</span><span class="fa-name">вектор одного патча</span><span class="fa-desc">патч P×P пикселей × C каналов распрямляется в вектор длины P²C. Это «токен» для Transformer. При P=16, C=3: длина вектора = 768.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">число каналов</span><span class="fa-desc">для RGB изображения C=3. Входит в P²C — размерность каждого токена до линейной проекции.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ViT превращает изображение в последовательность patches и обрабатывает её как текстовые токены.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как разрезать картину на плитки и дать модели смотреть, какие плитки связаны друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> image 224x224 с patch 16x16 даёт 14x14=196 patch tokens плюс CLS token.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> разбиение на патчи — единственный шаг, где ViT «знает» о 2D структуре. Всё остальное — обычный Transformer: токены без пространственных предположений.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> взять газетную страницу, разрезать на 196 кусочков по 16×16 мм и перемешать — Transformer должен понять смысл без информации о порядке (отсюда нужны positional encodings).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H=W=224, P=16, C=3 → N=(224/16)²=196 патчей, каждый — вектор 16²×3=768. После линейной проекции → 768-мерный embedding (ViT-Base). Итого: последовательность 196×768 на вход Transformer.</div>
     </div>
     <p>ViT режет изображение на патчи размера <code>P × P</code>, распрямляет каждый патч в вектор и линейно проецирует его в embedding space. После этого картинка становится обычной последовательностью токенов.</p>
       <div class="info">Главная цена такого подхода: мы теряем жёстко зашитую локальную inductive bias CNN и должны “выучить” её на данных.</div>
@@ -247,7 +272,40 @@ logits = head(encoded[:, 0])</div></div>
     <details><summary>[Hard] Patch size tradeoff</summary><p>Что меняется при уменьшении patch size? <strong>Решение:</strong> больше tokens, выше spatial detail, но attention cost растёт квадратично.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-8">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как ViT обрабатывает изображение, чтобы применить механизм внимания?</summary>
+      <div class="ml-quiz__a"><p>ViT делит изображение на патчи фиксированного размера (например 16×16 пикселей), разворачивает каждый патч в вектор и проецирует линейным слоем в embedding. Получается последовательность patch-токенов, к которой добавляется специальный [CLS]-токен и positional encoding.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему ViT требует значительно больше данных, чем CNN, для хорошего качества?</summary>
+      <div class="ml-quiz__a"><p>CNN имеют встроенные индуктивные bias: локальность и трансляционная инвариантность. ViT должен выучить эти свойства из данных. На малых датасетах (ImageNet-1k) ViT уступает CNN; на больших (ImageNet-21k, JFT-300M) или с предобучением — превосходит.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое DeiT и как он решает проблему данных для ViT?</summary>
+      <div class="ml-quiz__a"><p>DeiT (Data-efficient Image Transformers) обучает ViT на ImageNet-1k через knowledge distillation от CNN-учителя. Добавляется специальный distillation token, который учится предсказывать то же, что CNN. Это позволяет получить конкурентоспособный ViT без миллиардов изображений.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём преимущества гибридных архитектур CNN + Transformer?</summary>
+      <div class="ml-quiz__a"><p>Гибриды (например, ViT с CNN-бэкбоуном вместо patch embedding) получают локальные признаки CNN на ранних слоях и глобальные отношения Transformer на поздних. Это снижает потребность в данных, уменьшает число токенов (меньше O(n²)) и часто превосходит чистые ViT при ограниченных данных.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-8">
     <h2>Checkpoint: 5.8 Vision Transformer</h2>
     <ul>
       <li>Как изображение превращается в sequence?</li>
@@ -257,6 +315,7 @@ logits = head(encoded[:, 0])</div></div>
       <li>Rubber duck: объясни ViT как Transformer, который читает изображение по плиткам.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

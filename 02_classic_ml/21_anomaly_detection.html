@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/21_anomaly_detection.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -25,8 +25,67 @@
       <h1>2.21 Anomaly Detection</h1>
       <p class="muted">Anomaly detection is not just classification with rare positives. Often you have few labels, changing behavior, asymmetric costs, and a business threshold that matters more than the raw model score.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Anomaly detection — это ML без меток для большинства случаев. Fraud, intrusion detection, оборудование — задачи, где «нормальное» поведение известно, а аномальное — нет.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Isolation Forest — как случайные деревья изолируют выбросы</li>
+      <li>One-class SVM — граница нормальности в пространстве признаков</li>
+      <li>Autoencoders для anomaly detection — высокий reconstruction error = аномалия</li>
+      <li>Метрики оценки: когда нет меток и когда они есть</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Деревья решений (2.10)</li>
+      <li>SVM (2.13)</li>
+      <li>Нейронные сети (3.1–3.3)</li>
+    </ul>
+  </div>
+</div>
 
-    <section class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<section class="card">
       <h2>TL;DR</h2>
       <p>Anomaly detection learns a score for how unusual an object is, then converts that score into an action using a threshold. The hard parts are defining "normal", handling drift, choosing threshold, and evaluating with rare or delayed labels.</p>
     </section>
@@ -246,7 +305,40 @@ print("top scores:", np.sort(scores)[-5:])
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем аномалия отличается от выброса (outlier)?</summary>
+      <div class="ml-quiz__a"><p>Выброс (outlier) — статистически необычная точка, которая может быть просто редкой, но нормальной. Аномалия (anomaly) — точка, отражающая реальное отклонение от ожидаемого поведения (сбой, мошенничество). На практике термины часто используют взаимозаменяемо.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как работает Isolation Forest?</summary>
+      <div class="ml-quiz__a"><p>Isolation Forest строит случайные деревья, случайно разбивая пространство. Аномальные точки (редкие, далёкие) изолируются быстрее — для их выделения нужно меньше сплитов. Оценка аномальности = среднее число сплитов по лесу: чем меньше, тем аномальнее точка.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое One-Class SVM и когда его применяют?</summary>
+      <div class="ml-quiz__a"><p>One-Class SVM обучается только на нормальных данных и строит гиперплоскость, отделяющую их от начала координат в feature space. Подходит, когда аномалий в обучающих данных нет совсем. Основной недостаток — плохо масштабируется на большие данные.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему precision важнее recall в большинстве систем обнаружения аномалий?</summary>
+      <div class="ml-quiz__a"><p>Ложные срабатывания (FP) в системах обнаружения аномалий крайне дорогостоящи: они требуют ручного расследования, снижают доверие пользователей и создают операционную нагрузку. Поэтому часто приоритизируют precision (мало ложных тревог), допуская некоторый пропуск аномалий.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain why anomaly detection is often a ranking and thresholding problem?</li>
@@ -268,5 +360,47 @@ print("top scores:", np.sort(scores)[-5:])
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Anomaly Detection</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй при мониторинге систем, fraud detection, контроле качества производства.</li>
+        <li>Isolation Forest — хороший первый выбор без меток, LOF — для плотностного подхода.</li>
+        <li>Сравнивай precision@k: сколько из топ-k алертов реально аномальны.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Обучать supervised-модель, когда меток аномалий почти нет — используй unsupervised.</li>
+        <li>Игнорировать class imbalance при оценке: accuracy почти бесполезна.</li>
+        <li>Не проверять threshold: многие методы дают score, порог нужно подбирать по бизнес-стоимости.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Порог decision score — главная ручка, настраивается на labeled holdout.</li>
+        <li>n_estimators и contamination в Isolation Forest.</li>
+        <li>n_neighbors в LOF — контролирует масштаб «нормальности».</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="02_classic_ml/17_validation_and_hyperparameter_tuning.html">← 2.17 Валидация</a></li>
+        <li><a href="02_classic_ml/18_imbalanced_classes.html">← 2.18 Дисбаланс классов</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

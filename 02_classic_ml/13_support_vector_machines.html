@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/13_support_vector_machines.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,131 @@
         Maximum margin, hard/soft margin, kernel trick, RBF / polynomial / linear kernels, параметры C и gamma.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>SVM ищет максимально широкий «коридор» между классами. Kernel trick позволяет работать в миллионномерных пространствах признаков без явного вычисления координат.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Margin и support vectors — геометрический смысл и оптимизация</li>
+      <li>Soft-margin SVM — как параметр C справляется с несепарабельными данными</li>
+      <li>Kernel trick — RBF, poly, linear — что они вычисляют неявно</li>
+      <li>C и γ — как гиперпараметры управляют bias-variance</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Теория оптимизации (1.5)</li>
+      <li>Предобработка данных (2.2)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">SVM: как C управляет шириной отступа (margin)</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">C (штраф за ошибку)</span>
+          <span class="ml-slider-lab__param-value" id="sl-svc-disp">20</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-svc"
+               min="0" max="100" step="1" value="20">
+        <div class="ml-slider-lab__range-labels">
+          <span>0.01 (мягкий)</span><span>100 (жёсткий)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-svc"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-svc');
+  var disp = document.getElementById('sl-svc-disp');
+  var out = document.getElementById('sl-out-svc');
+  function render(){
+    var v = +sl.value;
+    var C = v === 0 ? 0.01 : v;
+    disp.textContent = C < 1 ? '0.01' : C;
+    var margin      = Math.round(100 - v * 0.95);
+    var trainErr    = Math.max(2, Math.round(40 - v * 0.38));
+    var testErr     = Math.round(25 + Math.abs(v - 20) * 0.45);
+    var overfit     = Math.round(v * 0.9);
+    var verdict, vclass, txt;
+    if (v < 5) {
+      verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
+      txt = 'C ≈ ' + (v === 0 ? '0.01' : v) + ': широкий margin, много точек внутри. SVM игнорирует часть обучающих примеров. Граница простая, возможно недообучение.';
+    } else if (v <= 40) {
+      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
+      txt = 'C = ' + v + ': хороший баланс. Margin умеренный, SVM штрафует выбросы, но не запоминает каждую точку.';
+    } else {
+      verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
+      txt = 'C = ' + v + ': узкий margin. SVM старается правильно классифицировать все обучающие точки → может переобучиться, особенно с шумными данными.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Ширина margin</span><div class="sl-bar-wrap"><div class="sl-bar sl-good" style="width:' + margin + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Train error</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar ' + (testErr > 40 ? 'sl-bad' : testErr > 28 ? 'sl-warn' : 'sl-good') + '" style="width:' + testErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Риск overfitting</span><div class="sl-bar-wrap"><div class="sl-bar ' + (overfit > 60 ? 'sl-bad' : overfit > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + overfit + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Что пытается сделать SVM</h2>
       <p>
         <strong>Support Vector Machine</strong> ищет не просто границу между классами,
@@ -494,14 +617,14 @@ wᵀx + b = -1</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">margin width</span><span class="fa-name">ширина полосы разделения</span><span class="fa-desc">Расстояние между двумя параллельными гиперплоскостями w^T x + b = ±1, ограничивающими margin. SVM максимизирует это расстояние.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2</span><span class="fa-name">два полу-margin</span><span class="fa-desc">Каждая из двух опорных гиперплоскостей находится на расстоянии 1/||w|| от центральной границы. Суммарный margin = 1/||w|| + 1/||w|| = 2/||w||.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||</span><span class="fa-name">норма вектора весов (L2)</span><span class="fa-desc">Длина вектора нормали к разделяющей гиперплоскости. Чем больше ||w||, тем уже margin. Максимизировать margin = минимизировать ||w||.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Margin — это «коридор безопасности» между классами. SVM ищет гиперплоскость с наибольшим коридором. Чем меньше ||w||, тем шире margin и тем устойчивее решение к новым данным.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как провести двойную разделительную линию на дороге: хочется, чтобы коридор между потоками был как можно шире для безопасности.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ||w||=1 → margin=2 (широкий). ||w||=4 → margin=0.5 (узкий). Максимизация margin = минимизация ||w||² в objective SVM.</div>
     </div>
     </div>
         <div>
@@ -1269,14 +1392,14 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">margin</span><span class="fa-name">ширина разделяющего коридора</span><span class="fa-desc">Геометрическое расстояние между двумя гиперплоскостями w^T x + b = ±1. SVM максимизирует этот зазор — он связан с обобщающей способностью.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2</span><span class="fa-name">два полу-margin</span><span class="fa-desc">Каждая опорная гиперплоскость (w^T x + b = +1 и = −1) отстоит от центральной на 1/||w||. Сумма: 2/||w||.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||</span><span class="fa-name">L2-норма вектора весов</span><span class="fa-desc">Длина нормали к разделяющей гиперплоскости. Большой ||w|| → узкий margin → хуже обобщение. Минимизация ||w||² при SVM = максимизация margin.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Большой margin означает: граница решения далека от обоих классов. Это делает SVM устойчивым к шуму — небольшие отклонения данных не пересекут разделительную полосу. Теория VC-размерности гарантирует: большой margin → хорошая generalization.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Дорога с широкой разделительной полосой безопаснее, чем со сплошной линией. Чем шире полоса, тем меньше риска при небольшом отклонении от курса.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,4] → ||w||=5, margin=2/5=0.4. w=[1,0] → ||w||=1, margin=2 — этот вариант SVM предпочтёт как более устойчивый.</div>
     </div>
     <div class="info">Именно поэтому в жёстком линейном случае SVM можно читать как задачу: разделить данные и одновременно минимизировать норму весов. Геометрическая устойчивость и регуляризация здесь оказываются одной и той же идеей, только записанной разными языками.</div>
     </div>
@@ -1288,31 +1411,29 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Что именно объясняет метод интерпретации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовый уровень</span><span class="fa-desc">Средний или ожидаемый прогноз до учёта признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">φ_i</span><span class="fa-name">вклад признака</span><span class="fa-desc">Насколько признак сдвигает прогноз относительно baseline.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K(x_i, x_j)</span><span class="fa-name">kernel-функция — «сходство» двух объектов</span><span class="fa-desc">Скаляр: насколько два объекта похожи в скрытом feature space φ. Вычисляется быстро напрямую, без явного построения φ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">φ(x_i), φ(x_j)</span><span class="fa-name">нелинейное отображение в feature space</span><span class="fa-desc">Функция, переводящая объект x из исходного пространства в (потенциально бесконечномерное) признаковое пространство. Kernel trick позволяет не вычислять φ явно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⟨·, ·⟩</span><span class="fa-name">скалярное произведение в feature space</span><span class="fa-desc">Мера угла и длины в feature space. K(x_i,x_j) = ⟨φ(x_i),φ(x_j)⟩ — kernel = скалярное произведение образов объектов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i, x_j</span><span class="fa-name">два объекта в исходном пространстве</span><span class="fa-desc">Пара объектов, для которых вычисляем сходство. Kernel позволяет SVM работать с любыми объектами, для которых определена K (тексты, графы, изображения).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула раскладывает prediction или качество на вклады признаков, но объясняет модель, а не причинность мира.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разбор чека: видно, какие позиции дали итоговую сумму, но не почему их купили.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline 0.3, prediction 0.8 и вклад признака +0.2, этот признак поднял прогноз модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Kernel trick: «считаем скалярное произведение в огромном пространстве φ, не строя его». Линейный SVM в feature space φ ≡ нелинейный SVM в исходном пространстве x.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как проверить сходство текстов через tf-idf без явного вычисления вектора: достаточно знать скалярное произведение (K), а не сам вектор (φ).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Линейное ядро: K(x_i,x_j)=x_i^T x_j. x_i=[1,2], x_j=[3,1]. K=1·3+2·1=5. Это ровно то, что дало бы скалярное произведение в исходном пространстве.</div>
     </div>
     <div class="formula" data-render-tex data-tex-source="K_{\mathrm{RBF}}(x_i, x_j) = \exp\!\left(-\gamma \|x_i - x_j\|^2\right)">K_RBF(x_i, x_j) = exp(-γ ||x_i - x_j||²)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K_RBF(x_i, x_j)</span><span class="fa-name">RBF kernel (сходство)</span><span class="fa-desc">Гауссова мера схожести двух объектов SVM: от 0 (далеко) до 1 (совпадение).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">ширина RBF</span><span class="fa-desc">Параметр затухания сходства: большой γ → только ближайшие объекты влияют на решение SVM.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||x_i − x_j||²</span><span class="fa-name">квадрат евклидова расстояния</span><span class="fa-desc">Мера удалённости двух объектов x_i и x_j в исходном пространстве признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i, x_j</span><span class="fa-name">два объекта</span><span class="fa-desc">Пара обучающих примеров, для которых вычисляется kernel-сходство.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RBF превращает "физическое расстояние" в "сходство". Большой γ → SVM опирается только на ближайших соседей, малый → глобально гладкая граница.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как влияние голоса на встрече: γ регулирует, насколько далеко "слышны" support vectors при принятии решения.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x_i=(0,0), x_j=(1,1): ||x_i−x_j||²=2. γ=0.5 → K=e^{−1}≈0.37. γ=0.1 → K=e^{−0.2}≈0.82.</div>
     </div>
     <p>Это и есть kernel trick: вместо явного <code>φ(x)</code> мы напрямую считаем сходство, которое соответствует скалярному произведению в скрытом пространстве. RBF особенно силён, потому что задаёт гладкую локальную “область влияния” вокруг каждого обучающего примера.</p>
     </div>
@@ -1793,7 +1914,40 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     <details><summary>[Hard] Hinge loss vs log loss</summary><p>Почему SVM не стремится давать вероятности напрямую? <strong>Решение:</strong> hinge loss оптимизирует margin и ошибки классификации, а не likelihood вероятностной модели.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-13">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «максимизация зазора» (margin maximization) в SVM?</summary>
+      <div class="ml-quiz__a"><p>SVM ищет гиперплоскость, которая не просто разделяет классы, но делает это с максимальным расстоянием (margin) до ближайших примеров каждого класса — support vectors. Большой margin означает лучшее обобщение: модель не «прижимается» к данным.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое kernel trick и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Kernel trick позволяет неявно работать в пространстве высокой размерности без явного вычисления координат. Функция ядра K(x,z) = φ(x)·φ(z) вычисляет скалярное произведение в исходном пространстве, заменяя дорогое преобразование φ. Это делает SVM практичным для нелинейных задач.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как параметр C влияет на жёсткость SVM?</summary>
+      <div class="ml-quiz__a"><p>Маленький C — «мягкий» margin: допускаются нарушения (ошибки классификации), граница глаже, модель генерализует лучше, но может недообучиться. Большой C — жёсткий margin: нарушения сильно штрафуются, граница сложнее, возможно переобучение.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему SVM плохо масштабируется на большие датасеты?</summary>
+      <div class="ml-quiz__a"><p>SVM решает задачу квадратичного программирования, которая в наивной реализации требует O(n²)–O(n³) вычислений и памяти O(n²) для матрицы ядра. На n>100k примеров это становится непрактичным. Используют SGD-аппроксимации (LinearSVC) или нейросетевые подходы.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-13">
     <h2>Checkpoint: 2.13 SVM</h2>
     <ul>
       <li>Что такое margin геометрически?</li>
@@ -1803,5 +1957,6 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       <li>Rubber duck: объясни SVM как поиск самой безопасной разделяющей дороги между классами.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

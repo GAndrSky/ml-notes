@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/12b_gradient_boosting_in_practice.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -47,23 +47,82 @@
       <h1>2.12b XGBoost, LightGBM и CatBoost</h1>
       <p class="muted">Теория boosting уже понятна; теперь разбираем инженерный слой: вторые производные, регуляризация дерева, histogram-based split finding, ordered boosting и выбор гиперпараметров под реальные табличные задачи.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>XGBoost, LightGBM, CatBoost — самые популярные инструменты на табличных данных. Различия в скорости, работе с категориями и борьбе с переобучением определяют выбор библиотеки.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Гиперпараметры XGBoost — max_depth, eta, subsample, lambda</li>
+      <li>Чем LightGBM быстрее XGBoost — GOSS, EFB, leaf-wise split</li>
+      <li>CatBoost — как он обрабатывает категориальные признаки без OHE</li>
+      <li>Early stopping и cross-validation как борьба с переобучением</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Gradient Boosting Theory (2.12a)</li>
+      <li>Деревья решений (2.10)</li>
+      <li>Кросс-валидация (2.17)</li>
+    </ul>
+  </div>
+</div>
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Почему современные GBDT так сильны</h2>
       <div class="formula" data-render-tex data-tex-source="\mathcal{L}^{(t)} \approx \sum_i \left[g_i f_t(x_i) + \frac{1}{2} h_i f_t(x_i)^2\right] + \Omega(f_t)">L^(t) ≈ Σ [ g_i f_t(x_i) + 1/2 h_i f_t(x_i)^2 ] + Ω(f_t)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L^(t)</span><span class="fa-name">аппроксимация loss на шаге t</span><span class="fa-desc">Квадратичное приближение полного loss после добавления нового дерева f_t. XGBoost минимизирует именно её — проще, чем исходный loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по всем объектам i</span><span class="fa-desc">Суммирует вклад каждого объекта в аппроксимированный loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">g_i</span><span class="fa-name">градиент loss по i-му объекту</span><span class="fa-desc">Первая производная функции потерь по текущему предсказанию: g_i = ∂L/∂ŷ_i. Указывает направление ошибки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h_i</span><span class="fa-name">гессиан loss по i-му объекту</span><span class="fa-desc">Вторая производная функции потерь: h_i = ∂²L/∂ŷ_i². Отражает кривизну loss — насколько «уверенно» корректировать предсказание.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f_t(x_i)</span><span class="fa-name">вклад нового дерева для объекта i</span><span class="fa-desc">Предсказание t-го дерева. Именно это дерево оптимизируется на данном шаге boosting.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Ω(f_t)</span><span class="fa-name">регуляризация нового дерева</span><span class="fa-desc">Ω(f_t) = γT + λ/2·Σw_j². Штраф за сложность t-го дерева (листья, веса). Встроен прямо в objective.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вместо точного loss XGBoost минимизирует его квадратичное приближение через g_i и h_i. Это позволяет аналитически найти оптимальные веса листьев и выбор сплитов за один проход.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как навигатор, аппроксимирующий сложный рельеф параболой: «вот дно, оптимальный шаг туда». Квадратичная аппроксимация быстрее точного поиска минимума.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> g_i=0.5, h_i=1.0, f_t(x_i)=w_j=-g_i/h_i=-0.5. Оптимальный вес листа находится аналитически. Без h_i — только первый порядок (обычный gradient boosting).</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -97,16 +156,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса внутри текущего узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько классов учитывается в узле.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">split</span><span class="fa-name">вопрос дерева</span><span class="fa-desc">Проверка признака, которая делит узел на дочерние группы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w*_j</span><span class="fa-name">оптимальный вес листа j</span><span class="fa-desc">Оптимальный сдвиг прогноза в листе j: −G_j/(H_j+λ).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">G_j, H_j</span><span class="fa-name">сумма градиентов и гессианов</span><span class="fa-desc">G_j=Σ g_i, H_j=Σ h_i по всем объектам, попавшим в лист j.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">L2-регуляризация листа</span><span class="fa-desc">Добавляется к знаменателю H_j+λ, не давая весу листа стать слишком большим.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Gain</span><span class="fa-name">прирост при сплите</span><span class="fa-desc">Насколько данный сплит уменьшил loss: ключевой критерий выбора разбиения в XGBoost.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">штраф за лист</span><span class="fa-desc">Минимальный Gain, при котором сплит разрешён; отсекает слабые разбиения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула оценивает, насколько узел дерева смешан и насколько split сделал дочерние узлы чище.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сортировка шариков по коробкам: хороший вопрос раскладывает цвета отдельно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для 50/50 Gini = 0.5, а для 90/10 Gini = 1-(0.9&#178;+0.1&#178;)=0.18.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> XGBoost аналитически находит оптимальный вес листа через первые и вторые производные loss. Gain — это "польза сплита"; если Gain ≤ γ, дерево не ветвится дальше.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как ROI инвестиции: γ — это порог окупаемости; разбиение происходит только если польза превышает минимум.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> G_L=−10, H_L=5, λ=1 → w*_L=10/6≈1.67. Если Gain=0.3 &lt; γ=0.5, сплит не делается.</div>
     </div>
     <div class="info">Отсюда интуитивно видно, почему <code>min_child_weight</code>, <code>lambda</code> и <code>gamma</code> так важны: они напрямую управляют тем, насколько легко библиотека разрешает делать сплит и насколько большим будет листовой сдвиг.</div>
     </div>
@@ -348,7 +407,40 @@ gamma / min_split_gain ↑</div>
     <details><summary>[Hard] Leakage через target encoding</summary><p>Как boosting может переоценить качество при неправильном encoding? <strong>Решение:</strong> если target encoded на всех данных до split, validation получает информацию о своей метке.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-12b">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какой основной гиперпараметр нужно настроить первым в XGBoost/LightGBM?</summary>
+      <div class="ml-quiz__a"><p>Learning rate (η) и n_estimators тесно связаны: уменьши η и подбери оптимальное число деревьев через ранную остановку. Затем тюнь max_depth/num_leaves, min_child_weight и subsample/colsample_bytree. Регуляризацию (lambda, alpha) настраивают в последнюю очередь.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между LightGBM и XGBoost по стратегии роста деревьев?</summary>
+      <div class="ml-quiz__a"><p>XGBoost растит деревья по уровням (level-wise), добавляя все узлы одного уровня. LightGBM растит по листьям (leaf-wise): добавляет лист с максимальным снижением потерь. Leaf-wise быстрее сходится, но требует ограничений на глубину, иначе переобучается.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда категориальные признаки лучше обрабатывать нативно в LightGBM, а не через one-hot?</summary>
+      <div class="ml-quiz__a"><p>LightGBM поддерживает категориальные признаки напрямую через оптимальный бинарный сплит всех категорий за O(k·log k), что эффективнее при высокой кардинальности (>10 категорий). OHE при высокой кардинальности создаёт разреженные данные и замедляет обучение.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое DART (Dropouts meet Multiple Additive Regression Trees)?</summary>
+      <div class="ml-quiz__a"><p>DART применяет идею dropout к бустингу: на каждой итерации случайно «выключаются» некоторые уже обученные деревья, и новое дерево подгоняется под исправленные остатки. Это уменьшает переобучение и снижает эффект «dominance» ранних деревьев.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-12b">
     <h2>Checkpoint: 2.12b Boosting Practice</h2>
     <ul>
       <li>Какие параметры контролируют сложность деревьев?</li>
@@ -358,5 +450,6 @@ gamma / min_split_gain ↑</div>
       <li>Rubber duck: объясни practical boosting как баланс силы деревьев, количества шагов и регуляризации.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

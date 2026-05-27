@@ -12,13 +12,37 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/02_model_serving.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="mlops">
   <div class="page">
     <div class="hero">
       <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.1 Tracking</span><span class="tag active">9.2 Serving</span><span class="tag">9.3 Docker</span></div>
       <h1>9.2 Model Serving</h1>
       <p class="muted">Serving — это место, где модель становится продуктом: она получает запросы, возвращает ответы, выдерживает latency budget и не ломает downstream-системы.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Обученная модель бесполезна в Jupyter. REST API, GRPC, TorchServe, TensorRT — способы выставить модель в продакшн с нужными latency и throughput.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Latency vs Throughput — фундаментальный tradeoff при serving</li>
+      <li>Dynamic batching — как увеличить throughput без потери latency</li>
+      <li>TorchScript и ONNX — портируемые форматы для production</li>
+      <li>INT8 квантизация при serving — latency impact</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Python (Flask/FastAPI basics)</li>
+      <li>Docker (9.3)</li>
+      <li>Основы HTTP</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Online vs batch inference</h2>
@@ -87,7 +111,40 @@ def predict(request: PredictRequest):
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между batch inference и real-time (online) serving?</summary>
+      <div class="ml-quiz__a"><p>Batch inference: предсказания вычисляются для большого набора примеров заранее (ночью, офлайн) — высокий throughput, задержка не критична. Online serving: предсказание по одному запросу в реальном времени — критична latency (< 100ms). Разные архитектуры, оптимизации и требования к стоимости.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое model quantization и как она снижает latency при serving?</summary>
+      <div class="ml-quiz__a"><p>Quantization снижает точность весов (FP32 → INT8, INT4). INT8 inference в 2-4× быстрее FP32 на CPU и GPU с VNNI/CUTLASS. Размер модели также снижается в 4×. Post-training quantization (PTQ) применяется без переобучения; Quantization-Aware Training (QAT) — точнее, но требует дополнительного обучения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое ONNX и зачем он нужен для deployment?</summary>
+      <div class="ml-quiz__a"><p>ONNX (Open Neural Network Exchange) — открытый формат сериализации моделей, не зависящий от фреймворка. PyTorch/TF экспортируют в ONNX, который затем оптимизируется под target hardware (ONNX Runtime, TensorRT). Это даёт переносимость и обычно 2-5× ускорение inference.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое SLO (Service Level Objective) для ML-сервиса?</summary>
+      <div class="ml-quiz__a"><p>SLO — количественные цели качества сервиса: p99 latency < 200ms, throughput > 100 RPS, availability > 99.9%. SLO определяют требования к инфраструктуре (CPU/GPU, replica count, caching). Нарушение SLO — триггер для алертинга и масштабирования.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -103,5 +160,47 @@ def predict(request: PredictRequest):
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="mlops-9-2-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>latency_total = preprocess + inference + postprocess + network</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">preprocess</span><span class="fa-name">подготовка входа</span><span class="fa-desc">декодирование, нормализация, tokenization, resize.</span></div><div class="formula-anatomy__row"><span class="fa-sym">inference</span><span class="fa-name">время модели</span><span class="fa-desc">чистое вычисление нейросети или ML-модели.</span></div><div class="formula-anatomy__row"><span class="fa-sym">postprocess</span><span class="fa-name">обработка выхода</span><span class="fa-desc">NMS, decoding, thresholding, formatting ответа.</span></div><div class="formula-anatomy__row"><span class="fa-sym">network</span><span class="fa-name">сетевые задержки</span><span class="fa-desc">serialization, transport, gateway overhead.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> оптимизировать только model forward недостаточно — latency складывается из всей цепочки serving.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> 10ms preprocess + 22ms inference + 8ms postprocess + 5ms network дают 45ms total latency.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Serving моделей</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Начинай с простого FastAPI + Uvicorn для прототипа, переходи на TorchServe/Triton для production.</li>
+        <li>Измеряй p50, p95, p99 latency — не только среднюю.</li>
+        <li>Квантизация INT8 — часто 2-4× speedup с минимальной потерей качества.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не нагрузочное тестировать serving до production — spike трафик рушит модели.</li>
+        <li>Игнорировать batch inference для offline задач — это на порядок дешевле.</li>
+        <li>Деплоить модель без мониторинга drift — качество молча деградирует.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Размер батча при inference: больше = выше throughput, выше latency.</li>
+        <li>Replicas: горизонтальное масштабирование под нагрузку.</li>
+        <li>Timeout и retry policy: защита от slow requests.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="09_mlops_deployment/03_docker_for_ml.html">9.3 Docker →</a></li>
+        <li><a href="09_mlops_deployment/04_ml_system_design_patterns.html">9.4 Design Patterns →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

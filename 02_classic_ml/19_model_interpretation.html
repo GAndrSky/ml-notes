@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/19_model_interpretation.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,67 @@
         Коэффициенты линейных моделей, feature importance, permutation importance, partial dependence, SHAP и локальная vs глобальная интерпретация.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>«Почему модель так решила?» — вопрос, который задают клиенты, регуляторы и дата-сайентисты. SHAP, LIME, feature importance — способы заглянуть в чёрный ящик.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>SHAP values — как Shapley values из теории игр объясняют предсказания</li>
+      <li>LIME — локальные линейные объяснения для любой модели</li>
+      <li>Feature importance: permutation vs Gini vs SHAP — в чём разница</li>
+      <li>Когда нужна глобальная, а когда — локальная интерпретируемость</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Любой ML-алгоритм (2.3–2.16)</li>
+      <li>Random Forest (2.11)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Зачем вообще нужна интерпретация</h2>
       <p>
         Хорошая модель — это не всегда только высокая метрика. Во многих задачах важно понимать:
@@ -540,15 +599,16 @@ logit(p) = β₀ + β₁x₁ + β₂x₂ + ... + β_p x_p</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание (регрессия)</span><span class="fa-desc">Числовой ответ линейной регрессии: взвешенная сумма признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">logit(p)</span><span class="fa-name">логит вероятности (классификация)</span><span class="fa-desc">Логарифм odds: log(p/(1−p)). Та же линейная сумма задаёт логит, а не вероятность напрямую.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">β₀</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при всех x_j = 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">β_j</span><span class="fa-name">коэффициент j-го признака</span><span class="fa-desc">При росте x_j на 1 прогноз ŷ меняется на β_j (в регрессии) или logit — на β_j (в логистической).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Числовое значение j-й характеристики объекта.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В обеих формулах β_j — это "чувствительность" к признаку x_j: знак задаёт направление, величина — силу влияния.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: каждый β_j — тариф за единицу соответствующего признака.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β₁=2.5 для площади: каждый дополнительный м² добавляет 2.5 к ŷ (регрессия) или 2.5 к logit (логистическая).</div>
     </div>
     <div class="grid-2">
         <div>
@@ -677,18 +737,17 @@ log-odds изменится на β_j</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">logit(p)</span><span class="fa-name">логит (log-odds)</span><span class="fa-desc">Логарифм отношения шансов — монотонно растущая функция p, принимающая значения от −∞ до +∞.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log(p/(1-p))</span><span class="fa-name">натуральный логарифм отношения шансов</span><span class="fa-desc">p/(1-p) — odds (шансы), log — переводит в логарифмическую шкалу для линейности.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">β₀</span><span class="fa-name">свободный член (intercept)</span><span class="fa-desc">Базовый log-odds при нулевых значениях всех признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_j β_j x_j</span><span class="fa-name">линейная комбинация признаков</span><span class="fa-desc">Сумма взвешенных признаков — линейная часть logistic regression.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">β_j</span><span class="fa-name">коэффициент при j-м признаке</span><span class="fa-desc">Показывает, на сколько изменится log-odds при росте x_j на 1 единицу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Числовое значение j-й колонки — умножается на β_j.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> β_j — это интерпретируемый эффект признака в пространстве log-odds: рост x_j на 1 → log-odds сдвигается на β_j.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Каждый признак добавляет свой «голос» к шансам события, β_j задаёт его вес.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β_j=0.5 для «возраст»: человек на 1 год старше → log-odds растёт на 0.5 → odds умножаются на e^0.5 ≈ 1.65.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -887,16 +946,17 @@ f(t, x_{-j})</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">PDP(x_j = t)</span><span class="fa-name">partial dependence при значении t</span><span class="fa-desc">Среднее предсказание модели, когда j-й признак принудительно зафиксирован на значении t.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">анализируемый признак</span><span class="fa-desc">Признак, эффект которого исследуем — перебираем его по диапазону значений t.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">фиксированное значение признака x_j</span><span class="fa-desc">Конкретное значение, которое мы «вставляем» в x_j для каждого объекта датасета.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(t, x_{-j})</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Модель f вызывается с x_j=t и реальными значениями остальных признаков x_{-j} из датасета.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_{-j}</span><span class="fa-name">остальные признаки</span><span class="fa-desc">Все признаки кроме j-го — берутся из каждого реального объекта без изменений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">average over dataset</span><span class="fa-name">маргинализация по датасету</span><span class="fa-desc">Усредняем f(t, x_{-j}) по всем объектам — «устраняем» влияние остальных признаков.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для каждого t: берём каждый объект датасета, подставляем x_j=t, запускаем модель, усредняем предсказания — получаем PDP(t).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как звучало бы среднее предсказание, если всем пациентам назначить одну дозу t, а всё остальное оставить как есть?</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 объекта, t=30 (возраст): f(30,x₁)=0.2, f(30,x₂)=0.5, f(30,x₃)=0.8 → PDP(30) = (0.2+0.5+0.8)/3 = 0.50.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -970,16 +1030,15 @@ prediction = base_value + Σ_j φ_j
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">prediction</span><span class="fa-name">предсказание модели для конкретного объекта</span><span class="fa-desc">Итоговый output модели — тот же, что и при обычном вызове f(x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">base_value</span><span class="fa-name">базовое предсказание (ожидание по датасету)</span><span class="fa-desc">Среднее предсказание модели по всему обучающему/фоновому датасету — стартовая точка разложения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_j φ_j</span><span class="fa-name">сумма SHAP-вкладов</span><span class="fa-desc">Сумма вкладов всех признаков — точно равна разнице prediction − base_value.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">φ_j</span><span class="fa-name">SHAP-значение j-го признака</span><span class="fa-desc">Вклад j-го признака в отклонение от base_value: положительный — толкает вверх, отрицательный — вниз.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SHAP раскладывает любое предсказание: base_value + «вклад признака 1» + «вклад признака 2» + … = итоговый prediction.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Счёт в игре: базовый балл команды + очки каждого игрока = итоговый результат. Каждый φ_j — это сколько принёс конкретный признак.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> base_value=0.4, φ_возраст=+0.15, φ_доход=+0.10, φ_опыт=−0.05 → prediction = 0.4+0.15+0.10−0.05 = 0.60.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -1774,7 +1833,40 @@ shap.force_plot(
     <details><summary>[Hard] Interpretation vs causality</summary><p>Почему высокий SHAP value не доказывает причинное влияние признака? <strong>Решение:</strong> он объясняет поведение модели на данных, а не результат intervention в реальном мире.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-19">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между глобальной и локальной интерпретируемостью?</summary>
+      <div class="ml-quiz__a"><p>Глобальная интерпретируемость объясняет поведение всей модели (feature importance, partial dependence plots). Локальная объясняет конкретное предсказание (почему модель дала именно этот ответ для данного примера — LIME, SHAP).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое SHAP-значения и как их интерпретировать?</summary>
+      <div class="ml-quiz__a"><p>SHAP (SHapley Additive exPlanations) распределяет вклад каждого признака в отклонение предсказания от среднего. SHAP(j) для признака j показывает, насколько он сдвигает предсказание вверх или вниз относительно базового значения E[f(x)]. Основан на теории кооперативных игр.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что показывает Partial Dependence Plot (PDP)?</summary>
+      <div class="ml-quiz__a"><p>PDP показывает маргинальный эффект одного признака на предсказание при усреднении по всем остальным признакам. Он помогает понять направление и форму зависимости (линейная, монотонная, немонотонная), но предполагает независимость признаков.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему интерпретируемость важна в ML-системах, используемых в реальных задачах?</summary>
+      <div class="ml-quiz__a"><p>Она необходима для: (1) обнаружения ошибок модели и data leakage, (2) доверия пользователей и соответствия регуляторным требованиям (GDPR right to explanation), (3) debugging — понять, почему модель ошибается, (4) обнаружения дискриминационных паттернов.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-19">
     <h2>Checkpoint: 2.19 Model Interpretation</h2>
     <ul>
       <li>Чем global interpretation отличается от local interpretation?</li>
@@ -1784,5 +1876,6 @@ shap.force_plot(
       <li>Rubber duck: объясни интерпретацию модели как аудит её поведения, а не доказательство устройства мира.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

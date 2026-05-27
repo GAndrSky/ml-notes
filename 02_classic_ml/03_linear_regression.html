@@ -588,7 +588,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/03_linear_regression.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -601,8 +601,147 @@
     <h1>2.3 Линейная регрессия</h1>
     <p class="muted">Prediction as a weighted sum, MSE, gradients, normal equation, geometry of best-fit line</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Линейная регрессия — отправная точка для всего ML. Простая формула y = wᵀx + b скрывает MSE, аналитическое решение через Normal Equation и геометрию наименьших квадратов.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Формула линейной регрессии и аналитическое решение Normal Equation</li>
+      <li>Интерпретация коэффициентов w и их геометрический смысл</li>
+      <li>Метрики MSE, MAE, R² — что они измеряют</li>
+      <li>Почему линейная регрессия = MLE при гауссовском шуме</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Метрики регрессии (2.6)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Градиентный спуск на числах — y = wx, три точки</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Начальные значения</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Данные: три точки (x, y). Модель: ŷ = w·x (без смещения). Старт: w = 0.</p>
+        <div class="wt-formula">x = [1, 2, 3],  y_true = [2, 4, 6]
+w = 0,  lr = 0.1</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Forward: предсказания ŷ</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Подставляем текущий w в модель.</p>
+        <div class="wt-formula">ŷ = w · x = 0 × [1,2,3] = [0, 0, 0]</div>
+        <div class="wt-result">Предсказания нулевые — модель ещё ничему не научилась.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Loss: MSE</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>MSE = среднее квадратичное отклонение предсказания от правильного ответа.</p>
+        <div class="wt-formula">L = (1/n) Σ(ŷᵢ - yᵢ)²
+  = ((0-2)² + (0-4)² + (0-6)²) / 3
+  = (4 + 16 + 36) / 3 = 18.67</div>
+        <div class="wt-result"><strong>L = 18.67</strong> — высокий loss, нужно обновить w.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Gradient ∂L/∂w</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Производная MSE по w. Правило цепочки: ∂L/∂w = (2/n) Σ (ŷᵢ - yᵢ) · xᵢ.</p>
+        <div class="wt-formula">∂L/∂w = (2/3) × [(0-2)·1 + (0-4)·2 + (0-6)·3]
+       = (2/3) × [-2 - 8 - 18]
+       = (2/3) × (-28) = -18.67</div>
+        <div class="wt-result">Отрицательный градиент → нужно <em>увеличить</em> w.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Обновление w</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Шаг градиентного спуска: w ← w − lr · ∂L/∂w.</p>
+        <div class="wt-formula">w_new = 0 − 0.1 × (−18.67) = 0 + 1.867 = 1.867</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Проверка: новые предсказания</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Считаем ŷ с обновлённым w = 1.867.</p>
+        <div class="wt-formula">ŷ = 1.867 × [1, 2, 3] = [1.87, 3.73, 5.60]
+L  = ((1.87-2)² + (3.73-4)² + (5.60-6)²) / 3
+   ≈ (0.017 + 0.073 + 0.160) / 3 ≈ 0.083</div>
+        <div class="wt-result"><strong>Loss упал с 18.67 → 0.083</strong> за один шаг. Правильный ответ: y = 2x, w → 2.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">regression</span>
       <span class="mini-tag">MSE</span>
@@ -624,15 +763,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Числовой ответ модели: взвешенная сумма всех d признаков плюс свободный член b.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">вес j-го признака</span><span class="fa-desc">Коэффициент при x_j: при росте x_j на 1 прогноз ŷ изменяется на w_j.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Числовое значение j-й характеристики объекта (j = 1, ..., d).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член (bias)</span><span class="fa-desc">Базовый уровень предсказания при x_1=...=x_d=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Предсказание — взвешенная сумма признаков. Каждый вес w_j показывает "цену" единицы признака x_j — независимо от других признаков.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена = площадь·цена_м² + этаж·доплата_этаж + … + базовый тариф.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d=2, w=[0.5,2], x=[50,3], b=10 → ŷ=25+6+10=41.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -689,15 +828,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Числовой ответ на одном объекте: wx + b — прямая линия в пространстве x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">наклон прямой</span><span class="fa-desc">Коэффициент при x: на сколько меняется ŷ при увеличении x на 1 единицу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">значение признака</span><span class="fa-desc">Единственный числовой признак объекта (одномерный случай).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член (intercept)</span><span class="fa-desc">Сдвиг прямой: значение ŷ при x=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это уравнение прямой: w — наклон, b — точка пересечения с осью y. Задача — найти прямую, ближайшую к облаку точек.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Цена такси: b — посадочный тариф, w — цена за километр, x — расстояние.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=2, b=1, x=3 → ŷ=2·3+1=7.</div>
     </div>
     <p>
           Геометрически это просто прямая на плоскости.
@@ -713,16 +852,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Скаляр — число, которое модель выдаёт для данного объекта. Это и есть «ответ» линейной регрессии.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов признаков</span><span class="fa-desc">Каждый элемент w_j показывает, насколько j-й признак влияет на ответ. Большой |w_j| — признак важен, знак задаёт направление.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков объекта</span><span class="fa-desc">d числовых характеристик одного наблюдения. Например, для квартиры: площадь, этаж, число комнат, …</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член (bias)</span><span class="fa-desc">Сдвиг: базовый уровень предсказания при x=0. Без него гиперплоскость вынуждена проходить через начало координат.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> w^T x — скалярное произведение, «взвешенная сумма» признаков. Добавление b позволяет смещать гиперплоскость в любое место пространства.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена = стоимость₁·кол-во₁ + стоимость₂·кол-во₂ + … + базовый тариф. Веса w — тарифы, признаки x — количества, b — базовый тариф.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[0.5, 2], x=[50, 3], b=10. ŷ = 0.5·50 + 2·3 + 10 = 25+6+10 = 41 (например, тысяч рублей аренды).</div>
     </div>
     <p>
           В векторной форме линейная регрессия описывает гиперплоскость в пространстве признаков.
@@ -738,16 +876,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x^(i)</span><span class="fa-name">i-й объект выборки</span><span class="fa-desc">Вектор в R^d — d признаков одного наблюдения. Верхний индекс (i) нумерует объект, нижний — признак.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность признакового пространства</span><span class="fa-desc">Число признаков в каждом объекте. Например, d=10 означает 10 числовых колонок в таблице данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание для i-го объекта</span><span class="fa-desc">Результат применения модели к i-му объекту: скалярное произведение w^T x^(i) + b.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов</span><span class="fa-desc">d коэффициентов, по одному на каждый признак. Настраиваются в процессе обучения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Сдвиг — позволяет предсказанию не равняться нулю при x=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый объект — точка в d-мерном пространстве. Модель строит гиперплоскость; w задаёт её наклон, b — положение. Предсказание — высота этой плоскости над точкой x^(i).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка квартиры: x^(i)=[50м², 3 этаж, 2 комнаты], w=[500, -50, 100] — тарифы за м², этаж, комнату. Итог: линейная цена без торга.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x^(i)=[2,3], w=[1,2], b=0.5. ŷ^(i) = 1·2 + 2·3 + 0.5 = 2+6+0.5 = 8.5.</div>
     </div>
     <div class="warn">
       <strong>Важно:</strong> “линейная” регрессия означает линейность по параметрам <code>w</code> и <code>b</code>.
@@ -772,15 +910,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e^(i)</span><span class="fa-name">ошибка на i-м объекте</span><span class="fa-desc">Signed residual: положительный — прогноз завышен, отрицательный — занижен.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Предсказание линейной регрессии для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное числовое значение из обучающей выборки (target).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ошибка со знаком: e^(i) > 0 если модель завысила прогноз, e^(i) < 0 если занизила.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разница между обещанным и реальным: +2 означает "сказали 8, оказалось 10".</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ŷ^(1)=8, y^(1)=10 → e^(1)=8−10=−2 (недооценка). ŷ^(2)=12, y^(2)=10 → e^(2)=+2 (переоценка).</div>
     </div>
     <h3>Squared error</h3>
     <div class="formula">
@@ -789,15 +926,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(e^(i))^2</span><span class="fa-name">квадрат ошибки</span><span class="fa-desc">Положительная мера отклонения: всегда ≥ 0, большие ошибки штрафуются непропорционально.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Предсказание для i-го объекта: w^T x^(i) + b.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение из обучающей выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(·)^2</span><span class="fa-name">возведение в квадрат</span><span class="fa-desc">Делает ошибки положительными и наказывает крупные промахи сильнее: ошибка 2 → штраф 4, ошибка 4 → штраф 16.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Квадрат нейтрализует знак ошибки и нелинейно штрафует крупные промахи — именно это делает MSE чувствительным к выбросам.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как площадь квадрата, построенного на промахе: мелкий промах — маленький квадрат, крупный — огромный.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ŷ^(1)=8, y^(1)=10 → ошибка=−2, squared error=4. ŷ^(2)=4, y^(2)=10 → ошибка=−6, squared error=36.</div>
     </div>
     <h3>MSE на всём train</h3>
     <div class="formula">
@@ -806,18 +943,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(w,b)</span><span class="fa-name">MSE loss — целевая функция</span><span class="fa-desc">Mean Squared Error по всей обучающей выборке — то, что минимизируется при обучении регрессии.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка на размер выборки</span><span class="fa-desc">Делим на n, чтобы loss не зависел от размера датасета — сравниваем модели независимо от n.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем квадрат ошибки по каждому из n обучающих объектов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание модели для объекта i</span><span class="fa-desc">Вывод модели w^T x^(i) + b — то, что модель предсказала для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинное значение для объекта i</span><span class="fa-desc">Правильный ответ из обучающей выборки для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(ŷ−y)²</span><span class="fa-name">квадрат ошибки</span><span class="fa-desc">Штрафует за отклонение: большие ошибки наказываются непропорционально сильно, квадрат всегда ≥ 0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MSE измеряет среднюю «площадь» квадратных отклонений — чем меньше ошибается модель на каждом объекте, тем меньше loss.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Среднее расстояние в квадрате от прогнозов до реальных значений — хочем, чтобы точки лежали как можно ближе к линии.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=3, ошибки: 1, -2, 3 → MSE = (1²+4+9)/3 = 14/3 ≈ 4.67.</div>
     </div>
     <p>
       Подставляя модель:
@@ -828,18 +964,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(w,b)</span><span class="fa-name">MSE loss — функция потерь</span><span class="fa-desc">Среднеквадратичная ошибка по всей выборке. Чем меньше L, тем лучше модель описывает данные.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка на размер выборки</span><span class="fa-desc">Усредняет сумму квадратов ошибок по n объектам, делая loss независимым от размера выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем квадраты ошибок по каждому из n объектов обучающей выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w^T x^(i) + b</span><span class="fa-name">прогноз в развёрнутом виде</span><span class="fa-desc">Явная подстановка модели вместо ŷ. Показывает, от каких параметров (w, b) зависит loss — именно по ним берётся градиент.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Метка из обучающей выборки, которую модель пытается воспроизвести. Разность (прогноз − y^(i)) — это residual.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(·)²</span><span class="fa-name">квадрат ошибки</span><span class="fa-desc">Делает все ошибки положительными и штрафует большие промахи сильнее: ошибка 2 даёт штраф 4, ошибка 4 — штраф 16.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это та же MSE, что и выше, но с явно подставленной моделью. Теперь видно: L зависит от w и b — именно по ним будем дифференцировать при gradient descent.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Дистанция стрелка: каждый выстрел промахивается на (прогноз − цель), промахи возводим в квадрат и усредняем. Задача — настроить прицел (w, b) так, чтобы среднее отклонение было минимальным.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=2, объекты: y^(1)=10, прогноз=8 → ошибка²=4; y^(2)=5, прогноз=6 → ошибка²=1. L = (4+1)/2 = 2.5.</div>
     </div>
     <div class="intuition">
       Почему квадрат ошибки? Потому что:
@@ -872,16 +1007,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min_{w,b}</span><span class="fa-name">оптимизация по w и b</span><span class="fa-desc">Ищем веса и bias, при которых суммарная ошибка минимальна.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по объектам</span><span class="fa-desc">Суммирует квадраты ошибок для каждого из n обучающих примеров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер обучающей выборки — количество примеров в сумме.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное числовое значение для i-го объекта (target).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">wx^(i)+b</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Линейная комбинация признаков: w·x^(i) плюс свободный член b.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ищем линию, которая минимизирует суммарные квадраты вертикальных расстояний от точек до линии — квадраты residuals.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как натянуть резинку через облако точек: минимизируем суммарное напряжение (квадраты отклонений).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y^(1)=10, прогноз=8 → (10-8)²=4. y^(2)=6, прогноз=5 → (6-5)²=1. Итого SSE=5.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -900,15 +1035,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r^(i)</span><span class="fa-name">residual (остаток)</span><span class="fa-desc">Разность между истинным значением и прогнозом для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное числовое значение из обучающей выборки (target).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Предсказание линейной регрессии для i-го объекта: w^T x^(i) + b.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Residual — вертикальное расстояние от точки до линии регрессии. Least squares минимизирует сумму их квадратов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как промах стрелка: r^(i) — насколько выстрел (прогноз) не попал в мишень (истинный ответ).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y^(1)=10, ŷ^(1)=8 → r^(1)=10−8=2. Знак важен: +2 означает недооценку.</div>
     </div>
     <p>
           Это вертикальное расстояние от точки до линии предсказания.
@@ -1029,15 +1163,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание для i-го объекта</span><span class="fa-desc">Число, которое модель выдаёт для i-го примера из обучающей выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вес (скаляр)</span><span class="fa-desc">Наклон прямой — единственный коэффициент в одномерном случае.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x^(i)</span><span class="fa-name">признак i-го объекта</span><span class="fa-desc">Значение единственного признака для i-го обучающего примера.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Сдвиг прямой — базовый уровень прогноза при x=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Одномерная линейная регрессия: прямая линия y=wx+b, где w — наклон, b — сдвиг. Задача — найти w и b, минимизирующие MSE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как прямая на графике цены: w — скорость роста (рублей/м²), b — базовая ставка.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=2, b=1, x^(1)=3 → ŷ^(1)=2·3+1=7.</div>
     </div>
     <div class="formula">
       L(w,b)=\frac{1}{n}\sum_{i=1}^n (wx^{(i)} + b - y^{(i)})^2
@@ -1045,17 +1179,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(w,b)</span><span class="fa-name">MSE — цель минимизации</span><span class="fa-desc">Среднеквадратичная ошибка по n объектам. Это поверхность в пространстве (w,b), по которой движется gradient descent.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка</span><span class="fa-desc">Усредняем ошибки по всей выборке, чтобы масштаб loss не зависел от n.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">wx^(i) + b</span><span class="fa-name">прогноз для i-го объекта</span><span class="fa-desc">Линейная функция для одномерного случая (w — скаляр). Здесь видно, что L квадратична по w и b — поверхность выпуклая, минимум единственный.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Метка i-го объекта. Разность (wx^(i)+b − y^(i)) — это signed residual (ошибка со знаком).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вес (скаляр в 1D случае)</span><span class="fa-desc">Наклон прямой. Оптимизируется gradient descent-ом.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Сдвиг прямой. Оптимизируется вместе с w.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MSE — выпуклая парабола по w и b. Gradient descent находит её дно — это и есть оптимальные параметры прямой.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Шарик в чаше (выпуклая поверхность MSE). Градиент — уклон в текущей точке, шаг — движение вниз. После нескольких шагов шарик достигает дна.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=1, b=0, x^(1)=2, y^(1)=5. Residual = 1·2+0−5 = −3. Вклад в loss: 9. После нормировки на n вычитается из суммы.</div>
     </div>
     <h3>Градиенты</h3>
     <div class="formula">
@@ -1066,17 +1200,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂w</span><span class="fa-name">частная производная loss по w</span><span class="fa-desc">Показывает, в какую сторону и насколько нужно изменить w, чтобы уменьшить L. Gradient descent двигает w в направлении −∂L/∂w.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2/n</span><span class="fa-name">константа из правила дифференцирования</span><span class="fa-desc">Появляется при дифференцировании (·)² по цепному правилу. На обучение влияет через масштаб — можно поглотить в learning rate.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">wx^(i)+b−y^(i)</span><span class="fa-name">residual (ошибка) i-го объекта</span><span class="fa-desc">Signed residual: прогноз минус истина. При переобучении можно думать так: градиент — это взвешенная сумма ошибок, взвешенная на признак x^(i).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x^(i)</span><span class="fa-name">признак i-го объекта</span><span class="fa-desc">Множитель от дифференцирования w·x^(i) по w. Объекты с большими |x^(i)| вносят больший вклад в градиент.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент по w — это сумма произведений (ошибка × признак). Если модель систематически завышает прогнозы (residual>0) у объектов с большим x, нужно уменьшить w.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Тренер корректирует ошибки: чем больше значение признака x^(i) у ошибочного объекта, тем сильнее «дёргается» вес w в нужную сторону.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=1, x^(1)=2, prогноз=8, y^(1)=5. Residual=3. ∂L/∂w = (2/1)·3·2 = 12. Значит w нужно уменьшить.</div>
     </div>
     <div class="formula">
       \frac{\partial L}{\partial b}
@@ -1086,17 +1218,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂b</span><span class="fa-name">частная производная loss по b</span><span class="fa-desc">Показывает, насколько сдвиг b влияет на loss. Gradient descent корректирует b по этому градиенту.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2/n</span><span class="fa-name">коэффициент из дифференцирования</span><span class="fa-desc">Аналогично градиенту по w — от правила дифференцирования квадрата.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">wx^(i)+b−y^(i)</span><span class="fa-name">residual i-го объекта</span><span class="fa-desc">Ошибка со знаком. Производная b·const по b = const, поэтому нет множителя x^(i) (в отличие от ∂L/∂w). Градиент — просто среднее всех ошибок.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w, b</span><span class="fa-name">текущие параметры</span><span class="fa-desc">Параметры модели в текущей итерации. Входят в вычисление residual, который определяет направление и величину обновления.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ∂L/∂b — среднее всех ошибок (без взвешивания на x). Если модель систематически завышает, ∂L/∂b>0, и b уменьшается — прямая сдвигается вниз.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Корректировка нулевого уровня весов: если в среднем прибор врёт на +5, надо сдвинуть нулевую отметку на −5. Это ровно то, что делает ∂L/∂b.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 объекта с ошибками +2, −1, +3. ∂L/∂b = (2/3)·(2−1+3) = (2/3)·4 ≈ 2.67. Значит b нужно уменьшить.</div>
     </div>
     <div class="step"><strong>Шаг 1.</strong> Считаем предсказания <code>ŷ</code>.</div>
     <div class="step"><strong>Шаг 2.</strong> Считаем ошибки <code>ŷ - y</code>.</div>
@@ -1110,15 +1240,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w ←</span><span class="fa-name">обновление веса</span><span class="fa-desc">Присваивание нового значения: старый w заменяется результатом шага в сторону антиградиента.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate (шаг обучения)</span><span class="fa-desc">Контролирует размер шага. Слишком большой — алгоритм расходится, слишком маленький — сходится медленно. Подбирается как гиперпараметр.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂w</span><span class="fa-name">градиент loss по w</span><span class="fa-desc">Направление наибольшего роста L. Знак минус разворачивает движение в сторону убывания — это и есть gradient descent.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">текущий вес (правая сторона)</span><span class="fa-desc">Значение w до обновления. После итерации w = w_old − η·(∂L/∂w). Повторяется до сходимости.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Маленький шаг в направлении «под уклон» на выпуклой поверхности MSE. При правильном η каждая итерация уменьшает L, пока не достигнем минимума.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Альпинист спускается в тумане: он не видит дно, но чувствует уклон (градиент) и делает шаг в сторону склона. η — длина шага. Слишком большой шаг — перескочишь через дно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=3.0, η=0.1, ∂L/∂w=5.0. Новое w = 3.0 − 0.1·5.0 = 2.5. Loss уменьшился — движемся к минимуму.</div>
     </div>
     <div class="formula">
       b \leftarrow b - \eta \frac{\partial L}{\partial b}
@@ -1126,15 +1256,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b ←</span><span class="fa-name">обновление bias</span><span class="fa-desc">Аналогично обновлению w: bias корректируется на шаг η в направлении антиградиента.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Тот же гиперпараметр, что и для w. Часто для w и b используют единый η.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂b</span><span class="fa-name">градиент loss по b</span><span class="fa-desc">Среднее всех residuals (без весов x). Если прямая систематически выше данных, ∂L/∂b>0 и b уменьшается.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">текущий bias (правая сторона)</span><span class="fa-desc">Значение до обновления. После итерации b = b_old − η·(∂L/∂b). W и b обновляются одновременно на каждой итерации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Bias — вертикальный сдвиг прямой. Если в среднем прогнозы выше меток, нужно сдвинуть прямую вниз — это делает ∂L/∂b с правильным знаком.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Калибровка весов: сначала настраиваем чувствительность (w), потом сдвигаем нулевую отметку (b). GD делает оба шага одновременно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> b=1.0, η=0.1, ∂L/∂b=2.67. Новое b = 1.0 − 0.1·2.67 = 0.733. Прямая немного опустилась — меньше систематически завышает.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1201,15 +1331,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X ∈ R^{n×d}</span><span class="fa-name">матрица данных</span><span class="fa-desc">n строк — объекты, d столбцов — признаки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Количество строк в матрице X — размер обучающей выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">число признаков</span><span class="fa-desc">Количество столбцов в X и длина вектора весов w.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w ∈ R^d</span><span class="fa-name">вектор весов</span><span class="fa-desc">d коэффициентов: по одному на каждый признак.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y ∈ R^n</span><span class="fa-name">вектор целевых значений</span><span class="fa-desc">n правильных ответов, соответствующих строкам X.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матричная запись позволяет компактно выразить n уравнений: каждая строка X — один объект, каждый столбец — один признак.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как таблица в Excel: n строк (объекты) × d столбцов (признаки) = матрица X.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 50 объектов с 10 признаками: X ∈ R^{50×10}, w ∈ R^10, y ∈ R^50.</div>
     </div>
     <div class="formula">
       \hat{\mathbf{y}} = X\mathbf{w} + b\mathbf{1}
@@ -1217,14 +1348,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">вектор предсказаний</span><span class="fa-desc">n-мерный вектор ŷ ∈ R^n — предсказания для всех n объектов сразу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">матрица признаков</span><span class="fa-desc">n×d матрица данных: каждая строка — объект, каждый столбец — признак.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов</span><span class="fa-desc">d коэффициентов — по одному на каждый признак. Xw = матрично-векторное произведение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b·1</span><span class="fa-name">bias (broadcast)</span><span class="fa-desc">Скаляр b, умноженный на вектор единиц 1 ∈ R^n — добавляет b ко всем n предсказаниям.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матричная форма вычисляет все n предсказаний за одно умножение: ŷ = Xw + b·1, где 1 — столбец единиц.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как таблица умножения: одна операция Xw сразу даёт взвешенные суммы для всех строк, плюс константа b.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X ∈ R^{3×2}, w=[1,2], b=0.5: ŷ_i = x_{i1}·1 + x_{i2}·2 + 0.5 для i=1,2,3.</div>
     </div>
     <p>
       Если bias включить прямо в матрицу признаков, добавив столбец единиц:
@@ -1232,7 +1364,7 @@
 
     <div class="formula">
       \tilde{X} = [X \ \mathbf{1}],\quad
-      \tilde{\mathbf{w}} = 
+      \tilde{\mathbf{w}} =
       \begin{bmatrix}
       \mathbf{w}\\
       b
@@ -1241,14 +1373,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X̃</span><span class="fa-name">расширенная матрица признаков</span><span class="fa-desc">X с добавленным столбцом единиц: X̃ ∈ R^{n×(d+1)}. Позволяет включить bias b в вектор параметров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1</span><span class="fa-name">вектор единиц</span><span class="fa-desc">n-мерный столбец единиц — добавляется к X справа для учёта bias.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w̃</span><span class="fa-name">расширенный вектор параметров</span><span class="fa-desc">Вектор [w; b] ∈ R^{d+1}: веса w и bias b объединены в один вектор размера d+1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Последний элемент w̃: скаляр-сдвиг, теперь включённый в вектор параметров w̃.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Трюк с добавлением единичного столбца позволяет трактовать bias как ещё один вес — тогда X̃w̃ включает и все Xw-слагаемые, и b.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как добавить константу в таблицу: вместо отдельного учёта фиксированного сбора просто добавляем колонку "1" в данные.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X=[[2],[3]], 1=[[1],[1]] → X̃=[[2,1],[3,1]], w̃=[0.5,1]: X̃w̃=[2,2.5].</div>
     </div>
     <div class="formula">
       \hat{\mathbf{y}} = \tilde{X}\tilde{\mathbf{w}}
@@ -1256,14 +1389,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">вектор предсказаний</span><span class="fa-desc">n-мерный вектор: ŷ = X̃w̃ вычисляет предсказания для всех n объектов сразу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X̃</span><span class="fa-name">расширенная матрица</span><span class="fa-desc">X с добавленным столбцом единиц: X̃ ∈ R^{n×(d+1)}.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w̃</span><span class="fa-name">расширенный вектор [w; b]</span><span class="fa-desc">d весов признаков плюс bias — всё в одном векторе. Упрощает запись: вместо Xw+b достаточно X̃w̃.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Единственное матричное умножение X̃w̃ заменяет n отдельных вычислений — компактная запись для нормального уравнения.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как калькулятор цен оптом: одна операция вместо расчёта для каждого клиента.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=2, d=1: X̃=[[2,1],[3,1]], w̃=[0.5,1] → ŷ=[2,2.5].</div>
     </div>
     <h3>MSE в матричной форме</h3>
     <div class="formula">
@@ -1272,16 +1405,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(w̃)</span><span class="fa-name">MSE loss в матричной форме</span><span class="fa-desc">Та же среднеквадратичная ошибка, что и поэлементно, но записана через матрицы. Удобна для вывода аналитического решения (normal equation).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка на размер выборки</span><span class="fa-desc">Делает loss независимым от n — усредняем квадрат нормы по числу объектов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X̃</span><span class="fa-name">расширенная матрица признаков</span><span class="fa-desc">Матрица X с добавленным столбцом единиц: X̃ = [X | 1]. Позволяет включить bias b в вектор параметров w̃ без отдельного учёта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w̃</span><span class="fa-name">расширенный вектор параметров</span><span class="fa-desc">Вектор [w; b] — веса и bias объединены в один вектор. Результат X̃w̃ даёт все предсказания сразу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">вектор истинных меток</span><span class="fa-desc">Все n целевых значений из обучающей выборки, собранные в столбец.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||·||₂²</span><span class="fa-name">квадрат L2-нормы вектора ошибок</span><span class="fa-desc">||X̃w̃−y||₂² = Σ(ŷ_i − y_i)². Это сумма квадратов всех residuals — тот же MSE·n.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матричная запись компактно кодирует то, что поэлементно занимало несколько строк. Она открывает путь к normal equation: берём производную, приравниваем к нулю — и сразу получаем w* = (X̃^T X̃)^{-1} X̃^T y.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вместо 1000 уравнений (по объекту) — одно матричное уравнение. Как тензор в физике: тот же смысл, но компактная запись позволяет оперировать всей системой разом.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=2: X̃w̃=[8,6], y=[10,5]. Разность=[−2,1]. ||·||₂²=4+1=5. L=5/2=2.5 — та же MSE, что и поэлементно.</div>
     </div>
     <div class="intuition">
       Это уже очень важный мост к линейной алгебре:
@@ -1303,15 +1437,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w*</span><span class="fa-name">оптимальный вектор параметров</span><span class="fa-desc">Аналитическое решение задачи least squares — параметры, при которых MSE минимален. Это точный минимум, не приближение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T X</span><span class="fa-name">матрица Грама (d×d)</span><span class="fa-desc">Произведение транспонированной матрицы признаков на саму себя. Квадратная, симметричная. Если обратима, normal equation имеет единственное решение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(X^T X)^{-1}</span><span class="fa-name">обратная матрица Грама</span><span class="fa-desc">Существует, когда признаки не мультиколлинеарны. При мультиколлинеарности X^T X вырождена — нужна псевдообратная или регуляризация (Ridge).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T y</span><span class="fa-name">вектор корреляций признаков с целевой переменной</span><span class="fa-desc">d-мерный вектор: j-й элемент — скалярное произведение j-го признака (столбца X) с вектором меток y. Кодирует, насколько каждый признак коррелирует с y.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">вектор целевых значений</span><span class="fa-desc">n-мерный столбец с истинными метками обучающей выборки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Normal equation — это результат приравнивания градиента ∂L/∂w к нулю и решения системы. В одно действие даёт точный ответ без итераций, но требует O(d³) для обращения матрицы.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как решить систему линейных уравнений через обратную матрицу: Ax=b → x=A⁻¹b. Здесь A=X^T X, b=X^T y. Метод Крамера для regression.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X=[[1],[2],[3]], y=[2,4,5]. X^T X=[[14]], X^T y=[[24]]. w* = 24/14 ≈ 1.71. Прямая y=1.71x — оптимальный наклон.</div>
     </div>
     <p>
       Это и есть <span class="hl-amber">normal equation</span>.
@@ -1374,15 +1509,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">наблюдаемый ответ</span><span class="fa-desc">То, что мы реально измеряем в данных. В отличие от ŷ, это «правда» — но она содержит шум ε.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w^T x + b</span><span class="fa-name">детерминированный сигнал</span><span class="fa-desc">Линейный предиктор — «идеальный» прогноз без шума. Это μ в нормальном распределении ответа y|x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">случайный шум</span><span class="fa-desc">Всё, что модель не может объяснить: ошибки измерения, пропущенные признаки, случайность. Предполагается ε~N(0,σ²).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов признаков</span><span class="fa-desc">Параметры линейного предиктора. В статистической трактовке — истинные коэффициенты генерирующей модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень y при x=0. В статистике соответствует intercept.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Модель говорит: «данные = сигнал + шум». Задача регрессии — оценить сигнал (w, b), не переобучившись на шум ε. Предположение ε~N(0,σ²) делает MSE правильным criterion-ом по MLE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Измерение температуры: истинная t° = линейный тренд + погрешность прибора. Модель ищет тренд, не подгоняя кривую под каждый шум термометра.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=2, b=1, x=3, ε=0.3. Наблюдаем y = 2·3+1+0.3 = 7.3. Модель предсказывает ŷ=7 (без шума). Residual=0.3=ε.</div>
     </div>
     <p>
       где <code>ε</code> — шум, который модель не может объяснить.
@@ -1407,16 +1543,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(y|x)</span><span class="fa-name">условная плотность ответа</span><span class="fa-desc">Вероятностная модель: при данных признаках x ответ y имеет нормальное распределение. Это и есть вероятностная интерпретация линейной регрессии.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N(·, ·)</span><span class="fa-name">нормальное распределение</span><span class="fa-desc">Первый аргумент — среднее (предсказание), второй — дисперсия шума σ². Предположение гауссового шума делает MSE оптимальным критерием MLE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w^T x + b</span><span class="fa-name">линейный предиктор — среднее предсказания</span><span class="fa-desc">Скалярное произведение весов w и признаков x плюс смещение b. Это μ нормального распределения — «центральное предсказание» для данного x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия шума — неопределённость предсказания</span><span class="fa-desc">Параметр разброса вокруг предсказания. Малый σ² — данные плотно около прямой. Большой σ² — данные сильно шумят.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> p(y|x)=N(w^T x+b, σ²) говорит: наблюдаемый y — это линейный сигнал плюс гауссовский шум. Это предположение и делает MSE оптимальным критерием по MLE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как измерение с погрешностью: истинное значение w^T x+b, но прибор «шумит» с дисперсией σ². Каждое наблюдение немного отличается от идеала.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[1,2], x=[3,4], b=0.5. Среднее: 1·3+2·4+0.5=12.5. При σ²=1: y~N(12.5,1), большинство значений в [11.5, 13.5].</div>
     </div>
     <div class="intuition">
       Это очень важная связь:
@@ -1485,15 +1620,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Скаляр — числовой ответ модели для одного объекта: взвешенная сумма признаков плюс bias.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">вес j-го признака</span><span class="fa-desc">Коэффициент: при росте x_j на 1 прогноз меняется на w_j (при прочих равных).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Числовое значение j-й характеристики объекта (j = 1, ..., d).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член (bias)</span><span class="fa-desc">Базовый уровень предсказания при x_1=...=x_d=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Предсказание — это "смета": каждый признак вносит вклад w_j·x_j, и всё складывается плюс базовая ставка b.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Оценка квартиры: ŷ = 500·м² + 100·этаж + (−200)·шум + 50000. Каждый фактор имеет свой "тариф" w_j.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[0.5, 2], x=[50, 3], b=10: ŷ=0.5·50+2·3+10=25+6+10=41.</div>
     </div>
     <p>
       При прочих равных коэффициент <code>w_j</code> показывает,
@@ -1506,16 +1641,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Δx_j = 1</span><span class="fa-name">увеличение признака j на 1</span><span class="fa-desc">Единичное изменение j-го признака при прочих признаках фиксированных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Δŷ</span><span class="fa-name">изменение прогноза</span><span class="fa-desc">Насколько меняется предсказание при Δx_j = 1 — ровно на w_j.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">коэффициент j-го признака</span><span class="fa-desc">Наклон: при росте x_j на 1 единицу прогноз меняется ровно на w_j (при прочих равных).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это главное свойство линейной интерпретации: w_j — это "сколько даёт один дополнительный день/метр/рубль" признака j.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как цена за единицу товара: если w_j=500, каждый дополнительный м² квартиры добавляет 500 к цене.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w_j=2.5 для признака "площадь". Площадь+1 м² → ŷ+2.5 тыс. руб. — при прочих признаках неизменных.</div>
     </div>
     <div class="info">
       Но эта интерпретация корректна только если:
@@ -1758,37 +1891,29 @@ print("bias:", model.bias.data)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">наблюдаемый ответ i-го объекта</span><span class="fa-desc">То, что мы измерили или наблюдали. Это y_i = детерминированная часть + случайный шум.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w^T x_i + b</span><span class="fa-name">линейный сигнал — детерминированная часть</span><span class="fa-desc">Предсказание модели для i-го объекта. Скалярное произведение весов и признаков плюс смещение. Это «идеальный ответ» без шума.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε_i</span><span class="fa-name">случайный шум — ошибка наблюдения</span><span class="fa-desc">Гауссовский шум для i-го объекта. Независимый от всего остального. Моделирует неточности измерений и пропущенные факторы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N(0, σ²)</span><span class="fa-name">нормальное распределение шума</span><span class="fa-desc">Шум несмещён (среднее 0) и имеет дисперсию σ². Это предположение и приводит к MSE как оптимальному критерию обучения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Данные = сигнал + шум. w^T x_i+b — это то, что модель предсказывает. ε_i — то, что она не может объяснить. Предположение ε~N(0,σ²) → MSE — оптимальный loss.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как температура в комнате: есть закономерность (зависит от сезона, времени суток), но каждое измерение содержит небольшую случайную погрешность ε.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w^T x_i+b=5.2, σ=0.3. Наблюдаем y_i=5.4. ε_i=5.4−5.2=0.2. Вероятность такого ε при N(0,0.09): f(0.2)≈1.07. Не нулевая, вполне ожидаемо.</div>
     </div>
     <div class="formula" data-render-tex data-tex-source="-\log p(y \mid X,w,b) \propto \sum_i (y_i - \hat{y}_i)^2">-log p(y|X,w,b) ∝ Σ (y_i - ŷ_i)²</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log p(y|X,w,b)</span><span class="fa-name">отрицательный log-likelihood — NLL</span><span class="fa-desc">Это то, что минимизируем при обучении. -log превращает максимизацию likelihood в минимизацию loss. При гауссовском шуме NLL пропорционален MSE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально — знак скрытой константы</span><span class="fa-desc">Равенство с точностью до константы (1/2σ²). σ² не зависит от w и b, поэтому аргмин NLL совпадает с аргмин суммы квадратов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_i</span><span class="fa-name">сумма по всем объектам датасета</span><span class="fa-desc">Суммируем квадрат ошибки по всем n объектам. Это и есть MSE (без деления на n), который оптимизирует линейная регрессия.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(y_i - ŷ_i)²</span><span class="fa-name">квадрат остатка (residual)</span><span class="fa-desc">Насколько предсказание ŷ_i=w^T x_i+b отличается от истинного ответа y_i. Квадрат штрафует большие ошибки сильнее малых.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Минимизация NLL при гауссовском шуме = минимизация MSE. Именно поэтому MSE — не произвольный выбор, а следствие вероятностного предположения о природе шума.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как регулировка антенны: NLL говорит «насколько плохо параметры объясняют данные». Минимизировать NLL = найти параметры, максимально объясняющие данные.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y_i=10, ŷ_i=8: остаток 2, квадрат 4. y_i=10, ŷ_i=12: остаток -2, квадрат 4. Сумма квадратов нечувствительна к знаку ошибки.</div>
     </div>
     <div class="info">Это одна из самых важных связей во всём classic ML: выбор loss-функции почти всегда implicitly говорит, какой шум и какую статистическую природу ошибок мы считаем правдоподобными.</div>
     </div>
@@ -1800,29 +1925,28 @@ print("bias:", model.bias.data)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">вектор предсказаний (n×1)</span><span class="fa-desc">Все предсказания модели сразу в одном векторе. ŷ = Xw означает: умножаем матрицу признаков на вектор весов, получаем n предсказаний.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">матрица объектов-признаков (n×d)</span><span class="fa-desc">Design matrix: n строк (объекты), d столбцов (признаки). Каждая строка — один объект x_i^T. Умножение Xw даёт скалярные произведения w^T x_i для всех i.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов (d×1)</span><span class="fa-desc">Коэффициенты линейной модели. Произведение Xw эквивалентно вычислению w^T x_i для каждого объекта одновременно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r</span><span class="fa-name">вектор остатков (residuals)</span><span class="fa-desc">r = y − ŷ: насколько предсказания отличаются от истинных ответов. Каждый компонент r_i = y_i − ŷ_i. MSE = ||r||²/n.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ŷ = Xw — это матричная запись n вычислений w^T x_i сразу. r = y − ŷ — это вектор ошибок. В оптимуме r перпендикулярен пространству признаков.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как проекция: ŷ — это проекция вектора y на линейное подпространство, натянутое на столбцы X. r — вектор «того, что осталось» после проекции.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X=[[1,2],[3,4]], w=[1,0.5], y=[3,6]. ŷ=[1·1+0.5·2, 1·3+0.5·4]=[2,5]. r=[3−2, 6−5]=[1,1]. MSE=(1+1)/2=1.</div>
     </div>
     <div class="formula" data-render-tex data-tex-source="X^\top r = 0">X^T r = 0</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T</span><span class="fa-name">транспонированная матрица признаков (d×n)</span><span class="fa-desc">Транспозиция design matrix. Строки X^T — это признаки (d штук), столбцы — объекты. Умножение X^T r даёт вектор d скалярных произведений каждого признака с остатками.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r</span><span class="fa-name">вектор остатков r = y − ŷ</span><span class="fa-desc">Разность между истинными ответами и предсказаниями. В оптимуме least squares X^T r = 0 — необходимое условие минимума MSE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нулевой вектор — ортогональность остатков</span><span class="fa-desc">X^T r = 0 означает: вектор остатков r ортогонален каждому признаку (каждому столбцу X). Всё, что линейная модель могла объяснить — объяснила.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> X^T r = 0 — геометрическое условие оптимума: остатки ортогональны пространству признаков. Это то же самое, что градиент MSE равен нулю.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как тень на экране: оптимальная проекция ŷ даёт остаток r, перпендикулярный плоскости экрана (пространству X). Дальше «передвинуть проекцию» в пространстве X невозможно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Из предыдущего: X=[[1,2],[3,4]], r=[1,1]. X^T r=[1·1+3·1, 2·1+4·1]=[4,6] ≠ 0 → не оптимум. При ŵ=(X^T X)^{-1}X^T y: r ⊥ X. ✓</div>
     </div>
     <p>Последняя формула говорит очень красивую вещь: в оптимуме residual ортогонален пространству признаков. То есть всё, что линейная модель могла объяснить в доступной ей геометрии, она уже объяснила; всё оставшееся лежит вне этого пространства.</p>
     </div>
@@ -2060,14 +2184,15 @@ print("bias:", model.bias.data)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">прогноз</span><span class="fa-desc">Число, которое модель предсказывает для объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">коэффициенты</span><span class="fa-desc">Вклад каждого признака в итоговый прогноз.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член</span><span class="fa-desc">Базовый уровень прогноза при нулевых признаках.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_new</span><span class="fa-name">обновлённый вес</span><span class="fa-desc">Новое значение w после шага gradient descent: w_new = w − lr · dL/dw.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">lr</span><span class="fa-name">learning rate</span><span class="fa-desc">Размер шага: насколько сильно вес обновляется за одну итерацию.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">dw, db</span><span class="fa-name">градиенты</span><span class="fa-desc">Частные производные dL/dw и dL/db: направление наискорейшего роста loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b_new</span><span class="fa-name">обновлённый bias</span><span class="fa-desc">Новое значение b после шага: b_new = b − lr · dL/db.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула показывает, как линейная модель собирает прогноз из вкладов признаков и штрафует остатки.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смета: итоговая цена складывается из отдельных позиций с разными коэффициентами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если y=10, прогноз ŷ=8, то residual=2, а квадрат ошибки равен 4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Gradient descent: вычитаем градиент, умноженный на lr. Знак минус — идём в сторону уменьшения loss.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Шаг вниз по склону: lr — длина шага, dw/db — направление уклона.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=1, lr=0.05, dw=0.5 → w_new=1−0.05·0.5=0.975.</div>
     </div>
     `;
     }
@@ -2220,7 +2345,40 @@ print("bias:", model.bias.data)</div>
     <details><summary>[Hard] Multicollinearity</summary><p>Объясни, почему коррелирующие признаки делают коэффициенты нестабильными. <strong>Решение:</strong> \(X^TX\) становится плохо обусловленной, малые изменения данных сильно меняют \(w\).</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-3">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что минимизирует линейная регрессия при обучении методом наименьших квадратов?</summary>
+      <div class="ml-quiz__a"><p>MSE — среднеквадратичную ошибку: <strong>L = (1/n)·Σ(yᵢ - wᵀxᵢ)²</strong>. Минимизация MSE эквивалентна максимизации правдоподобия при предположении о нормальном распределении ошибок (Gaussian noise).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое нормальное уравнение и когда его использовать?</summary>
+      <div class="ml-quiz__a"><p>Нормальное уравнение даёт аналитическое решение: <strong>w = (XᵀX)⁻¹Xᵀy</strong>. Оно точно, но требует инвертирования матрицы — O(p³) по времени. При малом числе признаков (p < несколько тысяч) это быстро; при большом p лучше использовать итеративный градиентный спуск.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему мультиколлинеарность делает коэффициенты нестабильными?</summary>
+      <div class="ml-quiz__a"><p>Если признаки сильно коррелируют, матрица XᵀX становится почти вырожденной (плохо обусловленной). Малые изменения в данных приводят к большим изменениям в коэффициентах w. Решения: Ridge-регуляризация, удаление/агрегация коррелированных признаков.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как R² интерпретируется и каков его диапазон?</summary>
+      <div class="ml-quiz__a"><p>R² показывает долю дисперсии целевой переменной, объяснённую моделью: <strong>R² = 1 - SS_res/SS_tot</strong>. Значение 1 — идеальное предсказание; 0 — модель не лучше просто предсказывать среднее; отрицательные значения возможны, если модель хуже базовой.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-3">
     <h2>Checkpoint: 2.3 Линейная регрессия</h2>
     <ul>
       <li>Как MSE связан с предположением о Gaussian noise?</li>
@@ -2230,5 +2388,7 @@ print("bias:", model.bias.data)</div>
       <li>Rubber duck: объясни линейную регрессию как проекцию данных на плоскость.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

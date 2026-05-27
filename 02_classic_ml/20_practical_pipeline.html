@@ -419,7 +419,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/20_practical_pipeline.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -434,8 +434,67 @@
         Постановка задачи, EDA, baseline model, feature engineering, model selection, evaluation и reproducibility — как выглядит нормальный ML-процесс целиком.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Реальный ML-проект — это не только обучение модели. ETL, feature engineering, валидация, мониторинг, деплой. Без понимания полного пайплайна хороший алгоритм останется в Jupyter notebook.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Структура полного ML-пайплайна от бизнес-задачи до продакшена</li>
+      <li>Feature engineering — как создать признаки, которые действительно помогают</li>
+      <li>Reproducibility — как фиксировать код, данные и гиперпараметры</li>
+      <li>Data leakage — самая дорогая ошибка в ML</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Предобработка данных (2.2)</li>
+      <li>Валидация (2.17)</li>
+      <li>Любой ML-алгоритм (2.3–2.16)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Зачем нужен практический pipeline</h2>
       <p>
         До этого мы разбирали отдельные инструменты: метрики, модели, валидацию,
@@ -456,9 +515,11 @@ problem framing
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">problem framing</span><span class="fa-name">постановка задачи</span><span class="fa-desc">Первый шаг: зафиксировать, что именно предсказываем, какая метрика успеха и как выглядит production-сценарий. Ошибка здесь обнуляет всё остальное.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">простейшая рабочая модель</span><span class="fa-desc">Самое простое решение (константа, линейная модель, правило из здравого смысла). Все дальнейшие улучшения сравниваются относительно неё — без baseline непонятно, даёт ли сложная модель реальный прирост.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">validation</span><span class="fa-name">честная проверка на отложенных данных</span><span class="fa-desc">Оценка модели на данных, не участвовавших в обучении. Должна имитировать реальный deployment: temporal split для временных рядов, stratified для дисбаланса, group split для утечек по группам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">final evaluation</span><span class="fa-name">одноразовая финальная оценка на test</span><span class="fa-desc">Test-выборка используется строго один раз и только в конце. Любое подглядывание в test при выборе модели превращает его в ещё один validation — финальная оценка перестаёт быть честной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">reproducibility / deployment readiness</span><span class="fa-name">воспроизводимость и готовность к deploy</span><span class="fa-desc">Код, зафиксированные random seeds, версии библиотек, сохранённый pipeline целиком (включая preprocessing). Без этого результат нельзя ни воспроизвести через месяц, ни развернуть в production.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
@@ -568,16 +629,17 @@ FN для нас дороже FP,
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Редкие положительные объекты, которые модель пропустила — в данной задаче это самая дорогая ошибка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными — менее критично, чем FN.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">recall</span><span class="fa-name">полнота (sensitivity)</span><span class="fa-desc">TP/(TP+FN) — доля найденных положительных; растёт, когда мы снижаем FN.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">PR-AUC</span><span class="fa-name">площадь под PR-кривой</span><span class="fa-desc">Area under Precision-Recall curve — устойчивая метрика при дисбалансе классов, не зависит от порога.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">stratified CV</span><span class="fa-name">стратифицированная кросс-валидация</span><span class="fa-desc">CV с сохранением доли положительного класса в каждом fold — необходимо при редком классе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">threshold tuning</span><span class="fa-name">подбор порога решения</span><span class="fa-desc">Выбор оптимального p̂ ≥ threshold для баланса precision/recall под конкретные бизнес-требования.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Хороший старт = сначала framing: что считается ошибкой, что дороже, как оценивать — и только потом выбор модели.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Строитель, который сначала изучает требования к зданию, а не бежит за первым попавшимся инструментом.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Задача: найти мошенничество (1% транзакций). FN стоит $1000, FP — $10. Оптимизируем recall@precision≥0.7, используем stratified 5-fold.</div>
     </div>
     </div>
 <!-- practical-ml-deepening:start:2-20-framing -->
@@ -698,18 +760,20 @@ FN для нас дороже FP,
 - есть ли imbalance?
 - есть ли смысл в log-transform / clipping / imputation?
 - есть ли явные baseline-сигналы?</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">minority</span><span class="fa-name">редкий класс</span><span class="fa-desc">Класс, который важен, но встречается редко.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">weight</span><span class="fa-name">вес класса</span><span class="fa-desc">Множитель ошибки для компенсации дисбаланса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Настраивается под precision/recall trade-off.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>leakage</span><span class=”fa-name”>утечка информации из будущего</span><span class=”fa-desc”>Признак, содержащий информацию о target, которая в реальном применении недоступна. Признаки вроде «дата закрытия сделки» или «итог врача» — часто источник leakage.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>scaling</span><span class=”fa-name”>масштабирование признаков</span><span class=”fa-desc”>Нужно для моделей, чувствительных к масштабу (SVM, k-NN, регрессия). EDA показывает: есть ли признаки с диапазоном 0–1 рядом с признаками 0–1 000 000?</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>imbalance</span><span class=”fa-name”>дисбаланс классов</span><span class=”fa-desc”>Если один класс встречается в 100 раз реже другого, accuracy неинформативна. EDA: считаем target_counts и решаем, нужны ли oversampling / class_weight / специальные метрики.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>log-transform</span><span class=”fa-name”>логарифмирование сильно скошенных признаков</span><span class=”fa-desc”>Если признак распределён как log-normal (зарплаты, цены), log-transform убирает длинный хвост и улучшает линейные модели. EDA выявляет сильный skew через гистограмму.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>imputation</span><span class=”fa-name”>заполнение пропусков</span><span class=”fa-desc”>EDA показывает: сколько NaN в каждом признаке, случайны ли они (MCAR) или связаны с target (MAR/MNAR). От этого зависит стратегия заполнения.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>baseline-сигналы</span><span class=”fa-name”>очевидные предикторы</span><span class=”fa-desc”>Признаки с очень высокой корреляцией с target — хороший знак для простой baseline-модели. Но могут быть leakage — нужно проверить.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула меняет взгляд на качество, когда классы встречаются неравномерно и accuracy становится misleading.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как искать редкую поломку: “почти всегда нет поломки” даёт высокую accuracy, но бесполезно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> При 1% positives модель “всегда 0” имеет 99% accuracy и 0 recall по редкому классу.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> EDA — это разведка перед боем: до первой строчки кода модели нужно понять данные, иначе можно потратить дни на настройку модели, которая обучается на утечке или на бессмысленных признаках.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Как врач, который сначала собирает анамнез, а не сразу назначает лечение. EDA — анамнез данных: что болит, откуда, как давно.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Признак «payment_date» в задаче предсказания дефолта. EDA: корреляция с target = 0.95. Причина: дата платежа появляется только после погашения — leakage. Убираем до обучения.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -977,16 +1041,16 @@ FN для нас дороже FP,
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">валидационная часть</span><span class="fa-desc">Один из разбиений в cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса k</span><span class="fa-desc">Частота класса внутри текущего узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Сколько классов учитывается в узле.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">split</span><span class="fa-name">вопрос дерева</span><span class="fa-desc">Проверка признака, которая делит узел на дочерние группы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">metric</span><span class="fa-name">метрика оценки</span><span class="fa-desc">Что именно оптимизируем и измеряем: accuracy, F1, AUC, RMSE — должна соответствовать бизнес-задаче.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">split</span><span class="fa-name">разбиение на train/valid/test</span><span class="fa-desc">Должно имитировать deployment: temporal split для timeseries, stratified для imbalanced, group split для утечек.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">leakage</span><span class="fa-name">утечка информации из будущего</span><span class="fa-desc">Признак, который в train содержит информацию о target, недоступную в реальном применении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовая модель сравнения</span><span class="fa-desc">Простейшее решение: константа, last-value, простая эвристика — gain должен быть значимым относительно неё.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">folds / seeds</span><span class="fa-name">устойчивость по разным разбиениям</span><span class="fa-desc">Хорошая модель не скачет по folds и random seeds — высокая variance сигнализирует о нестабильности.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула оценивает, насколько узел дерева смешан и насколько split сделал дочерние узлы чище.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сортировка шариков по коробкам: хороший вопрос раскладывает цвета отдельно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для 50/50 Gini = 0.5, а для 90/10 Gini = 1-(0.9&#178;+0.1&#178;)=0.18.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Evaluation — не одна цифра, а чеклист: правильная метрика, честный split, отсутствие утечек, значимый прирост, стабильность.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как аудит проекта: проверяем не только итог, но и корректность всего процесса — иначе хорошая цифра может быть иллюзией.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Модель accuracy=0.95, но baseline тоже 0.95 (98% класс 0). Leakage: столбец «дата закрытия» был в признаках. Split: данные перемешаны по времени.</div>
     </div>
     </div>
 <!-- practical-ml-deepening:start:2-20-evaluation-to-deployment -->
@@ -1658,7 +1722,40 @@ print("sklearn:", sklearn.__version__)</div>
     <details><summary>[Hard] Train-serving skew</summary><p>Почему модель может быть хорошей offline и плохой online? <strong>Решение:</strong> production признаки, задержки, пропуски, распределение и preprocessing могут отличаться от train.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-20">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое ML Pipeline и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Pipeline — последовательная цепочка шагов (preprocessing → feature engineering → model), упакованная в единый объект. Он предотвращает data leakage (все шаги fit только на train), упрощает кросс-валидацию, сериализацию и воспроизводимость — одна команда fit/predict охватывает всё.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что нужно зафиксировать для полной воспроизводимости ML-эксперимента?</summary>
+      <div class="ml-quiz__a"><p>Код (git commit), данные (версия/хеш), параметры модели и гиперпараметры, random seed во всех местах (numpy, sklearn, torch), версии библиотек (requirements.txt/conda env) и метрики. Без этого результат нельзя воспроизвести через 3 месяца или на другой машине.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём ошибка при применении StandardScaler ко всему датасету перед split?</summary>
+      <div class="ml-quiz__a"><p>Это data leakage: scaler узнаёт μ и σ из тестового набора, передавая эту информацию в модель. На практике это завышает оценку качества, особенно для маленьких выборок. Правило: fit scaler только на train, затем transform(train) и transform(test) отдельно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Feature Store и зачем он нужен в production?</summary>
+      <div class="ml-quiz__a"><p>Feature Store — централизованное хранилище признаков с версионированием. Решает проблему training-serving skew (разные вычисления признаков при обучении и инференсе), упрощает переиспользование признаков разными командами и гарантирует согласованность данных.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-20">
     <h2>Checkpoint: 2.20 Practical Pipeline</h2>
     <ul>
       <li>Какие части pipeline должны быть сохранены вместе с моделью?</li>
@@ -1668,5 +1765,6 @@ print("sklearn:", sklearn.__version__)</div>
       <li>Rubber duck: объясни ML pipeline как конвейер, где каждый шаг должен быть воспроизводимым.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

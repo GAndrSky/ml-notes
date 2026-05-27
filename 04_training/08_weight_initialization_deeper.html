@@ -47,7 +47,7 @@ canvas{border-radius:8px;display:block;}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/08_weight_initialization_deeper.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -63,6 +63,30 @@ canvas{border-radius:8px;display:block;}
       <h1>4.8 Инициализация весов глубже</h1>
       <p class="muted">Почему плохой init убивает сигнал, откуда берутся Xavier и He, и как variance propagation объясняет устойчивость глубоких сетей.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Неправильная инициализация весов убивает обучение до первого шага. Xavier и He инициализации — математически выверенные стартовые точки, которые сохраняют дисперсию сигнала через все слои.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему нулевая инициализация смертельна — проблема симметрии</li>
+      <li>Как Xavier инициализация сохраняет дисперсию при линейных активациях</li>
+      <li>Почему He инициализация нужна именно для ReLU-сетей</li>
+      <li>Как инициализация связана с depth и нормализацией</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Backpropagation (4.1)</li>
+      <li>Дисперсия и теория вероятностей (1.3)</li>
+      <li>Функции активации (3.2)</li>
+    </ul>
+  </div>
+</div>
+
 
     <div class="card">
       <h2>Почему инициализация так критична</h2>
@@ -73,15 +97,14 @@ canvas{border-radius:8px;display:block;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">насколько широко разбросаны начальные веса слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">число входов в нейрон; определяет, сколько сигналов суммируется.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">число выходов из слоя; важно для сохранения масштаба backward-сигнала.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">матрица весов</span><span class="fa-desc">начальные параметры слоя до обучения; плохой масштаб может убить forward или backward.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(z_l)</span><span class="fa-name">дисперсия предактивации</span><span class="fa-desc">Дисперсия выхода z_l=W_l·a_{l-1} на слое l. Хотим, чтобы была ≈1 от слоя к слою.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">Число входов в нейрон. Сумма n_in независимых слагаемых → дисперсия суммы = n_in · Var(w·a).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(W_l)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">То, что мы контролируем при инициализации. Цель: Var(W_l) = 1/n_in → Var(z_l) ≈ Var(a_{l-1}).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(a_{l-1})</span><span class="fa-name">дисперсия входа</span><span class="fa-desc">Дисперсия активаций предыдущего слоя. При правильной инициализации сохраняется от слоя к слою.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> initialization выбирает такой масштаб весов, чтобы variance сигнала не взрывалась и не исчезала по глубине.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как настройка громкости в цепочке усилителей: слишком тихо - сигнал исчезает, слишком громко - клиппинг и шум.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для He init при n_in=512 получаем Var(W)≈2/512≈0.0039.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> z_l = Σ w_j·a_j (сумма n_in слагаемых). Если w и a независимы с нулевым средним: Var(z_l) = n_in·Var(W)·Var(a). Чтобы Var(z)≈Var(a): нужно Var(W)=1/n_in.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_in=512, Var(a_{l-1})=1.0. С Var(W)=1/512≈0.002: Var(z_l)=512×0.002×1=1.0 ✓. С Var(W)=0.01: Var(z_l)=512×0.01×1=5.12 → signal взрывается!</div>
     </div>
     <p>Если этот множитель систематически меньше 1, сигнал затухает. Если больше 1, масштаб растёт от слоя к слою.</p>
         </div>
@@ -90,15 +113,14 @@ canvas{border-radius:8px;display:block;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">насколько широко разбросаны начальные веса слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">число входов в нейрон; определяет, сколько сигналов суммируется.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">число выходов из слоя; важно для сохранения масштаба backward-сигнала.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">матрица весов</span><span class="fa-desc">начальные параметры слоя до обучения; плохой масштаб может убить forward или backward.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(∂L/∂a_{l-1})</span><span class="fa-name">дисперсия градиента входа</span><span class="fa-desc">То, что хотим сохранить при backprop. Симметрично forward: если Var(W)=1/n_out, то дисперсия сохраняется.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">Число выходов слоя. В backward каждый выход отправляет градиент назад → n_out слагаемых в сумме.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(W_l)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">Та же дисперсия, что и в forward. Для backward нужно Var(W)=1/n_out, для forward — 1/n_in.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(∂L/∂z_l)</span><span class="fa-name">дисперсия входящего градиента</span><span class="fa-desc">Градиент, пришедший со следующего слоя. Хотим, чтобы он не усилился и не ослаб при прохождении.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> initialization выбирает такой масштаб весов, чтобы variance сигнала не взрывалась и не исчезала по глубине.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как настройка громкости в цепочке усилителей: слишком тихо - сигнал исчезает, слишком громко - клиппинг и шум.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для He init при n_in=512 получаем Var(W)≈2/512≈0.0039.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Backward — зеркало forward, но по оси n_out. Forward требует Var(W)=1/n_in; backward — 1/n_out. Если n_in≠n_out (обычно так), нельзя удовлетворить оба условия → Xavier берёт среднее: 2/(n_in+n_out).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_out=256, Var(∂L/∂z_l)=1.0. С Var(W)=1/256: Var(∂L/∂a_{l-1})=256×(1/256)×1=1.0 ✓. Но forward требовало Var(W)=1/512 (если n_in=512) — конфликт!</div>
     </div>
     <p>Инициализация должна заботиться не только о forward-потоке, но и о том, чтобы backward не умер уже на первых шагах.</p>
         </div>
@@ -127,15 +149,14 @@ canvas{border-radius:8px;display:block;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">насколько широко разбросаны начальные веса слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">число входов в нейрон; определяет, сколько сигналов суммируется.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">число выходов из слоя; важно для сохранения масштаба backward-сигнала.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">матрица весов</span><span class="fa-desc">начальные параметры слоя до обучения; плохой масштаб может убить forward или backward.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">целевая дисперсия весов</span><span class="fa-desc">То значение дисперсии, с которым инициализируются веса слоя. Xavier выбирает его как компромисс.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">Число входов в слой. Forward требует Var(W)=1/n_in для сохранения variance сигнала.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">Число выходов слоя. Backward требует Var(W)=1/n_out для сохранения variance градиента.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">2/(n_in+n_out)</span><span class="fa-name">гармоническое среднее</span><span class="fa-desc">Компромисс: ≈ среднее между 1/n_in и 1/n_out. Хорош для tanh/линейных слоёв. Для ReLU — He лучше.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> initialization выбирает такой масштаб весов, чтобы variance сигнала не взрывалась и не исчезала по глубине.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как настройка громкости в цепочке усилителей: слишком тихо - сигнал исчезает, слишком громко - клиппинг и шум.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для He init при n_in=512 получаем Var(W)≈2/512≈0.0039.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Forward хочет 1/n_in, backward — 1/n_out. Xavier берёт среднее 2/(n_in+n_out). Работает хорошо для tanh (симметричная активация, не убивает половину сигнала). Для ReLU нужна поправка ×2 — это уже He init.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_in=256, n_out=128. Xavier: Var(W)=2/(256+128)=2/384≈0.0052. std=√0.0052≈0.072. W~N(0, 0.072). Glorot uniform: a=√(6/384)≈0.125, W~U[−0.125, 0.125].</div>
     </div>
     </div>
         <div>
@@ -169,15 +190,13 @@ a = sqrt(6 / (fan_in + fan_out))</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">дисперсия весов</span><span class="fa-desc">насколько широко разбросаны начальные веса слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">число входов в нейрон; определяет, сколько сигналов суммируется.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">n_out</span><span class="fa-name">fan-out</span><span class="fa-desc">число выходов из слоя; важно для сохранения масштаба backward-сигнала.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">матрица весов</span><span class="fa-desc">начальные параметры слоя до обучения; плохой масштаб может убить forward или backward.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Var(W)</span><span class="fa-name">целевая дисперсия весов</span><span class="fa-desc">Дисперсия инициализации для ReLU-сетей. Намеренно в 2× больше, чем хотела бы линейная теория.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">2</span><span class="fa-name">компенсация ReLU</span><span class="fa-desc">ReLU обнуляет ~50% активаций → effective variance после нелинейности падает в ~2×. Множитель 2 компенсирует это падение.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">Число входов в слой. Только n_in — не n_out: ReLU оптимизирован для сохранения forward variance.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> initialization выбирает такой масштаб весов, чтобы variance сигнала не взрывалась и не исчезала по глубине.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как настройка громкости в цепочке усилителей: слишком тихо - сигнал исчезает, слишком громко - клиппинг и шум.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> для He init при n_in=512 получаем Var(W)≈2/512≈0.0039.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Xavier даёт Var(W)=1/n_in. После ReLU variance делится на ~2 (половина нейронов = 0). He добавляет ×2 заранее, чтобы после ReLU variance оставалась ≈1. Стандарт для ResNet, EfficientNet и большинства современных CNN.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_in=512. He: Var(W)=2/512≈0.0039, std≈0.0625. Xavier: Var(W)=1/512≈0.002. После одного ReLU-слоя: He → Var(a)≈1.0 ✓; Xavier → Var(a)≈0.5 → за 10 слоёв: 0.5^10≈0.001 (исчезновение).</div>
     </div>
     </div>
         <div>
@@ -594,7 +613,40 @@ for scale in [0.05, np.sqrt(2/128), 0.3]:
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему инициализация Glorot (Xavier) подбирает дисперсию по числу входов и выходов?</summary>
+      <div class="ml-quiz__a"><p>Glorot инициализация: Var(w) = 2/(fanᵢₙ + fanₒᵤₜ). Цель — сохранить дисперсию сигнала при forward pass и дисперсию градиентов при backward pass одинаковой по всем слоям. Это предотвращает exponential growth/decay активаций и градиентов в глубоких сетях.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему инициализация He лучше Glorot для ReLU-сетей?</summary>
+      <div class="ml-quiz__a"><p>ReLU обнуляет половину активаций, что вдвое снижает дисперсию сигнала. He инициализация: Var(w) = 2/fanᵢₙ — вдвое больше Glorot, компенсируя этот эффект. Для leaky ReLU с наклоном α: Var(w) = 2/((1+α²)·fanᵢₙ).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое spectral normalization и в каких моделях оно применяется?</summary>
+      <div class="ml-quiz__a"><p>Spectral normalization делит веса слоя на их спектральную норму (наибольшее сингулярное значение): W̄ = W/σ₁(W). Это ограничивает Lipschitz-константу дискриминатора в GAN, стабилизируя обучение и предотвращая mode collapse. Также применяется в самовнимании трансформеров.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое orthogonal initialization и в каких ситуациях она полезна?</summary>
+      <div class="ml-quiz__a"><p>Orthogonal init инициализирует матрицу весов как случайную ортогональную матрицу (Q из QR-разложения). Её сингулярные значения равны 1, что гарантирует isometry: нет amplification или attenuation сигнала. Особенно полезна для RNN, где повторные умножения легко вызывают взрыв/затухание.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -666,5 +718,6 @@ for scale in [0.05, np.sqrt(2/128), 0.3]:
     </div>
   </section>
 <!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

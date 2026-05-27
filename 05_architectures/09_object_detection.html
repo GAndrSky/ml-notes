@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/09_object_detection.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>5.9 Object Detection</h1>
       <p class="muted">Object detection answers two questions at once: what objects are present, and where each object is located.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Детектор отвечает на два вопроса сразу: что за объект и где он находится. Это делает задачу сложнее классификации — нужно одновременно предсказать класс и bounding box.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Bounding box форматы и IoU — как оценивают качество локализации</li>
+      <li>Anchor boxes и YOLO — как предсказываются множество объектов</li>
+      <li>NMS (Non-Maximum Suppression) — как убрать дублирующие детекции</li>
+      <li>mAP — основная метрика детекции и как её считать</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>CNN (5.1)</li>
+      <li>ViT (5.8)</li>
+      <li>Метрики классификации (2.7)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -184,7 +208,40 @@ print(nms(boxes, scores, threshold=0.5))
     <details><summary>[Hard] DETR tradeoff</summary><p>Чем DETR отличается от anchor-based detectors? <strong>Решение:</strong> формулирует detection как set prediction с bipartite matching и attention.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-9">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём принципиальная разница между one-stage и two-stage детекторами?</summary>
+      <div class="ml-quiz__a"><p>Two-stage (Faster R-CNN): сначала генерирует region proposals (RPN), затем классифицирует их — более точный, но медленный. One-stage (YOLO, SSD, FCOS): напрямую предсказывает bounding boxes и классы по сетке — быстрее, лучше для real-time, но исторически уступал в точности на мелких объектах.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое anchor boxes и зачем они нужны?</summary>
+      <div class="ml-quiz__a"><p>Anchor boxes — предустановленные прямоугольники разных масштабов и соотношений сторон в каждой ячейке сетки. Модель предсказывает поправки (δx, δy, δw, δh) к anchors, а не координаты напрямую. Это стабилизирует обучение и покрывает разные размеры объектов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Non-Maximum Suppression (NMS) и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>NMS удаляет дублирующиеся детекции: сортирует боксы по confidence, берёт лучший, удаляет все боксы с IoU > порога (обычно 0.5), повторяет. Это оставляет один бокс на каждый объект. Без NMS детектор выдаёт множество перекрывающихся предсказаний для одного объекта.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое IoU и как он используется при обучении детектора?</summary>
+      <div class="ml-quiz__a"><p>IoU (Intersection over Union) = площадь пересечения / площадь объединения двух боксов. Используется для: (1) matching predictions к GT (IoU>0.5 → positive), (2) NMS, (3) как метрика качества (mAP вычисляется при разных IoU порогах). IoU-loss напрямую оптимизирует эту метрику.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-9">
     <h2>Checkpoint: 5.9 Object Detection</h2>
     <ul>
       <li>Чем detection отличается от classification?</li>
@@ -194,5 +251,47 @@ print(nms(boxes, scores, threshold=0.5))
       <li>Rubber duck: объясни object detection как задачу “что это и где это”.</li>
     </ul>
   </section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Object Detection</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй YOLO для real-time задач, DINO/DETR для высокой точности.</li>
+        <li>mAP@0.5 и mAP@0.5:0.95 — стандартные метрики; проверяй отдельно по размерам объектов.</li>
+        <li>Начинай с pretrained COCO-модели и fine-tune на своих данных.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не настраивать NMS-threshold под свою задачу — дефолт 0.5 не всегда оптимален.</li>
+        <li>Оценивать только на IoU=0.5 и не смотреть на small objects отдельно.</li>
+        <li>Забывать о data augmentation (mosaic, mixup, random crop) для детекции.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>IoU threshold для positive/negative matching (0.5 стандарт).</li>
+        <li>Confidence threshold для inference.</li>
+        <li>Anchor scales/ratios (для anchor-based) или stride (для anchor-free).</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="05_architectures/01_cnn_convolutional_networks.html">← 5.1 CNN</a></li>
+        <li><a href="05_architectures/10_segmentation.html">5.10 Segmentation →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

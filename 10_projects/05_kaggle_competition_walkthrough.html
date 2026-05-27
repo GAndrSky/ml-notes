@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/05_kaggle_competition_walkthrough.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="projects">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -25,7 +25,30 @@
       <p class="muted">A practical competition workflow: establish a baseline, build reliable validation, engineer features, compare models, ensemble carefully, and submit without fooling yourself.</p>
     </section>
 
-    <section class="card">
+    
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Kaggle — лучшая площадка для практики ML на реальных данных. Понимание workflow соревнования ускоряет разработку ML-моделей в любом контексте.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Построить надёжную CV схему и baseline модель</li>
+          <li>Провести feature engineering и гиперпараметрический поиск</li>
+          <li>Построить финальный ансамбль для submission</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>Валидация (2.17)</li>
+          <li>Ансамбли (2.16)</li>
+          <li>GBM (2.12)</li>
+    </ul>
+  </div>
+</div>
+<section class="card">
       <h2>TL;DR</h2>
       <p>Kaggle success is less about trying many models randomly and more about validation discipline. If your local validation does not predict leaderboard movement, every improvement is suspect.</p>
     </section>
@@ -137,6 +160,81 @@ print(scores, np.mean(scores))
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-5-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>competition score = feature quality + validation quality + ensemble quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">feature quality</span><span class="fa-name">качество признаков</span><span class="fa-desc">насколько хорошо engineered features раскрывают signal в данных.</span></div><div class="formula-anatomy__row"><span class="fa-sym">validation quality</span><span class="fa-name">качество валидации</span><span class="fa-desc">насколько локальная CV честно предсказывает leaderboard/generalization.</span></div><div class="formula-anatomy__row"><span class="fa-sym">ensemble quality</span><span class="fa-name">качество ансамбля</span><span class="fa-desc">насколько модели дают полезную diversity, а не дублируют ошибки друг друга.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> в Kaggle главный актив — не одна модель, а хороший validation loop и disciplined experimentation.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> leaderboard часто улучшается не от новой архитектуры, а от честного CV и нескольких слабо коррелированных моделей.</div></div></section>
   <section class="ml-study-practice" data-quality-pass="proj-10-5"><h2>Упражнения: Kaggle Walkthrough</h2><details><summary>[Foundational] Leakage audit</summary><div class="intuition-content">Назови три типичных источника leakage в табличной competition.</div></details><details><summary>[Intermediate] CV design</summary><div class="intuition-content">Подбери split strategy для временной, grouped и обычной табличной competition.</div></details><details><summary>[Hard] Ensemble plan</summary><div class="intuition-content">Опиши, как оценить, стоит ли добавлять ещё одну модель в ensemble.</div></details></section>
-  <section class="ml-checkpoint-section" data-quality-pass="proj-10-5"><h2>Checkpoint: 10.5 Kaggle Walkthrough</h2><ul><li>Почему локальный CV важнее публичного leaderboard?</li><li>Как проверить, не строишь ли ты leaderboard-overfitting?</li><li>Какие признаки стоит логировать между экспериментами?</li><li>Когда ensemble реально помогает?</li><li>Rubber duck: объясни competition pipeline как дисциплину валидации, а не охоту за одной удачной моделью.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какой стратегии придерживаться в первые дни Kaggle соревнования?</summary>
+      <div class="ml-quiz__a"><p>EDA → baseline submission (простая модель) → понять gap до lb → feature engineering → кросс-валидация. Не тюни гиперпараметры раньше, чем построишь надёжную CV. Часто baseline XGBoost/LightGBM + базовые признаки даёт 80% от финального результата.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему Local CV важнее Public Leaderboard при разработке?</summary>
+      <div class="ml-quiz__a"><p>Public LB использует только часть тестовых данных (обычно 20-30%). Переоптимизация под него приводит к shake-up на private LB (финальном). Надёжная кросс-валидация коррелирует с private LB. Правило: доверяй CV, а не public LB.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «shake-up» на Kaggle и почему он происходит?</summary>
+      <div class="ml-quiz__a"><p>Shake-up — изменение позиций в рейтинге при переходе с public на private LB. Происходит из-за переобучения под public LB (маленькая выборка), случайности в оценке или overfitting к особенностям конкретного сплита. Защита: ансамблирование, стабильная CV, не оптимизировать под public aggressively.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как строить финальный ансамбль для Kaggle?</summary>
+      <div class="ml-quiz__a"><p>Стратегии: (1) усреднение (soft voting) разных типов моделей (GBM + NN + linear), (2) rank averaging — усреднение рангов предсказаний, (3) stacking — meta-learner на OOF предсказаниях. Ключевое: diverse models с низкой корреляцией ошибок дают лучший ансамбль, чем 10 похожих моделей.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-5"><h2>Checkpoint: 10.5 Kaggle Walkthrough</h2><ul><li>Почему локальный CV важнее публичного leaderboard?</li><li>Как проверить, не строишь ли ты leaderboard-overfitting?</li><li>Какие признаки стоит логировать между экспериментами?</li><li>Когда ensemble реально помогает?</li><li>Rubber duck: объясни competition pipeline как дисциплину валидации, а не охоту за одной удачной моделью.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Kaggle Competition</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Фиксируй CV схему и seed с первого дня — без этого нельзя сравнивать эксперименты.</li>
+        <li>Читай discussion и notebooks лидеров — domain knowledge часто важнее ML.</li>
+        <li>Финальный сабмит: два разных ансамбля на случай shake-up.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Оптимизировать под public LB без надёжной CV — гарантированный shake-up.</li>
+        <li>Тратить всё время на feature engineering без проверки baseline.</li>
+        <li>Делать единственный финальный submission — всегда сохраняй разные варианты.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>CV схема: надёжность важнее correlation с public LB.</li>
+        <li>Ensemble weights: оптимизируй на holdout, не на public LB.</li>
+        <li>Feature selection: permutation importance на OOF предсказаниях.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="../02_classic_ml/16_ensembles.html">← 2.16 Ансамбли</a></li>
+        <li><a href="../02_classic_ml/17_validation_and_hyperparameter_tuning.html">← 2.17 Валидация</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

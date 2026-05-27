@@ -25,7 +25,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/04_rlhf.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -38,7 +38,112 @@
       <h1>6.4 RLHF</h1>
       <p class="muted">RLHF нужен, когда одного supervised fine-tuning уже мало: нужно оптимизировать ответы не просто под “один правильный target”, а под человеческие предпочтения — полезность, безвредность, честность и стиль.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>RLHF — алгоритм, который выровнял ChatGPT. Reward model обучается на предпочтениях людей, а PPO оптимизирует LLM максимизировать эту награду с KL-ограничением от base модели.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как reward model обучается на парах (предпочтительный/нежелательный ответ)</li>
+      <li>RLHF objective: E[reward] - β·KL(π||π_ref) — смысл каждого члена</li>
+      <li>PPO в контексте LLM: clip ratio и оценка преимущества</li>
+      <li>Почему KL-penalty важен и что происходит без него</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Instruction tuning (6.3)</li>
+      <li>RL basics (policy, reward, PPO)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
+
+    
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">RLHF — как Reward Model обучается на предпочтениях</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Промпт и два ответа</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Для каждого примера: промпт x и два ответа — предпочтительный y_w и отвергнутый y_l.</p>
+        <div class="wt-formula">x   = «Как исправить IndexError в Python?»
+y_w = чёткий ответ с примером кода   (предпочтительный)
+y_l = расплывчатый ответ без кода    (отвергнутый)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Reward Model: скоры</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Reward Model r_φ(x, y) выдаёт скалярную оценку для любого (промпт, ответ).</p>
+        <div class="wt-formula">r_φ(x, y_w) = 2.1   ← высокий скор
+r_φ(x, y_l) = 0.8   ← низкий скор</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Вероятность предпочтения</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Вероятность того, что человек предпочтёт y_w, задаётся разностью скоров через sigmoid.</p>
+        <div class="wt-formula">P(y_w > y_l) = σ(r_w − r_l) = σ(2.1 − 0.8) = σ(1.3)
+             = 1/(1+e^{−1.3}) ≈ 0.785</div>
+        <div class="wt-result">Модель уверена на 78.5%, что y_w лучше y_l.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Loss Reward Model</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Минимизируем отрицательный log-правдоподобие предпочтения.</p>
+        <div class="wt-formula">L_RM = −log σ(r_w − r_l) = −log(0.785) ≈ 0.242</div>
+        <div class="wt-result">Обучаем RM на всех парах, чтобы он предсказывал предпочтения людей.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">RLHF Objective</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>LLM π_θ обучается максимизировать r_φ, но с KL-штрафом от базовой модели π_ref.</p>
+        <div class="wt-formula">J(π_θ) = E[r_φ(x,y)] − β · KL(π_θ || π_ref)
+
+β=0.1, r_φ=2.5, KL=0.4:
+J = 2.5 − 0.1×0.4 = 2.5 − 0.04 = 2.46</div>
+        <div class="wt-result">KL-штраф предотвращает <em>reward hacking</em>: модель не может выродиться в один «выигрышный» шаблон.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Почему KL важен</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Без KL модель нашла бы способ обмануть reward model — например, начинать каждый ответ с «Excellent question!».</p>
+        <div class="wt-formula">β=0: J = E[r_φ] → модель оптимизирует только скор → reward hacking
+β>0: J штрафует за отклонение от base model → баланс</div>
+        <div class="wt-result">DPO (следующая лекция) упрощает RLHF: убирает явный RM и KL, обучая LLM напрямую на предпочтениях.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="card">
       <h2>Трёхшаговая схема</h2>
       <div class="formula" data-no-tex>1. SFT-модель
 2. Reward model по human preferences
@@ -76,17 +181,17 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L_RM</span><span class="fa-name">loss reward model</span><span class="fa-desc">Бинарная cross-entropy на парных сравнениях; обучает reward model различать предпочтительные и непредпочтительные ответы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r_φ(x, y_w)</span><span class="fa-name">reward предпочтительного ответа</span><span class="fa-desc">Скалярная оценка «хорошего» ответа y_w на промпт x. Reward model с параметрами φ должна давать здесь высокое значение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r_φ(x, y_l)</span><span class="fa-name">reward непредпочтительного ответа</span><span class="fa-desc">Скалярная оценка «плохого» ответа y_l на тот же промпт x. Reward model должна давать здесь меньшее значение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ(·)</span><span class="fa-name">сигмоида</span><span class="fa-desc">Превращает разность наград (r_w - r_l) в вероятность P(y_w предпочтительнее y_l). Диапазон: от 0 до 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-log(·)</span><span class="fa-name">отрицательный логарифм</span><span class="fa-desc">Превращает вероятность в loss. Максимизация P(y_w лучше y_l) ≡ минимизация -log σ(r_w - r_l).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">промпт</span><span class="fa-desc">Входной запрос, на который людьми были даны оба ответа (y_w и y_l) для попарного сравнения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Reward model учится не абсолютным оценкам, а различать «лучше/хуже». Если она даёт r_w > r_l, она правильно определила предпочтение. Потеря растёт, когда разность (r_w - r_l) мала или отрицательна.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как судья, который оценивает пары участников, а не выставляет абсолютные баллы. Ему нужно лишь стабильно отличать «этот ответ лучше» от «этот хуже».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> r_w=2.0, r_l=0.5 → σ(2.0-0.5)=σ(1.5)≈0.82 → L=-log(0.82)≈0.20. r_w=0.3, r_l=0.8 → σ(-0.5)≈0.38 → L≈0.97 (высокий штраф).</div>
     </div>
     <p>Это удобно, потому что человек хорошо чувствует относительное качество, даже если ему сложно дать точный числовой score. Но именно здесь появляется важный сдвиг: reward model учит не истину, а статистику предпочтений в конкретном наборе сравнений.</p>
     </div>
@@ -96,15 +201,17 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Что именно объясняет метод интерпретации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовый уровень</span><span class="fa-desc">Средний или ожидаемый прогноз до учёта признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">φ_i</span><span class="fa-name">вклад признака</span><span class="fa-desc">Насколько признак сдвигает прогноз относительно baseline.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>E[r_φ(x, y)]</span><span class=”fa-name”>ожидаемый reward</span><span class=”fa-desc”>Среднее вознаграждение обучаемой модели π_θ по промптам x и ответам y. Это то, что мы хотим максимизировать.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>r_φ(x, y)</span><span class=”fa-name”>функция reward</span><span class=”fa-desc”>Нейросетевая reward model с фиксированными параметрами φ, оценивающая качество ответа y на промпт x.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>β</span><span class=”fa-name”>коэффициент KL-штрафа</span><span class=”fa-desc”>Управляет балансом: большой β → модель держится ближе к reference, малый β → сильнее гонится за reward (риск reward hacking).</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>KL(π_θ || π_ref)</span><span class=”fa-name”>KL-дивергенция policy</span><span class=”fa-desc”>Штраф за отклонение обучаемой модели от reference (SFT) policy. Растёт, когда π_θ начинает отличаться от π_ref.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>π_θ</span><span class=”fa-name”>обучаемая policy (LLM)</span><span class=”fa-desc”>Языковая модель с параметрами θ, которую RLHF оптимизирует. Именно её поведение меняется.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>π_ref</span><span class=”fa-name”>reference policy</span><span class=”fa-desc”>Исходная SFT-модель, «якорь» обучения. KL-штраф удерживает π_θ рядом с ней, чтобы не деградировать.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула раскладывает prediction или качество на вклады признаков, но объясняет модель, а не причинность мира.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разбор чека: видно, какие позиции дали итоговую сумму, но не почему их купили.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline 0.3, prediction 0.8 и вклад признака +0.2, этот признак поднял прогноз модели.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Два противоречащих требования: максимизируй reward (E[r_φ]) и не уходи далеко от reference (KL↓). β задаёт, насколько серьёзно воспринимается второе. Это prevents reward hacking — ситуацию, когда модель «обманывает» reward model.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Стажёр, которому дали цель (reward) и правило: не делай ничего, что сильно отличается от того, как делает опытный сотрудник (reference). β — строгость этого правила.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> β=0.1, E[r]=1.5, KL=2.0 → objective=1.5-0.1·2.0=1.3. Если β=1.0 → objective=1.5-2.0=-0.5: модель не выиграла от reward, потому что слишком отклонилась.</div>
     </div>
     <p>Нам не нужно, чтобы модель просто “максимизировала reward любой ценой”. Поэтому её удерживают рядом с reference policy, чтобы она не улетала слишком далеко от pre-trained / SFT поведения.</p>
       <div class="warn">Без KL-штрафа модель может найти странные, нестабильные способы получать высокий reward, которые человеку уже не понравятся.</div>
@@ -129,14 +236,17 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r_t(θ)</span><span class="fa-name">probability ratio</span><span class="fa-desc">π_θ(a_t|s_t) / π_old(a_t|s_t) — отношение вероятностей действия по новой и старой policy. Мера того, насколько сильно policy изменилась.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Â_t</span><span class="fa-name">advantage estimate</span><span class="fa-desc">Оценка того, насколько действие в момент t лучше среднего. Положительный Â_t → действие хорошее, нужно усилить.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">clip(·, 1-ε, 1+ε)</span><span class="fa-name">clipping ratio</span><span class="fa-desc">Ограничивает отношение policy в диапазоне [1-ε, 1+ε]. Предотвращает слишком большой шаг обновления за одну итерацию.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min(·)</span><span class="fa-name">пессимистичный минимум</span><span class="fa-desc">Берёт худшее из двух вариантов: clipped и unclipped. Заставляет обновление быть осторожным в обе стороны.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">порог clipping</span><span class="fa-desc">Обычно 0.1–0.2. Максимально допустимое относительное изменение policy за один шаг.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E[·]</span><span class="fa-name">ожидание по траекториям</span><span class="fa-desc">Усреднение по батчу промптов и сгенерированных ответов в текущей итерации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> PPO — это осторожный способ улучшать policy. Clipping не даёт r_t(θ) выходить за [1-ε, 1+ε], а min берёт худший случай. Итог: большие изменения policy «дешевле не стоят» — gradient перестаёт их поощрять.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как осторожный инвестор: если изменение слишком большое, не делай его — шанс проигрыша растёт быстрее шанса выигрыша.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ε=0.2, r_t=1.5, Â_t=+1. clip(1.5,0.8,1.2)=1.2. min(1.5·1, 1.2·1)=1.2. PPO использует 1.2, а не 1.5 — ограничивает жадный шаг.</div>
     </div>
     <p>Clipping нужен затем, чтобы policy не менялась слишком резко от одного noisy сигнала. Для LLM это критично: иначе reward model быстро начинает толкать ответы в слишком узкий стиль, а сама модель теряет естественность и калибровку.</p>
     </div>
@@ -276,6 +386,41 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
     <details><summary>[Intermediate] Reward hacking</summary><p>Приведи пример reward hacking. <strong>Решение:</strong> модель учится писать ответы, которые нравятся reward model, но не пользователю.</p></details>
     <details><summary>[Hard] PPO complexity</summary><p>Почему PPO в LLM сложен инженерно? <strong>Решение:</strong> нужен rollout, reward model, reference model, KL control, стабильность и expensive generation loop.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-4"><h2>Checkpoint: 6.4 RLHF</h2><ul><li>Что делает reward model?</li><li>Зачем KL penalty?</li><li>Почему RLHF может reward-hack?</li><li>Чем RLHF отличается от SFT?</li><li>Rubber duck: объясни RLHF как обучение модели выбирать ответы, которые люди предпочитают.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое RLHF и из каких этапов он состоит?</summary>
+      <div class="ml-quiz__a"><p>RLHF (Reinforcement Learning from Human Feedback): (1) SFT — дообучение на демонстрациях, (2) Reward Model — обучение модели предсказывать предпочтения людей по парам ответов, (3) PPO — оптимизация LLM для максимизации вознаграждения при KL-ограничении относительно SFT-модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем KL-дивергенция нужна при RLHF-обучении?</summary>
+      <div class="ml-quiz__a"><p>Без KL-ограничения PPO может «эксплуатировать» reward model, генерируя тексты с высокой наградой, но деградировавшие как языковая модель (reward hacking). KL-штраф: R_total = R_reward - λ·KL(π‖π_SFT) удерживает политику π вблизи SFT-модели, сохраняя языковое качество.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Constitutional AI (CAI) и чем отличается от RLHF?</summary>
+      <div class="ml-quiz__a"><p>CAI (Anthropic): вместо людских оценок пар ответов используются принципы (constitution), по которым AI сам критикует и переписывает свои ответы. Это снижает зависимость от дорогостоящей разметки людьми и масштабируется лучше — AI-feedback дешевле human feedback.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему PPO сложен в реализации для LLM и что используют вместо?</summary>
+      <div class="ml-quiz__a"><p>PPO для LLM требует 4 модели одновременно в памяти (actor, critic, reference, reward), нестабилен при неправильных гиперпараметрах и медленен. DPO (Direct Preference Optimization) обходит reward model и RL полностью, напрямую оптимизируя предпочтения — проще, стабильнее, часто лучше.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-4"><h2>Checkpoint: 6.4 RLHF</h2><ul><li>Что делает reward model?</li><li>Зачем KL penalty?</li><li>Почему RLHF может reward-hack?</li><li>Чем RLHF отличается от SFT?</li><li>Rubber duck: объясни RLHF как обучение модели выбирать ответы, которые люди предпочитают.</li></ul></section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -27,7 +27,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/05_lora_qlora.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -39,20 +39,47 @@
       <h1>6.5 LoRA и QLoRA</h1>
       <p class="muted">Полный fine-tuning больших моделей дорог. LoRA и QLoRA появились как способ адаптировать LLM через маленькое число дополнительных параметров, не трогая большую часть исходных весов.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Fine-tuning всей 70B модели требует сотен GPU. LoRA обучает лишь малый адаптер ΔW = B·A, экономя память в 10–100×. QLoRA добавляет 4-bit quantization для ещё большей экономии.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>LoRA: ΔW = B·A — почему low-rank адаптер эффективно работает</li>
+      <li>Почему r·(d_in + d_out) << d_in·d_out — экономия параметров в числах</li>
+      <li>Какие матрицы обычно адаптируют — Q, V или все проекции</li>
+      <li>QLoRA: NF4 quantization + LoRA + gradient checkpointing</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Трансформер (5.4)</li>
+      <li>Fine-tuning basics</li>
+      <li>Линейная алгебра (1.1)</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>LoRA в одной формуле</h2>
       <div class="formula" data-render-tex data-tex-source="W' = W + \Delta W, \qquad \Delta W = BA, \qquad \mathrm{rank}(BA)=r">W' = W + ΔW,   ΔW = BA,   rank(BA)=r</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">результирующий сдвиг весов после добавления низкоранговой LoRA-поправки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W</span><span class="fa-name">исходная матрица весов</span><span class="fa-desc">Предобученные веса; заморожены при LoRA fine-tuning и не получают градиентов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W'</span><span class="fa-name">адаптированная матрица</span><span class="fa-desc">W плюс низкоранговая поправка; эта комбинация используется при инференсе вместо исходных весов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ΔW</span><span class="fa-name">низкоранговая поправка</span><span class="fa-desc">Обучаемое добавление к исходным весам; задаётся произведением BA и имеет ранг r.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">левая LoRA матрица</span><span class="fa-desc">Размер d_out×r; r — малый ранг. Обучается вместе с A; инициализируется нулями.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">правая LoRA матрица</span><span class="fa-desc">Размер r×d_in. Обучается вместе с B; инициализируется случайно (гауссиан).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">rank(BA)=r</span><span class="fa-name">ранг поправки</span><span class="fa-desc">Произведение BA имеет ранг не более r. При малом r поправка лежит в низкоразмерном подпространстве.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LoRA не переобучает всю матрицу, а добавляет к ней низкоранговую поправку.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как маленькая накладка на большой механизм: основная модель остаётся, меняется только компактная адаптация.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для слоя 4096x4096 полный fine-tune требует 16.7M весов, а LoRA rank 8 обучает примерно 65k параметров на две матрицы.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LoRA не переписывает всю матрицу W, а добавляет к ней компактную поправку ΔW=BA. Если полезное task-specific изменение лежит в малом подпространстве (что часто так и есть), это даёт почти то же качество при доле параметров.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как тонкая настройка звука на усилителе: основная схема не перепаивается, добавляется лишь небольшой регулятор тонкой коррекции.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слой 4096×4096: полный fine-tune = 16.7M весов. LoRA rank 8: B(4096×8)+A(8×4096)=65.5K — в 256 раз меньше.</div>
     </div>
     <p>Мы не обновляем всю матрицу веса, а учим низкоранговую поправку. Если нужное изменение действительно живёт в маленьком подпространстве, это даёт почти то же поведение за гораздо меньшую цену.</p>
     </div>
@@ -76,14 +103,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">результирующий сдвиг весов после добавления низкоранговой LoRA-поправки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ΔW ∈ R^{d_out×d_in}</span><span class="fa-name">матрица обновления</span><span class="fa-desc">Полного размера слоя, но имплицитно задана произведением BA ранга r; явно не хранится и не обучается.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d_out, d_in</span><span class="fa-name">размерности слоя</span><span class="fa-desc">Число выходных и входных нейронов. В больших LLM оба могут достигать 4096–16384. Произведение d_out·d_in — число параметров при полном fine-tune.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B ∈ R^{d_out×r}</span><span class="fa-name">левая LoRA матрица</span><span class="fa-desc">d_out строк и r столбцов; r«d_out. Инициализируется нулями, чтобы ΔW=0 в начале обучения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A ∈ R^{r×d_in}</span><span class="fa-name">правая LoRA матрица</span><span class="fa-desc">r строк и d_in столбцов; r«d_in. Инициализируется случайно (гауссиан); A·B=0 в начале только из-за B=0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r</span><span class="fa-name">ранг (ключевой гиперпараметр)</span><span class="fa-desc">Обычно 4–64. Число trainable параметров = r·(d_out+d_in). Определяет ёмкость адаптации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LoRA не переобучает всю матрицу, а добавляет к ней низкоранговую поправку.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как маленькая накладка на большой механизм: основная модель остаётся, меняется только компактная адаптация.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для слоя 4096x4096 полный fine-tune требует 16.7M весов, а LoRA rank 8 обучает примерно 65k параметров на две матрицы.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вместо d_out·d_in параметров для ΔW обучается r·(d_out+d_in) параметров в A и B. При r=8 и d=4096 экономия — в 256 раз. Сила LoRA в том, что полезное изменение часто и правда лежит в маломерном подпространстве.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сжать HD-видео: вместо хранения каждого пикселя — хранить только базисные компоненты. Потеря минимальна, если полезный сигнал низкоранговый.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_out=d_in=4096, r=8: B=4096×8=32768, A=8×4096=32768 → итого 65.5K параметров vs 16.7M полного ΔW. Отношение ≈1:255.</div>
     </div>
     <p>Это ограничивает мощность обновления, но резко уменьшает число обучаемых параметров. Если базовая модель уже выучила хорошее представление мира, то адаптация часто и правда оказывается почти низкоранговой: нужно не переписать всё знание, а чуть повернуть его под новую задачу.</p>
     </div>
@@ -295,6 +324,40 @@ LoRA:
     <details><summary>[Intermediate] QLoRA memory</summary><p>Что экономит QLoRA? <strong>Решение:</strong> base model хранится в quantized формате, а адаптеры обучаются в более удобной точности.</p></details>
     <details><summary>[Hard] Limitation</summary><p>Когда LoRA может не хватить? <strong>Решение:</strong> если задача требует большой перестройки представлений, а low-rank подпространство слишком узкое.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-5"><h2>Checkpoint: 6.5 LoRA / QLoRA</h2><ul><li>Почему low-rank update экономит параметры?</li><li>Что означает rank в LoRA?</li><li>Чем LoRA отличается от full fine-tuning?</li><li>Что добавляет QLoRA?</li><li>Rubber duck: объясни LoRA как маленький обучаемый слой-поправку к большой замороженной модели.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое LoRA и какую проблему он решает?</summary>
+      <div class="ml-quiz__a"><p>LoRA (Low-Rank Adaptation) замораживает предобученные веса W и добавляет обучаемое low-rank разложение: ΔW = A·B, где A ∈ ℝᵐˣʳ, B ∈ ℝʳˣⁿ, r << min(m,n). Обучается только ΔW — в 100-1000× меньше параметров. Это позволяет fine-tuning LLM на потребительских GPU.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбрать ранг r в LoRA и как он влияет на качество?</summary>
+      <div class="ml-quiz__a"><p>Маленький r (4-8) — минимум параметров, подходит для простых задач. Большой r (64-256) — больше выразительности, ближе к full fine-tuning. Обычно начинают с r=16 и проверяют кросс-валидацией. Ранг также определяет, насколько глубоко можно адаптировать распределение ответов модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое QLoRA и как квантизация сочетается с LoRA?</summary>
+      <div class="ml-quiz__a"><p>QLoRA: веса базовой модели квантизируются в 4-bit NF4 (NormalFloat), но LoRA-адаптеры остаются в fp16/bf16. Double quantization снижает footprint квантизированных констант. Это позволяет обучать 65B-параметровую модель на одной GPU 24GB — разница с LoRA в 3-4× по памяти.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Target modules в LoRA и какие слои обычно адаптируют?</summary>
+      <div class="ml-quiz__a"><p>Обычно адаптируют матрицы Q, K, V в attention (q_proj, v_proj) и иногда FFN-слои (up_proj, down_proj). Выбор зависит от задачи: для задач, требующих изменения «поведения» — attention; для фактических знаний — FFN. Адаптация всех матриц (q,k,v,o + FFN) даёт лучшее качество при большем числе параметров.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-5"><h2>Checkpoint: 6.5 LoRA / QLoRA</h2><ul><li>Почему low-rank update экономит параметры?</li><li>Что означает rank в LoRA?</li><li>Чем LoRA отличается от full fine-tuning?</li><li>Что добавляет QLoRA?</li><li>Rubber duck: объясни LoRA как маленький обучаемый слой-поправку к большой замороженной модели.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

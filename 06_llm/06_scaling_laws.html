@@ -27,7 +27,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/06_scaling_laws.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -38,22 +38,46 @@
       <h1>6.6 Scaling Laws</h1>
       <p class="muted">Scaling laws отвечают на вопрос, который для LLM критичнее многих архитектурных деталей: как именно loss улучшается при росте параметров, данных и compute, и где модель начинает быть недообученной или переразмеренной относительно корпуса.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Scaling laws предсказывают потери модели как функцию от параметров, данных и вычислений. Chinchilla laws изменили то, как индустрия обучает LLM — compute-optimal ≠ максимум параметров.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Power law: L(N) = A·N^(-α) — что это значит эмпирически</li>
+      <li>Chinchilla: оптимальное соотношение N и D при фиксированном compute-бюджете</li>
+      <li>Compute-optimal scaling: N ∝ C^0.5 и D ∝ C^0.5</li>
+      <li>Emergent abilities — когда они появляются и почему непредсказуемы</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Pretraining (6.2)</li>
+      <li>Оптимизация (1.5)</li>
+      <li>Логарифм и степенные функции</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>Базовая идея</h2>
       <div class="formula" data-render-tex data-tex-source="L(N) \approx A N^{-\alpha} + B">L(N) ≈ A N^-α + B</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(N)</span><span class="fa-name">loss при N параметрах</span><span class="fa-desc">Значение loss языковой модели (cross-entropy на тестовых токенах) как функция от числа параметров N при оптимальном обучении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число параметров модели</span><span class="fa-desc">Размер модели — количество обучаемых весов. Главный axis в scaling laws; обычно измеряется в миллиардах (10⁹).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">коэффициент масштаба</span><span class="fa-desc">Подбирается эмпирически по нескольким точкам; определяет абсолютный масштаб улучшения loss при росте N.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">показатель степени по параметрам</span><span class="fa-desc">Скорость убывания loss при росте N. По Chinchilla ≈0.34. Чем больше α, тем выгоднее масштабировать модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">irreducible loss</span><span class="fa-desc">Нижний предел loss при N→∞; связан с энтропией самих данных. Нельзя улучшить, только наращивая модель.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Loss убывает по степенному закону: удвоение N уменьшает loss в 2^α раз. Это значит, улучшения предсказуемы — зная несколько точек, можно экстраполировать, что даст модель в 10× больше.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как производительность производства: удвоение мощности завода даёт предсказуемый прирост выпуска, но не удваивает его ровно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> A=1.3, α=0.07, B=0.05. N=1B: L≈1.3·10⁻⁰·⁰⁷+0.05≈1.35. N=10B: L≈1.3·10⁻⁰·¹⁴+0.05≈1.27. Прирост небольшой, но стабильный.</div>
     </div>
     <p>Многие метрики качества при увеличении масштаба следуют примерно степенным законам. Это значит, что улучшения предсказуемы и не хаотичны, пока мы находимся в рабочем scaling regime.</p>
     </div>
@@ -77,18 +101,18 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">scaling exponent</span><span class="fa-desc">степень power law, показывающая скорость улучшения loss при росте масштаба.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(N, D, C)</span><span class="fa-name">total loss</span><span class="fa-desc">Зависит от трёх ресурсов: числа параметров N, числа токенов D и вычислительного бюджета C. Минимизируется выбором баланса между ними.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L∞</span><span class="fa-name">irreducible loss</span><span class="fa-desc">Нижний предел — информационная энтропия идеальной модели на данных. Не устраняется увеличением N, D или C.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число параметров</span><span class="fa-desc">Ёмкость (capacity) модели. При недостаточном N — underfitting по capacity.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">D</span><span class="fa-name">число обучающих токенов</span><span class="fa-desc">Объём данных. При недостатке D модель «голодает»: capacity используется, но обобщение страдает.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">вычислительный бюджет (FLOPs)</span><span class="fa-desc">Суммарные вычисления при обучении. Связан с N и D: C ≈ 6ND (Chinchilla approximation).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">a, b, c</span><span class="fa-name">подгоночные коэффициенты</span><span class="fa-desc">Определяют абсолютный масштаб улучшений по каждой оси; подбираются эмпирически.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">α, β, γ</span><span class="fa-name">показатели степени</span><span class="fa-desc">Скорость убывания loss по N, D и C. Показывают, какая ось сейчас «выгоднее»: больший exponent = более крутое улучшение.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Три независимых «узких места»: недостаток параметров (N↑), недостаток данных (D↑) или недостаток compute (C↑). Chinchilla показал: для GPT-3 было слишком мало данных — оптимально N и D должны расти пропорционально.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пропускная способность дороги зависит от числа полос (N), количества машин (D) и скорости движения (C). Узкое место — всегда одно, остальные не помогут.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Chinchilla: для 10B-параметровой модели оптимально обучать на ~200B токенов (N:D≈1:20). GPT-3 (175B) обучали на 300B токенов — поэтому он был недообученным по данным.</div>
     </div>
     <p>Эта запись не означает, что реальный мир идеально сводится к трём степенным членам. Но она хорошо передаёт инженерную интуицию: loss улучшается предсказуемо, пока у нас не кончаются либо параметры, либо данные, либо вычислительный бюджет.</p>
     </div>
@@ -299,6 +323,40 @@ params и tokens растут согласованно</div>
     <details><summary>[Intermediate] Data quality</summary><p>Почему scaling law не отменяет качество данных? <strong>Решение:</strong> loss зависит не только от количества tokens, но и от distribution, duplicates, noise, contamination.</p></details>
     <details><summary>[Hard] Extrapolation risk</summary><p>Почему scaling laws опасно слепо extrapolate? <strong>Решение:</strong> меняются data mixture, architecture, optimizer, context length и evaluation regimes.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-6"><h2>Checkpoint: 6.6 Scaling Laws</h2><ul><li>Почему model size и data size надо балансировать?</li><li>Что значит undertrained model?</li><li>Как scaling laws помогают планировать budget?</li><li>Почему benchmark contamination ломает выводы?</li><li>Rubber duck: объясни scaling laws как эмпирические законы бюджета обучения.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что утверждают scaling laws Kaplan et al. (OpenAI)?</summary>
+      <div class="ml-quiz__a"><p>Loss убывает как степенной закон от трёх факторов: числа параметров N, объёма данных D и вычислительного бюджета C. При фиксированном compute оптимально распределить его между N и D. Kaplan et al. рекомендовали больше параметров при фиксированном compute.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Chinchilla scaling laws и чем они уточняют выводы Kaplan?</summary>
+      <div class="ml-quiz__a"><p>Hoffmann et al. (DeepMind): оптимальное число токенов ≈ 20× число параметров. Многие модели были «недообучены» по данным (GPT-3: 300B параметров, 300B токенов — надо 6T). Chinchilla (70B, 1.4T токенов) превзошла Gopher (280B). Вывод: лучше меньше параметров, больше данных.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему compute-optimal не всегда означает inference-optimal?</summary>
+      <div class="ml-quiz__a"><p>Chinchilla-optimal означает максимальное качество при фиксированном compute на обучение. Но на инференсе расходы масштабируются с числом параметров. Для deployment выгоднее меньшая модель, обученная на большем числе токенов: LLaMA обучался на 7B параметрах на 2T+ токенов — дешевле деплоить.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое emergent abilities и почему они вызывают споры?</summary>
+      <div class="ml-quiz__a"><p>Emergent abilities — возможности, которые резко появляются при превышении порогового масштаба (few-shot reasoning, chain-of-thought). Ряд исследователей считает это артефактом метрик (нелинейные метрики = нелинейный рост). При переходе к более гладким метрикам emergent abilities выглядят более непрерывными.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-6"><h2>Checkpoint: 6.6 Scaling Laws</h2><ul><li>Почему model size и data size надо балансировать?</li><li>Что значит undertrained model?</li><li>Как scaling laws помогают планировать budget?</li><li>Почему benchmark contamination ломает выводы?</li><li>Rubber duck: объясни scaling laws как эмпирические законы бюджета обучения.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

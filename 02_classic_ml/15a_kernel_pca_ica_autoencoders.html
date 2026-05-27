@@ -33,7 +33,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/15a_kernel_pca_ica_autoencoders.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -44,7 +44,66 @@
       <h1>2.15a Kernel PCA, ICA и Autoencoders</h1>
       <p class="muted">После обычного PCA логично задать вопрос: что делать, если структура данных нелинейна, если источники смешаны или если мы хотим учить представление прямо из данных? Здесь как раз встречаются Kernel PCA, ICA и autoencoders.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Kernel PCA, ICA и автоэнкодеры — нелинейные расширения классической PCA. Каждый ищет скрытую структуру по-разному: через kernel trick, независимость компонент или бутылочное горло сети.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как Kernel PCA применяет PCA в RKHS через kernel matrix</li>
+      <li>ICA — что значит «статистически независимые компоненты» и когда ICA нужна</li>
+      <li>Автоэнкодер как нелинейное обобщение PCA</li>
+      <li>Когда выбрать Kernel PCA vs ICA vs Autoencoder</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>PCA и снижение размерности (2.15)</li>
+      <li>Kernel methods (2.13a)</li>
+      <li>Нейронные сети (3.1–3.3)</li>
+    </ul>
+  </div>
+</div>
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Три разных цели, которые часто путают</h2>
       <table>
         <thead><tr><th>Метод</th><th>Что ищет</th><th>Главная интуиция</th></tr></thead>
@@ -100,15 +159,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">матрица данных</span><span class="fa-desc">Объекты по строкам, признаки по столбцам.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">component</span><span class="fa-name">новая ось</span><span class="fa-desc">Направление, на которое проецируются данные.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">explained variance</span><span class="fa-desc">Сколько разброса объясняет компонента.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K̃</span><span class="fa-name">центрированная kernel-матрица</span><span class="fa-desc">Результат центрирования: K̃ = K − 1K − K1 + 1K1. Необходима для корректного Kernel PCA — без центрирования первая компонента уйдёт в «среднее», а не в «разброс».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">исходная kernel-матрица (n×n)</span><span class="fa-desc">K_{ij} = K(x_i, x_j) — попарные сходства всех объектов. Заменяет матрицу ковариации из обычного PCA.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1</span><span class="fa-name">матрица из 1/n (центрирующая матрица)</span><span class="fa-desc">1 = (1/n)·𝟙𝟙^T, где 𝟙 — вектор единиц. Вычитание 1K центрирует строки kernel-матрицы, вычитание K1 — столбцы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1K1</span><span class="fa-name">двойное центрирование</span><span class="fa-desc">Добавляется, чтобы не вычесть «среднее» дважды. Итог: K̃ — это kernel-матрица с вычтенными средними по строкам, столбцам и всей матрице.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула ищет сжатое представление данных, сохраняя главную структуру: variance, независимость или реконструкцию.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сделать карту метро: сохранить важные связи, убрав лишние детали.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если первая PCA-компонента объясняет 70% variance, одна ось уже несёт большую часть разброса.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Kernel PCA делает PCA в скрытом feature space φ. Центрирование K̃ — это обязательный аналог вычитания среднего в обычном PCA. После этого eigendecomposition K̃ даёт нелинейные главные компоненты.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> PCA нормирует данные (вычитает среднее), тогда Kernel PCA нормирует матрицу сходств (центрирует K). Идея та же — уйти от «смещения» к «разбросу».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=3, K=[1,0.8,0.2; 0.8,1,0.3; 0.2,0.3,1]. Центрирование: вычесть среднее каждой строки, каждого столбца, добавить общее среднее — получим K̃ для eigendecomposition.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -142,14 +201,15 @@ s_hat = W x
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z = f_θ(x)</span><span class="fa-name">encoder — сжатие в латентное пространство</span><span class="fa-desc">f_θ — нейронная сеть с параметрами θ. Берёт объект x (например, изображение) и выдаёт вектор z меньшей размерности — «сжатое представление».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x̂ = g_φ(z)</span><span class="fa-name">decoder — реконструкция из latent code</span><span class="fa-desc">g_φ — нейронная сеть с параметрами φ. Берёт latent code z и восстанавливает x̂ — попытку воспроизвести исходный объект x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min ||x − x̂||²</span><span class="fa-name">reconstruction loss (MSE)</span><span class="fa-desc">Цель обучения: параметры θ и φ подбираются так, чтобы реконструкция x̂ как можно меньше отличалась от оригинала x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">latent code / bottleneck</span><span class="fa-desc">Сжатое представление размерности d_z ≪ d_x. Bottleneck заставляет автоэнкодер учить содержательные признаки: нельзя просто скопировать x — нужно «понять» его структуру.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Autoencoder учится «сжать-и-восстановить». Encoder находит компактное z, decoder из z строит x̂ ≈ x. Всё, что нельзя восстановить из z, теряется — bottleneck вынуждает выучивать главное.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Пересказ книги в 3 предложениях (encoder) и восстановление из пересказа (decoder). Хорошие 3 предложения — «хорошее z». Качество восстановления — reconstruction loss.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Вход: изображение 784px → encoder → z ∈ ℝ³² → decoder → x̂ 784px. MSE(x, x̂) обучает encoder запоминать самое важное в 32 числах.</div>
     </div>
     <p>Если encoder и decoder достаточно гибкие, autoencoder может учить более сложное нелинейное сжатие, чем PCA. Линейный autoencoder с MSE и без лишних трюков, кстати, тесно связан с PCA.</p>
       <div class="success">Важный мост к deep learning: autoencoder — это уже не просто метод уменьшения размерности, а полноценная обучаемая архитектура представлений.</div>
@@ -321,7 +381,40 @@ optimizer.step()</div></div>
     <details><summary>[Hard] Nonlinear PCA</summary><p>Почему autoencoder можно рассматривать как нелинейный PCA, но не как прямую замену PCA? <strong>Решение:</strong> он обучает нелинейное кодирование, но зависит от архитектуры, loss и оптимизации.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-15a">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем Kernel PCA принципиально отличается от обычного PCA?</summary>
+      <div class="ml-quiz__a"><p>Обычный PCA ищет линейные направления максимальной дисперсии. Kernel PCA неявно отображает данные в высокомерное пространство через ядро и применяет там PCA — получая нелинейные главные компоненты. Это позволяет «расплетать» нелинейные структуры, невидимые в исходном пространстве.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что ICA ищет в данных и чем это отличается от PCA?</summary>
+      <div class="ml-quiz__a"><p>PCA ищет некоррелированные компоненты максимальной дисперсии. ICA (Independent Component Analysis) ищет статистически независимые компоненты, минимизируя взаимную информацию. ICA применяется для разделения смешанных сигналов (cocktail party problem), где PCA бессилен.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему автоэнкодер является нелинейным аналогом PCA?</summary>
+      <div class="ml-quiz__a"><p>Линейный автоэнкодер с одним скрытым слоем и MSE-потерей обучает то же подпространство, что и PCA. При добавлении нелинейных активаций он может моделировать нелинейные многообразия (manifolds). Латентное пространство — это аналог главных компонент, но нелинейный.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое variational autoencoder и зачем нужна регуляризация латентного пространства?</summary>
+      <div class="ml-quiz__a"><p>VAE вместо точечного латентного вектора предсказывает распределение N(μ, σ²), из которого сэмплирует z. KL-дивергенция к N(0,1) регуляризует латентное пространство: делает его непрерывным и плотно заполненным, что позволяет сэмплировать z и генерировать новые данные.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-15a">
     <h2>Checkpoint: 2.15a Nonlinear Reduction</h2>
     <ul>
       <li>Что меняет kernel trick в PCA?</li>
@@ -331,5 +424,6 @@ optimizer.step()</div></div>
       <li>Rubber duck: объясни autoencoder как компрессор, который учится восстанавливать вход.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

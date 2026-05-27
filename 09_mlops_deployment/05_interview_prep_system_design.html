@@ -12,13 +12,37 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/05_interview_prep_system_design.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="mlops">
   <div class="page">
     <div class="hero">
       <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.4 Design</span><span class="tag active">9.5 Interview</span></div>
       <h1>9.5 Interview Prep — ML System Design</h1>
       <p class="muted">На system design интервью оценивают не знание модной модели, а умение структурировать неопределённую задачу: уточнить цель, оценить масштаб, выбрать данные, построить pipeline, serving и monitoring.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>System design для ML — навык, проверяемый в крупных компаниях. Clarify → Estimate → Design → Scale → Monitor — структура, которая работает на любом интервью.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как декомпозировать ML system design вопрос за 5 шагов</li>
+      <li>Оценка масштаба: QPS, latency, storage — как быстро посчитать</li>
+      <li>Типичные ML systems: recommendation, search, fraud detection</li>
+      <li>Failure modes и monitoring — что спрашивают в конце интервью</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Весь раздел 09 MLOps</li>
+      <li>ML pipeline (2.20)</li>
+      <li>Distributed training (8.1)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Framework ответа</h2>
@@ -71,7 +95,40 @@
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как структурировать ответ на вопрос о ML System Design на собеседовании?</summary>
+      <div class="ml-quiz__a"><p>Структура: (1) Clarify requirements — бизнес-цель, масштаб, latency, freshness. (2) Define ML task — что предсказываем, какой лейбл. (3) Data pipeline — сбор, хранение, preprocessing. (4) Feature engineering. (5) Model selection. (6) Evaluation & offline testing. (7) Serving & monitoring.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что спрашивают при проектировании рекомендательной системы?</summary>
+      <div class="ml-quiz__a"><p>Типичные вопросы: cold start problem (новые пользователи/items), масштаб (миллионы пользователей × миллиарды items), latency (retrieval → ranking → reranking pipeline), diversity vs relevance trade-off, feedback loop bias (popular items получают больше показов → больше clicks).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое two-tower model и когда он применяется?</summary>
+      <div class="ml-quiz__a"><p>Two-tower: отдельные encoders для user и item, скалярное произведение эмбеддингов = relevance score. Позволяет предвычислить item embeddings и делать ANN search при inference. Используется в recommendation (YouTube, Pinterest), search, ad retrieval — везде, где нужно быстро найти релевантные items из миллиардов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как объяснить компромисс между precision и recall при проектировании системы?</summary>
+      <div class="ml-quiz__a"><p>Precision vs Recall зависит от стоимости ошибок. В медицинской диагностике FN (пропуск болезни) дороже FP (лишний тест) → высокий recall. В спам-фильтре FP (потеря важного письма) дороже FN (пропуск спама) → высокий precision. Порог выбирается по бизнес-стоимости ошибок.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -88,5 +145,47 @@
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="mlops-9-5-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>good answer = clarify -> estimate -> design -> serve -> monitor</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">clarify</span><span class="fa-name">уточнить задачу</span><span class="fa-desc">какая цель, metric, latency/SLA и бизнес-ограничения.</span></div><div class="formula-anatomy__row"><span class="fa-sym">estimate</span><span class="fa-name">оценить масштаб</span><span class="fa-desc">users, QPS, storage, retraining cadence, label delay.</span></div><div class="formula-anatomy__row"><span class="fa-sym">design -> serve</span><span class="fa-name">архитектура</span><span class="fa-desc">pipeline данных, модель, inference path и rollback strategy.</span></div><div class="formula-anatomy__row"><span class="fa-sym">monitor</span><span class="fa-name">наблюдение</span><span class="fa-desc">quality, drift, latency, cost и business KPIs после запуска.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> хороший system design answer — это не список buzzwords, а последовательный разбор компромиссов.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если система должна отвечать за 50ms при 10k QPS, выбор модели и serving architecture сразу ограничивается.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: System Design на собеседовании</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй фреймворк: clarify → data → features → model → eval → serving → monitoring.</li>
+        <li>Всегда спрашивай о масштабе: DAU, латентность, freshness требований.</li>
+        <li>Бэк-оф-нэпкин расчёты — обязательная часть: сколько QPS, памяти, GPU.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Прыгать к архитектуре без уточнения требований.</li>
+        <li>Называть «лучшую модель» без обоснования trade-off.</li>
+        <li>Игнорировать monitoring и model degradation — это признак опыта, когда упоминаешь.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Широта vs глубина ответа: фреймворк первым, детали по запросу интервьюера.</li>
+        <li>Акцент на trade-offs: latency/throughput, precision/recall, cost/quality.</li>
+        <li>Примеры из практики — сразу повышают убедительность ответа.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="job_prep/01_interview_question_bank.html">← Job Prep: Q&A</a></li>
+        <li><a href="job_prep/02_ml_system_design.html">← ML System Design</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

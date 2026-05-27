@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/14_clustering.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,200 @@
         k-means, inertia, elbow method, silhouette score, hierarchical clustering, DBSCAN и ограничения кластеризации.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Кластеризация — это поиск структуры в данных без меток. k-Means, DBSCAN, иерархическая кластеризация — разные определения «похожести» дают разные кластеры.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>k-Means — алгоритм E-M итераций и что происходит при разных k</li>
+      <li>DBSCAN — кластеры произвольной формы и обработка шума</li>
+      <li>Метрики качества кластеризации: Silhouette, Inertia, Davies-Bouldin</li>
+      <li>Когда кластеризация работает плохо — проклятие размерности</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Предобработка данных (2.2)</li>
+      <li>Метрики расстояния (2.8)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">k-Means — одна E-M итерация (k=2)</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Данные и начало</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>4 точки на плоскости, k=2. Случайная инициализация центроидов.</p>
+        <div class="wt-formula">A=(1,1), B=(2,1), C=(8,8), D=(9,8)
+μ₁ = (1,1),  μ₂ = (8,8)   ← начальные центроиды</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">E-шаг: расстояния до центроидов</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Каждую точку назначаем ближайшему центроиду (Евклидово расстояние).</p>
+        <div class="wt-formula">d(A, μ₁)=0,       d(A, μ₂)=√98≈9.9  → кластер 1
+d(B, μ₁)=1,       d(B, μ₂)=√85≈9.2  → кластер 1
+d(C, μ₁)=√98≈9.9, d(C, μ₂)=1        → кластер 2
+d(D, μ₁)=√128≈11, d(D, μ₂)=1        → кластер 2</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Результат E-шага</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>После назначения:</p>
+        <div class="wt-formula">Кластер 1: {A, B}
+Кластер 2: {C, D}</div>
+        <div class="wt-result">Интуитивно правильно: левые точки и правые точки разделены.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">M-шаг: пересчёт центроидов</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Новый центроид = среднее координат всех точек кластера.</p>
+        <div class="wt-formula">μ₁_new = mean(A, B) = ((1+2)/2, (1+1)/2) = (1.5, 1.0)
+μ₂_new = mean(C, D) = ((8+9)/2, (8+8)/2) = (8.5, 8.0)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Сходимость?</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Повторяем E-шаг с новыми центроидами μ₁=(1.5,1), μ₂=(8.5,8). Назначения не изменились!</p>
+        <div class="wt-formula">A→кластер 1, B→кластер 1, C→кластер 2, D→кластер 2  (те же)</div>
+        <div class="wt-result"><strong>Алгоритм сошёлся за 1 итерацию</strong>. Финальные центроиды: (1.5,1) и (8.5,8).</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">k-Means: как k влияет на качество кластеризации</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">k (число кластеров)</span>
+          <span class="ml-slider-lab__param-value" id="sl-k-disp">3</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-k"
+               min="1" max="20" step="1" value="3">
+        <div class="ml-slider-lab__range-labels">
+          <span>1 (всё один)</span><span>20 (каждый сам)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-k"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-k');
+  var disp = document.getElementById('sl-k-disp');
+  var out = document.getElementById('sl-out-k');
+  function render(){
+    var k = +sl.value;
+    disp.textContent = k;
+    var inertia   = Math.round(100 * Math.exp(-k / 5) + 5);
+    var interDist = Math.max(5, Math.round(100 - k * 4));
+    var interp    = Math.max(5, Math.round(100 - (k - 1) * 6));
+    var verdict, vclass, txt;
+    if (k === 1) {
+      verdict = 'Бессмысленно'; vclass = 'sl-verdict-bad';
+      txt = 'k=1: все точки в одном кластере. Модель не обнаруживает никакой структуры. Центроид = среднее всего датасета.';
+    } else if (k <= 5) {
+      verdict = 'Разумное k'; vclass = 'sl-verdict-ok';
+      txt = 'k=' + k + ': хороший диапазон для многих датасетов. Silhouette score обычно достигает максимума здесь. Используйте elbow method для выбора.';
+    } else if (k <= 10) {
+      verdict = 'Допустимо'; vclass = 'sl-verdict-warn';
+      txt = 'k=' + k + ': inertia падает медленнее. Зависит от данных — если есть реальные кластеры, это может быть оправдано.';
+    } else {
+      verdict = 'Слишком много'; vclass = 'sl-verdict-bad';
+      txt = 'k=' + k + ': каждая точка почти в своём кластере. Inertia низкая, но кластеры не интерпретируемы и не стабильны.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Inertia (↓ лучше)</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + inertia + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Расст. между кл-ми</span><div class="sl-bar-wrap"><div class="sl-bar ' + (interDist > 50 ? 'sl-good' : interDist > 25 ? 'sl-warn' : 'sl-bad') + '" style="width:' + interDist + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Интерпретируемость</span><div class="sl-bar-wrap"><div class="sl-bar ' + (interp > 50 ? 'sl-good' : interp > 20 ? 'sl-warn' : 'sl-bad') + '" style="width:' + interp + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Что такое кластеризация</h2>
       <p>
         <strong>Кластеризация</strong> — это задача <strong>unsupervised learning</strong>, где у нас нет готовых меток классов,
@@ -513,18 +705,17 @@ J = Σ_{j=1..k} Σ_{x_i ∈ C_j} ||x_i - μ_j||²</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J</span><span class="fa-name">целевая функция k-means (WCSS)</span><span class="fa-desc">Within-cluster sum of squares — то, что алгоритм минимизирует на каждой итерации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число кластеров</span><span class="fa-desc">Заданный гиперпараметр: сколько групп выделяем. Внешний ∑ идёт по j от 1 до k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C_j</span><span class="fa-name">множество объектов кластера j</span><span class="fa-desc">Внутренний ∑ суммирует расстояния только по точкам, отнесённым к j-му кластеру.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">i-й объект</span><span class="fa-desc">Точка данных, для которой считаем расстояние до её центроида.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_j</span><span class="fa-name">центроид j-го кластера</span><span class="fa-desc">Среднее всех точек кластера j — цель k-means: подобрать μ_j так, чтобы J была минимальной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||·||²</span><span class="fa-name">квадрат евклидова расстояния</span><span class="fa-desc">Штрафует за удалённость от центра квадратично — большие отклонения наказываются сильнее.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Минимизируем суммарную «рассыпанность» точек вокруг центров — чем компактнее кластеры, тем меньше J.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Разложить жителей города по районам так, чтобы суммарный путь до ратуши района был минимальным.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Кластер с точками {1,2,3}, μ=2 → J += (1-2)²+(2-2)²+(3-2)² = 2. Плохая инициализация даст больше.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -648,18 +839,16 @@ J = Σ_{j=1..k} Σ_{x_i ∈ C_j} ||x_i - μ_j||²</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Inertia</span><span class="fa-name">внутрикластерная рассыпанность</span><span class="fa-desc">Суммарное квадратичное расстояние всех точек до своих центроидов — метрика компактности кластеров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_i</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем вклад каждого из n объектов датасета.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">i-й объект</span><span class="fa-desc">Точка данных, для которой вычисляем расстояние до её центроида.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_{c(i)}</span><span class="fa-name">центроид кластера точки x_i</span><span class="fa-desc">c(i) — номер кластера, к которому отнесена точка i; μ_{c(i)} — среднее этого кластера.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||·||²</span><span class="fa-name">квадрат евклидовой нормы</span><span class="fa-desc">Квадрат расстояния от точки до её центроида.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Inertia — это «суммарное расстояние до дома»: чем меньше, тем плотнее точки сидят вокруг центров своих кластеров.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Суммарный путь всех жителей до ближайшего магазина — минимизируем, расставляя магазины оптимально.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Точка x_i=(3,4), центроид μ_{c(i)}=(1,1) → ||x_i−μ||² = (3-1)²+(4-1)² = 4+9 = 13.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -694,14 +883,16 @@ J = Σ_{j=1..k} Σ_{x_i ∈ C_j} ||x_i - μ_j||²</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центроид</span><span class="fa-desc">Центр k-го кластера.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">c_i</span><span class="fa-name">назначение кластера</span><span class="fa-desc">К какому кластеру отнесён i-й объект.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число кластеров</span><span class="fa-desc">Подбираем перебором: пробуем k=2,3,4,… и смотрим, как меняется inertia.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">↑</span><span class="fa-name">увеличивается</span><span class="fa-desc">Чем больше кластеров, тем меньше каждый из них — точки сидят ближе к центроиду.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⇒</span><span class="fa-name">влечёт за собой</span><span class="fa-desc">Причинно-следственная связь: рост k механически снижает inertia.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">inertia</span><span class="fa-name">внутрикластерная рассыпанность</span><span class="fa-desc">Сумма квадратов расстояний точек до центроидов — убывает по мере роста k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">↓</span><span class="fa-name">уменьшается</span><span class="fa-desc">Inertia падает, но после «локтя» каждый новый кластер даёт всё меньше выигрыша.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает компактность или разделённость групп без использования правильных labels.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разложить вещи по коробкам так, чтобы внутри коробки предметы были похожи.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если точка ближе к центроиду A, чем к B, k-means назначит её кластеру A.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> С ростом k inertia убывает монотонно — важна не сама величина, а скорость убывания: «локоть» = точка, где прирост k перестаёт окупаться.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Нанимаем больше менеджеров (k) — нагрузка падает, но после некоторого числа каждый новый почти ничего не даёт.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=2: inertia=120, k=3: 60, k=4: 50, k=5: 47 → «локоть» около k=3, где падение резко замедлилось.</div>
     </div>
     <div class="intuition">
             До elbow новые кластеры дают много пользы.
@@ -984,15 +1175,13 @@ min_samples — минимум соседей для "плотной" точки
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центроид</span><span class="fa-desc">Центр k-го кластера.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">c_i</span><span class="fa-name">назначение кластера</span><span class="fa-desc">К какому кластеру отнесён i-й объект.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число кластеров</span><span class="fa-desc">Сколько групп ищет алгоритм.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">eps</span><span class="fa-name">радиус окрестности</span><span class="fa-desc">Максимальное расстояние, при котором точка считается "соседом" другой точки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min_samples</span><span class="fa-name">минимум соседей</span><span class="fa-desc">Сколько точек должно быть в eps-окрестности, чтобы точка считалась "core point".</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает компактность или разделённость групп без использования правильных labels.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разложить вещи по коробкам так, чтобы внутри коробки предметы были похожи.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если точка ближе к центроиду A, чем к B, k-means назначит её кластеру A.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> eps и min_samples вместе задают понятие "плотности": сначала находим core points (достаточно соседей в eps-шаре), затем расширяем кластер через них.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как определить "оживлённый район": eps — радиус квартала, min_samples — минимальное число магазинов в нём.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> eps=0.5, min_samples=3: точка является core, если в радиусе 0.5 не менее 3 соседей (не считая саму себя).</div>
     </div>
     <div class="grid-2">
         <div>
@@ -1334,18 +1523,17 @@ GMM:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min_{μ_k}</span><span class="fa-name">минимизация по центроидам</span><span class="fa-desc">Ищем набор центроидов {μ_1,…,μ_K}, при которых суммарное расстояние минимально.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем вклад каждого из n объектов датасета.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min_k</span><span class="fa-name">выбор ближайшего центроида</span><span class="fa-desc">Для каждого x_i берём расстояние до ближайшего из K центроидов — это и есть assignment шаг k-means.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">i-й объект</span><span class="fa-desc">Точка данных, для которой находим ближайший центроид.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центроид k-го кластера</span><span class="fa-desc">Точка в пространстве признаков, представляющая центр k-го кластера — оптимизируемый параметр.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||·||²</span><span class="fa-name">квадрат евклидовой нормы</span><span class="fa-desc">Квадрат расстояния от объекта до центроида — суммируем по всем объектам, берём ближайший центроид.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> k-means = квантизация пространства: найти K точек (центроиды), чтобы суммарный квадрат расстояний от каждого объекта до ближайшего из них был минимальным.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Разместить K магазинов в городе так, чтобы жители суммарно ходили как можно меньше.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 точки {1,2,9}, K=2: центроиды μ₁=1.5, μ₂=9 → суммарно (1-1.5)²+(2-1.5)²+(9-9)²=0.5. Лучше, чем μ₁=1, μ₂=5.5.</div>
     </div>
     <div class="info">Поэтому inertia и elbow — это не “объективная истина о числе кластеров”, а способ измерить, насколько хорошо набор центров сжимает геометрию данных в выбранной модели мира.</div>
     </div>
@@ -1939,7 +2127,40 @@ GMM:
     <details><summary>[Hard] Нет “правильных” labels</summary><p>Почему clustering трудно валидировать? <strong>Решение:</strong> нет внешнего target, поэтому качество зависит от цели: сегментация, compression, anomaly, exploration.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-14">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как k-Means выбирает кластеры и что такое инерция (inertia)?</summary>
+      <div class="ml-quiz__a"><p>k-Means итеративно: 1) назначает каждый пример ближайшему центроиду, 2) пересчитывает центроиды как среднее точек кластера. Инерция = Σ‖xᵢ - μₖ‖² — суммарное квадратичное расстояние до центроидов. Алгоритм минимизирует её, но не гарантирует глобальный минимум.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему k-Means плохо работает с кластерами неевклидовой формы?</summary>
+      <div class="ml-quiz__a"><p>k-Means предполагает сферические кластеры одинакового размера — граница между ними всегда прямая линия в пространстве признаков. Для «полумесяцев», спиралей и других несферических форм нужны DBSCAN, спектральная кластеризация или GMM.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбрать оптимальное k? Что такое метод локтя?</summary>
+      <div class="ml-quiz__a"><p>Строят зависимость инерции от k. При увеличении k инерция падает, но с некоторого момента прирост становится незначительным — это «локоть». Также используют силуэтный коэффициент: он максимален при k, когда кластеры компактны и хорошо разделены.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем DBSCAN отличается от k-Means и когда он лучше?</summary>
+      <div class="ml-quiz__a"><p>DBSCAN не требует задавать k заранее, сам определяет число кластеров и умеет находить кластеры произвольной формы, отделяя шум (выбросы). Слабость: плохо работает при сильно различающейся плотности и плохо масштабируется — сложность O(n log n) при использовании kd-tree.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-14">
     <h2>Checkpoint: 2.14 Clustering</h2>
     <ul>
       <li>Какую форму кластеров предполагает k-means?</li>
@@ -1949,5 +2170,7 @@ GMM:
       <li>Rubber duck: объясни clustering как попытку найти группы без учителя.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

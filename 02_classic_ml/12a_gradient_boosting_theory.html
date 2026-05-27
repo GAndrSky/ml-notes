@@ -39,7 +39,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/12a_gradient_boosting_theory.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -52,24 +52,83 @@
       <h1>2.12a Теория Gradient Boosting</h1>
       <p class="muted">Не просто “много деревьев подряд”, а stage-wise функциональная оптимизация: как boosting учится приближать антиградиент функции потерь и почему маленькие деревья оказываются таким сильным базовым семейством.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Gradient Boosting — это функциональный градиентный спуск. Каждый шаг обучает новое дерево на псевдо-остатках. Понять теорию — значит понять, почему XGBoost побеждает на табличных данных.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Псевдо-остатки и их связь с градиентом функции потерь</li>
+      <li>Функциональный градиентный спуск — оптимизация в пространстве функций</li>
+      <li>Как learning rate и число деревьев управляют bias-variance tradeoff</li>
+      <li>Математический вывод: почему MSE даёт остатки, а LogLoss — взвешенные</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Бустинг (2.12)</li>
+      <li>Оптимизация (1.5)</li>
+      <li>Математический анализ (1.2)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Ключевая идея</h2>
       <p>Boosting строит модель <strong>поэтапно</strong>. На каждом шаге мы не переучиваем всё с нуля, а добавляем маленькую функцию, которая лучше всего исправляет текущую ошибку ансамбля.</p>
       <div class="formula" data-render-tex data-tex-source="F_M(x) = \sum_{m=0}^{M} \nu \rho_m h_m(x)">F_M(x) = Σ ν ρ_m h_m(x)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F_M(x)</span><span class="fa-name">итоговый ансамбль из M деревьев</span><span class="fa-desc">Предсказание всего gradient boosting ансамбля для объекта x после M итераций.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по итерациям m=0..M</span><span class="fa-desc">Суммирует вклады всех M деревьев. Каждая итерация добавляет одно дерево h_m с весом ν·ρ_m.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ν</span><span class="fa-name">learning rate (shrinkage)</span><span class="fa-desc">Гиперпараметр, масштабирующий вклад каждого нового дерева. Обычно 0.01–0.3. Маленький ν → нужно больше итераций, но ансамбль устойчивее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρ_m</span><span class="fa-name">оптимальный шаг m-й итерации</span><span class="fa-desc">Line search: ρ_m = argmin L(F_{m-1}(x)+ρ·h_m(x)). Масштабирует m-е дерево так, чтобы максимально снизить loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">m-й слабый learner (дерево)</span><span class="fa-desc">Неглубокое дерево, обученное приближать антиградиент loss. Само по себе слабое, но в сумме формирует мощный ансамбль.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> F_M(x) — это сумма взвешенных слабых learners. Каждый h_m исправляет ошибки предыдущих. ν·ρ_m контролирует, насколько сильно верим каждому новому дереву.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как постепенная корректировка маршрута: каждый шаг (h_m) небольшой и в сторону улучшения, ν — размер шага. Много маленьких шагов лучше одного большого.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ν=0.1, ρ₁=2, h₁(x)=1.5 → первое дерево вносит 0.1·2·1.5=0.3. После M=100 деревьев сумма даёт финальное предсказание.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -104,15 +163,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">F_m(x)</span><span class="fa-name">текущий ансамбль</span><span class="fa-desc">Прогноз после m добавленных weak learners.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новая слабая модель</span><span class="fa-desc">Поправка, которую добавляют на текущем шаге.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Насколько сильно добавляется новая поправка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r_i^(m)</span><span class="fa-name">псевдорезидуал</span><span class="fa-desc">Отрицательный градиент loss по прогнозу F(x_i) на шаге m — "на сколько и куда сдвинуть прогноз".</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ℓ(y_i, F(x_i))</span><span class="fa-name">функция потерь</span><span class="fa-desc">Мера расхождения между истинным y_i и текущим прогнозом F(x_i).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение i-го объекта, относительно которого берётся производная loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F_{m-1}(x_i)</span><span class="fa-name">текущий ансамбль</span><span class="fa-desc">Прогноз после m-1 итераций: точка, в которой вычисляется производная.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет слабую модель как поправку к текущему ансамблю, обычно в сторону ошибок или градиента.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как редактировать черновик: каждый проход исправляет оставшиеся слабые места.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если F₀=10, новое дерево даёт h=2, а η=0.1, новый прогноз F₁=10.2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Псевдорезидуал — это "сколько и в каком направлении надо изменить прогноз": отрицательный градиент loss по F(x_i). Именно это учит следующее дерево.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как учитель, указывающий на ошибки: "вот на сколько твой ответ промахнулся и в каком направлении".</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> MSE loss: ℓ=0.5(y_i−F)² → r_i = y_i − F_{m-1}(x_i) — это обычный residual.</div>
     </div>
     <div class="step"><strong>1.</strong> Считаем псевдорезидуалы: для каждой точки спрашиваем, в какую сторону надо сдвинуть текущее предсказание, чтобы loss уменьшился быстрее всего.</div>
       <div class="step"><strong>2.</strong> Обучаем слабую модель <code>h_m(x)</code> приближать эти псевдорезидуалы.</div>
@@ -413,7 +472,40 @@ r_i = y_i - p_i
     <details><summary>[Hard] Function space view</summary><p>Что означает “gradient descent в пространстве функций”? <strong>Решение:</strong> мы обновляем не вектор параметров одной модели, а всю функцию предсказания, добавляя новый weak learner.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-12a">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «слабый ученик» (weak learner) в контексте градиентного бустинга?</summary>
+      <div class="ml-quiz__a"><p>Слабый ученик — модель, незначительно лучше случайного угадывания. В GBM это обычно неглубокие деревья решений (depth 3-6). Их «слабость» — намеренная: они недостаточно гибки, чтобы переобучиться самостоятельно, и их ошибки исправляются ансамблем.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как learning rate взаимодействует с числом деревьев в GBM?</summary>
+      <div class="ml-quiz__a"><p>Малый learning rate (shrinkage) η уменьшает вклад каждого дерева, замедляя обучение, но улучшая обобщение. Это компенсируется увеличением числа деревьев. Типичная пара: η=0.01–0.1 при n=500–5000. Меньший η + больше деревьев = лучше, но дороже.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему XGBoost значительно быстрее наивной реализации GBM?</summary>
+      <div class="ml-quiz__a"><p>XGBoost применяет несколько оптимизаций: приближённый алгоритм нахождения лучшего сплита (quantile sketch), column subsampling, кеширование гистограмм, работу со sparse-данными и распараллеливание. Также использует L2-регуляризацию прямо в критерии сплита.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «второй порядок» в оптимизации XGBoost?</summary>
+      <div class="ml-quiz__a"><p>XGBoost минимизирует функцию потерь, используя второй порядок разложения Тейлора: L ≈ Σ[gᵢf(xᵢ) + 0.5·hᵢf²(xᵢ)], где g — первая производная, h — вторая. Это даёт более точное направление оптимизации, чем только первый порядок в классическом GBM.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-12a">
     <h2>Checkpoint: 2.12a Gradient Boosting Theory</h2>
     <ul>
       <li>Что такое pseudo-residual?</li>
@@ -423,5 +515,6 @@ r_i = y_i - p_i
       <li>Rubber duck: объясни gradient boosting как спуск по loss, где шагом является дерево.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

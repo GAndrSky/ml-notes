@@ -74,12 +74,36 @@ canvas{display:block;width:100%}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/05_resnet_normalization.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <h1>5.5 — Residual Networks & Normalization</h1>
       <p class="mu">ResNet · Degradation problem · Basic/Bottleneck · Gradient highway · BN / LN / GN / RMSNorm</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>ResNet сделал возможным обучение сетей глубиной 100+ слоёв через residual connections: градиент обходит слои напрямую. BatchNorm, LayerNorm, GroupNorm — разные ответы на вопрос нормализации.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Residual block: как skip connection решает проблему vanishing gradient</li>
+      <li>Bottleneck — 1×1 свёртки для снижения размерности и экономии параметров</li>
+      <li>BatchNorm vs LayerNorm vs GroupNorm — когда что использовать</li>
+      <li>Identity shortcut vs projection shortcut — математика downsampling</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>CNN (5.1)</li>
+      <li>Backpropagation (4.1)</li>
+      <li>Функции активации (3.2)</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="tabs" id="mtabs">
   <button class="tab active" onclick="sw(0)">Degradation</button>
@@ -152,17 +176,17 @@ skip(x) = BN(Conv1×1(x, stride=s))</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">выход блока</span><span class="fa-desc">y = σ(BN(F(x)) + x) — сумма residual преобразования и оригинального входа, затем ReLU. Блок учит поправку, а не полное преобразование.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход / skip connection</span><span class="fa-desc">исходный сигнал, проходящий по shortcut пути напрямую. Если размерности совпадают — identity; иначе — projection: BN(Conv1×1(x, stride=s)).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F(x)</span><span class="fa-name">residual функция</span><span class="fa-desc">W₂·σ(BN(W₁·x)) — два свёрточных слоя 3×3. Блок учит только «разницу» между выходом и входом: F(x) = y − x. При инициализации F≈0 → y≈x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W₁, W₂</span><span class="fa-name">веса свёрточных слоёв</span><span class="fa-desc">два Conv 3×3 с C каналами. Параметров: 2·9·C² = 18C². При C=256: 18·256²=1.18M параметров на один Basic Block.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">ReLU (нелинейность)</span><span class="fa-desc">здесь σ — это ReLU, не sigmoid. Применяется после BN в середине блока и после сложения на выходе. Вводит нелинейность между слоями.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">BN</span><span class="fa-name">BatchNorm</span><span class="fa-desc">нормализует по батчу и пространственным измерениям. Стабилизирует масштаб активаций между слоями. В projection shortcut: BN(Conv1×1) выравнивает размерность skip пути.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> блок не учит преобразование целиком — он учит лишь поправку F(x) к уже хорошему приближению x. В начале обучения W≈0 → F≈0 → y≈x: блок начинает как identity и постепенно учится добавлять полезную информацию.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> редактор правит черновик: основа (x) остаётся, добавляются только правки (F(x)). Легче исправить несколько слов, чем переписать абзац с нуля.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[1.0, 0.5, −0.3]. F(x)=[0.1, −0.05, 0.2]. До ReLU: [1.1, 0.45, −0.1]. После ReLU: y=[1.1, 0.45, 0]. Блок внёс небольшую поправку, не «стёр» входной сигнал.</div>
     </div>
     <h3>Bottleneck (ResNet-50/101/152)</h3>
 <div class="fm">W₁: 1×1  C→C/4   squeeze
@@ -172,15 +196,15 @@ W₃: 1×1  C/4→C   expand
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">число каналов</span><span class="fa-desc">ширина residual stream — число feature map каналов на входе и выходе блока. Bottleneck сохраняет C, но сжимает внутри до C/4.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C/4</span><span class="fa-name">bottleneck width</span><span class="fa-desc">внутренняя ширина после 1×1 squeeze. При C=256: C/4=64. Именно здесь происходит дорогая 3×3 свёртка — в пространстве вчетверо меньшего числа каналов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W₁, W₂, W₃</span><span class="fa-name">три свёрточных слоя</span><span class="fa-desc">W₁: 1×1 (C→C/4, squeeze), W₂: 3×3 (C/4→C/4, spatial), W₃: 1×1 (C/4→C, expand). Параметры: 1·C·C/4 + 9·(C/4)² + 1·C/4·C = C²/4+9C²/16+C²/4 ≈ 3.5C²/4.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">3.5C²/4</span><span class="fa-name">число параметров Bottleneck</span><span class="fa-desc">vs Basic Block: 18C². При C=256: Bottleneck≈57K, Basic≈1.18M — в ~20× меньше! Это позволяет строить ResNet-50/101/152 без взрывного роста параметров.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> squeeze-expand структура выносит дорогую 3×3 свёртку в узкое пространство каналов. 1×1 слои — это channel mixing без пространственной обработки; они дёшевы, но позволяют контролировать ширину для 3×3.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> перед решением сложной задачи сжать условие до ключевых переменных, решить в компактной записи, затем развернуть ответ обратно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> C=256. Basic Block: 2×9×256²=1.18M. Bottleneck: W₁=256×64=16K, W₂=9×64²=37K, W₃=64×256=16K → итого ≈69K — в 17× меньше при той же глубине residual преобразования.</div>
     </div>
     <h3>Pre-activation (He 2016)</h3>
 <div class="fm">Post-act 2015:  y = σ(BN(<span class="ha">F(x)+x</span>))
@@ -189,16 +213,15 @@ Skip path чист → градиент без BN и ReLU</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">выход блока</span><span class="fa-desc">Post-act (2015): y=σ(BN(F(x)+x)) — ReLU после сложения. Pre-act (2016): y=x+F(BN(σ(x))) — ReLU и BN перед свёрткой. Skip path в Pre-act проходит без изменений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход / skip path</span><span class="fa-desc">в Pre-act: x проходит через + без BN и ReLU — «чистый» gradient highway. Градиент ∂L/∂x проходит без умножения на σ′(BN(...)) — нет риска затухания от насыщения ReLU на skip пути.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F(BN(σ(x)))</span><span class="fa-name">residual с Pre-LN</span><span class="fa-desc">BN и ReLU применяются ДО свёртки, а не после. Это аналог Pre-LN в Transformer. Градиент через F тоже стабилизируется: BN нормирует входы свёртки, σ′ не насыщает их на skip.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">ReLU</span><span class="fa-desc">нелинейность (ReLU, не sigmoid). В Post-act применяется после сложения x+F(x) — значит градиент skip пути тоже проходит через σ′. В Pre-act skip чист — σ применяется только внутри F.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> в Post-act ReLU «зажимает» и skip путь — если (F(x)+x) &lt; 0, градиент через skip тоже обнуляется. Pre-act убирает ReLU с skip пути, давая градиенту чистую дорогу от loss до ранних слоёв.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Post-act — турникет стоит в конце коридора и блокирует всех; Pre-act — турникет только на боковом пути, главный проход всегда открыт.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> F(x)+x = −0.1 (отрицательное). Post-act: σ(−0.1)=0, grad=0 — skip заблокирован. Pre-act: y=x+F(...)= x + σ(BN(x'))*W — skip x всегда добавляется, даже если F отрицательно.</div>
     </div>
     <div class="ib"><strong>Зачем Pre-act лучше:</strong> при Post-act добавление проходит через BN+ReLU — skip не чистый. Pre-act: residual stream = чистая сумма слагаемых.</div>
 </div>
@@ -259,17 +282,15 @@ Plain: ∂L/∂x_l = ∂L/∂x_L · <span class="hr">ΠWᵢ·σ′ᵢ</span> →
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂x_l</span><span class="fa-name">градиент на слое l</span><span class="fa-desc">то, что нужно вычислить при backprop. Для ResNet: ∂L/∂x_l = ∂L/∂x_L · (1 + ∂ΣF/∂x_l) — слагаемое «1» от skip пути всегда присутствует.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂x_L</span><span class="fa-name">градиент от верхнего слоя L</span><span class="fa-desc">приходит с более глубокого слоя L. Умножается на (1 + ∂ΣF/∂x_l) — слагаемое 1 гарантирует, что даже при ∂F/∂x→0 градиент не исчезает.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1 + ∂ΣF/∂x_l</span><span class="fa-name">полный Якобиан с skip</span><span class="fa-desc">«1» — вклад skip connection. ∂ΣF/∂x_l — вклад residual ветки. Даже если ∂F→0 (блок не активен), градиент ≥ ∂L/∂x_L — без затухания от этого слоя.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ΠWᵢ·σ′ᵢ</span><span class="fa-name">произведение Якобианов (Plain)</span><span class="fa-desc">в сети без skip градиент — это произведение весов и производных активаций по всем N слоям. При ‖W‖·σ′&lt;1: произведение → 0 (затухание); при &gt;1: → ∞ (взрыв). ResNet убирает этот риск для skip пути.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> skip connection добавляет «1» к Якобиану. Это значит, что градиент от любого слоя доходит до любого раннего слоя хотя бы через skip путь — без умножения на цепочку матриц. ResNet из 152 слоёв обучается, а Plain-152 нет.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> лифт в небоскрёбе: можно идти по лестнице (через все слои, теряя силы) или сесть в лифт (skip) и доехать напрямую.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> N=5, ‖W‖·σ′=0.7. Plain: 0.7⁵≈0.168 (теряем 83% градиента). ResNet: ≈1+∂F/∂x ≈ 1.05 — градиент почти не затухает через skip, даже если ∂F мало.</div>
     </div>
     <div class="sb"><span class="sn">Пример N=5, ‖W‖·σ′=0.7.</span> Plain: 0.7⁵=<span class="hr">0.168</span>. ResNet: ≈<span class="hg">1.05</span>.</div>
 <div class="ib"><strong>Аналогия с LSTM:</strong> ∂cₜ/∂cₜ₋₁ = fₜ — тот же gradient highway без матричных умножений.</div>
@@ -306,17 +327,17 @@ Plain: ∂L/∂x_l = ∂L/∂x_L · <span class="hr">ΠWᵢ·σ′ᵢ</span> →
 <div class="g2">
 <div><h3>DenseNet</h3><div class="fm">x_l = H([x₀,x₁,…,x_{l-1}])
 Concat вместо Add</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>x_l</span><span class=”fa-name”>выход слоя l</span><span class=”fa-desc”>в DenseNet — функция от конкатенации ВСЕХ предыдущих слоёв [x₀,…,x_{l-1}], а не только x_{l-1}. Каждый слой получает градиенты напрямую от всех последующих.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>H([x₀,…,x_{l-1}])</span><span class=”fa-name”>composite функция от конкатенации</span><span class=”fa-desc”>H — это BN+ReLU+Conv, применённые к конкатенации feature maps всех предыдущих слоёв. Конкатенация (не сложение) сохраняет все предыдущие признаки в явном виде.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>Concat vs Add</span><span class=”fa-name”>ключевое отличие от ResNet</span><span class=”fa-desc”>ResNet: x_l = x_{l-1} + F(x_{l-1}) — сложение «стирает» предыдущее в один вектор. DenseNet: [x₀,…,x_{l-1}] — все слои видны явно. Память: O(L²) vs O(L), но recognition улучшается.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> DenseNet — extreme version of residual: каждый слой видит все предыдущие как прямые входы. Это максимизирует gradient flow и feature reuse, но резко растёт ширина конкатенации с глубиной.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> группа студентов, где каждый новый читает все предыдущие конспекты, а не только последний. ResNet — читает только вчерашний и добавляет свои заметки поверх.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> growth rate k=32 (каждый слой добавляет 32 канала). Слой 5 получает [x₀,x₁,x₂,x₃,x₄] с шириной 4×32=128 каналов (плюс начальные). Слой 10: 9×32=288 каналов на входе — растёт линейно.</div>
     </div>
     </div>
 <div><h3>Transformer</h3><div class="fm">x = x + MHA(LN(x))
@@ -325,14 +346,14 @@ x = x + FFN(LN(x))
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">residual stream</span><span class="fa-desc">вектор состояния токена, который проходит через все слои как «магистраль». Каждый sublayer добавляет к нему поправку — точно как ResNet добавляет F(x) к x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x + MHA(LN(x))</span><span class="fa-name">residual после attention</span><span class="fa-desc">структурный аналог ResNet Basic Block: x — skip path, MHA(LN(x)) — residual branch (F(x)). LN перед sublayer — это Pre-LN, аналог Pre-activation ResNet (He 2016).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">LN</span><span class="fa-name">LayerNorm (Pre-LN)</span><span class="fa-desc">применяется ДО sublayer, а не после. Аналог Pre-act ResNet: нормировка на входе F, skip чист. Стабилизирует обучение глубоких Transformer так же, как Pre-act стабилизировал ResNet-1000+.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer позаимствовал residual connection из ResNet — и по той же причине: gradient highway через сотни слоёв. Skip path в Transformer (x +) позволяет обучать модели с 96+ слоями (GPT-3) без взрыва/затухания градиентов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> одна и та же инженерная идея — «обходной путь» — используется и в CNN (ResNet), и в Transformer. Разница только в том, что делает F(x): свёртка vs attention+FFN.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> GPT-3: 96 слоёв. Gradient через skip проходит 96 сложений (+) вместо умножений. Даже если каждый sublayer вносит ≈0 (в начале обучения), signal течёт от loss до embeddings без затухания.</div>
     </div>
     </div>
 </div>
@@ -363,15 +384,16 @@ y  =  <span class="hg">γ · x̂  +  β</span>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход блока</span><span class="fa-desc">сигнал, который может пройти через residual branch без потери.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">F(x)</span><span class="fa-name">residual transform</span><span class="fa-desc">то, что блок должен доучить поверх identity пути.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">μ, σ</span><span class="fa-name">статистики нормализации</span><span class="fa-desc">среднее и масштаб, используемые для стабилизации активаций.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">learned scale/shift</span><span class="fa-desc">обучаемые параметры, возвращающие нормализованному сигналу нужный масштаб и сдвиг.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной сигнал</span><span class="fa-desc">исходное значение до нормировки. Один из элементов тензора активаций. Формула одинакова для BN/LN/IN/GN — разница только в том, по каким элементам считать μ и σ².</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее по оси нормировки</span><span class="fa-desc">вычитается для центрирования. Ось зависит от метода: BN — по (B,H,W) для каждого канала c; LN — по (C,H,W) для каждого примера b; IN — по (H,W) для каждого (b,c).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия по той же оси</span><span class="fa-desc">мера разброса. x̂ = (x−μ)/√(σ²+ε) имеет нулевое среднее и единичную дисперсию по выбранной оси. Вычисляется по той же группе элементов, что и μ.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">числовая стабильность</span><span class="fa-desc">~1e-5 в знаменателе √(σ²+ε). Предотвращает деление на ноль при σ²=0 (все элементы группы одинаковы).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">обучаемые scale и shift</span><span class="fa-desc">γ·x̂+β восстанавливает любой нужный масштаб и сдвиг. Инициализируются γ=1, β=0 (identity). Без них нормировка принудительно фиксировала бы N(0,1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> residual connection даёт градиенту короткий путь, а normalization удерживает масштаб сигналов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как обходная дорога вокруг сложного участка: можно пройти напрямую или через обработку.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если F(x)=0 в начале обучения, residual block всё равно может передать y≈x.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> формула одна для всех методов нормализации — разница только в том, какие элементы группируются для вычисления μ и σ². BN объединяет по батчу, LN — по признакам, IN — по пространству, GN — по группам каналов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> стандартизация оценок: нормировать класс целиком (BN), нормировать одного студента по всем предметам (LN) или нормировать по отдельному предмету каждого студента (IN).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,4,6,8]. μ=5, σ²=5. x̂≈[−1.34,−0.45,0.45,1.34]. γ=2, β=1: y=[−1.68, 0.10, 1.90, 3.68]. Если γ=1,β=0: выход центрирован с дисперсией 1.</div>
     </div>
     <h3>Batch Norm (Ioffe & Szegedy, 2015)</h3>
 <div class="fm">μ_c = <span class="ha">1/(B·H·W)</span> · Σ_{b,h,w} x_{b,c,h,w}   ← per channel
@@ -379,18 +401,15 @@ Train: batch stats   Test: running EMA (momentum=0.1)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_c</span><span class="fa-name">среднее по каналу c</span><span class="fa-desc">1/(B·H·W) · Σ x_{b,c,h,w} — усредняем по всем примерам в батче и по пространству (H×W) для каждого канала отдельно. Один μ_c на каждый из C каналов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B, H, W</span><span class="fa-name">размеры батча и пространства</span><span class="fa-desc">B — batch size, H×W — пространственные размеры feature map. Нормировка по B·H·W элементам на канал. При B=1 (inference одного примера) статистика ненадёжна — BN нестабилен.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">running EMA</span><span class="fa-name">скользящая средняя для inference</span><span class="fa-desc">при training: μ и σ² вычисляются по батчу. При inference: используется EMA, накопленная за training: μ_run ← 0.9·μ_run + 0.1·μ_batch. model.eval() переключает на running stats.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">momentum=0.1</span><span class="fa-name">скорость обновления EMA</span><span class="fa-desc">вес нового батча при обновлении running stats. 0.1 означает: 10% из нового батча, 90% из истории. Малый momentum → медленнее адаптируется, зато стабильнее при inference.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BatchNorm нормирует каждый канал по всему батчу — это делает активации стабильными и ускоряет обучение. Но создаёт train/test разрыв: на training μ из батча, на test — из EMA. При маленьком батче (B&lt;8) статистика шумная → BN работает хуже.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> нормировать оценки по классу: у каждого предмета (канала) своя средняя по всем студентам (батчу) и пространству. На финальном экзамене (inference) используется историческое среднее, а не текущей группы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=3, B=4, H=W=2 → 4×2×2=16 элементов. x_{b,3,h,w}=[1,2,3,4,5,6,7,8,2,3,4,5,6,7,8,9]. μ_3=5.0, σ²_3=5.25. x̂=нормированные. После γ=1,β=0: выход центрирован.</div>
     </div>
     <h3>Layer Norm (Ba et al., 2016)</h3>
 <div class="fm">μ_b = <span class="hg">1/(C·H·W)</span> · Σ_{c,h,w} x_{b,c,h,w}   ← per sample
@@ -398,18 +417,14 @@ Train ≡ Test. Стандарт Transformer/NLP.</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_b</span><span class="fa-name">среднее по примеру b</span><span class="fa-desc">1/(C·H·W) · Σ_{c,h,w} x_{b,c,h,w} — усредняем по всем каналам и пространству одного примера. Один μ_b на каждый пример в батче.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C, H, W</span><span class="fa-name">каналы и пространство</span><span class="fa-desc">нормировка по C·H·W элементам одного примера. В NLP: C — число признаков токена, H=W=1 → нормировка по всем C признакам токена. Стандарт Transformer.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Train ≡ Test</span><span class="fa-name">одинаковое поведение</span><span class="fa-desc">LN не использует статистику батча — μ и σ² вычисляются по признакам одного примера. Поэтому нет разрыва между training и inference, нет running stats, нет model.train()/eval() влияния.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LN нормирует каждый пример независимо по его признакам. Это делает LN идеальным для sequence models: длина последовательности и batch size не влияют на статистику. Именно поэтому LN доминирует в Transformer.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> нормировать одного студента по всем его оценкам (а не по классу). Каждый студент оценивается относительно себя — независимо от других.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> токен с признаками x=[1,2,3,4,5,6], C=6. μ=3.5, σ²=2.92. x̂≈[−1.46,−0.88,−0.29,0.29,0.88,1.46]. Это одно и то же при B=1 и B=32 — LN не зависит от батча.</div>
     </div>
     <h3>Instance Norm (Ulyanov 2016)</h3>
 <div class="fm">μ_{b,c} = <span class="hb">1/(H·W)</span> · Σ_{h,w} x_{b,c,h,w}   ← per (B,C)
@@ -417,18 +432,16 @@ Style transfer — убирает стиль, держит структуру</d
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_{b,c}</span><span class="fa-name">среднее по (b, c) — per-example-per-channel</span><span class="fa-desc">1/(H·W) · Σ_{h,w} x_{b,c,h,w} — усредняем только по пространству H×W для каждой пары (пример b, канал c). Самый узкий масштаб нормировки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/(H·W)</span><span class="fa-name">коэффициент усреднения по пространству</span><span class="fa-desc">Делит сумму пикселей H·W на число позиций. Статистика считается только по пространству — без батча, без других каналов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{h,w}</span><span class="fa-name">сумма по всем пространственным позициям</span><span class="fa-desc">Суммирует пиксели по высоте h (0..H-1) и ширине w (0..W-1). Для канала c примера b — ровно H·W значений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">H, W</span><span class="fa-name">пространственные размеры feature map</span><span class="fa-desc">Высота и ширина карты признаков. Нормировка только по H·W пикселям одного канала одного примера — независима для каждого (b,c).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Style transfer</span><span class="fa-name">ключевое применение Instance Norm</span><span class="fa-desc">μ_{b,c} и σ_{b,c} кодируют «стиль» изображения (яркость, контраст канала). Замена этих статистик на статистику стилевого изображения переносит его стиль при сохранении структуры контента.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> IN нормирует каждый канал каждого изображения по его собственному пространственному среднему, «стирая» стиль. Для классификации плохо (теряем информацию о яркости и контрасте), для style transfer — идеально.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> перевести фото в оттенки серого и выровнять гистограмму — убрать «стиль» освещения, оставив только форму объектов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=0 картинки b=0: x=[100,120,80,110], H·W=4. μ=102.5. x̂≈[−0.19,1.32,−1.70,0.57]. Заменяем μ,σ на статистику стилевого изображения → пиксели принимают его «тон».</div>
     </div>
     <h3>Group Norm (Wu & He, 2018)</h3>
 <div class="fm">Делим C на G групп, нормируем внутри:
@@ -437,15 +450,15 @@ G=32 стандарт, не зависит от B → detection</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход блока</span><span class="fa-desc">сигнал, который может пройти через residual branch без потери.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">F(x)</span><span class="fa-name">residual transform</span><span class="fa-desc">то, что блок должен доучить поверх identity пути.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">μ, σ</span><span class="fa-name">статистики нормализации</span><span class="fa-desc">среднее и масштаб, используемые для стабилизации активаций.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">learned scale/shift</span><span class="fa-desc">обучаемые параметры, возвращающие нормализованному сигналу нужный масштаб и сдвиг.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">число каналов</span><span class="fa-desc">Общее количество каналов признаков, которые нужно нормализовать.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">G</span><span class="fa-name">число групп</span><span class="fa-desc">Каналы делятся на G равных групп. G=32 — стандарт. G=1 даёт LayerNorm; G=C даёт InstanceNorm.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">C/G</span><span class="fa-name">каналов в группе</span><span class="fa-desc">Нормализация вычисляется отдельно внутри каждой группы из C/G каналов. Пример: C=256, G=32 → 8 каналов на группу.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">learned scale/shift</span><span class="fa-desc">Обучаемые параметры (по C штук), восстанавливающие нужный масштаб после нормализации.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> residual connection даёт градиенту короткий путь, а normalization удерживает масштаб сигналов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как обходная дорога вокруг сложного участка: можно пройти напрямую или через обработку.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если F(x)=0 в начале обучения, residual block всё равно может передать y≈x.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GroupNorm нормирует по пространству H×W и подгруппе каналов — не зависит от batch size, поэтому стабильно при B=1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо нормализации всех студентов класса (BN) нормализуем по небольшим группам — работает даже с одним учеником.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> C=256, G=32, H=W=7: статистики считаются по 8×7×7=392 значений — достаточно для стабильных оценок даже при B=1.</div>
     </div>
     <h3>RMSNorm (Zhang & Sennrich, 2019)</h3>
 <div class="fm">RMS(x) = √(1/d · Σ xᵢ²)
@@ -454,15 +467,15 @@ y = <span class="ha">γ · x / RMS(x)</span>    ← нет μ, нет β!
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход блока</span><span class="fa-desc">сигнал, который может пройти через residual branch без потери.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">F(x)</span><span class="fa-name">residual transform</span><span class="fa-desc">то, что блок должен доучить поверх identity пути.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">μ, σ</span><span class="fa-name">статистики нормализации</span><span class="fa-desc">среднее и масштаб, используемые для стабилизации активаций.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">learned scale/shift</span><span class="fa-desc">обучаемые параметры, возвращающие нормализованному сигналу нужный масштаб и сдвиг.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор</span><span class="fa-desc">Вектор активаций размерности d, который нужно нормализовать.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">RMS(x)</span><span class="fa-name">среднеквадратичное значение</span><span class="fa-desc">√(1/d · Σ xᵢ²) — корень из среднего квадрата элементов. Нет вычитания среднего (нет μ).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность</span><span class="fa-desc">Число элементов в x. Пример: d=4096 в LLaMA-3.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">learned scale</span><span class="fa-desc">Обучаемый вектор масштаба размером d. Только γ — β отсутствует (нет сдвига).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> residual connection даёт градиенту короткий путь, а normalization удерживает масштаб сигналов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как обходная дорога вокруг сложного участка: можно пройти напрямую или через обработку.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если F(x)=0 в начале обучения, residual block всё равно может передать y≈x.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSNorm убирает масштаб (делит на RMS), но не центрирует (нет вычитания μ) и не сдвигает (нет β) — меньше операций, та же стабильность.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> LayerNorm — вычесть среднее и поделить на std; RMSNorm — просто поделить на «размер» вектора.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[1,2,−1,2], d=4 → RMS=√((1+4+1+4)/4)=√2.5≈1.58. y=γ·x/1.58 ≈ γ·[0.63, 1.27, −0.63, 1.27]. Никакого вычитания среднего.</div>
     </div>
     </div>
 
@@ -918,7 +931,40 @@ window.addEventListener('load',()=>{
     <details><summary>[Hard] Normalization placement</summary><p>Почему placement norm до/после блока влияет на stability? <strong>Решение:</strong> оно меняет путь градиента и масштаб сигнала в residual branch.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-5">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как residual блок решает проблему деградации в очень глубоких сетях?</summary>
+      <div class="ml-quiz__a"><p>Residual блок: y = F(x) + x, где F — несколько conv-слоёв. Вместо аппроксимации желаемого mapping H(x) напрямую, сеть учит «остаток» F(x) = H(x) - x. Если слой бесполезен — проще обнулить F(x)≈0, чем научить y≈x через сложные преобразования.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему Group Normalization предпочтительнее Batch Normalization при малом размере батча?</summary>
+      <div class="ml-quiz__a"><p>BatchNorm вычисляет статистику по всему батчу — при batch_size=1–2 оценки μ и σ нестабильны и шумны. GroupNorm нормирует по группам каналов внутри одного примера, не зависит от batch size. В object detection и segmentation с малыми батчами GroupNorm стандартен.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое pre-activation ResNet (pre-norm) и почему он лучше оригинального?</summary>
+      <div class="ml-quiz__a"><p>Оригинальный ResNet: Conv → BN → ReLU → Conv → BN, затем Add → ReLU. Pre-activation: BN → ReLU → Conv → BN → ReLU → Conv, затем Add. Pre-norm позволяет identity shortcut передавать неактивированный сигнал, что улучшает поток градиентов и даёт лучшую оптимизируемость.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем в ResNet-50 используется bottleneck block (1×1 → 3×3 → 1×1)?</summary>
+      <div class="ml-quiz__a"><p>Bottleneck снижает вычислительную стоимость: 1×1 conv уменьшает число каналов (bottleneck), 3×3 conv работает в сжатом пространстве, 1×1 conv восстанавливает число каналов. Это позволяет построить более глубокую сеть (50 вместо 34 слоёв) при сопоставимой вычислительной стоимости.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-5">
     <h2>Checkpoint: 5.5 ResNet / Norm</h2>
     <ul>
       <li>Почему residual block легче обучать, чем plain block?</li>
@@ -928,6 +974,7 @@ window.addEventListener('load',()=>{
       <li>Rubber duck: объясни residual как обходной путь для сигнала и градиента.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

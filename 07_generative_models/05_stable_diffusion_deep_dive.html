@@ -18,7 +18,7 @@
     @media (max-width:860px){.pipeline{grid-template-columns:1fr}}
   </style>
 </head>
-<body>
+<body data-ml-section="generative">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -30,6 +30,30 @@
       <h1>7.5 Stable Diffusion Deep Dive</h1>
       <p class="muted">Stable Diffusion is latent diffusion: it denoises compressed image latents instead of raw pixels, while text embeddings guide the generation.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Stable Diffusion — это диффузия в латентном пространстве VAE. Latent Diffusion + CLIP text conditioning + U-Net с cross-attention = SOTA генерация изображений по тексту.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Latent diffusion — почему диффузия в z-space быстрее, чем в pixel-space</li>
+      <li>Text conditioning через cross-attention между image и text embeddings</li>
+      <li>Classifier-Free Guidance — как усилить соответствие промпту</li>
+      <li>ControlNet и LoRA для SD — адаптация pre-trained модели</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Diffusion models (7.3)</li>
+      <li>VAE (7.1)</li>
+      <li>CLIP (5.11)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="learning-meta">
       <div class="meta-card"><strong>Prerequisites</strong><span><a href="03_diffusion_models.html">7.3 Diffusion</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a>, <a href="../05_architectures/03_transformer_attention.html">5.3 Attention</a></span></div>
@@ -154,6 +178,81 @@
     </section>
   </main>
   <script src="../bundle.js" defer></script>
-  <section class="ml-checkpoint-section" data-quality-pass="gen-7-5"><h2>Checkpoint: 7.5 Stable Diffusion</h2><ul><li>Почему diffusion работает в latent space?</li><li>Что делает VAE encoder/decoder?</li><li>Как CLIP text conditioning попадает в UNet?</li><li>Что меняет classifier-free guidance scale?</li><li>Rubber duck: объясни Stable Diffusion как denoising в компактном latent-пространстве под управлением текста.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Latent Diffusion Model (LDM) и чем он отличается от Pixel Diffusion?</summary>
+      <div class="ml-quiz__a"><p>LDM проводит диффузию в сжатом латентном пространстве автоэнкодера (обычно 8× сжатие). Это снижает вычислительную стоимость в 64× при той же сложности задачи. Stable Diffusion = LDM + CLIP text encoder. Качество сопоставимо с pixel-diffusion, но скорость намного выше.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как CLIP encoder интегрируется в Stable Diffusion?</summary>
+      <div class="ml-quiz__a"><p>Текст кодируется CLIP text encoder в последовательность токен-эмбеддингов. U-Net диффузионной модели использует cross-attention: query — латентные патчи изображения, key и value — CLIP embeddings. Это позволяет изображению «обращаться» к семантике текста на каждом шаге денойзинга.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое VAE в Stable Diffusion и почему нужен именно он?</summary>
+      <div class="ml-quiz__a"><p>VAE кодирует изображение 512×512×3 в латентный код 64×64×4 (encoder) и декодирует обратно (decoder). Диффузионный процесс работает только в 64×64×4 пространстве — это быстро. VAE нужен для финального «перевода» генерированного латента в пиксели без потери деталей.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое DreamBooth и как он персонализирует диффузионные модели?</summary>
+      <div class="ml-quiz__a"><p>DreamBooth fine-tuning: обучаем всю модель на 3-20 фотографиях субъекта с уникальным идентификатором («a sks dog»). Модель учится ассоциировать идентификатор с конкретным субъектом. Prior preservation loss предотвращает catastrophic forgetting: параллельно генерируем обычных собак.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-5"><h2>Checkpoint: 7.5 Stable Diffusion</h2><ul><li>Почему diffusion работает в latent space?</li><li>Что делает VAE encoder/decoder?</li><li>Как CLIP text conditioning попадает в UNet?</li><li>Что меняет classifier-free guidance scale?</li><li>Rubber duck: объясни Stable Diffusion как denoising в компактном latent-пространстве под управлением текста.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Stable Diffusion</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй SDXL для высококачественных изображений, SD1.5 для максимальной совместимости.</li>
+        <li>LoRA fine-tuning — стандарт для персонализации без огромных ресурсов.</li>
+        <li>img2img и inpainting расширяют применение за рамки text-to-image.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не подбирать guidance scale и steps для конкретного checkpoint — дефолты не оптимальны.</li>
+        <li>Путать VAE в SD с VAE как теоретической концепцией — здесь VAE это encoder/decoder.</li>
+        <li>Добавлять отрицательные промпты хаотично — они влияют на все аспекты изображения.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>CFG scale: 7-9 для фото, 3-5 для творческого использования.</li>
+        <li>Steps: 20-30 для DDIM, 50+ для DDPM.</li>
+        <li>LoRA rank и alpha при fine-tuning — стандарт r=16-32.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="07_generative_models/03_diffusion_models.html">← 7.3 Диффузия</a></li>
+        <li><a href="06_llm/05_lora_qlora.html">← 6.5 LoRA</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

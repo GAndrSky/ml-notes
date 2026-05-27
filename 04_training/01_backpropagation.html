@@ -90,7 +90,7 @@ canvas{border-radius:8px;display:block;}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/01_backpropagation.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -107,6 +107,30 @@ canvas{border-radius:8px;display:block;}
       <h1>4.1 Backpropagation</h1>
       <p class="muted">Chain rule на вычислительном графе — полный вывод с нуля</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Backpropagation — алгоритм, без которого не существовало бы ни ResNet, ни GPT. Это применение правила цепочки к вычислительному графу с умным кэшированием промежуточных значений.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как правило цепочки применяется слой за слоем в обратном направлении</li>
+      <li>Что вычисляется в forward pass и что — в backward pass</li>
+      <li>Почему gradients «взрываются» или «исчезают» в глубоких сетях</li>
+      <li>Как autograd в PyTorch реализует backprop автоматически</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Forward pass и Loss (3.3–3.4)</li>
+      <li>Производная и правило цепочки (1.2)</li>
+      <li>Линейная алгебра (1.1)</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- 1. Идея -->
 <div class="card">
@@ -117,15 +141,15 @@ Backprop: один forward + один backward → O(1) по числу прох
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂θᵢ</span><span class="fa-name">градиент по i-му параметру</span><span class="fa-desc">Насколько loss меняется при малом изменении параметра θᵢ. Именно это нужно вычислить для каждого веса, чтобы сделать шаг градиентного спуска.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">P</span><span class="fa-name">число параметров</span><span class="fa-desc">Общее количество весов в сети. У GPT-3 P=175 млрд. Брутфорс требует P отдельных forward pass-ов — практически невозможно.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">O(P)</span><span class="fa-name">сложность брутфорса</span><span class="fa-desc">Линейная сложность по числу параметров: каждый из P градиентов вычисляется независимо через отдельный forward pass с numerical perturbation.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">O(1)</span><span class="fa-name">сложность backprop по проходам</span><span class="fa-desc">Backprop вычисляет ВСЕ P градиентов за один forward + один backward. Число проходов не зависит от P — это и есть ключевое преимущество.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Брутфорс считает «что будет, если чуть-чуть изменить θ₁? а θ₂? а θ₃?» — по одному вопросу за раз. Backprop отвечает на все P вопросов одновременно, используя то, что граф вычислений уже построен в forward pass.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Брутфорс — опрашивать 175 млрд работников поодиночке. Backprop — разослать одно сообщение по всей цепочке командования: каждый звено пересылает его вниз, добавив свою долю ответственности.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Сеть с P=1000 параметрами. Брутфорс: 1000 forward pass-ов × 0.1 мс = 100 мс на один update. Backprop: 1 forward (0.1 мс) + 1 backward (≈0.2 мс) = 0.3 мс. Выигрыш: 333×.</div>
     </div>
     <div class="intuition">
     💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
@@ -144,6 +168,115 @@ Backprop: один forward + один backward → O(1) по числу прох
     </ul>
   </section>
 <!-- training-deepening:end -->
+
+<!-- ml-walkthrough: backprop step-by-step on concrete numbers -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Backprop на числах — сеть x→h→ŷ за 8 шагов</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1 — Сеть и данные</span>
+      <h3 class="ml-walkthrough__step-heading">Фиксируем параметры</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Простейшая сеть: один вход, один скрытый нейрон, один выход. Активация — ReLU. Loss — MSE.</p>
+        <div class="wt-formula">x = 2.0    (вход)
+w₁ = 0.5   (вес input→hidden)
+w₂ = 0.3   (вес hidden→output)
+b₁ = b₂ = 0
+y = 1.0    (правильный ответ)</div>
+        <div class="wt-result"><strong>Задача:</strong> вычислить ∂L/∂w₁ и ∂L/∂w₂, чтобы сдвинуть w в сторону правильного ответа.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2 — Forward: скрытый слой</span>
+      <h3 class="ml-walkthrough__step-heading">Считаем h = ReLU(w₁ · x)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Сначала линейное преобразование, потом нелинейность.</p>
+        <div class="wt-formula">z₁ = w₁ · x = 0.5 × 2.0 = 1.0
+h  = ReLU(z₁) = ReLU(1.0) = 1.0   ← 1.0 > 0, поэтому не режется</div>
+        <div class="wt-result"><strong>h = 1.0</strong> — выход скрытого нейрона перед передачей на output.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3 — Forward: выход</span>
+      <h3 class="ml-walkthrough__step-heading">Считаем ŷ = w₂ · h</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Выходной нейрон — линейный (без активации, так как задача регрессии).</p>
+        <div class="wt-formula">ŷ = w₂ · h = 0.3 × 1.0 = 0.3</div>
+        <div class="wt-result"><strong>ŷ = 0.3</strong> — предсказание модели. Правильный ответ y = 1.0 — далеко.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4 — Loss</span>
+      <h3 class="ml-walkthrough__step-heading">L = (ŷ − y)²</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>MSE loss для одного примера — квадрат ошибки предсказания.</p>
+        <div class="wt-formula">L = (ŷ − y)² = (0.3 − 1.0)² = (−0.7)² = 0.49</div>
+        <div class="wt-result"><strong>L = 0.49</strong> — это число мы хотим уменьшить. Начинается обратный проход.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5 — Backward: ∂L/∂ŷ</span>
+      <h3 class="ml-walkthrough__step-heading">Градиент loss по выходу</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Производная MSE по предсказанию — первый шаг backward pass.</p>
+        <div class="wt-formula">∂L/∂ŷ = 2(ŷ − y) = 2 × (0.3 − 1.0) = 2 × (−0.7) = −1.4</div>
+        <div class="wt-result"><strong>∂L/∂ŷ = −1.4</strong> — отрицательный знак означает: нужно увеличить ŷ.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6 — Backward: ∂L/∂w₂</span>
+      <h3 class="ml-walkthrough__step-heading">Градиент по весу output-слоя</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Цепное правило: ∂L/∂w₂ = ∂L/∂ŷ · ∂ŷ/∂w₂. Поскольку ŷ = w₂·h, то ∂ŷ/∂w₂ = h.</p>
+        <div class="wt-formula">∂L/∂w₂ = ∂L/∂ŷ · h = (−1.4) × 1.0 = −1.4</div>
+        <div class="wt-result"><strong>∂L/∂w₂ = −1.4</strong> — w₂ нужно увеличить (отрицательный градиент → спуск).</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 7 — Backward: ∂L/∂w₁ (через ReLU)</span>
+      <h3 class="ml-walkthrough__step-heading">Градиент через ReLU к w₁</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>ReLU'(z₁) = 1, поскольку z₁ = 1.0 > 0. Если бы z₁ ≤ 0 — градиент был бы 0 (мёртвый нейрон).</p>
+        <div class="wt-formula">∂L/∂h  = ∂L/∂ŷ · w₂ = (−1.4) × 0.3 = −0.42
+∂L/∂z₁ = ∂L/∂h · ReLU'(z₁) = (−0.42) × 1 = −0.42
+∂L/∂w₁ = ∂L/∂z₁ · x = (−0.42) × 2.0 = −0.84</div>
+        <div class="wt-result"><strong>∂L/∂w₁ = −0.84</strong> — цепное правило прошло через три узла.</div>
+      </div>
+    </div>
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 8 — Обновление весов (η = 0.1)</span>
+      <h3 class="ml-walkthrough__step-heading">w ← w − η · ∂L/∂w</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Один шаг градиентного спуска. Новые веса дают ŷ ближе к y = 1.0.</p>
+        <div class="wt-formula">w₁_new = 0.5 − 0.1 × (−0.84) = 0.5 + 0.084 = 0.584
+w₂_new = 0.3 − 0.1 × (−1.4)  = 0.3 + 0.14  = 0.440</div>
+        <div class="wt-result"><strong>Новый ŷ</strong> = w₂_new · ReLU(w₁_new · x) = 0.44 × ReLU(0.584 × 2) = 0.44 × 1.168 ≈ <strong>0.514</strong>. Loss упал с 0.49 → 0.235. ✓</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
 
 <div class="card" id="bpLiveTrainer">
   <h2>Live training: forward → loss → backward → update</h2>
@@ -215,15 +348,17 @@ dz/dx = dz/dy · dy/dx</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x, y, z</span><span class="fa-name">скалярные переменные цепочки</span><span class="fa-desc">Три числа, связанные двумя функциями: x → f → y → g → z. Каждая стрелка — один «узел» вычислительного графа.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f, g</span><span class="fa-name">локальные функции</span><span class="fa-desc">Произвольные дифференцируемые функции. В нейросети это может быть: умножение на вес, сложение с bias, ReLU, sigmoid — любая операция узла.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">dz/dx</span><span class="fa-name">итоговая производная</span><span class="fa-desc">Насколько z (например, loss) меняется при изменении x (например, параметра). Именно это нам нужно для градиентного спуска.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">dz/dy</span><span class="fa-name">upstream gradient</span><span class="fa-desc">Производная z по промежуточной переменной y — «сигнал» от следующего узла. В backprop это то, что пришло «сверху» (из правой части графа).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">dy/dx</span><span class="fa-name">локальная производная</span><span class="fa-desc">Производная функции f в данном узле. Вычисляется локально — каждый узел знает только свою производную, не всю цепочку.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">·</span><span class="fa-name">умножение производных</span><span class="fa-desc">Chain rule: итоговая производная = произведение всех локальных производных по цепочке. Backprop проходит граф назад, накапливая это произведение.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый узел графа «знает» только свою локальную производную dy/dx. Backprop передаёт upstream gradient dz/dy от выхода ко входу, умножая на локальную производную в каждом узле. Итог — производная по любому параметру без повторных вычислений.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Эстафета: последний бегун (loss) передаёт «градиентную палочку» предыдущему, умноженную на скорость своего участка. Каждый умножает полученное на свою скорость и передаёт дальше. Первый бегун (параметр) получает произведение всех скоростей.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y = f(x) = x², z = g(y) = 3y. dy/dx = 2x, dz/dy = 3. При x=4: dz/dx = 3 · 2·4 = 24. Проверка: z = 3x² → dz/dx = 6x = 24 ✓</div>
     </div>
     <h3 style="margin-top:14px;">Векторный случай (VJP)</h3>
       <div class="formula">z = g(y),  y = f(x),  x,y,z ∈ ℝⁿ
@@ -234,15 +369,16 @@ J = ∂y/∂x — якобиан слоя</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">backward-сигнал</span><span class="fa-desc">локальная ошибка слоя: насколько loss изменится при изменении pre-activation.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂A</span><span class="fa-name">градиент сверху</span><span class="fa-desc">сигнал от следующего слоя, который говорит текущему слою, куда двигаться.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">f'(Z)</span><span class="fa-name">производная активации</span><span class="fa-desc">показывает, насколько активация пропускает gradient flow в данной точке.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">A^{l-1}</span><span class="fa-name">вход слоя</span><span class="fa-desc">активации предыдущего слоя, которые участвовали в forward pass.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x, y, z ∈ ℝⁿ</span><span class="fa-name">векторы вместо скаляров</span><span class="fa-desc">Теперь каждая переменная — вектор из n чисел. Это реальный случай для нейросетей: входы и выходы слоя — батчи или векторы признаков.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">J = ∂y/∂x</span><span class="fa-name">якобиан слоя</span><span class="fa-desc">Матрица частных производных: Jᵢⱼ = ∂yᵢ/∂xⱼ. Если y имеет m компонент, а x — n, то J — матрица m×n. Описывает, как каждый выход зависит от каждого входа.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v = ∂z/∂y</span><span class="fa-name">upstream gradient (вектор)</span><span class="fa-desc">Градиент z по y — вектор той же размерности, что y. Это «сигнал», пришедший из следующего узла при backprop.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Jᵀ · v</span><span class="fa-name">Vector-Jacobian Product (VJP)</span><span class="fa-desc">Транспонированный якобиан умножается на upstream вектор v. Результат — вектор той же размерности, что x. Это и есть градиент z по x.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(∂y/∂x)ᵀ</span><span class="fa-name">транспонирование якобиана</span><span class="fa-desc">В forward pass: y = J·x (матрица × вектор). В backward pass: градиент = Jᵀ·v (транспонированная матрица × вектор). Транспонирование «разворачивает» операцию.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> backprop распределяет ответственность за loss по всем весам через цепочку локальных производных.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как расследование ошибки на конвейере: каждый участок получает долю ответственности за финальный дефект.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если upstream gradient 0.8, а ReLU derivative равен 1, локальный сигнал остаётся 0.8; если derivative 0, сигнал гаснет.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Полный якобиан J может быть огромным (миллионы × миллионы). Backprop никогда не строит его явно — только вычисляет произведение Jᵀv, которое имеет размер входа. Это на порядки эффективнее хранения полного J.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Зная таблицу умножения (якобиан), не нужно хранить её всю в памяти. Достаточно уметь умножить нужную строку на входной вектор — это и есть VJP.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y = Wx, W — матрица 3×2. J = W (3×2). v = [0.5, 0.3, 0.1] (3D upstream). VJP = Wᵀ·v — матрица (2×3) умноженная на вектор (3) = вектор (2). Никакой явной якобиановой матрицы 3×2 хранить не нужно.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">На практике нам не нужен полный якобиан J — только произведение Jᵀv. Это VJP (Vector-Jacobian Product) — именно это вычисляет autograd.</p>
     </div>
@@ -259,15 +395,21 @@ Backward: δˡ = (∂L/∂Aˡ) ⊙ f′(Zˡ)   ← поэлементно
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ξ_i</span><span class="fa-name">slack-переменная</span><span class="fa-desc">Насколько объект нарушает margin.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w, b</span><span class="fa-name">гиперплоскость</span><span class="fa-desc">Параметры разделяющей границы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">цена нарушения</span><span class="fa-desc">Насколько сильно штрафуются ошибки margin.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">l</span><span class="fa-name">номер слоя</span><span class="fa-desc">Индекс текущего слоя в сети. l=1 — первый слой после входа, l=L — последний (выходной). Backprop идёт от L к 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Zˡ</span><span class="fa-name">pre-activation слоя l</span><span class="fa-desc">Результат линейного преобразования до функции активации: Zˡ = Aˡ⁻¹·(Wˡ)ᵀ + bˡ. Матрица формы (B, n_out).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Aˡ</span><span class="fa-name">активации слоя l</span><span class="fa-desc">Выход слоя l после активации: Aˡ = f(Zˡ). Подаётся как вход в следующий слой l+1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Aˡ⁻¹</span><span class="fa-name">активации предыдущего слоя</span><span class="fa-desc">Вход в слой l — это выход слоя l−1. В формуле ∂L/∂Wˡ = (δˡ)ᵀ·Aˡ⁻¹ нужны именно эти значения из forward pass.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Wˡ, bˡ</span><span class="fa-name">веса и bias слоя l</span><span class="fa-desc">Обучаемые параметры. Wˡ — матрица (n_out, n_in), bˡ — вектор (n_out,). Именно для них вычисляем градиенты ∂L/∂Wˡ и ∂L/∂bˡ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δˡ</span><span class="fa-name">локальный градиент (дельта)</span><span class="fa-desc">∂L/∂Zˡ — насколько loss чувствителен к pre-activation. Ключевой промежуточный результат: из δˡ выводятся все три градиента (по W, b и A_prev).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂Aˡ</span><span class="fa-name">upstream gradient</span><span class="fa-desc">Градиент, пришедший из слоя l+1. Для последнего слоя это ∂L/∂ŷ (например 2(ŷ−y)/B для MSE). Для промежуточных — результат предыдущего шага backward.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f′(Zˡ)</span><span class="fa-name">производная активации</span><span class="fa-desc">Поэлементная производная функции активации, вычисленная в точках Zˡ из forward pass. Умножение на неё — это цепное правило через узел активации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⊙</span><span class="fa-name">поэлементное умножение (Hadamard)</span><span class="fa-desc">Умножение матриц одинакового размера поэлементно. Отличается от матричного умножения ·: здесь каждый элемент умножается на соответствующий, размер не меняется.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sum(δˡ, axis=0)</span><span class="fa-name">суммирование по батчу</span><span class="fa-desc">Bias b один для всех B примеров в батче, поэтому его gradient — сумма δˡ по всем примерам (строкам). Результат: вектор (n_out,).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула ищет границу с большим margin и штрафует объекты, которые нарушают зазор.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как провести коридор между двумя группами точек: граница должна быть не вплотную к объектам.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если margin violation равен 0, объект не добавляет hinge-loss; если violation 0.7, он штрафуется.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Три уравнения backward — полный backprop одного слоя. δˡ вычисляется один раз и используется трижды: для ∂L/∂W (обновить веса), ∂L/∂b (обновить bias) и ∂L/∂Aˡ⁻¹ (передать сигнал в следующий слой назад).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> δˡ — как «счёт претензий» отдела к предыдущему звену. Из него выводится: сколько каждый сотрудник (вес W) виноват, сколько виновата базовая ставка (bias b), и сколько виноват отдел целиком (передаём дальше).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> δˡ = [[0.3, −0.1]], Aˡ⁻¹ = [[1.0, 2.0]]. ∂L/∂Wˡ = (δˡ)ᵀ·Aˡ⁻¹ = [[0.3],[−0.1]]·[[1.0, 2.0]] = [[0.3, 0.6],[−0.1, −0.2]]. ∂L/∂bˡ = sum([[0.3, −0.1]], axis=0) = [0.3, −0.1].</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 Три уравнения backward — вот и весь backprop для одного слоя. Применяешь их от последнего слоя к первому.
@@ -354,16 +496,18 @@ Tanh:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Z</span><span class="fa-name">pre-activation (матрица)</span><span class="fa-desc">Входные значения функции активации для всего батча. Форма: (B, n_out). Сохраняется из forward pass — нужен при backward для вычисления производной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">активации (выход f)</span><span class="fa-desc">Результат применения активации к Z: A = f(Z). Также сохраняется из forward pass — используется в backward для sigmoid (A⊙(1−A)) и tanh (1−A²).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">upstream gradient</span><span class="fa-desc">Градиент ∂L/∂A — сигнал, пришедший из следующего слоя. Умножается на локальную производную активации для получения δ_prev.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ_prev</span><span class="fa-name">gradient для предыдущего слоя</span><span class="fa-desc">∂L/∂Z — то, что передаётся дальше назад по сети. Именно из него следующий слой вычислит свои ∂L/∂W и ∂L/∂b.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⊙</span><span class="fa-name">поэлементное умножение</span><span class="fa-desc">Градиент умножается на производную активации поэлементно — каждый нейрон независимо масштабирует свой сигнал. Не матричное умножение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">𝟙[Z &gt; 0]</span><span class="fa-name">маска ReLU</span><span class="fa-desc">Матрица из 0 и 1: 1 там, где Z>0 (нейрон был активен в forward), 0 там, где Z≤0. Gradient проходит только через активные нейроны.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A⊙(1−A)</span><span class="fa-name">производная sigmoid</span><span class="fa-desc">σ′(Z) = σ(Z)·(1−σ(Z)) = A·(1−A). Переиспользует A из forward pass. Максимум = 0.25 при Z=0 — именно это ограничение вызывает vanishing gradient.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1−A²)</span><span class="fa-name">производная tanh</span><span class="fa-desc">tanh′(Z) = 1−tanh²(Z) = 1−A². Переиспользует A из forward pass. Максимум = 1 при Z=0 — вдвое лучше sigmoid, но тоже насыщается.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждая активация превращается в «ворота» для gradient flow. ReLU — бинарные ворота (открыты/закрыты). Sigmoid и tanh — аналоговые ворота (открыты частично), причём тем меньше, чем дальше от нуля. Поэтому ReLU так популярна для глубоких сетей.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Z=[[2, −1, 0.5]], δ=[[0.8, 0.6, 0.4]]. ReLU: маска=[[1,0,1]], δ_prev=[[0.8, 0.0, 0.4]]. Sigmoid (A≈[[0.88, 0.27, 0.62]]): A⊙(1−A)≈[[0.106, 0.197, 0.236]], δ_prev≈[[0.085, 0.118, 0.094]] — значительно меньше.</div>
     </div>
     </div>
     <div>
@@ -422,16 +566,19 @@ BACKWARD (дано δ^l = ∂L/∂A^l, shape (B, n_out)):
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">размер батча</span><span class="fa-desc">Число примеров в одном батче. Все матрицы имеют B строк — по одной на каждый пример. Градиент усредняется или суммируется по B.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n_in, n_out</span><span class="fa-name">размерности слоя</span><span class="fa-desc">n_in — число входных нейронов, n_out — выходных. Матрица весов W имеет форму (n_out, n_in), что определяет форму всех градиентов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">shape: (B, n_out)</span><span class="fa-name">форма тензора</span><span class="fa-desc">Размерность матрицы: B строк (примеры в батче) × n_out столбцов (нейроны слоя). Важно отслеживать формы — несовпадение формы = ошибка в реализации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂Z^l</span><span class="fa-name">градиент по pre-activation</span><span class="fa-desc">Ключевой промежуточный gradient. Вычисляется как δ^l ⊙ f′(Z^l) и используется для всех трёх производных: по W, b и A_prev.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(∂L/∂Z^l)ᵀ · A^(l-1)</span><span class="fa-name">градиент по весам W</span><span class="fa-desc">Внешнее произведение (транспонированных) дельт и входных активаций. Форма: (n_out, B) · (B, n_in) = (n_out, n_in) — совпадает с формой W ✓</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_B ∂L/∂Z^l</span><span class="fa-name">градиент по bias b</span><span class="fa-desc">Суммируем дельты по всем B примерам батча. Bias один на все примеры → его gradient = сумма вкладов всех примеров. Форма: (n_out,).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂Z^l · W^l</span><span class="fa-name">gradient для предыдущего слоя</span><span class="fa-desc">Передаём backward-сигнал в слой l−1. Форма: (B, n_out) · (n_out, n_in) = (B, n_in). Обратите внимание: W без транспонирования (в отличие от ∂L/∂W).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2(A^L − y)/B</span><span class="fa-name">стартовый gradient MSE</span><span class="fa-desc">Производная MSE loss по выходу последнего слоя A^L. Это точка входа в backprop — отсюда начинается распространение градиента назад.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(p̂ − y)/B</span><span class="fa-name">стартовый gradient Softmax+CE</span><span class="fa-desc">Аналитически упрощённый gradient softmax + cross-entropy вместе. p̂ — предсказанные вероятности, y — one-hot вектор истинного класса. Деление на B — усреднение по батчу.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Эта таблица — полный backprop одного слоя в матричной форме. Всего 4 формулы. Применяешь их от последнего слоя к первому, и получаешь градиенты для всех параметров сети. Формы тензоров — лучший способ проверить правильность реализации.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слой: n_in=3, n_out=2, B=4. ∂L/∂Z^l: форма (4,2). ∂L/∂W^l = (∂L/∂Z^l)ᵀ·A^(l-1): (2,4)·(4,3) = (2,3) ✓ совпадает с W. ∂L/∂b: sum по axis=0 → (2,). δ^(l-1) = ∂L/∂Z^l·W^l: (4,2)·(2,3) = (4,3) ✓ совпадает с входом.</div>
     </div>
     <div class="intuition">
     💡 <strong>Ключевое наблюдение:</strong> ∂L/∂W = δᵀ·X имеет shape (n_out, n_in) — то же, что у W. Каждый параметр получает свой градиент автоматически из одного матричного умножения.
@@ -1357,7 +1504,40 @@ print(finite_diff(w))
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что вычисляет обратный проход (backpropagation) и почему он эффективен?</summary>
+      <div class="ml-quiz__a"><p>Backpropagation вычисляет градиент функции потерь по всем параметрам за O(p) операций, применяя цепное правило от выхода к входу. Без него нужно было бы численно оценивать каждый из p параметров отдельно — O(p²). Это делает обучение многомиллионных сетей практически возможным.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «ванишинг/взрывной» градиент и как он влияет на обучение?</summary>
+      <div class="ml-quiz__a"><p>При backprop градиент умножается на производные активаций и веса на каждом слое. Если |произведение| < 1 на каждом шаге — градиент экспоненциально убывает (vanishing), ранние слои не учатся. Если > 1 — градиент взрывается (exploding). Решения: skip-connections, нормализация, клиппинг градиентов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему gradient checkpointing (реkomputation) используется при обучении больших моделей?</summary>
+      <div class="ml-quiz__a"><p>Обычно все активации кешируются для backward pass — это O(depth × batch) памяти. Gradient checkpointing сохраняет только каждый k-й слой, пересчитывая промежуточные активации при необходимости. Это снижает память в √depth раз за счёт ~33% замедления.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как automatic differentiation отличается от символьного и численного дифференцирования?</summary>
+      <div class="ml-quiz__a"><p>Символьное дифференцирование строит аналитическую формулу (может быть очень длинной). Численное считает (f(x+ε)-f(x))/ε — неточно, O(p) вызовов. Autodiff (как в PyTorch/JAX) применяет цепное правило к примитивным операциям в графе вычислений — точно, O(p) за один проход.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -1432,5 +1612,7 @@ print(finite_diff(w))
 </div>
 
 <script src="../bundle.js" defer></script>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

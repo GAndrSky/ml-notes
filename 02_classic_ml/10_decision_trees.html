@@ -614,7 +614,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/10_decision_trees.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -626,8 +626,147 @@
     <h1>2.10 Decision Trees</h1>
     <p class="muted">Tree intuition, Gini, Entropy, Information Gain, regression trees, depth, pruning, overfitting</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Decision Tree — один из редких алгоритмов, который полностью интерпретируем: решение можно прочитать как набор правил. Gini impurity и pruning — два ключевых механизма.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как дерево выбирает признак для разбиения — Gini impurity и Information Gain</li>
+      <li>Рекурсивное разбиение и критерии остановки роста дерева</li>
+      <li>Почему деревья переобучаются и как pruning это исправляет</li>
+      <li>Связь деревьев с Random Forest и Gradient Boosting</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Метрики классификации (2.7)</li>
+      <li>Теория информации (1.4)</li>
+      <li>Логистическая регрессия (2.5)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Gini impurity — выбор лучшего разбиения</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Данные</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>6 точек, 2 класса. X — единственный признак.</p>
+        <div class="wt-formula">X: [1, 2, 3, 4, 5, 6]
+y: [○, ○, ○, ●, ●, ●]  (○=класс 0, ●=класс 1)</div>
+        <div class="wt-result">Задача: найти порог на X, который лучше всего разделяет классы.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Gini родительского узла</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Gini = 1 − Σ pᵢ². Считаем для всего датасета.</p>
+        <div class="wt-formula">p(○) = 3/6 = 0.5,  p(●) = 3/6 = 0.5
+Gini_parent = 1 − (0.5² + 0.5²) = 1 − 0.5 = 0.5</div>
+        <div class="wt-result"><strong>Gini = 0.5</strong> — максимальная неопределённость (50/50).</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Порог X ≤ 3</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Пробуем разбить датасет на левый (X≤3) и правый (X>3) узлы.</p>
+        <div class="wt-formula">Левый  узел: X≤3 → {○,○,○} — 3 точки класса 0
+Правый узел: X>3 → {●,●,●} — 3 точки класса 1</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Gini левого узла</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Все точки одного класса → Gini = 0 (идеальная чистота).</p>
+        <div class="wt-formula">p(○)=1, p(●)=0
+Gini_L = 1 − (1² + 0²) = 0</div>
+        <div class="wt-result"><strong>Gini_L = 0</strong> — левый узел чистый!</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Gini правого узла</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Аналогично — все точки класса 1.</p>
+        <div class="wt-formula">p(●)=1, p(○)=0
+Gini_R = 1 − (1² + 0²) = 0</div>
+        <div class="wt-result"><strong>Gini_R = 0</strong> — правый узел тоже чистый!</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Weighted Gini и Information Gain</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Взвешенный Gini после разбиения. Information Gain = Gini_parent − Gini_split.</p>
+        <div class="wt-formula">Gini_split = (3/6)×Gini_L + (3/6)×Gini_R = 0.5×0 + 0.5×0 = 0
+IG = 0.5 − 0 = 0.5</div>
+        <div class="wt-result"><strong>IG = 0.5</strong> — идеальное разбиение! Порог X≤3 разделяет классы без ошибок.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">decision tree</span>
       <span class="mini-tag">gini</span>
@@ -2333,7 +2472,40 @@ print("best score :", search.best_score_)</div>
     <details><summary>[Hard] CART vs oblique tree</summary><p>Чем axis-aligned split отличается от oblique split? <strong>Решение:</strong> CART задаёт вопросы вида \(x_j&lt;t\); oblique tree может делить линейной комбинацией признаков.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-10">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое критерий Gini impurity и что он измеряет?</summary>
+      <div class="ml-quiz__a"><p>Gini = 1 - Σ pᵢ² измеряет вероятность того, что случайно выбранный элемент будет неправильно классифицирован случайной меткой из того же узла. Равен 0 для чистого узла (один класс) и максимален при равномерном распределении.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как дерево решений выбирает, по какому признаку и порогу делать сплит?</summary>
+      <div class="ml-quiz__a"><p>Для каждого признака и каждого возможного порога вычисляется Information Gain (или снижение Gini): IG = H(parent) - Σ wᵢ·H(childᵢ), где wᵢ — доля примеров в дочернем узле. Выбирается сплит с максимальным IG.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое pruning и зачем он нужен деревьям решений?</summary>
+      <div class="ml-quiz__a"><p>Дерево без ограничений растёт до запоминания каждого примера (depth=log₂n, leaf содержит 1 пример) — это переобучение. Pruning ограничивает глубину, мин. число примеров в листе или мин. прирост качества, что снижает variance за счёт небольшого роста bias.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём преимущества деревьев решений перед линейными моделями?</summary>
+      <div class="ml-quiz__a"><p>Деревья легко интерпретируются (можно визуализировать), не требуют масштабирования признаков, хорошо работают с категориальными данными и автоматически моделируют нелинейности и взаимодействия признаков. Слабость — высокая variance: небольшое изменение данных может сильно поменять дерево.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-10">
     <h2>Checkpoint: 2.10 Decision Trees</h2>
     <ul>
       <li>Как дерево выбирает split?</li>
@@ -2343,5 +2515,7 @@ print("best score :", search.best_score_)</div>
       <li>Rubber duck: объясни decision tree как серию вопросов, которые уменьшают неопределённость.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/01_math/05_optimization_theory.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="math">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -25,8 +25,101 @@
       <h1>1.5 Optimization Theory</h1>
       <p class="muted">Optimization theory explains why training can work even when the loss landscape is non-convex, high-dimensional, noisy, and impossible to solve exactly.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Любое обучение модели — это оптимизация. Convex vs non-convex, seddle points, local minima — не теория ради теории, а то, почему Adam работает лучше SGD в определённых задачах.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Градиентный спуск — интуиция через топографическую карту</li>
+      <li>Convex оптимизация — когда гарантирован глобальный минимум</li>
+      <li>Non-convex проблемы: седловые точки, плато, локальные минимумы</li>
+      <li>Как momentum и адаптивные методы решают проблемы классического GD</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Математический анализ и градиент (1.2)</li>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Backpropagation (4.1)</li>
+    </ul>
+  </div>
+</div>
 
-    <section class="card">
+
+    
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Градиентный спуск: η и скорость сходимости</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">η (step size) ×10⁻²</span>
+          <span class="ml-slider-lab__param-value" id="sl-opt-disp">10</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-opt"
+               min="1" max="200" step="1" value="10">
+        <div class="ml-slider-lab__range-labels">
+          <span>0.01 (мало)</span><span>2.0 (расход.)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-opt"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-opt');
+  var disp = document.getElementById('sl-opt-disp');
+  var out = document.getElementById('sl-out-opt');
+  function render(){
+    var v = +sl.value; // 1..200
+    var lr = v / 100;
+    disp.textContent = lr.toFixed(2);
+    // Simulate steps to minimum for f(x) = x^2 (Lipschitz constant L=2)
+    // Optimal lr = 1/L = 0.5. Diverges if lr > 1/L for strongly convex.
+    var converges = lr <= 1.5;
+    var stepsEst  = converges ? Math.max(3, Math.round(80 * Math.abs(Math.log(1 - lr / 2)) / (-Math.log(Math.abs(1 - 2 * lr))))) : 999;
+    stepsEst = Math.min(stepsEst, 500);
+    var stability = Math.max(0, Math.round(100 * (1 - lr / 1.5)));
+    var speed     = Math.min(100, Math.round(lr * 60));
+    var verdict, vclass, txt;
+    if (v <= 5) {
+      verdict = 'Слишком медленно'; vclass = 'sl-verdict-warn';
+      txt = 'η=' + lr.toFixed(2) + ': шаг слишком мал. Для f(x)=x² понадобится ~' + Math.round(10/lr) + ' шагов. В DL — тысячи эпох без прогресса.';
+    } else if (v <= 60) {
+      verdict = 'Хорошая сходимость'; vclass = 'sl-verdict-ok';
+      txt = 'η=' + lr.toFixed(2) + ': стабильная сходимость. Для квадратичной функции оптимальный lr = 1/L. Здесь ~' + stepsEst + ' шагов до минимума.';
+    } else if (v <= 100) {
+      verdict = 'Осциллирует'; vclass = 'sl-verdict-warn';
+      txt = 'η=' + lr.toFixed(2) + ': GD «перепрыгивает» минимум, но всё ещё сходится. Нужно больше шагов из-за осцилляций.';
+    } else {
+      verdict = 'Расходится'; vclass = 'sl-verdict-bad';
+      txt = 'η=' + lr.toFixed(2) + ': шаг слишком большой! Loss не убывает, а растёт. Для f(x)=x² расходимость при η > 1.0.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Скорость шага</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + speed + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Стабильность</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stability > 60 ? 'sl-good' : stability > 30 ? 'sl-warn' : 'sl-bad') + '" style="width:' + Math.max(2,stability) + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Шагов до минимума</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stepsEst > 200 ? 'sl-bad' : stepsEst > 50 ? 'sl-warn' : 'sl-good') + '" style="width:' + Math.min(100, stepsEst/5) + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<section class="card">
       <h2>TL;DR</h2>
       <p>Classical optimization asks for global minima. Deep learning often works with non-convex landscapes, stochastic gradients, overparameterization, and approximate solutions. The key research questions are: why does optimization find useful solutions, and why do some solutions generalize better than others?</p>
     </section>
@@ -172,7 +265,40 @@
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между выпуклой и невыпуклой задачей оптимизации?</summary>
+      <div class="ml-quiz__a"><p>В выпуклой задаче любой локальный минимум является глобальным, гарантируя сходимость градиентного спуска к оптимуму. В невыпуклых задачах (обучение нейросетей) существуют седловые точки и плохие локальные минимумы, хотя на практике нейросети редко «застревают» в них серьёзно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему SGD сходится медленнее, чем градиентный спуск, но используется чаще?</summary>
+      <div class="ml-quiz__a"><p>SGD обновляет параметры по мини-батчу, а не по всем данным — это намного быстрее за одну итерацию и позволяет обрабатывать большие датасеты. Его шум иногда даже помогает: он действует как регуляризатор и помогает выбраться из острых локальных минимумов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое learning rate schedule и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Learning rate schedule — стратегия изменения скорости обучения η в ходе тренировки. Большой η в начале позволяет быстро найти хорошую область, малый η в конце — точно сойтись. Популярные варианты: step decay, cosine annealing, warmup + decay.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему вторые производные (метод Ньютона) редко используются напрямую в глубоком обучении?</summary>
+      <div class="ml-quiz__a"><p>Метод Ньютона требует вычисления и инвертирования матрицы Гессе размером O(p²), где p — число параметров. Для современных сетей p > 10⁸, что делает это вычислительно невозможным. Вместо этого используют квазиньютоновские методы или адаптивные оптимизаторы (Adam), которые аппроксимируют кривизну.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you distinguish convex and non-convex objectives?</li>
@@ -195,5 +321,47 @@
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Теория оптимизации</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй знания об оптимизации, когда выбираешь или отлаживаешь optimizer.</li>
+        <li>При нестабильном обучении — первым делом смотри на lr, momentum и форму loss landscape.</li>
+        <li>Анализируй training curves совместно: скорость убывания loss + variance между прогонами.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Устанавливать lr «на глаз» без lr range test или расписания.</li>
+        <li>Путать локальный минимум с глобальным — для большинства deep-сетей хватает любого хорошего..</li>
+        <li>Игнорировать curvature: Adam хорошо работает «из коробки», но fine-tuning требует понимания кривизны.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Learning rate: основная ручка — подбирай через lr finder или grid.</li>
+        <li>Momentum / β₁, β₂ в Adam — редко требуют изменений, но важно при файн-тюнинге.</li>
+        <li>Gradient clipping и weight decay — ортогональные регуляризаторы.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="04_training/02_optimizers.html">4.2 Оптимизаторы →</a> — практическое применение.</li>
+        <li><a href="04_training/05_learning_rate_scheduling.html">4.5 LR Scheduling →</a> — стратегии расписания.</li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

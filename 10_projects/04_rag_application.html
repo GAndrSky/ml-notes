@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/04_rag_application.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="projects">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -25,7 +25,30 @@
       <p class="muted">Build a document question-answering system with retrieval, citations, evaluation, and failure analysis.</p>
     </section>
 
-    <section class="card">
+    
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>RAG — самый востребованный паттерн для LLM-приложений в production. Умение построить его с нуля и оценить качество обязательно для LLM-инженера.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Построить RAG pipeline от индексации до генерации</li>
+          <li>Оценить качество через Ragas (faithfulness, relevance)</li>
+          <li>Оптимизировать chunk size и top-k под конкретную задачу</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>RAG (6.9)</li>
+          <li>Трансформеры (5.3)</li>
+          <li>Vector databases</li>
+    </ul>
+  </div>
+</div>
+<section class="card">
       <h2>TL;DR</h2>
       <p>A RAG app is not "LLM plus vector database". It is an information retrieval system plus a generation layer. Most quality problems come from chunking, retrieval recall, reranking, context assembly, and evaluation.</p>
     </section>
@@ -134,6 +157,81 @@ print(top, scores[top, 0])
   </main>
   <script src="../bundle.js" defer></script>
   <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><div class="intuition-content">Сравни fixed-size chunking и semantic chunking для технической документации.</div></details><details><summary>[Intermediate] Retrieval eval</summary><div class="intuition-content">Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</div></details><details><summary>[Hard] Hallucination debugging</summary><div class="intuition-content">Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</div></details></section>
-  <section class="ml-checkpoint-section" data-quality-pass="proj-10-4"><h2>Checkpoint: 10.4 RAG Application</h2><ul><li>Почему retrieval quality ограничивает весь RAG?</li><li>Как chunk size влияет на recall и precision retrieval?</li><li>Зачем нужны citations?</li><li>Как измерять качество отдельно для retrieval и generation?</li><li>Rubber duck: объясни RAG как связку поиска доказательств и генерации ответа по ним.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбрать embedding model для RAG системы?</summary>
+      <div class="ml-quiz__a"><p>Критерии: (1) размерность — больше не всегда лучше (768 vs 1536), (2) benchmark на domain-specific задачах (MTEB leaderboard), (3) поддержка русского языка при необходимости, (4) inference speed, (5) максимальная длина контекста. BAAI/bge и E5 — сильные общие модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое chunking overlap и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Overlap: соседние chunks делят несколько предложений. Без overlap релевантная информация может оказаться на стыке chunks — оба chunk частично «половинчаты» и ни один не релевантен полностью. Overlap 10-20% предотвращает это, добавляя контекст на краях.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как оценить качество RAG системы?</summary>
+      <div class="ml-quiz__a"><p>Метрики: (1) Retrieval: precision@k, recall@k, nDCG (насколько релевантны найденные chunks). (2) Generation: faithfulness (нет ли hallucinations вне retrieved context), answer relevance, context relevance. Ragas — библиотека для автоматической оценки RAG по этим метрикам.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое HyDE (Hypothetical Document Embeddings) и как он улучшает retrieval?</summary>
+      <div class="ml-quiz__a"><p>HyDE: вместо поиска по исходному запросу генерируем LLM гипотетический ответ, затем ищем документы по embedding этого ответа. Гипотетический ответ семантически ближе к реальным документам, чем короткий вопрос. Улучшает recall, особенно для абстрактных или сложных запросов.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-4"><h2>Checkpoint: 10.4 RAG Application</h2><ul><li>Почему retrieval quality ограничивает весь RAG?</li><li>Как chunk size влияет на recall и precision retrieval?</li><li>Зачем нужны citations?</li><li>Как измерять качество отдельно для retrieval и generation?</li><li>Rubber duck: объясни RAG как связку поиска доказательств и генерации ответа по ним.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: RAG Приложение</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Начинай с BM25 retrieval + GPT-4 generation — простой baseline для оценки потолка.</li>
+        <li>Ragas или LLM-as-judge обязателен для оценки faithfulness.</li>
+        <li>Мониторь, какие запросы не находят релевантных документов — это сигнал о coverage gap.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не разделять retrieval и generation ошибки при дебаггинге.</li>
+        <li>Не тестировать на adversarial запросах (вне knowledge base, противоречивые вопросы).</li>
+        <li>Не учитывать context window при выборе chunk_size × top_k.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>chunk_size: 200-500 слов для большинства задач.</li>
+        <li>top_k: 3-5 для начала, увеличивай при низком recall.</li>
+        <li>Temperature LLM: снижай для factual задач (0.1-0.3).</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="../06_llm/09_retrieval_augmented_generation.html">← 6.9 RAG теория</a></li>
+        <li><a href="../09_mlops_deployment/02_model_serving.html">← 9.2 Serving</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

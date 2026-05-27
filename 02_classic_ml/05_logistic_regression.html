@@ -576,7 +576,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/05_logistic_regression.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -588,8 +588,147 @@
     <h1>2.5 Логистическая регрессия</h1>
     <p class="muted">Sigmoid, probability of class, logit, cross-entropy, decision boundary, multiclass, regularization</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Логистическая регрессия — это не регрессия, а классификатор. Sigmoid + Cross-Entropy + gradient descent — три строки, которые лежат в основе большинства бинарных классификаторов.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему sigmoid преобразует линейный выход в вероятность</li>
+      <li>Как Cross-Entropy loss выводится из MLE</li>
+      <li>Градиентный спуск для обучения логистической регрессии — шаг за шагом</li>
+      <li>Разница между решающей границей и вероятностным прогнозом</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная регрессия (2.3)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Метрики классификации (2.7)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Логистическая регрессия — один шаг обучения</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Данные и параметры</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Один обучающий пример: x = [2, 3], y = 1 (положительный класс). Начальные веса w = [0.1, −0.2], смещение b = 0.</p>
+        <div class="wt-formula">x = [2, 3],  y = 1
+w = [0.1, -0.2],  b = 0</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Линейная часть: z = w·x + b</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Сначала вычисляем линейную комбинацию признаков.</p>
+        <div class="wt-formula">z = w₁·x₁ + w₂·x₂ + b
+  = 0.1×2 + (−0.2)×3 + 0
+  = 0.2 − 0.6 = −0.4</div>
+        <div class="wt-result"><strong>z = −0.4</strong> — отрицательное, значит модель сейчас скорее предсказывает класс 0.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Sigmoid: σ(z) → вероятность</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Sigmoid преобразует любое z ∈ ℝ в вероятность ∈ (0, 1).</p>
+        <div class="wt-formula">σ(z) = 1 / (1 + e^(−z)) = 1 / (1 + e^0.4)
+     = 1 / (1 + 1.492) ≈ 0.401</div>
+        <div class="wt-result"><strong>P(y=1|x) ≈ 0.40</strong>. Правильный ответ y=1, а модель даёт 40% — нужно обновить w.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Loss: Binary Cross-Entropy</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>BCE loss для одного примера с y=1: L = −log(σ(z)).</p>
+        <div class="wt-formula">L = −log(0.401) ≈ 0.913</div>
+        <div class="wt-result">Высокий loss — модель неуверена в правильном классе.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Градиент ∂L/∂w</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Магия: градиент BCE по w имеет изящный вид (σ − y) · x.</p>
+        <div class="wt-formula">∂L/∂w₁ = (σ − y) · x₁ = (0.401 − 1) × 2 = −1.198
+∂L/∂w₂ = (σ − y) · x₂ = (0.401 − 1) × 3 = −1.797</div>
+        <div class="wt-result">Оба градиента отрицательные → нужно <em>увеличить</em> оба веса.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Обновление весов (lr = 0.1)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Шаг SGD: w ← w − lr · ∂L/∂w.</p>
+        <div class="wt-formula">w₁_new = 0.1  − 0.1×(−1.198) = 0.1 + 0.120 = 0.220
+w₂_new = −0.2 − 0.1×(−1.797) = −0.2 + 0.180 = −0.020</div>
+        <div class="wt-result">Новый z = 0.220×2 + (−0.020)×3 = 0.440 − 0.060 = 0.38. σ(0.38) ≈ 0.594 — ближе к 1. ✓</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">classification</span>
       <span class="mini-tag">sigmoid</span>
@@ -2133,7 +2272,40 @@ proba = multi_model.predict_proba(X_val)</div>
     <details><summary>[Hard] Calibration vs discrimination</summary><p>Почему ROC-AUC может быть высоким, но вероятности плохими? <strong>Решение:</strong> AUC проверяет ranking, а calibration проверяет, соответствует ли 0.8 примерно 80% частоте события.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-5">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему логистическая регрессия — это классификатор, несмотря на слово «регрессия»?</summary>
+      <div class="ml-quiz__a"><p>Модель регрессирует логарифм шансов (log-odds) на линейную комбинацию признаков, но итоговый выход пропускается через сигмоид σ(z) = 1/(1+e⁻ᶻ), который преобразует результат в вероятность [0,1]. Порог 0.5 задаёт граничу решения для класса.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему для логистической регрессии используют binary cross-entropy, а не MSE?</summary>
+      <div class="ml-quiz__a"><p>MSE с сигмоидом создаёт невыпуклую поверхность потерь с множеством локальных минимумов и «насыщенными» зонами с нулевыми градиентами. Binary cross-entropy даёт выпуклую функцию потерь и прямо вытекает из принципа максимального правдоподобия для бернуллиевских наблюдений.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что означает коэффициент w_j в логистической регрессии?</summary>
+      <div class="ml-quiz__a"><p>При увеличении xⱼ на 1 единицу log-odds растёт на wⱼ, что соответствует умножению шансов (odds) на exp(wⱼ). Например, wⱼ=0.7 означает, что шансы события растут в e⁰·⁷ ≈ 2 раза на единицу признака.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как логистическая регрессия обобщается на множественную классификацию?</summary>
+      <div class="ml-quiz__a"><p>Используется softmax: для K классов вычисляют K линейных функций zₖ = wₖᵀx, затем нормируют: P(y=k|x) = exp(zₖ)/Σexp(zⱼ). Функция потерь — categorical cross-entropy. Это называется multinomial logistic regression или softmax regression.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-5">
     <h2>Checkpoint: 2.5 Логистическая регрессия</h2>
     <ul>
       <li>Что именно является линейным в logistic regression?</li>
@@ -2143,5 +2315,7 @@ proba = multi_model.predict_proba(X_val)</div>
       <li>Rubber duck: объясни разницу между вероятностью модели и финальным решением.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/07_efficient_attention.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -46,21 +46,47 @@
       <h1>5.7 Efficient Attention</h1>
       <p class="muted">Когда последовательность становится длинной, классический attention начинает проигрывать по памяти и пропускной способности. Здесь разбираем, как именно FlashAttention, sparse attention и Longformer-подходи меняют экономику вычислений.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>O(L²) memory — узкое место стандартного attention при длинных контекстах. FlashAttention, Multi-Query Attention, GQA — способы масштабировать внимание до 1M токенов.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему наивный attention требует O(L²) памяти и где это узкое место</li>
+      <li>FlashAttention — IO-aware алгоритм: tiling, recomputation, без materialization</li>
+      <li>MQA и GQA — как сократить KV-heads без потери качества</li>
+      <li>Linear Attention — как аппроксимировать softmax для O(L) сложности</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Multi-Head Attention (5.3)</li>
+      <li>GPU/HBM memory hierarchy</li>
+      <li>Transformer Architecture (5.4)</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>Где узкое место обычного attention</h2>
       <div class="formula" data-render-tex data-tex-source="\text{Attention}(Q,K,V)=\text{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right)V">\text{Attention}(Q,K,V)=softmax(QK^T / sqrt(d))V</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">sequence length</span><span class="fa-desc">число токенов; именно оно создаёт квадратичную стоимость full attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">hidden dimension</span><span class="fa-desc">размер представления токена и attention head.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">QK^T</span><span class="fa-name">attention scores</span><span class="fa-desc">матрица попарных сравнений токенов размера LxL.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">blocks / tiles</span><span class="fa-name">плиточная обработка</span><span class="fa-desc">FlashAttention считает attention кусками, уменьшая memory traffic.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Q</span><span class="fa-name">матрица запросов</span><span class="fa-desc">Query: каждый токен спрашивает «что мне нужно?». Размер L×d, где L — длина последовательности.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">матрица ключей</span><span class="fa-desc">Key: каждый токен объявляет «что я предлагаю?». Скалярное произведение Qᵢ·Kⱼ = сходство i-го и j-го токенов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">матрица значений</span><span class="fa-desc">Value: то, что реально передаётся от токена j к токену i, если attention score высок.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">QK^T</span><span class="fa-name">матрица scores</span><span class="fa-desc">L×L матрица попарных сходств — именно она создаёт O(L²) стоимость по памяти и вычислениям.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√d</span><span class="fa-name">масштабирующий делитель</span><span class="fa-desc">без деления dot products растут пропорционально √d → softmax насыщается → градиенты исчезают. Деление удерживает дисперсию ~1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">softmax</span><span class="fa-name">нормализация весов</span><span class="fa-desc">преобразует scores в вероятности (0,1), сумма по строке = 1. Каждый токен получает распределение внимания по всем остальным.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> efficient attention пытается сохранить смысл attention, но уменьшить память, IO или число пар токенов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как читать большую таблицу по блокам, не выгружая её целиком на стол.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при L=4096 full attention имеет около 16.7M pairwise scores на одну head.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> QK^T — дорогой шаг: L=4096 даёт матрицу 4096×4096=16.7M чисел на каждую голову. FlashAttention вычисляет тот же результат, не материализуя эту матрицу целиком в памяти.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо того чтобы выписать всю таблицу умножения на листе, считаешь нужные ячейки на ходу и сразу суммируешь — ответ тот же, бумаги нужно в разы меньше.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> L=4096, d=64 (размер одной головы). QK^T: 4096²×4 байта=64 МБ только на scores одной головы. При 32 головах — 2 ГБ. Именно поэтому FlashAttention экономит память через tiling, а не хранит всё сразу.</div>
     </div>
     <div class="formula" data-no-tex>Время:  O(n² d)
 Память: O(n²)
@@ -254,7 +280,40 @@ for token in sequence:
     <details><summary>[Hard] Longformer tradeoff</summary><p>Почему local+global attention может быть хорошим компромиссом? <strong>Решение:</strong> локальные окна ловят близкий контекст, global tokens переносят информацию через документ.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-7">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему обычный attention O(n²) становится проблемой при длинном контексте?</summary>
+      <div class="ml-quiz__a"><p>Матрица attention n×n при n=16k токенов занимает 16k×16k×2 байт ≈ 512 MB только для одной головы. Для 32 голов × 32 слоя это терабайты. Вычисление тоже O(n²), что делает длинные контексты (100k+ токенов) недоступными без специальных методов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое FlashAttention и почему он быстрее стандартного?</summary>
+      <div class="ml-quiz__a"><p>FlashAttention реструктурирует вычисление attention для IO-efficiency: вместо материализации всей матрицы n×n в HBM (медленная память GPU), он обрабатывает блоки в SRAM (быстрая). Результат: 2-4× ускорение при той же точности. Это алгоритмическая, а не математическая оптимизация.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как работает Multi-Query Attention (MQA) и зачем он нужен при инференсе?</summary>
+      <div class="ml-quiz__a"><p>MQA использует одну пару K,V для всех голов (только Q множественный). Это в h раз снижает размер KV-кеша (h — число голов), что критично при инференсе: KV-кеш — основной потребитель памяти. Ускоряет autoregressive decoding при небольшой потере качества.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Grouped Query Attention (GQA) и чем он отличается от MQA?</summary>
+      <div class="ml-quiz__a"><p>GQA — компромисс: G групп ключей/значений на h голов (1 < G < h). Головы внутри группы делят одну пару KV. При G=1 — MQA, при G=h — стандартный MHA. GQA даёт хороший баланс между скоростью и качеством; используется в LLaMA 2/3, Gemma.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-7">
     <h2>Checkpoint: 5.7 Efficient Attention</h2>
     <ul>
       <li>Почему full attention плохо масштабируется по длине?</li>
@@ -264,6 +323,7 @@ for token in sequence:
       <li>Rubber duck: объясни efficient attention как способы не строить огромную таблицу связей целиком.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

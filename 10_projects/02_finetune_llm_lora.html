@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/02_finetune_llm_lora.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="projects">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -310,7 +310,40 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какой минимальный объём данных нужен для эффективного LoRA fine-tuning?</summary>
+      <div class="ml-quiz__a"><p>Для специализации на стиль или формат ответа — 100-500 примеров достаточно. Для обучения предметным знаниям — от 1k. Для instruction following в новой области — 1k-10k. Качество важнее количества: разнообразные, чистые примеры > большой зашумлённый датасет.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как оценить качество fine-tuned LLM без человеческой разметки?</summary>
+      <div class="ml-quiz__a"><p>LLM-as-judge: промптить сильную модель (GPT-4/Claude) оценить ответ по критериям (точность, безопасность, стиль). MT-bench и Alpaca Eval — стандартные benchmarks. Также автоматические метрики: ROUGE (для summarization), pass@k (для code generation), Exact Match (для QA).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое catastrophic forgetting при fine-tuning LLM?</summary>
+      <div class="ml-quiz__a"><p>Catastrophic forgetting: при обучении на узкой задаче модель «забывает» общие знания. Симптомы: деградация на benchmarks, потеря instruction following. LoRA снижает риск (веса заморожены). Также помогает: добавление general data в training mix, низкий lr, небольшое число эпох (1-3).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбрать base model для fine-tuning под конкретную задачу?</summary>
+      <div class="ml-quiz__a"><p>Критерии: (1) размер — баланс качества и inference cost, (2) лицензия (Llama — commercial use с условиями, Mistral — Apache 2.0), (3) языковая поддержка, (4) context length, (5) уже ли обучена на похожей задаче (меньше fine-tuning данных нужно). Начинают с меньшей модели — быстрее итерации.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain why LoRA reduces trainable parameters?</li>
@@ -329,9 +362,74 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
       </div>
     </section>
   </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Fine-tuning LLM — стандартная задача для ML-инженеров в 2024–2025; умение делать это эффективно через LoRA отличает junior от mid-level.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Настроить LoRA fine-tuning через Hugging Face PEFT</li>
+          <li>Собрать датасет и написать evaluation pipeline</li>
+          <li>Задеплоить fine-tuned модель для инференса</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>LoRA/QLoRA (6.5)</li>
+          <li>Instruction Tuning (6.3)</li>
+          <li>PyTorch основы</li>
+    </ul>
+  </div>
+</div>
+
 
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Fine-tune LLM с LoRA</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Начинай с маленькой модели (7B) на маленьком датасете — быстрые итерации.</li>
+        <li>Evaluation обязателен: без него не знаешь, что обучение помогло.</li>
+        <li>DPO после SFT часто улучшает стиль ответов без потери качества.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Обучать без evaluation pipeline — нельзя определить overfitting.</li>
+        <li>Использовать слишком высокий lr при LoRA — веса быстро уходят в catastrophic forgetting.</li>
+        <li>Не проверять degeneration на базовых бенчмарках после fine-tuning.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>LoRA rank r: начинай с 16, увеличивай при недоученности.</li>
+        <li>Target modules: q_proj + v_proj минимум, добавляй k_proj + up/down proj при необходимости.</li>
+        <li>Число эпох: 1-3, больше — риск overfitting и forgetting.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="../06_llm/05_lora_qlora.html">← 6.5 LoRA/QLoRA</a></li>
+        <li><a href="../06_llm/03_instruction_tuning.html">← 6.3 Instruction Tuning</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

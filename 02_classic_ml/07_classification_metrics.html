@@ -623,7 +623,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/07_classification_metrics.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -635,8 +635,67 @@
     <h1>2.7 Метрики классификации</h1>
     <p class="muted">Confusion matrix, accuracy, precision, recall, F1, ROC-AUC, PR-AUC, log loss, threshold tuning</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Accuracy — плохая метрика при дисбалансе классов. Precision, Recall, F1, AUC — разные инструменты для разных целей. Confusion matrix — это карта ошибок вашей модели.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Confusion matrix, Precision, Recall — что они измеряют</li>
+      <li>F1-score — гармоническое среднее и когда его использовать</li>
+      <li>ROC-AUC vs PR-AUC — разница и когда что выбирать</li>
+      <li>Как дисбаланс классов влияет на все метрики</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Логистическая регрессия (2.5)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Понятие True/False Positive/Negative</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">confusion matrix</span>
       <span class="mini-tag">accuracy</span>
@@ -846,16 +905,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TN</span><span class="fa-name">true negatives</span><span class="fa-desc">Отрицательные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP+TN</span><span class="fa-name">число правильных предсказаний</span><span class="fa-desc">TP — правильно найденные positives, TN — правильно найденные negatives. Числитель: всё, что модель угадала.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP+TN+FP+FN</span><span class="fa-name">общее число объектов</span><span class="fa-desc">Знаменатель: все объекты выборки. TP+TN+FP+FN = n — полный объём данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives (ложные тревоги)</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные как positive. Попадают в знаменатель, увеличивают общий счёт ошибок.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives (пропуски)</span><span class="fa-desc">Positive объекты, которые модель пропустила (назвала negative). Критичны при imbalance: если positives редки, FN «тихие» — accuracy их игнорирует.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Accuracy = (правильные) / (все). Простая и понятная, но при imbalance обманчива: модель, всегда говорящая «negative», получает accuracy = доля negatives в данных.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как процент угаданных слов в диктанте — общий показатель, но не скажет, какие именно ошибки (пропущенные запятые vs. перепутанные буквы).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> TP=80, TN=810, FP=20, FN=90. Accuracy=(80+810)/(80+810+20+90)=890/1000=89%. Звучит хорошо, но recall=80/(80+90)≈47% — модель пропускает половину positives.</div>
     </div>
     <p>
       Accuracy показывает долю всех объектов, которые модель классифицировала правильно.
@@ -910,15 +968,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">990</span><span class="fa-name">число правильных предсказаний «negative»</span><span class="fa-desc">Модель всегда говорит «negative», поэтому TN=990 (все реальные negatives), TP=0. Ни одного positive не найдено.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1000</span><span class="fa-name">общее число объектов</span><span class="fa-desc">990 negatives + 10 positives. Accuracy = TN/total = 990/1000 = 99% — но это обман класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">99%</span><span class="fa-name">обманчиво высокая accuracy</span><span class="fa-desc">Возникает из-за дисбаланса классов: модель «выучила» предсказывать только большой класс. Для positive class: TP=0, recall=0%.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> 99% accuracy при нулевом recall по positive class — это пустая модель. Она ничему не научилась: просто запомнила частотность классов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Детектор рака с 99% accuracy, который всегда говорит «здоров». При базовой частоте рака 1% — математически верно, практически бесполезно и опасно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 объектов: 990 — класс 0, 10 — класс 1. Модель-«все 0»: TN=990, TP=0, FN=10. Accuracy=990/1000=99%. Recall@class1=0/10=0%.</div>
     </div>
     <p>
       Но recall по positive class у неё будет:
@@ -930,14 +987,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Recall = 0</span><span class="fa-name">полнота равна нулю</span><span class="fa-desc">Recall = TP/(TP+FN). Если TP=0 — модель не нашла ни одного positive объекта. Знаменатель TP+FN = все реальные positives, но числитель обнулён.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP = 0</span><span class="fa-name">ноль правильно найденных positives</span><span class="fa-desc">Модель-«всегда negative» никогда не предсказывает класс 1, поэтому все 10 реальных positives попадают в FN. TP буквально равен нулю.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN = 10</span><span class="fa-name">все positives пропущены</span><span class="fa-desc">10 реальных positives — все помечены как negative. Recall = 0/10 = 0. Метрика разоблачает «пустую» модель, которую accuracy=99% скрывала.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Recall=0 при accuracy=99% — это сигнал тревоги: модель выучила частотность классов, но ничего не знает о редком классе. Accuracy молчит, recall кричит.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Скрининг рака: если тест всегда пишет «здоров», он угадывает 99% (здоровые), но recall=0 — ни одного больного не выявлено. Точность по бумаге есть, пользы нет.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 990 negatives + 10 positives. Модель «всегда 0»: TP=0, FN=10, TN=990. Accuracy=990/1000=99%. Recall=0/(0+10)=0. F1≈0.</div>
     </div>
     <div class="success">
       Это одна из самых важных интуиций в classification:
@@ -957,15 +1014,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Precision</span><span class="fa-name">точность — «что нашли, то верно?»</span><span class="fa-desc">Доля реальных positives среди всех, кого модель назвала positive. Отвечает: «насколько можно доверять предупреждению модели?»</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Реально positive объекты, которых модель правильно назвала positive. Числитель: «удачные находки».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives (ложные тревоги)</span><span class="fa-desc">Реально negative объекты, ошибочно помеченные как positive. Чем больше FP, тем ниже precision — много «пустых» тревог.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP+FP</span><span class="fa-name">все, кого модель назвала positive</span><span class="fa-desc">Знаменатель: все предсказания «класс 1», независимо от правоты. Precision = доля правильных среди них.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Precision — точность сигнала: из всех поднятых тревог какой процент был настоящим? Низкий precision → много ложных тревог → «волк, волк!» эффект.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Антиспам: precision = доля реального спама среди всего, что попало в папку «спам». Precision=0.9 → 90% писем в спаме действительно спам, 10% — ложные тревоги.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> TP=80, FP=20. Precision=80/(80+20)=0.8. Модель 80 раз права и 20 раз напрасно «тревожится».</div>
     </div>
     <p>
           Из всех объектов, которые модель назвала positive,
@@ -980,15 +1037,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Recall</span><span class="fa-name">полнота — «сколько нашли из всех?»</span><span class="fa-desc">Доля найденных positives среди всех реальных positives. Отвечает: «сколько настоящих случаев мы не пропустили?»</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Реальные positives, правильно найденные моделью. Числитель: «улов» модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives (пропуски)</span><span class="fa-desc">Реальные positives, которых модель пропустила (назвала negative). Чем больше FN, тем ниже recall — много «упущенных» случаев.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP+FN</span><span class="fa-name">все реальные positives</span><span class="fa-desc">Знаменатель: истинное число positives в данных. Recall = доля из них, которую модель «поймала».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Recall — полнота охвата: из всех реальных positives какой процент нашла модель? Низкий recall → много пропусков → «пропущенные больные» в медицине.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Медицинский скрининг: recall = доля реально больных, выявленных тестом. Recall=0.95 → тест находит 95% больных, 5% уходят домой нелеченными.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> TP=80, FN=20. Recall=80/(80+20)=0.8. Из 100 реальных positives модель нашла 80, пропустила 20.</div>
     </div>
     <p>
           Из всех реально positive объектов,
@@ -1074,15 +1131,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F1</span><span class="fa-name">гармоническое среднее precision и recall</span><span class="fa-desc">Баланс между точностью и полнотой. Высокий F1 требует, чтобы оба компонента были высокими — ни один не может быть «нулём».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2·(...)/(... + ...)</span><span class="fa-name">гармоническое среднее</span><span class="fa-desc">Гармоническое среднее падает к наименьшему из двух значений. F1 = 2·P·R/(P+R). Если P=1, R=0: F1=0. Если P=R=0.8: F1=0.8. Наказывает дисбаланс между P и R.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Precision</span><span class="fa-name">точность — TP/(TP+FP)</span><span class="fa-desc">Доля реальных positives среди всех, кого модель назвала positive.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Recall</span><span class="fa-name">полнота — TP/(TP+FN)</span><span class="fa-desc">Доля найденных positives среди всех реальных positives.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> F1 «строже» обычного среднего: P=1, R=0 → arithmetic mean=0.5, F1=0. Нельзя обмануть F1, пожертвовав одним из компонентов — нужен реальный баланс.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Нельзя сдать курс, сдав только половину заданий на 100%. Нужно выполнить оба типа заданий (найти positives И не ошибаться). F1 — «двусторонняя» оценка.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P=0.9, R=0.5. Arithmetic mean=0.7. F1=2·0.9·0.5/(0.9+0.5)=0.9/1.4≈0.64. F1 ниже — штраф за низкий recall.</div>
     </div>
     <p>
       Можно также записать через TP, FP, FN:
@@ -1094,15 +1151,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2TP</span><span class="fa-name">двойные true positives — числитель</span><span class="fa-desc">Масштабирующий множитель 2 обеспечивает, что F1 ∈ [0,1] при всех P,R ∈ [0,1]. TP — фундамент обеих метрик: и precision, и recall считают через него.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives — штраф за ложные тревоги</span><span class="fa-desc">Входит в знаменатель как «стоимость» ложных срабатываний. Больше FP → ниже precision → ниже F1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives — штраф за пропуски</span><span class="fa-desc">Входит в знаменатель как «стоимость» пропущенных positives. Больше FN → ниже recall → ниже F1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2TP+FP+FN</span><span class="fa-name">знаменатель — все «промахи» плюс двойные «попадания»</span><span class="fa-desc">Эквивалентная запись: (TP+FP)+(TP+FN) = denominator precision + denominator recall. Удобно считать напрямую из confusion matrix.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> F1 = 2TP/(2TP+FP+FN) — «чистая» формулировка через confusion matrix. Видно: F1 максимален при FP=FN=0 (идеальная модель), падает с ростом любой ошибки.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Оценка спасателя: TP — спасённые, FP — ложные тревоги, FN — пропущенные жертвы. F1 = 2·спасённые/(2·спасённые + ложные + пропущенные).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> TP=80, FP=20, FN=10. F1=2·80/(2·80+20+10)=160/190≈0.84. Precision=80/100=0.8, Recall=80/90≈0.89. F1≈0.84 — баланс между ними.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1160,14 +1217,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂(y=1|x)</span><span class="fa-name">предсказанная вероятность positive класса</span><span class="fa-desc">Непрерывный score модели ∈ (0,1). Это не класс, а уверенность: p̂=0.87 означает «87% шанс, что объект принадлежит классу 1».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y=1</span><span class="fa-name">positive класс (событие)</span><span class="fa-desc">Метка интересующего класса. Формула вычисляет вероятность именно этого исхода. Для negative: p̂(y=0|x) = 1 − p̂(y=1|x).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков объекта</span><span class="fa-desc">Условие: вероятность задаётся для конкретного объекта с признаками x. Разные x дают разные p̂ — это и есть «обучение» модели.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> p̂(y=1|x) — это «уверенность» модели. Чтобы получить класс, нужен порог t: если p̂ ≥ t → класс 1. Варьируя t от 0 до 1, получаем все точки ROC/PR-кривых.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Врач говорит «80% вероятность рака» вместо «болен/не болен» — это p̂(y=1|x). Решение (лечить/нет) принимается отдельно по порогу риска, который задаёт врач или пациент.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Логистическая регрессия: p̂=0.73. При t=0.5 → класс 1. При t=0.8 → класс 0. Threshold — бизнес-решение поверх модели.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1190,16 +1247,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанный класс (бинарный)</span><span class="fa-desc">Дискретное решение: 0 или 1. Получается из вероятности p̂ через пороговое правило.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂</span><span class="fa-name">предсказанная вероятность positive класса</span><span class="fa-desc">Непрерывный score модели ∈ [0,1]. Логистическая регрессия, Random Forest и др. выдают p̂, а не сразу класс.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог классификации (threshold)</span><span class="fa-desc">Гиперпараметр ∈ [0,1]. Если p̂ ≥ t → класс 1, иначе → класс 0. По умолчанию t=0.5, но его можно настраивать под задачу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂ ≥ t / p̂ < t</span><span class="fa-name">условие перехода между классами</span><span class="fa-desc">Два случая piecewise-функции. Понижение t → больше объектов в класс 1 (recall↑, precision↓). Повышение t → меньше тревог (precision↑, recall↓).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Threshold — это «чувствительность» системы. Снизить t до 0.3 → модель «кричит тревогу» при меньшей уверенности → больше finds, но и больше ложных срабатываний.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Термостат: t — температура срабатывания. Низкий t → батарея включается часто. Высокий t → редко, но зато точно холодно. Threshold регулирует «отзывчивость» классификатора.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p̂=0.65. При t=0.5 → класс 1. При t=0.7 → класс 0. Порог выбирается по ROC/PR-кривой или через бизнес-требования.</div>
     </div>
     <p>
       Если threshold менять, будут меняться TP, FP, FN, TN,
@@ -1224,15 +1280,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TPR</span><span class="fa-name">True Positive Rate = Recall</span><span class="fa-desc">Доля реальных positives, найденных моделью. TPR = TP/(TP+FN) = Recall. Ось Y в ROC-кривой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Реально positive объекты, правильно классифицированные моделью. Числитель TPR.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives — пропущенные positives</span><span class="fa-desc">Реально positive, ошибочно назначенные как negative. TP+FN = все реальные positives. Знаменатель TPR.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> TPR — «чувствительность» (sensitivity) детектора. ROC-кривая строит TPR против FPR при разных threshold: высокий TPR значит «много positives поймано».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Доля больных, выявленных тестом. TPR=0.9 → из 100 реально больных 90 получили положительный результат теста.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> TP=90, FN=10. TPR=90/(90+10)=0.9. Модель находит 90% реальных positives.</div>
     </div>
     </div>
       <div>
@@ -1243,16 +1298,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TN</span><span class="fa-name">true negatives</span><span class="fa-desc">Отрицательные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FPR</span><span class="fa-name">False Positive Rate — доля ложных тревог</span><span class="fa-desc">Доля реальных negatives, ошибочно названных positive. FPR = FP/(FP+TN). Ось X в ROC-кривой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Реально negative объекты, ошибочно помеченные positive. Числитель FPR.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">TN</span><span class="fa-name">true negatives</span><span class="fa-desc">Реально negative, правильно классифицированные. FP+TN = все реальные negatives — знаменатель FPR.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> FPR — «цена» снижения threshold: при низком t больше positives поймаем (TPR↑), но и больше negatives ошибочно пометим (FPR↑). ROC-кривая показывает этот trade-off.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Доля здоровых людей, получивших ложно-положительный диагноз. FPR=0.1 → 10% здоровых пациентов «напрасно» направлены на процедуры.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> FP=10, TN=90. FPR=10/(10+90)=0.1. Специфичность (1−FPR)=0.9 — 90% negatives правильно классифицировано.</div>
     </div>
     </div>
     </div>
@@ -1267,14 +1320,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Отрицательные объекты, ошибочно помеченные положительными.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x = FPR</span><span class="fa-name">ось X — False Positive Rate</span><span class="fa-desc">Горизонтальная ось ROC-пространства. FPR = FP/(FP+TN): доля negatives, ошибочно помеченных positive. Идеальная модель: x=0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y = TPR</span><span class="fa-name">ось Y — True Positive Rate (Recall)</span><span class="fa-desc">Вертикальная ось ROC-пространства. TPR = TP/(TP+FN): доля реальных positives, найденных моделью. Идеальная модель: y=1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ROC-кривая</span><span class="fa-name">траектория точек (FPR, TPR) при разных threshold</span><span class="fa-desc">Каждая точка кривой — конкретный threshold t. При t→0: все в класс 1 → FPR=1, TPR=1 (правый верхний угол). При t→1: все в класс 0 → FPR=0, TPR=0 (левый нижний угол).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ROC-кривая — портрет модели при всех threshold одновременно. Чем «выше» и «левее» кривая, тем лучше модель. Диагональ = случайный классификатор (AUC=0.5).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> График «улов vs. усилие» для рыбака. Ось Y — сколько рыбы поймали (TPR). Ось X — сколько лишней работы (FPR). Хорошая снасть дает много рыбы при малых усилиях.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> При t=0.7: FPR=0.05, TPR=0.6. При t=0.3: FPR=0.3, TPR=0.95. ROC-кривая соединяет эти точки — выбираем t по задаче.</div>
     </div>
     <p>
       При разных threshold мы получаем разные пары <code>(FPR, TPR)</code>.
@@ -1317,14 +1370,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x = Recall</span><span class="fa-name">горизонтальная ось PR-кривой</span><span class="fa-desc">Recall = TP/(TP+FN). Показывает, какую долю реальных positives нашла модель. При t→0: все в класс 1, Recall→1 (правый край). При t→1: Recall→0 (левый край).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y = Precision</span><span class="fa-name">вертикальная ось PR-кривой</span><span class="fa-desc">Precision = TP/(TP+FP). Показывает, насколько точны найденные позитивы. PR-кривая не монотонна: при низком recall precision может скакать вверх и вниз.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">параметр, задающий точку на кривой</span><span class="fa-desc">Каждая точка (x,y) PR-кривой соответствует конкретному порогу t. Перебирая t от 1 до 0, рисуем кривую. Идеал: верхний правый угол (Recall=1, Precision=1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> PR-кривая — портрет trade-off: чем больше positives ловим (Recall↑), тем больше ложных тревог (Precision↓). В отличие от ROC, PR-кривая чувствительна к дисбалансу классов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Рыбак с сетью: ось X — доля рыбы пойманной из всей рыбы в озере (Recall), ось Y — доля рыбы среди всего улова (Precision). Мелкая сеть: высокий Recall, но много мусора (низкий Precision).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> t=0.8: Recall=0.5, Precision=0.95 (мало, но точно). t=0.3: Recall=0.9, Precision=0.6 (много, но шумно). PR-AUC = площадь под кривой между этими точками.</div>
     </div>
     <p>
       То есть это график trade-off между precision и recall при разных threshold.
@@ -1470,18 +1523,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">LogLoss</span><span class="fa-name">бинарная кросс-энтропия</span><span class="fa-desc">Метрика качества вероятностных предсказаний. Чем меньше LogLoss, тем лучше откалиброваны вероятности модели. LogLoss=0 — идеальная уверенность без ошибок.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−1/n</span><span class="fa-name">усреднение со знаком минус</span><span class="fa-desc">Логарифм вероятности ≤ 0, поэтому минус делает LogLoss ≥ 0. Усреднение на n делает метрику независимой от размера выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинная метка объекта (0 или 1)</span><span class="fa-desc">Бинарная метка: 1 = positive, 0 = negative. Используется как переключатель: при y=1 активируется log p̂, при y=0 — log(1−p̂).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂^(i)</span><span class="fa-name">предсказанная вероятность positive</span><span class="fa-desc">Выход модели ∈ (0,1). Чем увереннее и правильнее — тем меньше вклад в loss. Уверенная ошибка (p̂≈1 при y=0) дает огромный штраф.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p̂ + log(1−p̂)</span><span class="fa-name">log-правдоподобие для обоих классов</span><span class="fa-desc">y·log p̂: вклад positive объектов. (1−y)·log(1−p̂): вклад negative. Это и есть negative log-likelihood бернуллиевого распределения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LogLoss штрафует за уверенные неверные предсказания: если модель говорит p̂=0.99 при y=0, штраф огромен. Умеренная неуверенность лучше, чем самоуверенная ошибка.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как штраф за уверенный неверный ответ на экзамене. Сказал «наверняка A» (p=0.99), а правильно B — штраф намного больше, чем если бы ты сказал «наверное A» (p=0.6).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=1, p̂=0.9: вклад = −log(0.9) ≈ 0.11 (хорошо). y=1, p̂=0.1: вклад = −log(0.1) ≈ 2.3 (плохо — уверенная ошибка).</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1581,15 +1632,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">t↓</span><span class="fa-name">снижение порога классификации</span><span class="fa-desc">Модель «соглашается» классифицировать как positive при меньшей уверенности. Порог снижается, порог «входа» в класс 1 опускается.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">recall↑</span><span class="fa-name">полнота растёт</span><span class="fa-desc">При низком t больше объектов попадают в класс 1 → TP растёт, FN падает → recall = TP/(TP+FN) растёт. Меньше пропусков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">precision↓</span><span class="fa-name">точность падает</span><span class="fa-desc">Вместе с TP растёт FP (ложные тревоги) → precision = TP/(TP+FP) снижается. Больше ложных срабатываний.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(обычно)</span><span class="fa-name">монотонность не гарантирована строго</span><span class="fa-desc">В типичном случае precision и recall антикоррелируют при изменении threshold. Исключение возможно при «мусорных» моделях или необычных распределениях score.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Снижать t — как снижать планку для попадания в список кандидатов. Больше кандидатов → не пропустим хорошего → но добавим нежелательных. Recall ↑, precision ↓.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Антиспам с низким t: любое подозрительное письмо — в спам. Ни одного спама не пропустим (recall↑), но и нужные письма будем блокировать (precision↓).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> t: 0.5→0.3. TP: 80→95, FP: 20→60, FN: 20→5. Recall: 80%→95%. Precision: 80%→61%. Выбор t — бизнес-решение.</div>
     </div>
     <div class="formula">
       t \uparrow \Rightarrow recall \downarrow,\; precision \uparrow \text{ (обычно)}
@@ -1597,15 +1648,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">t↑</span><span class="fa-name">повышение порога классификации</span><span class="fa-desc">Модель требует большей уверенности перед классификацией в класс 1. Порог поднимается — «консервативная» система.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">recall↓</span><span class="fa-name">полнота падает</span><span class="fa-desc">При высоком t меньше объектов попадают в класс 1 → TP падает, FN растёт → recall = TP/(TP+FN) снижается. Больше пропусков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">precision↑</span><span class="fa-name">точность растёт</span><span class="fa-desc">Из тех, кого модель помечает как positive, меньше ошибок → FP падает → precision = TP/(TP+FP) растёт. Меньше ложных тревог.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(обычно)</span><span class="fa-name">типичное поведение, не математический закон</span><span class="fa-desc">Как правило, precision↑ при t↑ — но это зависит от формы распределения score. PR-кривая показывает реальный trade-off для конкретной модели.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Повышать t — как повышать планку «точно спам, не трогать». Меньше ложных блокировок (precision↑), но некоторый спам пройдёт (recall↓).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Кредитный скоринг: высокий t → одобряем только «отличников». Мало дефолтов (precision↑), но много надёжных клиентов отказано (recall↓).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> t: 0.5→0.8. TP: 80→50, FP: 20→3, FN: 20→50. Precision: 80%→94%. Recall: 80%→50%. «Снайпер» vs. «широкая сеть».</div>
     </div>
     <div class="success">
       Threshold tuning — это bridge между ML-моделью и product/business decision.
@@ -2272,7 +2323,40 @@ for t in thresholds:
     <details><summary>[Hard] Метрика под задачу</summary><p>Выбери метрику для cancer screening и spam filtering. <strong>Решение:</strong> screening часто оптимизирует recall/FN cost; spam filtering сильнее следит за precision, чтобы не терять важные письма.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-7">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему accuracy плохо подходит для несбалансированных классов?</summary>
+      <div class="ml-quiz__a"><p>Если 95% примеров принадлежат классу 0, классификатор, всегда предсказывающий 0, даёт accuracy=95%, хотя он совершенно бесполезен. Для несбалансированных задач используют F1-score, ROC-AUC или Precision-Recall AUC.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Precision и Recall и как их трактовать?</summary>
+      <div class="ml-quiz__a"><p><strong>Precision = TP/(TP+FP)</strong> — из всех предсказанных позитивных сколько действительно позитивные (точность). <strong>Recall = TP/(TP+FN)</strong> — из всех реальных позитивных сколько модель нашла (полнота). Высокий Recall важен при поиске болезней; высокий Precision — при спам-фильтрации.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что показывает ROC-кривая и что означает AUC=0.5?</summary>
+      <div class="ml-quiz__a"><p>ROC строит TPR vs FPR при разных порогах классификации. AUC = площадь под кривой. AUC=1 — идеальный классификатор; AUC=0.5 — модель не лучше случайного угадывания (диагональная линия); AUC<0.5 — модель систематически «ошибается», что само по себе информативно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда предпочесть PR-кривую вместо ROC?</summary>
+      <div class="ml-quiz__a"><p>При сильном дисбалансе классов (много негативных) ROC может выглядеть оптимистично, так как большой TN в знаменателе FPR = FP/(FP+TN) его занижает. Precision-Recall кривая фокусируется только на позитивных примерах и честнее отражает качество на редких событиях.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-7">
     <h2>Checkpoint: 2.7 Метрики классификации</h2>
     <ul>
       <li>Чем precision отличается от recall?</li>
@@ -2282,5 +2366,6 @@ for t in thresholds:
       <li>Rubber duck: объясни confusion matrix через четыре типа решений врача или антиспама.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/01_distributed_training.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training-practice">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>8.1 Distributed Training: DDP vs FSDP</h1>
       <p class="muted">Distributed training нужен, когда один GPU уже не дает нужный throughput или модель, контекст, batch или optimizer state не помещаются в память. Главный trade-off: compute масштабируется, но communication, память и воспроизводимость становятся сложнее.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Одна GPU не вмещает современные модели. Data Parallel, Tensor Parallel, Pipeline Parallel, FSDP — разные стратегии распределения, меняющие tradeoffs по памяти, скорости и коммуникации.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Data Parallelism — как синхронизируются градиенты через AllReduce</li>
+      <li>Tensor Parallelism — как матричные операции шардируются по GPU</li>
+      <li>Pipeline Parallelism — micro-batches и пузырь простоя</li>
+      <li>FSDP / ZeRO — как шардировать не только данные, но и параметры</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Backpropagation (4.1)</li>
+      <li>Оптимизаторы (4.2)</li>
+      <li>Основы GPU computing</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -123,7 +147,40 @@ for epoch in range(num_epochs):
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Data Parallelism и как он ускоряет обучение?</summary>
+      <div class="ml-quiz__a"><p>Data Parallelism: одна копия модели на каждом GPU, каждый обрабатывает разные мини-батчи. После backward pass градиенты синхронизируются (AllReduce). Effective batch size = batch_per_gpu × num_gpus. Ограничение: модель должна помещаться в памяти одного GPU.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда нужен Model Parallelism вместо Data Parallelism?</summary>
+      <div class="ml-quiz__a"><p>Когда модель не помещается в памяти одного GPU. Tensor parallelism: один слой разрезается между GPU (например, матрица W разбивается по столбцам). Pipeline parallelism: разные слои на разных GPU. LLaMA-70B не умещается даже на A100 80GB — нужен tensor/pipeline parallel.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое ZeRO (Zero Redundancy Optimizer) и как он экономит память?</summary>
+      <div class="ml-quiz__a"><p>ZeRO (DeepSpeed) устраняет избыточность в data-parallel обучении. Stage 1: partition optimizer states. Stage 2: + partition gradients. Stage 3: + partition parameters. При Stage 3 каждый GPU хранит только 1/N параметров — что позволяет обучать модели размером N× больше при той же памяти.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое gradient accumulation и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Gradient accumulation: обновляем веса каждые k мини-батчей, не каждый. Это эмулирует больший effective batch size без дополнительной памяти GPU: effective_batch = batch_size × accumulation_steps. Используется, когда нужный batch_size не влезает в память одного GPU.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -139,5 +196,47 @@ for epoch in range(num_epochs):
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-1-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="B_{\text{global}} = N_{\text{devices}} \cdot B_{\text{local}} \cdot A">B_global = N_devices · B_local · A</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">B_global</span><span class="fa-name">global batch</span><span class="fa-desc">сколько примеров реально участвует в одном optimizer update.</span></div><div class="formula-anatomy__row"><span class="fa-sym">N_devices</span><span class="fa-name">число устройств</span><span class="fa-desc">GPU/worker-ов, которые считают forward/backward параллельно.</span></div><div class="formula-anatomy__row"><span class="fa-sym">B_local</span><span class="fa-name">local batch</span><span class="fa-desc">batch size на одном устройстве.</span></div><div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">grad accumulation</span><span class="fa-desc">сколько micro-batch шагов суммируется до optimizer.step().</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> effective batch в distributed training определяется не одним числом, а всей схемой распараллеливания.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> 8 GPU, local batch 4 и accumulation 2 дают global batch 64.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Distributed Training</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>DDP — первый выбор для multi-GPU на одной машине; FSDP/DeepSpeed — для мультиузловых LLM.</li>
+        <li>Проверяй global batch size при масштабировании: возможно нужен lr scaling.</li>
+        <li>Профилируй GPU utilization — часто DataLoader является bottleneck, не compute.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Менять lr при изменении числа GPU без учёта linear scaling rule.</li>
+        <li>Игнорировать communication overhead — при слабой сети allreduce может доминировать.</li>
+        <li>Не проверять воспроизводимость: distributed обучение требует фиксации seed на каждом worker.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>world_size (число GPU): влияет на global batch и communication overhead.</li>
+        <li>gradient_as_bucket_view и find_unused_parameters в DDP.</li>
+        <li>backend: nccl для GPU (быстрее), gloo для CPU.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="08_training_practice/02_gradient_checkpointing.html">8.2 Gradient Checkpointing →</a></li>
+        <li><a href="04_training/07_mixed_precision_training.html">← 4.7 Mixed Precision</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

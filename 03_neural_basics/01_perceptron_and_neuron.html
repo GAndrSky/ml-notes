@@ -93,7 +93,7 @@ canvas { border-radius: 8px; cursor: crosshair; }
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/03_neural_basics/01_perceptron_and_neuron.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="neural-basics">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -106,6 +106,30 @@ canvas { border-radius: 8px; cursor: crosshair; }
       <h1>3.1 Перцептрон и нейрон</h1>
       <p class="muted">y = f(w<sup>⊤</sup>x + b) — от биологии к математике</p>
     </div>
+
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Перцептрон — атомарная единица любой нейронной сети. От простого классификатора до GPT — всё строится из нейронов именно такой формы. Понять нейрон — значит понять фундамент глубокого обучения.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как нейрон вычисляет взвешенную сумму w·x + b</li>
+      <li>Зачем нужна функция активации и что происходит без неё</li>
+      <li>Почему перцептрон не решает XOR — и что это значит</li>
+      <li>Как биологический нейрон отображается на математику</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Скалярное произведение векторов w·x</li>
+      <li>Понятие функции и её аргументов</li>
+      <li>Линейная разделимость (интуитивно)</li>
+    </ul>
+  </div>
+</div>
 
 <!-- SECTION 1: История и биология -->
 <div class="card">
@@ -185,14 +209,18 @@ canvas { border-radius: 8px; cursor: crosshair; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор</span><span class="fa-desc">Набор всех признаков одного объекта, упакованных в вектор. Например, для дома: [площадь, число комнат, этаж].</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">xᵢ</span><span class="fa-name">i-й признак</span><span class="fa-desc">Одно конкретное число из вектора x. x₁ — первый признак, x₂ — второй и т.д.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов</span><span class="fa-desc">Обучаемые параметры нейрона. wᵢ задаёт, насколько сильно нейрон реагирует на i-й признак.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">wᵢ</span><span class="fa-name">вес i-го признака</span><span class="fa-desc">Коэффициент усиления: большой |wᵢ| → нейрон чувствителен к xᵢ; wᵢ = 0 → признак игнорируется.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">bias (смещение)</span><span class="fa-desc">Скалярная константа, добавляемая к взвешенной сумме. Позволяет нейрону активироваться даже при нулевых входах.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ℝⁿ</span><span class="fa-name">n-мерное пространство</span><span class="fa-desc">Множество всех векторов из n вещественных чисел. Если n=3, то x — точка в 3D-пространстве.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⊤</span><span class="fa-name">транспонирование</span><span class="fa-desc">Превращает строку в столбец (или наоборот). Нужно для корректного перемножения матриц.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула собирает взвешенный сигнал из признаков и превращает его в pre-activation нейрона.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как итоговая оценка из нескольких факторов: важные признаки получают больший вес.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак становится больше, его вклад в линейный score меняется пропорционально весу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> x — «описание» объекта, w — «важность» каждого свойства, b — «базовый порог» нейрона. Нейрон запоминает не сами объекты, а то, на какие признаки реагировать.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как анкета на работу: x = ответы кандидата, w = важность каждого вопроса для нанимателя, b = минимальный балл для прохождения даже без опыта.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x = [2, -1, 0.5] (три признака), w = [0.5, -0.3, 0.8] (три веса), b = 0.1. Размерности совпадают: оба вектора в ℝ³.</div>
     </div>
     <h3>Два шага вычисления</h3>
   <div class="formula">
@@ -202,14 +230,17 @@ canvas { border-radius: 8px; cursor: crosshair; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">pre-activation</span><span class="fa-desc">Результат линейной части: взвешенная сумма входов плюс bias. Это «сырой сигнал» до любой нелинейности.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w⊤x</span><span class="fa-name">скалярное произведение</span><span class="fa-desc">Сумма произведений wᵢxᵢ по всем признакам. Показывает, насколько вход «совпадает» с вектором весов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">bias</span><span class="fa-desc">Добавляется к взвешенной сумме. Сдвигает порог срабатывания нейрона независимо от входа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">выход нейрона</span><span class="fa-desc">Итоговое значение после применения функции активации. Именно это число передаётся в следующий слой.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f</span><span class="fa-name">функция активации</span><span class="fa-desc">Нелинейное преобразование z → y. Примеры: ReLU (max(0,z)), sigmoid (1/(1+e⁻ᶻ)), tanh. Без f сеть — просто линейная функция.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f(z)</span><span class="fa-name">активация</span><span class="fa-desc">Применение f к конкретному числу z. Решает, сколько сигнала «пропустить» дальше по сети.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула собирает взвешенный сигнал из признаков и превращает его в pre-activation нейрона.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как итоговая оценка из нескольких факторов: важные признаки получают больший вес.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак становится больше, его вклад в линейный score меняется пропорционально весу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Шаг 1 (z) — «голосование»: каждый признак вносит вклад пропорционально своему весу. Шаг 2 (y=f(z)) — «решение»: нейрон определяет, насколько сильно реагировать на результат голосования.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Судья на соревновании: z — взвешенная сумма оценок от жюри, f — правило перевода суммы в итоговый балл (например, только баллы выше порога считаются).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,−1,0.5], w=[0.5,−0.3,0.8], b=0.1 → z = 0.5·2 + (−0.3)·(−1) + 0.8·0.5 + 0.1 = 1.0+0.3+0.4+0.1 = 1.8 → y = ReLU(1.8) = 1.8.</div>
     </div>
     <div class="intuition">
     💡 <strong>Почему два шага?</strong> Линейная часть z — это «взвешенное голосование» входов. Функция активации f — это «решение» нейрона что делать с результатом. Без f вся сеть сколлапсировала бы в одну линейную операцию.
@@ -222,16 +253,17 @@ canvas { border-radius: 8px; cursor: crosshair; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w⊤x</span><span class="fa-name">скалярное произведение</span><span class="fa-desc">Результат «умножения» двух векторов, дающий одно число. Показывает, насколько x «похож» на w по направлению.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σᵢ wᵢxᵢ</span><span class="fa-name">покомпонентная сумма</span><span class="fa-desc">Алгебраическое определение скалярного произведения: перемножить каждую пару wᵢ и xᵢ, затем сложить всё.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|w|</span><span class="fa-name">длина (норма) вектора w</span><span class="fa-desc">Евклидова длина вектора весов: √(w₁²+w₂²+...+wₙ²). Отвечает за «чувствительность» нейрона.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|x|</span><span class="fa-name">длина (норма) вектора x</span><span class="fa-desc">Евклидова длина входного вектора. Отвечает за «силу» входного сигнала.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">угол между w и x</span><span class="fa-desc">Угол в n-мерном пространстве между векторами весов и входа. Малый θ → похожи по направлению.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">cos(θ)</span><span class="fa-name">косинус угла</span><span class="fa-desc">Мера сходства направлений: cos(0°)=1 (совпадают), cos(90°)=0 (перпендикулярны), cos(180°)=−1 (противоположны).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Нейрон максимально активируется, когда вход x направлен «туда же», куда смотрит вектор весов w. Dot product = детектор совпадения направлений.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как эхолот: нейрон «настроен» на определённую «волну» (вектор w) и даёт сильный сигнал, когда вход x резонирует с этой волной.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[1,0], x=[1,0] → cos(0°)=1, dot=1 (максимум). w=[1,0], x=[0,1] → cos(90°)=0, dot=0 (нет реакции). w=[1,0], x=[−1,0] → cos(180°)=−1, dot=−1 (противофаза).</div>
     </div>
     <p>Это <strong>косинусное сходство</strong> до нормировки: нейрон сильно активируется, когда вход x похож на вектор весов w (угол θ мал → cos(θ) ≈ 1).</p>
 </div>
@@ -326,14 +358,15 @@ canvas { border-radius: 8px; cursor: crosshair; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">нормаль к гиперплоскости</span><span class="fa-desc">Вектор, перпендикулярный к разделяющей поверхности. Задаёт направление, вдоль которого растёт z. Изменение w — поворот границы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">точка в пространстве признаков</span><span class="fa-desc">Координаты объекта. Уравнение w⊤x + b = 0 задаёт множество всех x, лежащих ровно на границе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">смещение границы</span><span class="fa-desc">Сдвигает гиперплоскость вдоль нормали w. Расстояние от начала координат до плоскости = |b| / |w|.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">= 0</span><span class="fa-name">условие границы</span><span class="fa-desc">Точки с w⊤x + b &gt; 0 — один класс, с w⊤x + b &lt; 0 — другой. Граница — там, где значение ровно 0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула собирает взвешенный сигнал из признаков и превращает его в pre-activation нейрона.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как итоговая оценка из нескольких факторов: важные признаки получают больший вес.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак становится больше, его вклад в линейный score меняется пропорционально весу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это уравнение прямой (в 2D), плоскости (в 3D) или гиперплоскости (в nD). Все точки, куда нейрон реагирует «ни да, ни нет» — лежат на этой поверхности.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пограничная линия на карте: страны по обе стороны — разные классы, сама линия — нейтральная территория (z = 0).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[1,1], b=−2. Граница: x₁+x₂−2=0, то есть прямая x₁+x₂=2. Точка (3,1): z=4−2=2&gt;0 → класс 1. Точка (0,0): z=−2&lt;0 → класс 0.</div>
     </div>
     <div class="grid-2">
     <div>
@@ -392,14 +425,16 @@ canvas { border-radius: 8px; cursor: crosshair; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w⊤x = 0</span><span class="fa-name">граница без bias</span><span class="fa-desc">Вынуждает гиперплоскость проходить через начало координат (0,0,...,0). Нейрон не может сдвинуть порог — это жёсткое ограничение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w⊤x + b = 0</span><span class="fa-name">граница с bias</span><span class="fa-desc">Гиперплоскость может находиться в любом месте пространства. Bias b даёт нейрону свободу выбора базового порога.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b &gt; 0</span><span class="fa-name">положительный bias</span><span class="fa-desc">Сдвигает границу так, что нейрон активируется легче — даже при слабых входах z уже может быть положительным.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b &lt; 0</span><span class="fa-name">отрицательный bias</span><span class="fa-desc">Повышает порог: нейрон активируется только при достаточно сильном входном сигнале.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(0,0)</span><span class="fa-name">начало координат</span><span class="fa-desc">Точка, где все признаки равны нулю. Без bias граница всегда проходит через неё — нейрон не может иметь «базовую активность».</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула собирает взвешенный сигнал из признаков и превращает его в pre-activation нейрона.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как итоговая оценка из нескольких факторов: важные признаки получают больший вес.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак становится больше, его вклад в линейный score меняется пропорционально весу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Bias — это как «константа в уравнении прямой»: без неё прямая y=kx всегда проходит через начало; с ней y=kx+b может лежать где угодно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Будильник без bias звонит только в 0:00. С bias (смещением) можно поставить на любое время — нейрон «просыпается» тогда, когда нужно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[1,0], без bias: граница x₁=0 (вертикаль через ноль). С b=−3: граница x₁=3 (сдвинута вправо на 3). Объект x=[2,5]: без bias → 2&gt;0 (класс 1); с bias → 2−3=−1&lt;0 (класс 0).</div>
     </div>
     <br>
       <div class="intuition" style="font-size:0.88em;">
@@ -546,15 +581,19 @@ print(b.grad)    # tensor(1.) = 1
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∀</span><span class="fa-name">«для любого»</span><span class="fa-desc">Квантор всеобщности. ∀ε>0 означает: «возьми сколь угодно малое ε — теорема всё равно выполняется».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">допустимая погрешность</span><span class="fa-desc">Сколь угодно малое положительное число — точность аппроксимации. Хочешь ε=0.001 или ε=0.000001 — сеть найдётся.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">f</span><span class="fa-name">целевая функция</span><span class="fa-desc">Любая непрерывная функция, которую мы хотим приблизить нейронной сетью. Например, синус, экспонента или сложная кривая.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C([0,1]ⁿ)</span><span class="fa-name">класс непрерывных функций</span><span class="fa-desc">Множество всех непрерывных функций на n-мерном единичном кубе. Непрерывность = нет скачков (нет «телепортаций» значений).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∃</span><span class="fa-name">«существует»</span><span class="fa-desc">Квантор существования. Гарантирует: такая сеть F найдётся — теорема доказывает существование, но не говорит, как её обучить.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F</span><span class="fa-name">нейронная сеть-аппроксиматор</span><span class="fa-desc">Сеть с одним скрытым слоем и достаточным числом нейронов, которая приближает f с нужной точностью.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sup</span><span class="fa-name">супремум (максимум)</span><span class="fa-desc">Наибольшее значение |f(x)−F(x)| по всем возможным x. Это «худший случай» ошибки — даже он меньше ε.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|f(x) − F(x)|</span><span class="fa-name">абсолютная ошибка в точке x</span><span class="fa-desc">Разность между истинным значением f и предсказанием сети F в конкретной точке x. Берём абсолютное значение — нас интересует величина ошибки, не знак.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула собирает взвешенный сигнал из признаков и превращает его в pre-activation нейрона.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как итоговая оценка из нескольких факторов: важные признаки получают больший вес.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак становится больше, его вклад в линейный score меняется пропорционально весу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Теорема говорит: нейронная сеть достаточной ширины может приблизить любую непрерывную функцию как угодно точно. Это оправдывает использование сетей как универсального инструмента — они не ограничены конкретным классом функций.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как аппроксимация кривой кусочками прямых: чем больше отрезков (нейронов), тем точнее. Теорема утверждает, что любую плавную кривую можно приблизить сколь угодно точно, взяв достаточно маленьких отрезков.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Хотим приблизить f(x)=sin(x) на [0,1] с точностью ε=0.01. Теорема гарантирует: существует сеть F с одним скрытым слоем, где max|sin(x)−F(x)|&lt;0.01 для всех x∈[0,1]. Сколько нейронов нужно — теорема не говорит, только существование гарантирует.</div>
     </div>
     <br>
   <div class="intuition">
@@ -934,7 +973,40 @@ print(z)        # [ 0.1   0.35  1.35]
     </div>
   </section>
 
-  <section class="ml-checkpoint-section">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем биологический нейрон отличается от математического перцептрона?</summary>
+      <div class="ml-quiz__a"><p>Биологический нейрон — сложная клетка с дендритами, аксоном и синаптическими механизмами, работающая через спайки. Математический перцептрон — упрощённая модель: взвешенная сумма входов + нелинейная активация. Он улавливает лишь общую идею интеграции сигналов, но не биохимические детали.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему линейный перцептрон без функции активации бесполезен для глубоких сетей?</summary>
+      <div class="ml-quiz__a"><p>Без нелинейности стек линейных слоёв эквивалентен одному линейному слою: W₃(W₂(W₁x)) = Wx. Глубина ничего не даёт. Нелинейные активации (ReLU, sigmoid) позволяют каждому слою извлекать всё более абстрактные признаки, создавая универсальный аппроксиматор.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «мёртвый нейрон» в ReLU-сетях?</summary>
+      <div class="ml-quiz__a"><p>Нейрон «умирает», если его вход всегда отрицателен — ReLU всегда выдаёт 0, а градиент тоже 0, поэтому веса не обновляются. Происходит при слишком большом learning rate или плохой инициализации. Решения: Leaky ReLU, ELU, инициализация He, уменьшение lr.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое universal approximation theorem и о чём он говорит?</summary>
+      <div class="ml-quiz__a"><p>Теорема утверждает: нейросеть с одним скрытым слоем достаточной ширины и нелинейной активацией может аппроксимировать любую непрерывную функцию на компактном множестве с произвольной точностью. Это теоретическое обоснование выразительности нейросетей, но не гарантия эффективного обучения.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
     <h2>Learning checkpoint</h2>
     <ul class="ml-study-practice__questions">
       <li>Что означают \(w\), \(x\), \(b\) и \(z\) в формуле нейрона?</li>
@@ -945,5 +1017,6 @@ print(z)        # [ 0.1   0.35  1.35]
     <p class="ml-study-practice__rubber-duck">Rubber duck: объясни нейрон как систему взвешенных свидетельств для принятия решения.</p>
   </section>
 
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

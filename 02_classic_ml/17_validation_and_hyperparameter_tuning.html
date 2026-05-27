@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/17_validation_and_hyperparameter_tuning.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,67 @@
         Hold-out, cross-validation, stratified split, grid search, random search и leakage в CV.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Модель без правильной валидации — заблуждение, а не модель. Hold-out, k-Fold, Nested CV — правильные методы оценки. Bayesian Optimization эффективнее Grid Search почти всегда.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему нельзя оценивать модель на тренировочных данных</li>
+      <li>k-Fold CV — как работает и почему k = 5 или 10</li>
+      <li>Bias-variance tradeoff при выборе валидационной стратегии</li>
+      <li>Bayesian Optimization vs Grid Search — почему рандом лучше сетки</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Любой классический ML-алгоритм</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Метрики (2.6–2.7)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Зачем вообще нужна валидация</h2>
       <p>
         Если мы оцениваем модель только на тех данных, на которых она обучалась,
@@ -437,14 +496,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Train quality</span><span class="fa-name">метрика на обучающих данных</span><span class="fa-desc">Качество модели, измеренное на тех же данных, на которых она обучалась. Может быть завышено из-за переобучения — модель «знает» train-данные.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">≠</span><span class="fa-name">не равно — generalization gap</span><span class="fa-desc">Разрыв между train quality и реальным качеством на новых данных. Чем больше переобучение, тем шире этот разрыв.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">real generalization quality</span><span class="fa-name">истинное качество на новых данных</span><span class="fa-desc">Качество модели на данных, которые она никогда не видела при обучении. Только это имеет значение на практике — именно это мы хотим оценить через validation/test.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Train quality — это то, что модель помнит. Real generalization quality — то, что она понимает. Validation выявляет этот разрыв до финального теста.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Студент выучил ответы конкретных задач (train quality = 100%), но на экзамене с новыми задачами получил 60% (real generalization). Валидация — это пробный экзамен с другими задачами.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Модель: train accuracy = 99%, validation accuracy = 73% → generalization gap = 26%: явное переобучение. Регуляризация или больше данных сократит этот разрыв.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -491,14 +550,14 @@ Test → final unbiased estimate</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Train → fit parameters</span><span class="fa-name">обучающая выборка — на ней fit параметры модели</span><span class="fa-desc">Данные, на которых алгоритм оптимизирует веса (w, b) или строит деревья. Никакой информации из val/test не должно сюда проникать.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Validation → tune hyperparameters</span><span class="fa-name">валидационная выборка — на ней подбираем λ, k, глубину и т.д.</span><span class="fa-desc">Данные для оценки качества при разных гиперпараметрах и выбора лучшей конфигурации. Validation видит preprocessing fit на train, но сам не обучает модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Test → final unbiased estimate</span><span class="fa-name">тестовая выборка — финальная честная оценка</span><span class="fa-desc">Используется один раз в конце. Не участвует ни в обучении, ни в подборе гиперпараметров. Даёт несмещённую оценку реального качества модели.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Три роли, три части данных. Train — «учебник», Validation — «контрольная», Test — «экзамен». Смешивать нельзя: использовать test для решений = подглядывать в ответы.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Готовишься к ЕГЭ: учишься по учебникам (Train), проверяешь себя по пробным вариантам (Validation), сдаёшь реальный экзамен один раз (Test). Пробные варианты не должны совпадать с реальными.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 10000 объектов: 7000 Train / 1500 Validation / 1500 Test. Ridge регрессия с λ∈{0.01, 0.1, 1, 10}: выбрали λ=0.1 по Validation MSE=2.3. Финальная оценка: Test MSE=2.4.</div>
     </div>
     <div class="info">
             Очень важно не путать роли этих наборов.
@@ -521,14 +580,14 @@ Validation = 20%</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Train = 80%</span><span class="fa-name">обучающая часть — 80% данных</span><span class="fa-desc">На этих данных обучается модель и fit-ится preprocessing. Чем больше train, тем лучше модель выучит паттерны — но тем меньше данных на честную оценку.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Validation = 20%</span><span class="fa-name">валидационная часть — 20% данных</span><span class="fa-desc">Эти данные модель не видела при обучении. Используются для выбора гиперпараметров и сравнения моделей. Типичный диапазон: 10–30%.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">80/20</span><span class="fa-name">типичное соотношение hold-out</span><span class="fa-desc">Чаще всего 70/30 или 80/20. При малом датасете (n&lt;1000) лучше кросс-валидация — каждый объект участвует в обучении и оценке.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Hold-out — самый простой split. Один раз случайно делим датасет. Минус: оценка зависит от случайности разбиения. Плюс: быстро, понятно, подходит для больших выборок.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Разложили колоду карт 80% в учебник, 20% спрятали. Обучились на 80%, проверили на 20%. Если разбить по-другому — оценка изменится. Для стабильности лучше кросс-валидация.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=1000: Train=800, Validation=200. Train accuracy=95%, Val accuracy=87% → небольшое переобучение. При другом random_state можно получить Val=84% — оценка нестабильна, лучше 5-fold CV.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -639,10 +698,10 @@ Validation = 20%</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">валидационная часть</span><span class="fa-desc">Один из разбиений в cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число фолдов</span><span class="fa-desc">Сколько частей делится выборка. Обычно 5 или 10. Каждый фолд по одному разу служит validation; остальные K-1 — train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">фолд — одна из K частей выборки</span><span class="fa-desc">Равный по размеру кусок данных. На каждой итерации один фолд = validation, K-1 фолдов = train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества на validation</span><span class="fa-desc">Значение метрики (accuracy, F1, RMSE и т.д.) на validation-фолде. Итоговая оценка = среднее score по всем K фолдам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K-1</span><span class="fa-name">размер train при одном validation фолде</span><span class="fa-desc">На каждой итерации модель обучается на K-1 фолдах. Чем больше K, тем больше данных на обучение, но больше вычислений.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
@@ -766,14 +825,14 @@ Validation = 20%</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">валидационная часть</span><span class="fa-desc">Один из разбиений в cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">доля классов</span><span class="fa-name">пропорция каждого класса в части датасета</span><span class="fa-desc">Например, если исходный датасет содержит 10% positives, то и train, и validation, и каждый fold должны содержать ~10% positives — не больше и не меньше.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">train / validation / folds</span><span class="fa-name">части датасета при split</span><span class="fa-desc">Все части должны сохранять исходное соотношение классов. Stratified split делает это автоматически — StratifiedKFold в sklearn.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">исходный датасет</span><span class="fa-name">эталон пропорций</span><span class="fa-desc">Доли классов в полном датасете — то, что stratification пытается сохранить в каждой части. Без stratification при редком классе один fold может получить 0 positives.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Случайный split может случайно «перекосить» классы. Stratification гарантирует: если в датасете 5% positives, то и в каждом fold будет ~5% positives. Это делает оценку на каждом fold честной.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Делим колоду 52 карт на 5 частей. Без stratification одна часть может получить 4 туза, другая — 0. Stratification гарантирует: в каждой части примерно одна карта каждого ранга.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 объектов: 950 класс 0, 50 класс 1 (5%). 5-fold без stratification: один fold может иметь 0 positives. 5-fold stratified: каждый fold ≈ 10 positives (5%). F1 на fold с 0 positives = 0 — ложная оценка.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -842,16 +901,15 @@ gamma ∈ {0.01, 0.1, 1}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">параметр регуляризации SVM</span><span class="fa-desc">Баланс между шириной margin и числом допустимых нарушений. Большой C → жёсткий margin, мало ошибок на train. Маленький C → мягкий широкий margin.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">gamma</span><span class="fa-name">ширина RBF-kernel</span><span class="fa-desc">Скорость убывания влияния обучающего примера с расстоянием. Большая gamma → узкий гауссиан → сложная граница, риск переобучения. Маленькая → гладкая.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">3 × 3 = 9</span><span class="fa-name">число комбинаций в сетке</span><span class="fa-desc">|C| × |gamma| = 3 × 3 = 9 комбинаций. Для каждой — запускается CV. Grid search проверяет все 9.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∈ {0.1, 1, 10}</span><span class="fa-name">дискретная сетка значений</span><span class="fa-desc">Набор значений гиперпараметра для перебора. Обычно логарифмически равномерная сетка — охватывает несколько порядков величины.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Grid search — полный перебор декартова произведения сеток всех гиперпараметров. Для 3 значений C и 3 значений gamma — 9 комбинаций, каждая оценивается по CV.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как выбор кофе и молока в кофемашине: 3 вида кофе × 3 вида молока = 9 вариантов. Grid search пробует все, выбирает самый вкусный по validation.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> C∈{0.1,1,10}, gamma∈{0.01,0.1,1}, 5-fold CV. Итого 9×5=45 обучений. Лучшая комбинация C=1, gamma=0.1 выбирается по среднему CV-score.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -908,14 +966,14 @@ Random search:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Grid search</span><span class="fa-name">полный перебор декартова произведения сеток</span><span class="fa-desc">Для каждого гиперпараметра задаётся список значений. Grid search проверяет все комбинации: |сетка₁| × |сетка₂| × ... Детерминированно, исчерпывающе, дорого.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Random search</span><span class="fa-name">случайная выборка из пространства гиперпараметров</span><span class="fa-desc">Вместо перебора сетки — случайные точки из заданных диапазонов (в том числе непрерывных). n_iter попыток. Эффективнее grid при высокой размерности пространства.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">пространство параметров</span><span class="fa-name">множество допустимых значений гиперпараметров</span><span class="fa-desc">Прямое произведение всех диапазонов. Grid search: дискретная сетка. Random search: непрерывные или дискретные диапазоны — выборка распределена равномернее по «важным» осям.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Если важны только 1–2 гиперпараметра из 5, random search найдёт хорошее решение быстрее: он не тратит ресурс равномерно на все оси. Grid search гарантированно проверит все комбинации, но дорого при большой сетке.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Поиск лучшего кофе. Grid search: пробуем каждую зерновую × каждую температуру (25 комбинаций). Random search: случайно пробуем 10 комбинаций — часто находим хорошее решение быстрее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 5 гиперпараметров × 5 значений каждый = 5⁵ = 3125 комбинаций для grid search. Random search с n_iter=50: 50 случайных точек — ~1.6% пространства, но часто достаточно.</div>
     </div>
     </div>
         <div>
@@ -1034,15 +1092,14 @@ fit только на train-part этого fold</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">валидационная часть</span><span class="fa-desc">Один из разбиений в cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">fit на всём датасете до CV</span><span class="fa-name">leakage — статистики val попали в preprocessing</span><span class="fa-desc">Если scaler/imputer/encoder fit-ился на train+val перед CV, он «знает» статистику val. Нормализация val завышена — оценка качества нечестная.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">fit только на train-part этого fold</span><span class="fa-name">правильно — каждый fold независим</span><span class="fa-desc">В каждой итерации CV: scaler fit на K-1 фолдах (train), transform на 1 фолде (val). Val-фолд не участвует в подборе статистик preprocessing.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">scaler / imputer / encoder / PCA</span><span class="fa-name">примеры трансформеров, нуждающихся в fit</span><span class="fa-desc">Каждый из них вычисляет статистики по данным (среднее, медиана, категории, главные компоненты). Эти статистики должны быть вычислены только по train-части fold.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Leakage в CV: если fit preprocessing до split, val-данные «сообщают» свою статистику в preprocessing — модель получила нечестную информацию. Pipeline(preprocessing + model) в sklearn решает это автоматически.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Репетитор готовит вопросы для теста (preprocessing), зная ответы учеников на реальном экзамене. Оценка завышена — тест нечестный. Правильно: вопросы готовятся только по репетиционным ответам.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> StandardScaler fit на train+val: μ учитывает val-выбросы. На val z-score выглядит «нормально». Честный вариант: μ только от train — val с выбросами покажет z>>3, что и нужно увидеть.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -1941,7 +1998,40 @@ random search почти всегда разумнее
     <details><summary>[Hard] Random search vs grid search</summary><p>Почему random search часто эффективнее grid search? <strong>Решение:</strong> если важны не все гиперпараметры, random search быстрее пробует разные значения по действительно важным осям.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-17">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое кросс-валидация и зачем нужно несколько фолдов?</summary>
+      <div class="ml-quiz__a"><p>K-fold CV: данные разбиваются на K фолдов; модель обучается K раз, каждый раз используя K-1 фолдов для обучения и 1 для валидации. Это даёт K оценок качества, среднее которых устойчивее однократного разбиения. Обычно K=5 или K=10.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем GridSearch отличается от RandomSearch при подборе гиперпараметров?</summary>
+      <div class="ml-quiz__a"><p>GridSearch перебирает все комбинации заданных значений — гарантирует нахождение лучшей точки в сетке, но экспоненциально дорог. RandomSearch сэмплирует n случайных комбинаций — при том же бюджете покрывает больше пространства гиперпараметров и чаще находит хорошие значения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое утечка данных через validation set при многократном подборе гиперпараметров?</summary>
+      <div class="ml-quiz__a"><p>Если использовать один и тот же валидационный набор для выбора из сотен гиперпараметров, финальный результат будет завышен: мы случайно подобрали гиперпараметры, которые хорошо работают именно на этом val. Нужно иметь отдельный holdout test set, который не трогают до финальной оценки.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Bayesian Optimization для гиперпараметров?</summary>
+      <div class="ml-quiz__a"><p>Bayesian Optimization строит суррогатную модель (обычно Gaussian Process) для функции качества от гиперпараметров и выбирает следующую точку для проверки с балансом exploitation/exploration (acquisition function). Намного эффективнее RandomSearch при дорогих вычислениях.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-17">
     <h2>Checkpoint: 2.17 Validation / HPO</h2>
     <ul>
       <li>Чем validation отличается от test?</li>
@@ -1951,5 +2041,6 @@ random search почти всегда разумнее
       <li>Rubber duck: объясни validation как экзамен, к которому модель не должна заранее видеть ответы.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

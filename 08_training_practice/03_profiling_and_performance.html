@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/03_profiling_and_performance.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training-practice">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>8.3 Profiling and Performance</h1>
       <p class="muted">Performance tuning начинается не с догадок, а с измерений. Нужно понять, где уходит время: загрузка данных, CPU preprocessing, transfer на GPU, forward, backward, optimizer или distributed communication.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Медленный тренировочный код = дорогое облако. Профилирование PyTorch, bottleneck analysis, MFU (Model FLOPs Utilization) — инструменты, которые позволяют выжать максимум из железа.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>GPU vs CPU bottleneck — как отличить и что делать</li>
+      <li>PyTorch Profiler — как читать flame graph и находить узкие места</li>
+      <li>MFU — что значит 50% utilization и как его улучшить</li>
+      <li>DataLoader оптимизация — num_workers, prefetch, pin_memory</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Mixed precision (4.7)</li>
+      <li>Distributed training (8.1)</li>
+      <li>Основы GPU архитектуры</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Главная формула step time</h2>
@@ -108,7 +132,40 @@ with profile(
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое GPU utilization и как его повысить?</summary>
+      <div class="ml-quiz__a"><p>GPU utilization — процент времени, когда GPU активно выполняет вычисления (nvidia-smi показывает %). Низкий utilization: CPU bottleneck (медленная загрузка данных), слишком маленький batch. Повышают через num_workers в DataLoader, prefetching данных, pin_memory=True, persistent_workers=True.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое PyTorch Profiler и какие метрики он предоставляет?</summary>
+      <div class="ml-quiz__a"><p>PyTorch Profiler (torch.profiler) измеряет время выполнения каждой операции, потребление памяти и CUDA events. Показывает: какие операции самые медленные, накладные расходы на DataLoader, overhead Python интерпретатора. TensorBoard visualizer строит flame graph и timeline.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему torch.compile() (PyTorch 2.0) ускоряет обучение?</summary>
+      <div class="ml-quiz__a"><p>torch.compile() использует TorchDynamo для захвата вычислительного графа и Triton/XLA для его компиляции. Устраняет Python overhead, применяет kernel fusion (несколько операций в одно CUDA ядро), оптимизирует memory layout. Обычно даёт 30-80% ускорение без изменения кода.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое memory bandwidth vs compute bottleneck и как их различить?</summary>
+      <div class="ml-quiz__a"><p>Compute-bound: GPU постоянно занят вычислениями, увеличение batch размера не помогает. Memory-bound: GPU ждёт данные из памяти (много маленьких операций, attention). Диагностика: Arithmetic Intensity = FLOPs/bytes. Если AI < machine threshold — memory bound. Fusion помогает при memory bound.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -124,5 +181,47 @@ with profile(
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="\text{throughput} = \frac{\text{samples or tokens}}{\text{time}}">throughput = samples or tokens / time</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">throughput</span><span class="fa-name">скорость обработки</span><span class="fa-desc">сколько samples или tokens система обрабатывает за единицу времени.</span></div><div class="formula-anatomy__row"><span class="fa-sym">samples or tokens</span><span class="fa-name">объём работы</span><span class="fa-desc">единица полезной нагрузки для training или inference.</span></div><div class="formula-anatomy__row"><span class="fa-sym">time</span><span class="fa-name">время</span><span class="fa-desc">реальное wall-clock время, включая data loading, kernels и синхронизации.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> profiling нужен, чтобы понять, где именно тратится время, а не просто увидеть медленный run.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если 4096 tokens обрабатываются за 0.5 секунды, throughput равен 8192 tokens/sec.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Профилирование и производительность</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Профилируй перед оптимизацией — 80% времени часто в 20% операций.</li>
+        <li>Смотри на GPU utilization в nvidia-smi: если < 80% — есть bottleneck.</li>
+        <li>torch.compile() — простейший первый шаг оптимизации без изменения кода.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Оптимизировать случайные места без профилировщика — «premature optimization».</li>
+        <li>Игнорировать DataLoader как bottleneck — медленная загрузка данных частая причина.</li>
+        <li>Сравнивать throughput без фиксации hardware, precision и batch size.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>num_workers в DataLoader: обычно 4-8 на GPU.</li>
+        <li>pin_memory=True и prefetch_factor — улучшают CPU→GPU transfer.</li>
+        <li>batch_size: больше = эффективнее использование GPU, но ограничено памятью.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="08_training_practice/01_distributed_training.html">← 8.1 Distributed</a></li>
+        <li><a href="04_training/07_mixed_precision_training.html">← 4.7 Mixed Precision</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

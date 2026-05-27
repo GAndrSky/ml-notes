@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/01_neural_net_from_scratch.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="projects">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -253,7 +253,40 @@ for step in range(1000):
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что нужно реализовать, чтобы написать нейросеть с нуля?</summary>
+      <div class="ml-quiz__a"><p>Минимум: (1) Forward pass — матричные умножения + активации, (2) Loss function — MSE или CrossEntropy, (3) Backward pass — цепное правило для градиентов через все слои, (4) Optimizer step — SGD: w -= lr * dL/dw. Опционально: батчи, BatchNorm, Conv2d.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как проверить правильность реализации backward pass?</summary>
+      <div class="ml-quiz__a"><p>Gradient check: аналитический градиент сравнивают с численным (f(w+ε) - f(w-ε)) / 2ε для каждого параметра. Если разница < 1e-5 — реализация верна. PyTorch gradcheck делает это автоматически. Также проверяют: loss убывает при обучении на маленьком датасете.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему важно добиться overfit на маленьком датасете как первый тест?</summary>
+      <div class="ml-quiz__a"><p>Если модель не может запомнить 10 примеров — есть баг в forward pass, backward pass или оптимизаторе. Только после успешного overfit стоит добавлять регуляризацию. Это стандартный debugging workflow: сначала убедись в правильности кода, потом добивайся обобщения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое computational graph (вычислительный граф) и зачем он строится?</summary>
+      <div class="ml-quiz__a"><p>Вычислительный граф — DAG, где узлы — операции, рёбра — тензоры. При forward pass строится граф; при backward — по нему передаются градиенты в обратном порядке. PyTorch строит граф динамически (eager mode), что упрощает дебаггинг; JAX компилирует статический граф.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you write the full forward and backward pass without looking?</li>
@@ -272,9 +305,74 @@ for step in range(1000):
       </div>
     </section>
   </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Реализация нейросети с нуля закрепляет понимание backpropagation, инициализации и оптимизации — без этого остальные разделы курса остаются абстракцией.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Написать forward и backward pass для MLP</li>
+          <li>Реализовать градиентный спуск и проверить через gradient check</li>
+          <li>Обучить модель и добиться overfit на маленьком датасете</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>Backpropagation (4.1)</li>
+          <li>Функции потерь (3.4)</li>
+          <li>NumPy основы</li>
+    </ul>
+  </div>
+</div>
+
 
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Нейросеть с нуля</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Этот проект — лучший способ убедиться, что ты понимаешь backpropagation по-настоящему.</li>
+        <li>Начинай с XOR задачи (нелинейная), потом MNIST — проверяй каждый шаг.</li>
+        <li>Gradient check обязателен: сравни численный градиент с аналитическим.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не делать gradient check перед масштабированием — ошибки в backward проявятся позже.</li>
+        <li>Инициализировать все веса нулями — симметрия, сеть не учится.</li>
+        <li>Не нормализовать входные данные — обучение будет нестабильным.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Learning rate — критический параметр: 0.01-0.1 для простых сетей.</li>
+        <li>Число слоёв и нейронов в скрытых слоях.</li>
+        <li>Функция активации: ReLU стандарт, sigmoid для выхода бинарной классификации.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="../04_training/01_backpropagation.html">← 4.1 Backpropagation</a></li>
+        <li><a href="../03_neural_basics/03_forward_pass.html">← 3.3 Forward Pass</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -52,7 +52,7 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/05_learning_rate_scheduling.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -68,6 +68,30 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
       <h1>4.5 Learning Rate Scheduling</h1>
       <p class="muted">Warmup, cosine annealing, OneCycleLR и почему график learning rate часто влияет не меньше, чем выбор оптимизатора</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Постоянная скорость обучения — субоптимальна почти всегда. Warmup → cosine decay — стандарт обучения трансформеров. Правильный schedule может сделать разницу между «сошлась» и «взорвалась».</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Зачем нужен warmup и что происходит без него в начале обучения</li>
+      <li>Cosine annealing, step decay, polynomial decay — математика и выбор</li>
+      <li>Noam schedule из «Attention Is All You Need» — формула и смысл</li>
+      <li>OneCycleLR — как ускорить обучение за один цикл</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Оптимизаторы (4.2)</li>
+      <li>Adam (4.3)</li>
+      <li>Понятие training и validation curves</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="card">
   <h2>🎯 Почему одного фиксированного lr часто недостаточно</h2>
@@ -76,16 +100,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">learning rate на шаге t</span><span class="fa-desc">размер update именно в текущий момент обучения, а не постоянная величина.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">номер шага</span><span class="fa-desc">итерация optimizer-а; scheduler меняет η в зависимости от этого шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η_max / η_min / η_0</span><span class="fa-name">границы schedule</span><span class="fa-desc">верхний, нижний или стартовый learning rate, задающие амплитуду изменения.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">T / T_warmup / s</span><span class="fa-name">длительность фазы</span><span class="fa-desc">сколько шагов занимает warmup, cosine cycle или один step decay interval.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление update; scheduler масштабирует этот шаг через η_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_{t+1}</span><span class="fa-name">обновлённый параметр</span><span class="fa-desc">Значение после шага. Scheduler не меняет правило обновления — только масштаб η_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">текущий параметр</span><span class="fa-desc">Значение до обновления на шаге t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">lr на шаге t</span><span class="fa-desc">Вычисляется по расписанию (warmup, cosine, step). Меняется каждый шаг — в этом суть scheduler.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент на шаге t</span><span class="fa-desc">∂L/∂θ на текущем батче. Scheduler масштабирует шаг η_t·g_t, но не меняет направление g_t.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> scheduler управляет не направлением движения, а длиной шага в разные фазы обучения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как педаль газа: сначала осторожный разгон, потом быстрый ход, в конце плавное торможение.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при warmup на 1000 шагов и η_max=1e-3 на шаге 250 получаем η_t=2.5e-4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Scheduler управляет только размером шага η_t, не направлением g_t. Большой η в середине — быстрое движение по loss surface; малый в конце — «шлифовка» у минимума.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> g_t=0.5, θ_t=2.0. Постоянный η=1e-3: θ=1.9995. С cosine: в начале η_t≈η_max=1e-3; в середине η_t≈0.5e-3; в конце η_t≈η_min=1e-5 — шаг в 100× меньше.</div>
     </div>
     <div class="grid-3">
     <div class="info">
@@ -175,16 +197,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">learning rate на шаге t</span><span class="fa-desc">размер update именно в текущий момент обучения, а не постоянная величина.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">номер шага</span><span class="fa-desc">итерация optimizer-а; scheduler меняет η в зависимости от этого шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η_max / η_min / η_0</span><span class="fa-name">границы schedule</span><span class="fa-desc">верхний, нижний или стартовый learning rate, задающие амплитуду изменения.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">T / T_warmup / s</span><span class="fa-name">длительность фазы</span><span class="fa-desc">сколько шагов занимает warmup, cosine cycle или один step decay interval.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление update; scheduler масштабирует этот шаг через η_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">текущий lr</span><span class="fa-desc">Растёт линейно от 0 до η_max за T_warmup шагов. На шаге t: η_max · t/T_warmup.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_max</span><span class="fa-name">пиковый lr</span><span class="fa-desc">Целевое значение lr, которое достигается в конце warmup. После этого вступает в силу основной scheduler (cosine и т.д.).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">текущий шаг</span><span class="fa-desc">Номер итерации от 0 до T_warmup. Отношение t/T_warmup даёт линейный прогресс 0→1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T_warmup</span><span class="fa-name">длина warmup</span><span class="fa-desc">Число шагов линейного разгона. Типично 5–10% от T_total. Даёт оптимизатору время накопить статистики.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> scheduler управляет не направлением движения, а длиной шага в разные фазы обучения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как педаль газа: сначала осторожный разгон, потом быстрый ход, в конце плавное торможение.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при warmup на 1000 шагов и η_max=1e-3 на шаге 250 получаем η_t=2.5e-4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> На первых шагах Adam ещё не накопил надёжные моменты m_t и v_t — большой lr даст хаотичные обновления. Warmup удерживает lr малым, пока статистики «прогреваются», затем открывает полный шаг.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η_max=1e-3, T_warmup=1000. t=0: η=0. t=250: η=0.25e-3. t=500: η=0.5e-3. t=1000: η=1e-3 (пик достигнут, warmup закончен).</div>
     </div>
     <p>Особенно важен для Transformer и больших batch. Убирает слишком резкий старт, пока статистики оптимизатора ещё сырые.</p>
     </div>
@@ -194,16 +214,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">learning rate на шаге t</span><span class="fa-desc">размер update именно в текущий момент обучения, а не постоянная величина.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">номер шага</span><span class="fa-desc">итерация optimizer-а; scheduler меняет η в зависимости от этого шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η_max / η_min / η_0</span><span class="fa-name">границы schedule</span><span class="fa-desc">верхний, нижний или стартовый learning rate, задающие амплитуду изменения.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">T / T_warmup / s</span><span class="fa-name">длительность фазы</span><span class="fa-desc">сколько шагов занимает warmup, cosine cycle или один step decay interval.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление update; scheduler масштабирует этот шаг через η_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_min</span><span class="fa-name">нижняя граница lr</span><span class="fa-desc">Минимальный lr в конце цикла. Часто = 0 или 1e-5. Задаёт «пол» — ниже которого lr не опускается.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_max</span><span class="fa-name">верхняя граница lr</span><span class="fa-desc">Пиковый lr в начале цикла (= η_max после warmup). Задаёт «потолок» расписания.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">cos(πt/T)</span><span class="fa-name">косинусный множитель</span><span class="fa-desc">При t=0: cos(0)=+1 → η_t=η_max. При t=T: cos(π)=−1 → η_t=η_min. Плавное убывание без скачков.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">длина цикла</span><span class="fa-desc">Общее число шагов расписания. В CosineAnnealingWarmRestarts: T — длина одного цикла до перезапуска.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> scheduler управляет не направлением движения, а длиной шага в разные фазы обучения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как педаль газа: сначала осторожный разгон, потом быстрый ход, в конце плавное торможение.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при warmup на 1000 шагов и η_max=1e-3 на шаге 250 получаем η_t=2.5e-4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Cosine плавно снижает lr от η_max до η_min по форме полукосинуса. Нет резких скачков, lr убывает медленно вначале и ускоряется в середине — хорошо согласуется с типичной формой loss surface.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η_max=1e-3, η_min=0, T=1000. t=0: η=1e-3. t=250: cos(π/4)≈0.707 → η=0.5e-3·(1+0.707)≈0.854e-3. t=500: cos(π/2)=0 → η=0.5e-3. t=1000: cos(π)=−1 → η=0.</div>
     </div>
     <p>Даёт мягкое затухание без резких скачков. Хорошо работает как стандартный “безопасный” scheduler.</p>
     </div>
@@ -213,16 +231,14 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">learning rate на шаге t</span><span class="fa-desc">размер update именно в текущий момент обучения, а не постоянная величина.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">номер шага</span><span class="fa-desc">итерация optimizer-а; scheduler меняет η в зависимости от этого шага.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η_max / η_min / η_0</span><span class="fa-name">границы schedule</span><span class="fa-desc">верхний, нижний или стартовый learning rate, задающие амплитуду изменения.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">T / T_warmup / s</span><span class="fa-name">длительность фазы</span><span class="fa-desc">сколько шагов занимает warmup, cosine cycle или один step decay interval.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление update; scheduler масштабирует этот шаг через η_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η₀</span><span class="fa-name">начальный lr</span><span class="fa-desc">Стартовое значение lr. Каждые s шагов умножается на γ: η₀, η₀γ, η₀γ², ...</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">коэффициент затухания</span><span class="fa-desc">Типично 0.1 или 0.5. При γ=0.1 lr падает в 10× каждые s шагов — резкий скачок вниз.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">⌊t/s⌋</span><span class="fa-name">число завершённых интервалов</span><span class="fa-desc">Целая часть от деления t на s. Внутри каждого интервала lr постоянен — отсюда «ступенчатость».</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">s</span><span class="fa-name">длина интервала</span><span class="fa-desc">Число шагов между «ступеньками». При s=30 epochs и γ=0.1: стандартный ResNet schedule.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> scheduler управляет не направлением движения, а длиной шага в разные фазы обучения.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как педаль газа: сначала осторожный разгон, потом быстрый ход, в конце плавное торможение.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при warmup на 1000 шагов и η_max=1e-3 на шаге 250 получаем η_t=2.5e-4.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> lr держится постоянным s шагов, затем резко падает в γ раз. Простой и предсказуемый — исторически стандарт для CNN (ResNet: γ=0.1 каждые 30 эпох). Cosine плавнее и часто лучше для больших моделей.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η₀=0.1, γ=0.1, s=30. t=0..29: η=0.1. t=30..59: η=0.01. t=60..89: η=0.001. t=90: η=0.0001 — за 3 «ступеньки» lr упал в 1000×.</div>
     </div>
     <p>Простой и понятный. Хорош в классических CNN-режимах, но грубее, чем cosine.</p>
     </div>
@@ -599,7 +615,40 @@ print([round(lr_at(s), 8) for s in [0, 10, 99, 100, 500, 999]])
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое warmup в learning rate schedule и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Warmup — постепенное увеличение lr с нуля до целевого значения в течение первых N шагов. В начале обучения веса далеки от оптимума и градиенты нестабильны; большой lr может вызвать расходимость. Warmup стабилизирует обучение, особенно критично для трансформеров.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как cosine annealing отличается от step decay?</summary>
+      <div class="ml-quiz__a"><p>Step decay резко уменьшает lr через равные интервалы (×0.1 каждые 30 эпох) — есть резкие скачки. Cosine annealing плавно снижает lr по косинусной кривой: lr_t = lr_min + 0.5(lr_max - lr_min)(1 + cos(πt/T)). Более плавный переход — лучшее обобщение.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Cyclical Learning Rates (CLR) и зачем они нужны?</summary>
+      <div class="ml-quiz__a"><p>CLR циклически меняет lr между min и max значениями (треугольный цикл). Это помогает выбираться из острых минимумов (высокий lr) и находить широкие минимумы с лучшей генерализацией (низкий lr). Также снижает необходимость точного подбора фиксированного lr.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как найти оптимальный learning rate с помощью lr range test?</summary>
+      <div class="ml-quiz__a"><p>Lr range test (fastai): запустить обучение с экспоненциально нарастающим lr (от 1e-7 до 10) на одну эпоху и построить loss vs lr. Оптимальный lr — чуть левее минимума потерь, в зоне наибольшего снижения. Это быстро даёт хорошую отправную точку.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -674,5 +723,6 @@ print([round(lr_at(s), 8) for s in [0, 10, 99, 100, 500, 999]])
 </div>
 
 <script src="../bundle.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

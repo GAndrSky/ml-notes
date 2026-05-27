@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/08_dpo_alignment_alternatives.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -25,6 +25,30 @@
       <h1>6.8 DPO and Alignment Alternatives</h1>
       <p class="muted">DPO is a preference-optimization method that fine-tunes a language model directly from chosen/rejected answer pairs. It removes the explicit reward model and PPO loop used in classic RLHF, but it does not remove the hard parts of preference data, evaluation, and safety.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>DPO упрощает RLHF: вместо отдельной reward model оптимизируется LLM напрямую на предпочтениях. Меньше компонент, нет RL, сопоставимое качество — революционная идея 2023 года.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как DPO выводится из RLHF через closed-form reward</li>
+      <li>Loss DPO: разница log-ratio для выбранного и отвергнутого ответов</li>
+      <li>ORPO и SimPO — дальнейшие упрощения без reference model</li>
+      <li>Когда DPO лучше или хуже PPO по качеству выравнивания</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>RLHF (6.4)</li>
+      <li>Instruction tuning (6.3)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -265,7 +289,40 @@ assert all(field in example for field in required_fields)
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как DPO отличается от RLHF и в чём его ключевое упрощение?</summary>
+      <div class="ml-quiz__a"><p>RLHF требует отдельной reward model и нестабильного PPO. DPO напрямую обучает LLM на предпочтениях: loss = -log σ(β·[log π(y_w)/π_ref(y_w) - log π(y_l)/π_ref(y_l)]), где y_w — лучший ответ, y_l — худший. Нет RL, нет reward model — только supervised обучение на парах.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое отрицательный сдвиг в DPO и почему он может быть проблемой?</summary>
+      <div class="ml-quiz__a"><p>DPO может «деградировать» предпочтительный ответ, если он похож на нежелательный. Loss снижает вероятность y_l, но при этом может занизить и вероятность y_w, если β слишком мал. RLHF с KL-ограничением явно защищает от этого; IPO и другие варианты DPO исправляют эту проблему.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое RLAIF (RL from AI Feedback) и для чего используется?</summary>
+      <div class="ml-quiz__a"><p>RLAIF использует LLM (обычно мощную модель вроде Claude/GPT-4) в качестве «судьи» вместо человека для оценки ответов. Это масштабируется лучше, дешевле и позволяет создать reward model без краудсорсинга. Constitutional AI от Anthropic — пример RLAIF.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое reward hacking и как от него защититься?</summary>
+      <div class="ml-quiz__a"><p>Reward hacking: модель находит способы получить высокое вознаграждение, не совпадающее с желаемым поведением (например, длинные ответы → высокая reward, но не полезные). Защита: KL-ограничение (не уходить далеко от SFT), diverse reward signals, периодическое обновление reward model.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain DPO vs PPO-RLHF without buzzwords?</li>
@@ -288,5 +345,47 @@ assert all(field in example for field in required_fields)
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: DPO и альтернативы выравниванию</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>DPO — первый выбор для alignment при наличии preference данных: проще RLHF, сопоставимое качество.</li>
+        <li>Начинай с β=0.1 и смотри на KL divergence от SFT — не должен быть слишком большим.</li>
+        <li>Проверяй качество preference data: плохие пары ухудшают модель хуже отсутствия данных.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Использовать низкое качество preference пар — «chosen» должен быть явно лучше «rejected».</li>
+        <li>Ставить слишком большой β — модель почти не меняется относительно SFT.</li>
+        <li>Не проверять деградацию базовых бенчмарков после DPO.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>β (strength) в DPO — основная ручка: 0.01–0.5 типичные значения.</li>
+        <li>Learning rate при DPO обычно ниже, чем при SFT (1e-6 – 5e-6).</li>
+        <li>Число эпох: 1-3, переобучение при DPO происходит быстро.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="06_llm/04_rlhf.html">← 6.4 RLHF</a></li>
+        <li><a href="06_llm/03_instruction_tuning.html">← 6.3 Instruction Tuning</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,13 +12,37 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/04_ml_system_design_patterns.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="mlops">
   <div class="page">
     <div class="hero">
       <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.3 Docker</span><span class="tag active">9.4 ML System Design</span><span class="tag">9.5 Interview</span></div>
       <h1>9.4 ML System Design Patterns</h1>
       <p class="muted">ML system design — это не “какую модель выбрать”, а как построить систему вокруг модели: данные, признаки, обучение, serving, monitoring, rollback и бизнес-метрики.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>ML в продакшне — это не только модель. Feature Store, Shadow Mode, A/B testing, Canary deployment — паттерны, которые отделяют proof of concept от надёжного сервиса.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Feature Store — зачем хранить признаки отдельно от модели</li>
+      <li>Shadow mode — как тестировать новую модель без риска для пользователей</li>
+      <li>Online vs Offline inference — компромиссы и архитектурные паттерны</li>
+      <li>Model drift monitoring — как детектировать деградацию качества</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Model Serving (9.2)</li>
+      <li>Docker (9.3)</li>
+      <li>Experiment tracking (9.1)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Базовая схема production ML</h2>
@@ -70,7 +94,40 @@
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое training-serving skew и как его предотвратить?</summary>
+      <div class="ml-quiz__a"><p>Training-serving skew: разные преобразования признаков при обучении и inference (разный preprocessing, разные версии библиотек). Модель ухудшается в production. Решение: единый feature transformation код (pipeline), feature store, мониторинг распределения признаков в production.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое shadow mode deployment и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Shadow mode: новая модель запускается параллельно со старой, получает те же запросы, но её ответы не используются пользователями. Это позволяет безопасно оценить новую модель на реальном трафике без риска. Сравниваем метрики offline и online перед полным переключением.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое A/B тестирование в контексте ML-моделей?</summary>
+      <div class="ml-quiz__a"><p>A/B тест: случайно делим трафик — 50% видят модель A (baseline), 50% — модель B (новая). Измеряем бизнес-метрики (CTR, конверсию) и ML-метрики (точность, latency). Нужна статистически значимая разница. Длительность: обычно 1-2 недели для снижения variance.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое model monitoring и какие метрики нужно отслеживать?</summary>
+      <div class="ml-quiz__a"><p>Мониторинг включает: (1) drift — изменение распределения входных признаков (data drift) и предсказаний (concept drift), (2) производительность (latency, error rate), (3) качество модели (если есть ground truth labels с задержкой). Triton, Evidently, Arize — инструменты для мониторинга.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -86,5 +143,47 @@
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="mlops-9-4-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>business value = model quality - latency cost - ops complexity</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">model quality</span><span class="fa-name">качество модели</span><span class="fa-desc">accuracy, ranking quality, calibration или другая core metric.</span></div><div class="formula-anatomy__row"><span class="fa-sym">latency cost</span><span class="fa-name">цена задержки</span><span class="fa-desc">просадка UX, conversion или SLA из-за медленной системы.</span></div><div class="formula-anatomy__row"><span class="fa-sym">ops complexity</span><span class="fa-name">операционная сложность</span><span class="fa-desc">стоимость поддержки features, pipelines, serving и monitoring.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> в system design лучшая offline-модель не всегда даёт лучший продуктовый результат.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если quality чуть лучше, но latency растёт в 3 раза и стоимость сервинга удваивается, система может стать хуже для бизнеса.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Паттерны проектирования ML-систем</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Feature store — инвестируй в него при работе с несколькими моделями в production.</li>
+        <li>Shadow mode перед A/B тестом — проверь новую модель без риска.</li>
+        <li>Мониторинг drift — обязателен для любой production модели.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не разделять training pipeline и serving pipeline — training-serving skew.</li>
+        <li>Пропускать shadow mode и переходить сразу к A/B тесту.</li>
+        <li>Игнорировать latency SLO при выборе архитектуры модели.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Confidence threshold для human-in-the-loop сценариев.</li>
+        <li>Canary rollout percentage: 1% → 5% → 25% → 100%.</li>
+        <li>Alert threshold для data drift: обычно PSI > 0.2 — проблема.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="09_mlops_deployment/02_model_serving.html">← 9.2 Serving</a></li>
+        <li><a href="09_mlops_deployment/01_experiment_tracking.html">← 9.1 Tracking</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

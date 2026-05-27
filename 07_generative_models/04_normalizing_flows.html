@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/04_normalizing_flows.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="generative">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -25,6 +25,30 @@
       <h1>7.4 Normalizing Flows</h1>
       <p class="muted">A normalizing flow turns a simple distribution into a complex one through a chain of invertible transformations with exact likelihood.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Normalizing flows — единственный класс генеративных моделей с точным likelihood. Invertible transformations позволяют точно вычислить p(x) через change of variables.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Change of variables — как Jacobian трансформирует плотности вероятности</li>
+      <li>Log-likelihood через суммирование log|det J_k| по слоям flow</li>
+      <li>Affine coupling layers (RealNVP) — почему они эффективно обратимы</li>
+      <li>Autoregressive flows (NAF, MAF) — мощность vs скорость</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Линейная алгебра и Jacobian (1.1)</li>
+      <li>VAE (7.1)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="learning-meta">
       <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/01_linear_algebra.html">1.1 Linear Algebra</a>, <a href="../01_math/03_probability_theory.html">1.3 Probability</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a></span></div>
@@ -133,6 +157,81 @@
     </section>
   </main>
   <script src="../bundle.js" defer></script>
-  <section class="ml-checkpoint-section" data-quality-pass="gen-7-4"><h2>Checkpoint: 7.4 Normalizing Flows</h2><ul><li>Почему flow должен быть invertible?</li><li>Зачем нужен Jacobian determinant?</li><li>Чем flow отличается от VAE?</li><li>Почему RealNVP использует coupling layers?</li><li>Rubber duck: объясни normalizing flow как обратимое растягивание простого шума в сложные данные.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое normalizing flow и что делает его «нормализующим»?</summary>
+      <div class="ml-quiz__a"><p>Normalizing flow — цепочка обратимых дифференцируемых преобразований, отображающих простое распределение (N(0,I)) в сложное p(x). «Нормализующий» означает, что вероятность «нормализуется»: по формуле change-of-variables p(x) = p(z)|det(J)|⁻¹, вычисляемой точно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему flows вычисляют точное правдоподобие, тогда как VAE и GAN — нет?</summary>
+      <div class="ml-quiz__a"><p>Flow — биективное отображение, поэтому log p(x) = log p(z) + log|det J| вычисляется точно. VAE оптимизирует ELBO (нижнюю оценку). GAN не имеет явного правдоподобия вовсе. Точное правдоподобие важно для сжатия данных (lossless compression) и аномалии-детекции.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое coupling layers и почему они нужны в Real-NVP?</summary>
+      <div class="ml-quiz__a"><p>Coupling layers разбивают вектор на две части: первая проходит без изменений, вторая трансформируется как функция первой. Якобиан треугольный → det вычисляется за O(d) вместо O(d³). Это делает flows практичными: обратимость + дешёвый det.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какие задачи решают normalizing flows, кроме генерации?</summary>
+      <div class="ml-quiz__a"><p>Flows используются для: (1) точной оценки плотности (outlier detection), (2) variational inference как более гибкий posterior, (3) нейронные ODEs (continuous normalizing flows), (4) сжатия данных (bijective → lossless). В молекулярном моделировании (AlphaFold) — для генерации структур белков.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-4"><h2>Checkpoint: 7.4 Normalizing Flows</h2><ul><li>Почему flow должен быть invertible?</li><li>Зачем нужен Jacobian determinant?</li><li>Чем flow отличается от VAE?</li><li>Почему RealNVP использует coupling layers?</li><li>Rubber duck: объясни normalizing flow как обратимое растягивание простого шума в сложные данные.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Normalizing Flows</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй flows для задач с точной оценкой плотности (anomaly detection, lossless compression).</li>
+        <li>Glow и RealNVP — хорошие базовые архитектуры для старта.</li>
+        <li>Точное log-likelihood — главное преимущество над GAN/VAE для диагностики.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не проверять invertibility численно — ошибки в coupling layers могут нарушить биективность.</li>
+        <li>Игнорировать вычислительную стоимость якобиана при масштабировании.</li>
+        <li>Путать flows с VAE: flows точные, VAE дают нижнюю оценку.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Число coupling layers — глубина модели: больше = выразительнее, дороже.</li>
+        <li>Ширина сетей внутри coupling layers.</li>
+        <li>Тип coupling: additive vs affine — affine мощнее, но менее стабилен.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="07_generative_models/01_variational_autoencoders.html">← 7.1 VAE</a></li>
+        <li><a href="07_generative_models/02_generative_adversarial_networks.html">← 7.2 GAN</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

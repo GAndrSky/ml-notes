@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/08_training_practice/02_gradient_checkpointing.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training-practice">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>8.2 Gradient Checkpointing</h1>
       <p class="muted">Gradient checkpointing экономит память, не сохраняя часть activations во время forward. Во время backward эти activations пересчитываются. Мы платим compute, чтобы купить VRAM.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Полное хранение активаций требует O(L) памяти на L слоёв. Gradient checkpointing хранит только часть, пересчитывая остальные в backward — компромисс память vs вычисления.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему активации занимают больше памяти, чем веса модели</li>
+      <li>Алгоритм checkpointing: какие активации сохранять, какие пересчитывать</li>
+      <li>√L стратегия — оптимальный компромисс памяти и FLOPs</li>
+      <li>Как включить в PyTorch через checkpoint или checkpoint_sequential</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Backpropagation (4.1)</li>
+      <li>Forward pass (3.3)</li>
+      <li>GPU memory basics</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Почему activations занимают память</h2>
@@ -110,7 +134,40 @@ loss.backward()
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как gradient checkpointing экономит память за счёт вычислений?</summary>
+      <div class="ml-quiz__a"><p>Обычно все активации каждого слоя сохраняются для backward pass — это O(depth) памяти. Gradient checkpointing сохраняет только «контрольные точки» каждые k слоёв, а промежуточные активации пересчитывает заново при backward. Компромисс: ~33% больше вычислений, но √depth меньше памяти.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">При каком сценарии gradient checkpointing наиболее полезен?</summary>
+      <div class="ml-quiz__a"><p>При обучении очень глубоких моделей с ограниченной GPU памятью: трансформеры с 32-96 слоями на GPU 24-40GB. Также полезен при больших sequence length (долгие последовательности = большие активации). В PyTorch: torch.utils.checkpoint.checkpoint(fn, *inputs).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое activation offloading и чем он отличается от gradient checkpointing?</summary>
+      <div class="ml-quiz__a"><p>Activation offloading перемещает активации с GPU в CPU RAM (или SSD) вместо пересчёта. Это медленнее по пропускной способности шины CPU-GPU, но не увеличивает compute. Gradient checkpointing быстрее при достаточной вычислительной мощности; offloading лучше при критическом дефиците вычислений.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как DeepSpeed реализует CPU offloading для оптимизатора?</summary>
+      <div class="ml-quiz__a"><p>DeepSpeed ZeRO-Offload перемещает состояния оптимизатора (fp32 копия весов + Adam моменты) в CPU RAM. Это 3× размер модели в fp32. Обновление параметров происходит на CPU, что медленно, но позволяет обучать модели, которые иначе не помещаются в GPU. Обычно используется как крайняя мера.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -126,5 +183,47 @@ loss.backward()
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-2-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>peak memory ≈ saved activations + parameters + optimizer state</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">saved activations</span><span class="fa-name">сохранённые активации</span><span class="fa-desc">тензоры forward pass, которые нужны для backward.</span></div><div class="formula-anatomy__row"><span class="fa-sym">parameters</span><span class="fa-name">веса модели</span><span class="fa-desc">постоянная память под trainable parameters.</span></div><div class="formula-anatomy__row"><span class="fa-sym">optimizer state</span><span class="fa-name">состояние optimizer-а</span><span class="fa-desc">например moments Adam, часто сравнимые по размеру с весами.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> checkpointing экономит память, уменьшая число активаций, которые хранятся между forward и backward.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если убрать половину сохранённых activation tensors, peak memory может заметно упасть ценой повторного forward compute.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Gradient Checkpointing</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Включай gradient checkpointing при OOM ошибках до того, как уменьшать batch size.</li>
+        <li>Оптимальная стратегия: checkpointing каждые √L слоёв, где L — глубина модели.</li>
+        <li>Комбинируй с mixed precision для максимальной экономии памяти.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Включать checkpointing везде — только в узких местах по памяти, иначе лишний overhead.</li>
+        <li>Не измерять trade-off: checkpointing экономит память, но замедляет на ~33%.</li>
+        <li>Путать с activation offloading: checkpointing = recompute, offloading = CPU перемещение.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Checkpoint granularity: каждый слой vs каждые k слоёв — баланс памяти и скорости.</li>
+        <li>Совмещение с torch.compile() требует осторожности — проверяй совместимость.</li>
+        <li>segment_size в gradient_checkpointing_enable() в Hugging Face Transformers.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="08_training_practice/01_distributed_training.html">← 8.1 Distributed</a></li>
+        <li><a href="04_training/07_mixed_precision_training.html">← 4.7 Mixed Precision</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

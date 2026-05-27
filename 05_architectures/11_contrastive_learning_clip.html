@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/11_contrastive_learning_clip.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>5.11 Contrastive Learning and CLIP</h1>
       <p class="muted">Contrastive learning trains representations by pulling matching pairs together and pushing non-matching pairs apart.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>CLIP научил модель понимать связь между изображениями и текстом без явных меток. Contrastive learning — подход, извлекающий универсальные представления из пар «похожее–непохожее».</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Contrastive loss — InfoNCE и почему он работает</li>
+      <li>CLIP: совместное обучение image и text encoder на N² пар</li>
+      <li>Zero-shot classification — как CLIP классифицирует без дообучения</li>
+      <li>DINO и SimCLR — self-supervised contrastive learning</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>CNN/ViT (5.1/5.8)</li>
+      <li>Трансформер (5.4)</li>
+      <li>Теория информации (1.4)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -80,14 +104,17 @@
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
         <div class="formula-anatomy__grid">
-          <div class="formula-anatomy__row"><span class="fa-sym">image_emb</span><span class="fa-name">image embedding</span><span class="fa-desc">Vector produced by image encoder.</span></div>
-          <div class="formula-anatomy__row"><span class="fa-sym">text_emb</span><span class="fa-name">text embedding</span><span class="fa-desc">Vector produced by text encoder.</span></div>
-          <div class="formula-anatomy__row"><span class="fa-sym">@</span><span class="fa-name">matrix product</span><span class="fa-desc">Computes all image-text similarities in the batch.</span></div>
-          <div class="formula-anatomy__row"><span class="fa-sym">normalize</span><span class="fa-name">unit vectors</span><span class="fa-desc">Makes dot product equal cosine similarity.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">image_emb</span><span class="fa-name">image embedding</span><span class="fa-desc">Vector produced by the image encoder (e.g. ViT). Shape: N×d, one row per image in the batch.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">text_emb</span><span class="fa-name">text embedding</span><span class="fa-desc">Vector produced by the text encoder (Transformer). Shape: N×d, one row per caption.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">normalize</span><span class="fa-name">L2 normalization</span><span class="fa-desc">Divides each vector by its norm so all embeddings lie on the unit sphere. Ensures dot product equals cosine similarity.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">^T</span><span class="fa-name">transpose</span><span class="fa-desc">Turns text_emb from N×d into d×N. After @, result is N×N: entry (i,j) is the cosine similarity between image i and text j.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">@</span><span class="fa-name">matrix product</span><span class="fa-desc">Computes all N² image-text similarities at once. The diagonal holds the correct (matched) pairs; off-diagonal are negatives.</span></div>
+          <div class="formula-anatomy__row"><span class="fa-sym">tau</span><span class="fa-name">temperature</span><span class="fa-desc">Learnable scalar (typically ~0.07). Low tau sharpens the softmax — correct pairs must be clearly more similar than all negatives.</span></div>
         </div>
         <hr class="formula-anatomy__divider">
-        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> CLIP aligns image and language vectors so matching concepts point in similar directions.</div>
-        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> put images and sentences on the same map, then search by nearest neighbor.</div>
+        <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the result is an N×N logit matrix. Training pushes diagonal entries (matched pairs) high and off-diagonal (mismatches) low — simultaneously in both image-to-text and text-to-image directions.</div>
+        <div class="formula-anatomy__analogy"><strong>Analogy:</strong> put images and sentences on the same map so matching pairs land near each other; all others are pushed apart.</div>
+        <div class="formula-anatomy__example"><strong>Numeric example:</strong> batch N=4. image_emb @ text_emb^T gives a 4×4 matrix. Divide by tau=0.07 → cross-entropy on rows (image→text) and columns (text→image). Loss is 0 only when each image ranks its caption first across all N candidates.</div>
       </div>
     </section>
 
@@ -160,7 +187,40 @@ print(logits)
     <details><summary>[Hard] False negatives</summary><p>Почему false negatives вредят contrastive learning? <strong>Решение:</strong> модель отталкивает объекты, которые семантически похожи или принадлежат одному классу.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-11">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое contrastive learning и в чём его основная идея?</summary>
+      <div class="ml-quiz__a"><p>Contrastive learning обучает представления, делая «похожие» примеры (позитивные пары) близкими в embedding space, а «разные» (негативные) — далёкими. Не нужны метки — позитивные пары создаются через augmentations (SimCLR) или разные модальности (CLIP: изображение + текст).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как CLIP обучается и что позволяет делать в inference?</summary>
+      <div class="ml-quiz__a"><p>CLIP обучается на 400M пар (изображение, текст) из интернета. Цель: максимизировать dot-product между эмбеддингами совпадающих пар и минимизировать для несовпадающих (InfoNCE loss). При inference: вычислить сходство изображения с текстовыми описаниями классов — zero-shot классификация.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое zero-shot transfer в контексте CLIP?</summary>
+      <div class="ml-quiz__a"><p>Zero-shot transfer: модель применяется к задаче, для которой не было примеров при обучении. Для CLIP: описываем классы текстом («a photo of a dog»), получаем текстовые эмбеддинги, сравниваем с эмбеддингом тестового изображения. CLIP достигает точности ResNet-50 на ImageNet без единого обучающего примера.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему InfoNCE loss работает хуже с маленьким батчем?</summary>
+      <div class="ml-quiz__a"><p>InfoNCE рассматривает все другие примеры в батче как негативные. Маленький батч → мало негативов → задача слишком проста, representation learning неэффективен. SimCLR требует batch_size=4096+; MoCo решает это через memory bank с тысячами негативов, независимо от батча.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-11">
     <h2>Checkpoint: 5.11 Contrastive / CLIP</h2>
     <ul>
       <li>Что contrastive loss притягивает и отталкивает?</li>
@@ -170,5 +230,47 @@ print(logits)
       <li>Rubber duck: объясни CLIP как обучение общей карты, где похожие картинки и подписи лежат рядом.</li>
     </ul>
   </section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Contrastive Learning & CLIP</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй CLIP embeddings для zero-shot классификации и image search.</li>
+        <li>Contrastive pretraining с аугментациями — мощный подход для self-supervised CV.</li>
+        <li>CLIP features хорошо работают как frozen backbone для downstream задач.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не масштабировать батч при contrastive learning — маленький батч = мало негативов.</li>
+        <li>Использовать CLIP для задач вне distribution обучения без проверки zero-shot accuracy.</li>
+        <li>Забывать о temperature τ — критический гиперпараметр для InfoNCE loss.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Температура τ в InfoNCE: слишком низкая → collapse, слишком высокая → медленная сходимость.</li>
+        <li>Batch size: больше = лучше, но дороже.</li>
+        <li>Augmentation strategy: сила аугментаций влияет на «сложность» positives.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="05_architectures/08_vision_transformer.html">← 5.8 ViT</a></li>
+        <li><a href="06_llm/02_pretraining_objectives.html">6.2 Pretraining →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

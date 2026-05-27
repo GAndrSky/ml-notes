@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/16_ensembles.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,67 @@
         Voting, bagging vs boosting, stacking, когда ансамбли помогают и когда они вредят.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Ансамблевые методы — надёжный способ выиграть ML-соревнование. Blending, stacking, voting — разные стратегии объединения моделей, каждая со своими компромиссами.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Voting и Averaging — простейшие ансамбли и их математический смысл</li>
+      <li>Stacking — как meta-learner учится на предсказаниях базовых моделей</li>
+      <li>Bagging vs Boosting vs Stacking — фундаментальные различия</li>
+      <li>Как ансамбль снижает variance (bagging) или bias (boosting)</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Random Forest (2.11)</li>
+      <li>Boosting (2.12)</li>
+      <li>Кросс-валидация (2.17)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Что такое ансамбль моделей</h2>
       <p>
         <strong>Ансамбль</strong> — это комбинация нескольких моделей, чьи предсказания
@@ -571,14 +630,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">итоговое предсказание</span><span class="fa-desc">Класс, за который проголосовало большинство моделей ансамбля.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">mode{·}</span><span class="fa-name">мода (наибольшая частота)</span><span class="fa-desc">Класс, который встречается чаще всего среди ŷ₁, ..., ŷ_M — победитель голосования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_m</span><span class="fa-name">предсказание m-й модели</span><span class="fa-desc">Метка класса, предсказанная m-й моделью ансамбля (m = 1, ..., M).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">M</span><span class="fa-name">число моделей</span><span class="fa-desc">Количество базовых моделей в ансамбле, участвующих в голосовании.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Hard voting — демократическое голосование: каждая модель отдаёт один голос, побеждает класс с максимальным числом голосов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как выборы: три эксперта говорят [A, B, A] → A побеждает (2 голоса из 3).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> M=3 модели предсказывают [1, 0, 1] → mode = 1 → итоговый класс 1.</div>
     </div>
     <p>
             Каждая модель отдаёт метку класса, и побеждает большинство голосов.
@@ -591,16 +651,18 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂</span><span class="fa-name">усреднённый вектор вероятностей</span><span class="fa-desc">Вектор вероятностей классов, усреднённый по всем M моделям ансамбля.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/M</span><span class="fa-name">коэффициент усреднения</span><span class="fa-desc">Делит сумму вероятностей на число моделей M, чтобы получить среднее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_m</span><span class="fa-name">сумма по моделям</span><span class="fa-desc">Суммирует векторы вероятностей всех M базовых моделей ансамбля.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂_m</span><span class="fa-name">вероятности m-й модели</span><span class="fa-desc">Вектор вероятностей классов, предсказанный m-й базовой моделью.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанный класс</span><span class="fa-desc">Итоговая метка класса — тот класс k, у которого наибольшая усреднённая вероятность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_k</span><span class="fa-name">класс с максимальной вероятностью</span><span class="fa-desc">Выбирает индекс k, при котором p̂_k максимально.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">индекс класса</span><span class="fa-desc">Перебирает все возможные классы; argmax выбирает тот, у которого вероятность выше.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждая модель «голосует» своей уверенностью — вектором вероятностей. Soft voting складывает эти векторы и берёт средний, а итоговый класс — тот, за кого коллектив в целом уверен сильнее всего.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Три эксперта оценивают вероятность дождя: 0.9, 0.7, 0.6. Среднее 0.73 — убедительнее, чем если бы только двое из трёх сказали «дождь» (hard voting 2/3).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 3 модели для классов [A, B]: [0.7,0.3], [0.6,0.4], [0.5,0.5]. Среднее p̂=[0.6,0.4], argmax_k = A → ŷ=A.</div>
     </div>
     <p>
             Мы усредняем вероятности классов и уже после этого выбираем итоговый класс.
@@ -1683,7 +1745,40 @@ train meta-model on stacked OOF predictions
     <details><summary>[Hard] Production tradeoff</summary><p>Когда ансамбль не стоит применять, даже если offline score выше? <strong>Решение:</strong> если latency, стоимость, сложность мониторинга или интерпретируемость важнее небольшого выигрыша.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-16">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между жёстким голосованием (hard voting) и мягким (soft voting) в ансамблях?</summary>
+      <div class="ml-quiz__a"><p>Hard voting: каждая модель голосует за класс, побеждает большинство. Soft voting: усредняет предсказанные вероятности всех моделей и берёт argmax. Soft voting обычно лучше, так как учитывает уверенность моделей — уверенный голос весит больше неуверенного.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое стекинг (stacking) и чем он лучше простого голосования?</summary>
+      <div class="ml-quiz__a"><p>Стекинг обучает мета-модель (blender) на предсказаниях базовых моделей. Базовые модели (уровень 0) обучаются на train-fold, генерируя out-of-fold предсказания. Мета-модель (уровень 1) обучается на этих предсказаниях. Это позволяет адаптивно взвешивать модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему ансамбль из «похожих» моделей менее эффективен?</summary>
+      <div class="ml-quiz__a"><p>Если все модели делают похожие ошибки (коррелированные ошибки), их агрегирование мало помогает. Ансамбль наиболее эффективен при низкой корреляции ошибок. Поэтому комбинируют модели разных типов (деревья + линейная + нейросеть), а не пять одинаковых деревьев.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Blending vs Stacking?</summary>
+      <div class="ml-quiz__a"><p>В стекинге мета-модель обучается на out-of-fold предсказаниях по кросс-валидации — это честнее, но дороже. Blending проще: train разбивается на два холда, базовые модели обучаются на первом, мета-модель — на втором. Blending быстрее, но менее эффективен из-за меньшего объёма данных для мета-модели.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-16">
     <h2>Checkpoint: 2.16 Ensembles</h2>
     <ul>
       <li>Почему diversity моделей важна?</li>
@@ -1693,5 +1788,6 @@ train meta-model on stacked OOF predictions
       <li>Rubber duck: объясни ансамбль как совет экспертов с разными ошибками.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

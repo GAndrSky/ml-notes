@@ -12,13 +12,37 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/03_docker_for_ml.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="mlops">
   <div class="page">
     <div class="hero">
       <div class="top-tags"><span class="tag tag-block">Блок 9 · MLOps</span><span class="tag done">9.2 Serving</span><span class="tag active">9.3 Docker</span><span class="tag">9.4 Design</span></div>
       <h1>9.3 Docker for ML Engineers</h1>
       <p class="muted">Docker фиксирует окружение: Python, system packages, CUDA runtime, зависимости и команду запуска. Это снижает класс ошибок “у меня работает, на сервере нет”.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Docker делает ML-среду воспроизводимой: один контейнер — одинаковый результат на любом железе. NVIDIA Docker позволяет прокинуть GPU внутрь контейнера.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Dockerfile для ML: base image, pip install, COPY — почему порядок слоёв важен</li>
+      <li>Docker build cache — как ускорить итерации разработки</li>
+      <li>nvidia-docker / --gpus all — как прокинуть GPU в контейнер</li>
+      <li>docker-compose для multi-service ML стеков</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Linux basics (команды)</li>
+      <li>Python virtual environments</li>
+      <li>CUDA (желательно)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Ментальная модель контейнера</h2>
@@ -86,7 +110,40 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему Docker полезен для ML-проектов?</summary>
+      <div class="ml-quiz__a"><p>Docker гарантирует воспроизводимость: одинаковое окружение на laptop, CI/CD и production. Решает проблему «у меня работает»: CUDA версия, Python зависимости, системные библиотеки — всё заморожено в image. Упрощает deployment: один docker run вместо установки десятков пакетов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как правильно организовать Dockerfile для ML-проекта?</summary>
+      <div class="ml-quiz__a"><p>Base image: nvidia/cuda или python:3.x. Затем: установка системных зависимостей, COPY requirements.txt + pip install (перед кодом — для кеширования слоёв), COPY код. Модель лучше загружать при запуске, а не в image (большой размер). Multi-stage build снижает финальный размер.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое layer caching в Docker и как его использовать?</summary>
+      <div class="ml-quiz__a"><p>Docker кеширует каждый слой образа. Если COPY requirements.txt + pip install идут перед COPY кода, изменение кода не инвалидирует кеш зависимостей. Это ускоряет rebuild. Правило: изменяющиеся редко слои — раньше; изменяющиеся часто (код) — позже.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как передавать GPU в Docker контейнер?</summary>
+      <div class="ml-quiz__a"><p>Для NVIDIA GPU: docker run --gpus all ... (требует nvidia-container-toolkit). В Docker Compose: deploy.resources.reservations.devices с capabilities: [gpu]. Проверка внутри контейнера: nvidia-smi. Без флага --gpus GPU не виден контейнеру.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -102,5 +159,47 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="mlops-9-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>reproducible image = base image + pinned deps + code + runtime config</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">base image</span><span class="fa-name">среда ОС</span><span class="fa-desc">стартовый слой контейнера с Python/CUDA/system libs.</span></div><div class="formula-anatomy__row"><span class="fa-sym">pinned deps</span><span class="fa-name">фиксированные зависимости</span><span class="fa-desc">точные версии пакетов, без которых поведение может плавать.</span></div><div class="formula-anatomy__row"><span class="fa-sym">code</span><span class="fa-name">приложение</span><span class="fa-desc">скрипты обучения, serving или inference.</span></div><div class="formula-anatomy__row"><span class="fa-sym">runtime config</span><span class="fa-name">конфиг запуска</span><span class="fa-desc">env vars, entrypoint и параметры окружения.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Docker нужен, чтобы один и тот же код запускался в предсказуемой среде.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если локально стоит CUDA 12.4, а сервер тянет другой base image, без pinned image поведение может отличаться.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Docker для ML</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй official CUDA base images — они проверены на совместимость.</li>
+        <li>Multi-stage builds: builder stage (pip install) + final stage (только нужное) — меньший образ.</li>
+        <li>docker-compose для локальной разработки со всеми зависимостями.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Хранить большие файлы (веса модели) в Docker image — используй volume mount.</li>
+        <li>Не тестировать GPU-доступность в контейнере (nvidia-smi) перед запуском.</li>
+        <li>Игнорировать .dockerignore — случайно добавляешь data/ и .venv/ в image.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Base image: nvidia/cuda:12.x-cudnn-devel vs runtime — devel нужен только для компиляции.</li>
+        <li>Порт (--port) и переменные окружения через -e или .env файл.</li>
+        <li>Memory limit (--memory) — важен для предотвращения OOM на shared серверах.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="09_mlops_deployment/02_model_serving.html">← 9.2 Serving</a></li>
+        <li><a href="09_mlops_deployment/01_experiment_tracking.html">← 9.1 Experiment Tracking</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

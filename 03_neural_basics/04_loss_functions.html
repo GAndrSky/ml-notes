@@ -82,7 +82,7 @@ td.mono{font-family:monospace;}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/03_neural_basics/04_loss_functions.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="neural-basics">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -94,6 +94,30 @@ td.mono{font-family:monospace;}
       <h1>3.4 Loss-функции</h1>
       <p class="muted">MSE, BCE, CrossEntropy, Focal Loss — выводы из MLE, геометрия, градиенты</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Loss-функция — единственный сигнал, которым сеть понимает «правильно» или «нет». Выбор MSE против Cross-Entropy может изменить результат обучения кардинально. Понять loss — значит понять, чему именно учится модель.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Чем MSE отличается от MAE и когда каждая уместна</li>
+      <li>Почему Cross-Entropy — правильный выбор для классификации (MLE)</li>
+      <li>Как loss связан с вероятностной интерпретацией модели</li>
+      <li>Что такое Focal Loss и когда он нужен при дисбалансе классов</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Forward pass (3.3)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Функции активации (3.2)</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- 1. Единый MLE-фрейм -->
 <div class="card">
@@ -105,15 +129,16 @@ td.mono{font-family:monospace;}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(θ)</span><span class="fa-name">функция потерь</span><span class="fa-desc">Скалярное число, которое оптимизатор минимизирует. Зависит от параметров модели θ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">обучаемые параметры</span><span class="fa-desc">Веса и смещения сети. Меняются при каждом шаге градиентного спуска.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(y|x,θ)</span><span class="fa-name">вероятность правильного ответа</span><span class="fa-desc">Насколько высокую вероятность модель с параметрами θ даёт истинному ответу y при входе x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">натуральный логарифм</span><span class="fa-desc">Превращает произведение вероятностей в сумму, удобную для дифференцирования. log(p) ≤ 0 для p ≤ 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−log</span><span class="fa-name">знак минус (NLL)</span><span class="fa-desc">Так как log(p) ≤ 0, знак минус делает loss неотрицательным. Минимизировать −log p = максимизировать p.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Модель параметризует распределение p(y|x,θ). Чем выше вероятность правильного ответа — тем меньше loss. Минимизировать NLL = учить модель уверенно давать правильные ответы. Меняешь предположение о распределении → получаешь другую loss (MSE, BCE, CE).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка фотографа: чем точнее резкость на нужном объекте, тем выше балл. NLL штрафует за расфокус на правильном ответе, причём сильнее при полной уверенности в неправильном.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Модель даёт p̂=0.9 для истинного класса → L=−log(0.9)≈0.105. При p̂=0.1 → L=−log(0.1)≈2.30 — в 22 раза больше. Именно поэтому уверенные ошибки штрафуются катастрофически.</div>
     </div>
     <div style="margin-top:14px;">
     <table>
@@ -254,17 +279,16 @@ pₜ = p̂   if y=1
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">pₜ</span><span class="fa-name">вероятность истинного класса</span><span class="fa-desc">pₜ = p̂ если y=1 (объект); pₜ = 1−p̂ если y=0 (фон). Отражает уверенность модели в правильном классе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">αₜ</span><span class="fa-name">балансировочный вес класса</span><span class="fa-desc">Компенсирует дисбаланс: редкому классу даётся больший α. Обычно α≈0.25 для фона, ≈0.75 для объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">focusing parameter (обычно 2)</span><span class="fa-desc">Управляет силой подавления лёгких примеров. γ=0: обычный BCE. γ=2: сильная фокусировка на трудных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1−pₜ)^γ</span><span class="fa-name">модулирующий фактор</span><span class="fa-desc">Для лёгкого примера (pₜ=0.9, γ=2): (0.1)²=0.01 → loss почти 0. Для трудного (pₜ=0.5): (0.5)²=0.25 → полная loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−log(pₜ)</span><span class="fa-name">базовый BCE-член</span><span class="fa-desc">Штраф за неуверенность в правильном классе — совпадает с обычным BCE при γ=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> (1−pₜ)^γ автоматически «выключает» лёгкие примеры: если модель уже уверена (pₜ→1), её вклад почти 0. Трудные примеры (pₜ≈0.5) штрафуются почти как в обычном BCE. Gradient budget концентрируется там, где модель ошибается.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как учитель, который не тратит время на учеников, которые уже всё знают. Всё внимание — тем, кто продолжает ошибаться.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> γ=2, y=1. Лёгкий: p̂=0.9 → Focal=(0.1)²·(−log 0.9)≈0.001; BCE=0.105. Сложный: p̂=0.3 → Focal=(0.7)²·(−log 0.3)≈0.590; BCE=1.204. Фокус работает!</div>
     </div>
     <div class="intuition" style="margin-top:10px;font-size:.85em;">
         💡 (1−pₜ)^γ — это «модулирующий фактор».<br>
@@ -317,16 +341,16 @@ CE+softmax:   ∂L/∂zₖ = (p̂ₖ − yₖ)/N
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂ŷ</span><span class="fa-name">градиент по выходу ŷ (MSE)</span><span class="fa-desc">На сколько изменится loss при малом сдвиге ŷ. Линейный по ошибке: 2(ŷ−y)/N.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">логит (до sigmoid)</span><span class="fa-desc">Выход линейного слоя до sigmoid. BCE-градиент по z элегантен: производные sigmoid и BCE сокращаются!</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂ − y</span><span class="fa-name">разность предсказания и метки</span><span class="fa-desc">Ядро gradient BCE и CE: 0 если модель точна, ±1 в крайних случаях. Одна формула для обоих!</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∂L/∂zₖ</span><span class="fa-name">CE-градиент по k-му логиту</span><span class="fa-desc">= (p̂ₖ − yₖ)/N. yₖ=1 для правильного класса, 0 для остальных (one-hot).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">размер батча</span><span class="fa-desc">Все три градиента усредняются по N примерам батча.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Элегантность gradient = (p̂ − y)/N: при p̂=y (идеальный прогноз) gradient=0. Чем дальше предсказание от метки — тем сильнее push. BCE через z не имеет vanishing gradient в выходном слое: σ′(z) сокращается с знаменателем BCE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как GPS-коррекция: чем дальше ты от пути — тем сильнее разворот. При идеальном прогнозе коррекция нулевая.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> N=32, BCE. p̂=0.1, y=1: ∂L/∂z=(0.1−1)/32=−0.028. Optimizer: z+=lr·0.028 → p̂ растёт к 1. p̂=0.9, y=1: grad=−0.003 — маленький, потому что почти правильно.</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 Градиент BCE через z (не через p̂!) отменяет σ′(z) знаменателя — именно поэтому sigmoid+BCE не имеет проблемы vanishing gradient в выходном слое.
@@ -402,14 +426,17 @@ L_MAE = (1/N)·Σ |yᵢ − ŷᵢ|
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Скалярный выход регрессора для одного примера.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное числовое значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e = ŷ−y</span><span class="fa-name">ошибка (error)</span><span class="fa-desc">Разность предсказания и ответа. Huber смотрит на |e| и сравнивает с δ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ</span><span class="fa-name">порог переключения</span><span class="fa-desc">Гиперпараметр. При |e|≤δ — MSE-режим (квадратичный, гладкий). При |e|>δ — MAE-режим (линейный, устойчивый).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">½(y−ŷ)²</span><span class="fa-name">MSE-вклад (малая ошибка)</span><span class="fa-desc">Квадратичный штраф вблизи нуля: гладкий градиент, точная сходимость для мелких ошибок.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">δ·|y−ŷ|−½δ²</span><span class="fa-name">MAE-вклад (большая ошибка)</span><span class="fa-desc">Линейный штраф при выбросе: градиент ограничен δ·sign(e), не взрывается от крупных ошибок.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Huber — гибридная loss. Мелкие ошибки (|e|≤δ) как MSE — точный градиент. Крупные (|e|>δ) как MAE — градиент ≤ δ, нет exploding gradient от выбросов. δ=1 типичный выбор; при δ→∞ Huber ≈ MSE, при δ→0 ≈ MAE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пружина с ограничителем: малые отклонения — нормальная пружина (квадратичная сила), большие — натяжение ограничивается максимумом (линейная сила).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> δ=1.0. e=0.5 (мал): L=½·0.25=0.125, grad=0.5. e=3.0 (выброс): L=1·3−0.5=2.5, grad=1·sign=1. MSE дала бы L=4.5, grad=3.0 — в 3 раза больший градиент от выброса.</div>
     </div>
     <div class="intuition" style="margin-top:8px;font-size:.85em;">
         💡 δ — порог переключения. При δ→∞: Huber ≈ MSE. При δ→0: Huber ≈ MAE.<br>
@@ -447,17 +474,16 @@ log-sum-exp трюк (ХОРОШО):
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">entropy</span><span class="fa-desc">Неопределённость распределения классов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">p_k</span><span class="fa-name">доля класса</span><span class="fa-desc">Вероятность класса внутри узла.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log₂</span><span class="fa-name">измерение в битах</span><span class="fa-desc">Показывает количество информации в бинарных вопросах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>zᵢ</span><span class=”fa-name”>i-й логит</span><span class=”fa-desc”>Сырое число на выходе линейного слоя. Может быть очень большим (1000+), что ломает наивный softmax.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>m = max(z)</span><span class=”fa-name”>максимальный логит</span><span class=”fa-desc”>Вычитается из каждого zᵢ перед exp. Гарантирует zᵢ−m ≤ 0, поэтому exp(zᵢ−m) ∈ (0, 1] — нет overflow.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>exp(zᵢ−m)</span><span class=”fa-name”>сдвинутая экспонента</span><span class=”fa-desc”>Всегда ≤ 1 (так как zᵢ−m ≤ 0). Математически идентична exp(zᵢ)/exp(m) — после нормировки exp(m) сокращается.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>Σⱼ exp(zⱼ−m)</span><span class=”fa-name”>нормировочная сумма</span><span class=”fa-desc”>Знаменатель softmax в безопасном диапазоне. Не бесконечность, не ноль.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>p̂ᵢ</span><span class=”fa-name”>вероятность i-го класса</span><span class=”fa-desc”>Результат стабильного softmax: математически идентичен наивному, но без численных проблем.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет неопределённость распределения классов в битах или натуральных единицах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как вопрос “угадай цвет”: чем равномернее варианты, тем больше информации нужно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для бинарного 50/50 entropy равна 1 биту; для 100/0 entropy равна 0.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Вычитание m не меняет вероятности: exp(zᵢ−m)/Σ exp(zⱼ−m) = exp(zᵢ)/Σ exp(zⱼ) (exp(m) сокращается). Но exp(0)=1 вместо exp(1000)=∞. Математика та же — числа безопасные.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Как оценивать рейтинг: вычесть минимальную оценку из всех — места не изменятся, но числа удобнее сравнивать.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> z=[1000, 998]. Naive: exp(1000)=∞ → nan. LSE trick: m=1000, exp([0,−2])=[1, 0.135]. p̂=[1/1.135, 0.135/1.135]≈[0.881, 0.119] — корректно, без overflow!</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 PyTorch <code style="color:var(--amber)">F.cross_entropy</code> и <code style="color:var(--amber)">F.log_softmax</code> применяют этот трюк автоматически. Именно поэтому <strong>передавай логиты, а не вероятности</strong> в CrossEntropyLoss.
@@ -641,6 +667,111 @@ const LOSSES = {
 const LOSS_ORDER=['mse','mae','bce','ce','focal'];
 let activeLoss='bce';
 
+const LOSS_ANATOMY = {
+  mse: {
+    rows: [
+      ['ŷᵢ','предсказание','Выход регрессора для i-го примера — скаляр.'],
+      ['yᵢ','истинный ответ','Правильное значение target из датасета.'],
+      ['(ŷᵢ−yᵢ)²','квадрат ошибки','Штраф растёт квадратично: ошибка×10 → штраф×100. Выбросы доминируют.'],
+      ['N','размер батча','Делитель для получения среднего loss по N примерам.'],
+      ['Σ','суммирование','Складывает квадраты ошибок всех N примеров, потом делится на N.'],
+    ],
+    intuition:'MSE = гауссовский шум: y=f_θ(x)+ε, ε~N(0,σ²). Квадрат сильно штрафует выбросы: ошибка 3 даёт штраф в 9 раз больший, чем ошибка 1. Минимизировать MSE = максимизировать log-правдоподобие гауссовской модели.',
+    example:'ŷ=[2.1, 0.8], y=[2.0, 1.5]: MSE=(0.01+0.49)/2=0.25. Выброс ŷ=5.0 (y=2.0): MSE=(9.0+0.49)/2=4.75 — один выброс утраивает loss.'
+  },
+  mae: {
+    rows: [
+      ['|ŷᵢ−yᵢ|','абсолютная ошибка','Расстояние между прогнозом и ответом без квадрата — линейный штраф.'],
+      ['ŷᵢ','предсказание','Выход регрессора для i-го примера.'],
+      ['yᵢ','истинный ответ','Правильное значение target.'],
+      ['N','размер батча','Делитель для усреднения абсолютных ошибок.'],
+      ['sign(ŷ−y)','субградиент','Направление ошибки: +1 если ŷ>y, −1 если ŷ<y. MAE негладкий при e=0.'],
+    ],
+    intuition:'MAE = лапласовский шум ε~Laplace(0,b). Штраф линейный: ошибка×10 → штраф×10 (не ×100). Один выброс не «взрывает» loss — робастность достигается именно линейным штрафом.',
+    example:'ŷ=[2.1, 0.8], y=[2.0, 1.5]: MAE=(0.1+0.7)/2=0.40. Выброс ŷ=5.0: MAE=(3.0+0.7)/2=1.85 — растёт линейно. MSE дала бы 4.75 — в 2.6 раза больше.'
+  },
+  bce: {
+    rows: [
+      ['p̂','предсказанная вероятность','p̂=σ(z)∈(0,1). Вероятность принадлежности к классу 1.'],
+      ['y','бинарная метка','y∈{0,1}: правильный класс для текущего примера.'],
+      ['−log(p̂)','штраф за класс 1','Растёт к ∞ при p̂→0, если y=1. Уверенная ошибка — огромный штраф.'],
+      ['−log(1−p̂)','штраф за класс 0','Растёт к ∞ при p̂→1, если y=0.'],
+      ['N','размер батча','Усредняем BCE по N примерам батча.'],
+    ],
+    intuition:'BCE = Бернулли: p(y|x,θ)=p̂ʸ·(1−p̂)^(1−y). Gradient по логиту z: ∂L/∂z=(p̂−y)/N — нет vanishing gradient в выходном слое (производные sigmoid и BCE взаимно сокращаются).',
+    example:'y=1, p̂=0.9: L=−log(0.9)≈0.105. y=1, p̂=0.1: L=−log(0.1)≈2.30 (в 22 раза больше). y=0, p̂=0.9: L=−log(0.1)≈2.30 — уверенная ошибка = катастрофический штраф.'
+  },
+  ce: {
+    rows: [
+      ['p̂ᵢ_cᵢ','вероятность правильного класса','Softmax-выход для истинного класса cᵢ примера i. Максимизируем её.'],
+      ['−log(p̂ᵢ_cᵢ)','штраф за неуверенность','Чем меньше вероятность правильного класса — тем больше штраф.'],
+      ['yᵢₖ','one-hot метка','1 если k=cᵢ (правильный класс), 0 иначе. Активна только одна позиция.'],
+      ['p̂ᵢₖ','вероятность k-го класса','Softmax: Σₖ p̂ᵢₖ=1 для каждого примера i.'],
+      ['N','размер батча','Усредняем cross-entropy по N примерам.'],
+    ],
+    intuition:'CE = KL-дивергенция от one-hot метки к предсказанному распределению. Gradient по логиту zₖ: ∂L/∂zₖ=(p̂ₖ−yₖ)/N — идентично BCE при K=2. Минимум при p̂=y.',
+    example:'K=3, истинный класс 0. p̂=[0.7,0.2,0.1]: L=−log(0.7)≈0.357. p̂=[0.1,0.8,0.1]: L=−log(0.1)≈2.30. Grad=[0.1−1, 0.8−0, 0.1−0]/N=[−0.9,0.8,0.1]/N.'
+  },
+  focal: {
+    rows: [
+      ['pₜ','вероятность истинного класса','p̂ если y=1 (объект); 1−p̂ если y=0 (фон). Чем выше pₜ — тем увереннее модель.'],
+      ['(1−pₜ)^γ','модулирующий фактор','Для pₜ=0.9, γ=2: (0.1)²=0.01 — loss почти 0. Для pₜ=0.5: (0.5)²=0.25 — почти полная loss.'],
+      ['γ','focusing parameter (обычно 2)','γ=0: обычный BCE. γ=2: сильная фокусировка на трудных примерах.'],
+      ['αₜ','балансировочный вес','Компенсирует дисбаланс классов: редкому классу даётся больший α.'],
+      ['−log(pₜ)','базовый BCE-член','Штраф за неуверенность в правильном классе — как в стандартном BCE.'],
+    ],
+    intuition:'Focal = BCE × (1−pₜ)^γ. Уверенно классифицированные примеры (pₜ→1) вносят почти нулевой вклад. Gradient budget автоматически перераспределяется на трудные и редкие объекты.',
+    example:'γ=2, y=1. p̂=0.9 (лёгкий): Focal=(0.1)²·0.105≈0.001 vs BCE=0.105. p̂=0.3 (трудный): Focal=(0.7)²·1.204≈0.590 vs BCE=1.204. Лёгкие подавлены в 100 раз сильнее!'
+  }
+};
+
+const CHAIN_ANATOMY = {
+  clf: {
+    rows: [
+      ['X ∈ ℝ^(B×d)','входной батч','B примеров, d признаков. Строка X[i] = один пример.'],
+      ['Z ∈ ℝ^(B×K)','логиты (нет softmax!)','Выход последнего Linear-слоя. K столбцов = K классов. Передаём в CELoss напрямую.'],
+      ['p̂ ∈ ℝ^(B×K)','вероятности','softmax(Z) по dim=1: Σₖ p̂ᵢₖ=1 для каждого i. CELoss вычисляет это внутри.'],
+      ['y ∈ {0,...,K−1}^B','целочисленные метки','Индекс правильного класса. Не one-hot — просто число от 0 до K−1.'],
+    ],
+    intuition:'PyTorch CrossEntropyLoss принимает логиты Z и метки y. Внутри: fused log_softmax + NLL. Численно стабильнее через log-sum-exp trick. Никогда не применяй softmax перед CrossEntropyLoss!',
+    example:'B=2, K=3, Z=[[2,1,0],[0,3,1]], y=[0,1]. Строка 0: softmax→[0.665,0.245,0.090], −log(0.665)≈0.408. Строка 1: softmax→[0.090,0.665,0.245], −log(0.665)≈0.408. L=(0.408+0.408)/2≈0.408.'
+  },
+  reg: {
+    rows: [
+      ['X ∈ ℝ^(B×d)','входной батч','B примеров, d признаков.'],
+      ['ŷ ∈ ℝ^B','предсказания','Выход Linear(d→1) без активации — сырые числа. Не sigmoid, не softmax.'],
+      ['y ∈ ℝ^B','истинные значения','Непрерывный target (цена, температура и т.д.).'],
+      ['δ (Huber)','порог переключения','При |e|≤δ — MSE-режим; при |e|>δ — MAE-режим. Типичный δ≈1.'],
+    ],
+    intuition:'Регрессия: финальный слой выдаёт скаляр без активации. MSE для гауссовского шума; MAE для лапласовского (выбросы); Huber — компромисс. Выбор loss = выбор предположения о распределении ошибок.',
+    example:'B=3, ŷ=[2.1,0.8,5.0], y=[2.0,1.5,4.8]. MSE=(0.01+0.49+0.04)/3=0.18. MAE=(0.1+0.7+0.2)/3=0.33. Huber δ=1: (0.125+0.245+0.04)/3=0.14 — выброс 5.0 не доминирует.'
+  },
+  binary: {
+    rows: [
+      ['z ∈ ℝ^B','логит (без sigmoid)','Выход Linear(d→1) без активации. Любое число ∈ ℝ.'],
+      ['p̂ = σ(z)','вероятность класса 1','σ — sigmoid: p̂∈(0,1). Для loss передаём z — не p̂!'],
+      ['y ∈ {0,1}^B','бинарные метки','Метка 0 или 1 для каждого примера.'],
+      ['BCEWithLogitsLoss','численно-стабильная BCE','Принимает z напрямую. Внутри: sigmoid + BCE объединены безопасно.'],
+    ],
+    intuition:'BCEWithLogitsLoss(z, y) безопаснее, чем BCE(sigmoid(z), y): избегает log(sigmoid(z)) с underflow. Gradient: ∂L/∂z=(p̂−y)/N — одна элегантная формула без ветвления.',
+    example:'B=2, z=[1.5,−0.5], y=[1,0]. p̂=[σ(1.5),σ(−0.5)]=[0.818,0.378]. L=−(log 0.818+log(1−0.378))/2=(0.20+0.48)/2≈0.34.'
+  }
+};
+
+function buildAnatomyBlock(a) {
+  if (!a) return '';
+  const rows = a.rows.map(([sym,name,desc]) =>
+    `<div class="formula-anatomy__row"><span class="fa-sym">${sym}</span><span class="fa-name">${name}</span><span class="fa-desc">${desc}</span></div>`
+  ).join('');
+  return `<div class="formula-anatomy" data-static-formula-anatomy="1">
+  <div class="formula-anatomy__header">Что означают символы</div>
+  <div class="formula-anatomy__grid">${rows}</div>
+  <hr class="formula-anatomy__divider">
+  <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ${a.intuition}</div>
+  <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ${a.example}</div>
+</div>`;
+}
+
 function buildLossCards(){
   document.getElementById('lossCardList').innerHTML=LOSS_ORDER.map(k=>{
     const l=LOSSES[k];
@@ -657,19 +788,7 @@ function buildLossDetail(){
     <div style="color:${l.color};font-size:1.1em;font-weight:700;margin-bottom:8px;">${l.name}</div>
     <div class="muted" style="margin-bottom:4px;">Формула:</div>
     <div class="formula" style="margin:4px 0;font-size:.85em;">${l.formula}</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула loss измеряет, насколько предсказание модели расходится с правильным ответом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как система штрафов на экзамене: маленькие ошибки наказываются мягче, уверенные ошибки — сильнее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Чем дальше prediction от truth, тем выше цена ошибки и тем сильнее градиент исправления.</div>
-    </div>
+    ${buildAnatomyBlock(LOSS_ANATOMY[activeLoss])}
     <div class="muted" style="margin:8px 0 4px;">Градиент:</div>
     <div style="font-family:monospace;font-size:.85em;color:var(--green);">${l.deriv}</div>
     <div class="muted" style="margin:8px 0 4px;">MLE-интерпретация:</div>
@@ -911,18 +1030,7 @@ function showChain(key,btn){
   document.querySelectorAll('#chainTabs button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('chainContent').innerHTML=`<div class="formula" style="font-size:.85em;">${CHAINS[key]}</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула loss измеряет, насколько предсказание модели расходится с правильным ответом.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как система штрафов на экзамене: маленькие ошибки наказываются мягче, уверенные ошибки — сильнее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Чем дальше prediction от truth, тем выше цена ошибки и тем сильнее градиент исправления.</div>
-    </div>
+    ${buildAnatomyBlock(CHAIN_ANATOMY[key])}
     `;
 }
 
@@ -1304,7 +1412,40 @@ print(bce_with_logits(z, y))
     </div>
   </section>
 
-  <section class="ml-checkpoint-section">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему для регрессии обычно используют MSE, а для классификации — кросс-энтропию?</summary>
+      <div class="ml-quiz__a"><p>MSE вытекает из предположения Гауссова шума и минимизирует среднеквадратичное отклонение. Кросс-энтропия вытекает из максимального правдоподобия для категориального распределения и даёт выпуклую потерю для логитов — градиенты не исчезают при уверенных ошибках, в отличие от MSE с sigmoid.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Huber loss и когда его применяют?</summary>
+      <div class="ml-quiz__a"><p>Huber loss = 0.5·x² при |x| ≤ δ, иначе δ·(|x| - δ/2). Это «лучшее из двух миров»: квадратичная (сглаженная) для малых ошибок и линейная (устойчивая к выбросам) для больших. Хорошо подходит для регрессии с выбросами, где MSE давал бы слишком большой штраф.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Focal Loss и зачем он нужен при дисбалансе классов?</summary>
+      <div class="ml-quiz__a"><p>Focal Loss = -(1-pₜ)^γ · log(pₜ) снижает вес лёгких примеров (хорошо классифицированных) через модулирующий множитель (1-pₜ)^γ. Это фокусирует обучение на трудных примерах. Используется в object detection (RetinaNet), где фон (лёгкий класс) подавляет редкие объекты.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое KL-дивергенция как функция потерь?</summary>
+      <div class="ml-quiz__a"><p>KL(P‖Q) = Σ P(x)·log(P(x)/Q(x)) измеряет, насколько распределение Q отличается от «истинного» P. В вариационных автоэнкодерах KL-член в ELBO регуляризует латентное пространство, заставляя приблизить q(z|x) к prior p(z) = N(0,I).</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
     <h2>Learning checkpoint</h2>
     <ul class="ml-study-practice__questions">
       <li>Что именно оптимизирует MSE и почему он чувствителен к outliers?</li>
@@ -1315,5 +1456,6 @@ print(bce_with_logits(z, y))
     <p class="ml-study-practice__rubber-duck">Rubber duck: объясни loss-функцию как контракт между задачей и optimizer.</p>
   </section>
 
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

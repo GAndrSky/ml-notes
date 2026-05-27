@@ -25,7 +25,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/07_generative_models/02_generative_adversarial_networks.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="generative">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -37,22 +37,48 @@
       <h1>7.2 Generative Adversarial Networks</h1>
       <p class="muted">GAN строит генерацию как игру двух сетей: генератор пытается производить реалистичные объекты, дискриминатор — отличать реальные от синтетических. В идеале эта игра толкает генератор к распределению данных.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>GAN — генеративная игра: generator обманывает discriminator, discriminator учится различать. Это сделало возможным фотореалистичную генерацию. Wasserstein GAN решил проблему mode collapse.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Minmax игра: как G и D обучаются в противофазе</li>
+      <li>Mode collapse — почему GAN «застревает» на нескольких модах распределения</li>
+      <li>Wasserstein distance — почему WGAN тренируется стабильнее</li>
+      <li>Архитектуры: DCGAN, StyleGAN — прогресс поколений GAN</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Нейронные сети (3.1–3.3)</li>
+      <li>Backpropagation (4.1)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
+
     <div class="card">
       <h2>Minimax objective</h2>
       <div class="formula" data-render-tex data-tex-source="\min_G \max_D \; \mathbb{E}_{x \sim p_{data}}[\log D(x)] + \mathbb{E}_{z \sim p(z)}[\log(1 - D(G(z)))]">min_G max_D E[log D(x)] + E[log(1 - D(G(z)))]</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>min_G</span><span class=”fa-name”>минимизация по генератору</span><span class=”fa-desc”>Генератор G хочет минимизировать objective — то есть обмануть дискриминатор, подняв D(G(z)) как можно выше.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>max_D</span><span class=”fa-name”>максимизация по дискриминатору</span><span class=”fa-desc”>Дискриминатор D хочет максимизировать objective — правильно различать реальные и синтетические объекты.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>D(x)</span><span class=”fa-name”>дискриминатор на реальных</span><span class=”fa-desc”>Нейросеть, оценивающая P(объект реален). Для реальных x из p_data D хочет ставить значения близко к 1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>G(z)</span><span class=”fa-name”>генератор</span><span class=”fa-desc”>Нейросеть, отображающая шум z в синтетический объект. Цель G — сделать D(G(z)) близким к 1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>z</span><span class=”fa-name”>случайный шум</span><span class=”fa-desc”>Вход генератора; семплируется из простого prior p(z)=N(0,I). Источник разнообразия генерации.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>E[log D(x)]</span><span class=”fa-name”>ожидание по реальным данным</span><span class=”fa-desc”>Дискриминатор должен давать высокую вероятность реальным объектам; log D(x) растёт при D(x)→1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>E[log(1-D(G(z)))]</span><span class=”fa-name”>ожидание по сгенерированным</span><span class=”fa-desc”>Дискриминатор хочет 1-D(G(z))→1, т.е. D(G(z))→0 для fake; генератор хочет обратного.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GAN objective задаёт игру: discriminator отличает real/fake, generator учится его обманывать.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как фальшивомонетчик и эксперт: один делает подделки, другой учится их ловить.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если D(real)=0.9 и D(fake)=0.1, discriminator силён; generator должен поднять D(fake).</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> GAN — это игра с нулевой суммой. Дискриминатор максимизирует objective (лучше различать), генератор минимизирует (лучше обманывает). В равновесии Нэша D(x)=0.5 везде: дискриминатор не может отличить реальное от синтетического.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Фальшивомонетчик (G) и детектив (D). Детектив учится ловить подделки, фальшивомонетчик — делать их всё лучше. Оба развиваются вместе.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> D(real)=0.9: E[log 0.9]≈−0.1. D(fake)=0.1: E[log(1−0.1)]≈−0.1. Хороший дискриминатор даёт высокий общий score. G хочет поднять D(fake)→0.9.</div>
     </div>
     <p>Дискриминатор учится распознавать “реально / фейк”, а генератор учится подделывать данные так, чтобы дискриминатор ошибался.</p>
     </div>
@@ -122,16 +148,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">π_k</span><span class="fa-name">вес компоненты</span><span class="fa-desc">Доля k-й компоненты в смеси.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">generator loss</span><span class="fa-desc">сигнал, который заставляет генератор делать samples более похожими на реальные.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">оценка discriminator-а: насколько sample похож на real data.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">real/fake sample</span><span class="fa-desc">настоящий объект из данных или сгенерированный объект generator-а.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">batch index</span><span class="fa-desc">номер sample в batch, по которому считается вклад adversarial loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W(p_data, p_G)</span><span class="fa-name">Wasserstein distance</span><span class="fa-desc">Earth mover's distance: минимальная «стоимость перекладывания» массы из распределения данных p_data в распределение генератора p_G.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">inf_{γ∈Π}</span><span class="fa-name">инфимум по транспортным планам</span><span class="fa-desc">Минимум берётся по всем возможным совместным распределениям γ с маргиналями p_data и p_G.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Π(p_data, p_G)</span><span class="fa-name">множество транспортных планов</span><span class="fa-desc">Все способы «сопоставить» точки из двух распределений; каждый план задаёт, откуда и куда перемещается масса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">транспортный план</span><span class="fa-desc">Совместное распределение γ(x, y), задающее «маршрут» перемещения массы от p_data к p_G.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||x-y||</span><span class="fa-name">расстояние между парой точек</span><span class="fa-desc">Евклидово расстояние между реальным объектом x и сгенерированным y; cost перемещения единицы массы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">E_{(x,y)~γ}</span><span class="fa-name">ожидаемая стоимость перемещения</span><span class="fa-desc">Средний путь при данном транспортном плане γ; W — минимум этого ожидания по всем допустимым γ.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> GAN не измеряет расстояние напрямую; он обучает discriminator как адаптивный критерий реалистичности.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как экзаменатор, который меняет вопросы по мере того, как студент учится списывать.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> W измеряет, сколько «работы» нужно, чтобы превратить одно распределение в другое. В отличие от KL и JS divergence, W меняется непрерывно даже когда распределения не пересекаются — это делает gradient более полезным для обучения генератора.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Представьте два кучи земли разной формы. Wasserstein = минимальная работа бульдозера, чтобы переформировать одну кучу в другую.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p_data = δ(0) (масса в 0), p_G = δ(3) (масса в 3). W=3. KL=∞ (нет перекрытия). W даёт полезный gradient, KL — нет.</div>
     </div>
     <p>Интуитивно Wasserstein distance отвечает на вопрос: сколько “работы” нужно, чтобы перетащить массу одного распределения в другое. Эта геометрическая интерпретация часто даёт более гладкую и полезную оптимизацию, чем исходная minimax-цель.</p>
     </div>
@@ -250,6 +277,40 @@
     <details><summary>[Intermediate] WGAN intuition</summary><p>Почему Wasserstein distance помогает? <strong>Решение:</strong> даёт более гладкий training signal, когда distributions почти не пересекаются.</p></details>
     <details><summary>[Hard] Equilibrium</summary><p>Что происходит в идеальном равновесии GAN? <strong>Решение:</strong> generator distribution совпадает с data distribution, discriminator не лучше случайного.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="gen-7-2"><h2>Checkpoint: 7.2 GAN</h2><ul><li>Почему GAN - minimax game?</li><li>Почему обучение GAN нестабильно?</li><li>Что такое mode collapse?</li><li>Чем WGAN отличается по интуиции?</li><li>Rubber duck: объясни GAN как соревнование подделывателя и эксперта.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как устроена игра между генератором и дискриминатором в GAN?</summary>
+      <div class="ml-quiz__a"><p>Генератор G создаёт фейковые примеры из шума z. Дискриминатор D пытается отличить реальные данные от сгенерированных. G обучается обмануть D (максимизировать log D(G(z))), D обучается не ошибаться (максимизировать log D(x) + log(1-D(G(z)))). Nash equilibrium: G генерирует неотличимые образцы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое mode collapse и почему он возникает в GAN?</summary>
+      <div class="ml-quiz__a"><p>Mode collapse: генератор обучается производить только часть возможных примеров (например, только одну цифру вместо 10), так как это обманывает дискриминатор. Генератор находит «уязвимую» зону D и эксплуатирует её, а не разнообразие данных. Решения: WGAN, minibatch discrimination, унrолling.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем Wasserstein GAN (WGAN) лучше оригинального?</summary>
+      <div class="ml-quiz__a"><p>WGAN использует расстояние Вассерштейна вместо JS-дивергенции как меру между распределениями. Это даёт стабильный, информативный gradient сигнал даже при несовпадающих поддержках. Требует weight clipping (или gradient penalty в WGAN-GP) для Lipschitz-ограничения дискриминатора.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое conditional GAN (cGAN) и как добавить условие?</summary>
+      <div class="ml-quiz__a"><p>cGAN добавляет условие y (класс, текст, изображение) к обоим G и D. G(z,y) генерирует примеры условно на y; D(x,y) оценивает, реален ли x данного класса y. Условие передаётся через конкатенацию embedding с входом или через cross-attention (text-to-image).</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-2"><h2>Checkpoint: 7.2 GAN</h2><ul><li>Почему GAN - minimax game?</li><li>Почему обучение GAN нестабильно?</li><li>Что такое mode collapse?</li><li>Чем WGAN отличается по интуиции?</li><li>Rubber duck: объясни GAN как соревнование подделывателя и эксперта.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

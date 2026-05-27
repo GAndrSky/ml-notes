@@ -80,7 +80,7 @@ select{background:#0d1117;border:1px solid var(--border);color:var(--text);paddi
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/02_optimizers.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -96,8 +96,175 @@ select{background:#0d1117;border:1px solid var(--border);color:var(--text);paddi
       <h1>4.2 Оптимизаторы</h1>
       <p class="muted">SGD → Momentum → Adam → AdamW — откуда берутся формулы и почему они работают</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Оптимизатор решает, как параметры сети обновляются после каждого шага. SGD с моментумом, Adam, AdamW — разные компромиссы скорости, стабильности и обобщаемости.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как SGD с минибатчами работает и почему batching помогает</li>
+      <li>Что такое momentum и как он ускоряет сходимость</li>
+      <li>Чем адаптивные методы (Adam) отличаются от SGD</li>
+      <li>Как learning rate влияет на convergence</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Backpropagation (4.1)</li>
+      <li>Градиент и оптимизация (1.5)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- 1. Общая форма -->
+
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">SGD, Momentum и Adam — один шаг обновления w</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Исходные данные</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Один параметр w. Сравниваем три оптимизатора при одних и тех же условиях.</p>
+        <div class="wt-formula">w = 2.0,  градиент g = −0.5,  lr = 0.1</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">SGD (vanilla)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Самое простое правило: сдвинуться против градиента.</p>
+        <div class="wt-formula">w_new = w − lr × g = 2.0 − 0.1 × (−0.5) = 2.0 + 0.05 = 2.05</div>
+        <div class="wt-result"><strong>SGD: w → 2.05</strong>. Шаг ровно lr × |g|.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">SGD + Momentum (β = 0.9)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Momentum накапливает «импульс» v — EMA прошлых градиентов.</p>
+        <div class="wt-formula">v₀ = 0  (начало)  →  v₁ = β×v₀ + g = 0 + (−0.5) = −0.5
+w_new = w − lr × v₁ = 2.0 − 0.1×(−0.5) = 2.05</div>
+        <div class="wt-result">Первый шаг = SGD. На 2-м шаге: если g снова −0.5, то v₂=0.9×(−0.5)+(−0.5)=−0.95 → более крупный шаг!</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Adam: моменты m и v (t=1)</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Adam ведёт два EMA: первый момент (m, mean) и второй (v, variance).</p>
+        <div class="wt-formula">β₁=0.9, β₂=0.999, ε=1e-8
+m₁ = β₁×0 + (1−β₁)×g = 0.1×(−0.5) = −0.05
+v₁ = β₂×0 + (1−β₂)×g² = 0.001×0.25 = 0.00025</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Adam: bias correction</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>На начальных шагах m и v смещены к нулю. Коррекция исправляет это.</p>
+        <div class="wt-formula">m̂₁ = m₁ / (1−β₁^t) = −0.05 / 0.1 = −0.5
+v̂₁ = v₁ / (1−β₂^t) = 0.00025 / 0.001 = 0.25</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Adam: обновление</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Adam делит lr на корень из v̂ — адаптивный размер шага.</p>
+        <div class="wt-formula">w_new = w − lr × m̂₁ / (√v̂₁ + ε)
+      = 2.0 − 0.1 × (−0.5) / (√0.25 + 1e-8)
+      = 2.0 + 0.1 / 0.5 = 2.0 + 0.2 = 2.20</div>
+        <div class="wt-result"><strong>Adam: w → 2.20</strong> — шаг в 4× крупнее SGD при том же lr! Это эффект bias correction на первом шаге.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Скорость обучения η: сходимость vs нестабильность</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">η (learning rate) ×10⁻³</span>
+          <span class="ml-slider-lab__param-value" id="sl-lr-disp">10</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-lr"
+               min="1" max="1000" step="1" value="10">
+        <div class="ml-slider-lab__range-labels">
+          <span>0.001 (медленно)</span><span>1.0 (опасно)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-lr"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-lr');
+  var disp = document.getElementById('sl-lr-disp');
+  var out = document.getElementById('sl-out-lr');
+  function render(){
+    var v = +sl.value; // 1..1000 representing 0.001..1.0
+    var lr = v / 1000;
+    disp.textContent = lr < 0.01 ? lr.toFixed(4) : lr < 0.1 ? lr.toFixed(3) : lr.toFixed(2);
+    var speed    = Math.min(100, Math.round(v / 10));
+    var stable   = Math.max(0, Math.round(100 - v / 12));
+    var steps    = Math.max(5, Math.round(200 - v / 6));
+    var verdict, vclass, txt;
+    if (v < 5) {
+      verdict = 'Слишком медленно'; vclass = 'sl-verdict-warn';
+      txt = 'η=' + lr.toFixed(4) + ': обучение будет сходиться, но потребует тысячи эпох. Градиенты маленькие, веса почти не меняются.';
+    } else if (v <= 50) {
+      verdict = 'Хороший диапазон'; vclass = 'sl-verdict-ok';
+      txt = 'η=' + lr.toFixed(3) + ': рекомендуемый диапазон для большинства задач (0.001–0.05). Стабильная сходимость за разумное число шагов.';
+    } else if (v <= 200) {
+      verdict = 'Осторожно'; vclass = 'sl-verdict-warn';
+      txt = 'η=' + lr.toFixed(2) + ': для некоторых задач работает (SGD с momentum), но риск осцилляций растёт. Мониторьте loss curve.';
+    } else {
+      verdict = 'Расходится'; vclass = 'sl-verdict-bad';
+      txt = 'η=' + lr.toFixed(2) + ': слишком большой! Loss будет расти или осциллировать. Модель «перепрыгивает» минимум.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Скорость сходимости</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + speed + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Стабильность</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stable > 60 ? 'sl-good' : stable > 30 ? 'sl-warn' : 'sl-bad') + '" style="width:' + stable + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Шагов до минимума</span><div class="sl-bar-wrap"><div class="sl-bar ' + (steps > 150 ? 'sl-bad' : steps > 80 ? 'sl-warn' : 'sl-good') + '" style="width:' + Math.min(100,steps/2) + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
 <div class="card">
   <h2>🗺️ Общая задача оптимизации</h2>
   <p>После backprop у нас есть градиент <span class="hl-amber">g = ∂L/∂θ</span>. Оптимизатор решает: <strong>как именно обновить θ?</strong></p>
@@ -110,15 +277,15 @@ update зависит от оптимизатора:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">Текущие веса модели. После update становятся θ_{t+1}.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент loss ∂L/∂θ</span><span class="fa-desc">Направление роста loss. Все оптимизаторы идут против него: −η·update.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate (длина шага)</span><span class="fa-desc">Масштаб шага. Слишком большой → divergence; слишком маленький → медленная сходимость.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">EMA g</span><span class="fa-name">экспон. скользящее среднее g</span><span class="fa-desc">Momentum: β·v_{t-1}+(1−β)·g_t. Сглаживает шум батча, разгоняется в постоянных направлениях.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√(EMA g²)</span><span class="fa-name">корень из EMA квадратов</span><span class="fa-desc">Adam: адаптивный нормировщик. Параметры с высокой дисперсией градиента → меньший шаг.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SGD: шаг −η·g_t напрямую. Momentum: накапливает историю, разгоняется в стабильных направлениях. Adam: нормирует шаг на дисперсию — каждый параметр получает свой адаптивный lr независимо от масштаба gradient.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=2.0, η=0.1, g=3.0. SGD: θ=1.7. Momentum (β=0.9): v₁=0.3, θ=1.97 — маленький первый шаг, потом разгоняется. Adam: шаг ≈ η вне зависимости от масштаба g.</div>
     </div>
     <div class="intuition">
     💡 Все оптимизаторы решают одну задачу: двигаться вниз по loss surface, но делают это по-разному. SGD — прямолинейно. Momentum — с инерцией. Adam — адаптивно для каждого параметра.
@@ -207,15 +374,15 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_{t+1}</span><span class="fa-name">новые параметры</span><span class="fa-desc">Результат одного шага SGD: θ_{t+1} = θ_t − η·g_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">текущие параметры</span><span class="fa-desc">Веса модели до шага. SGD обновляет их напрямую градиентом.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Длина шага. Типично 0.001–0.1. Слишком большой → divergence, маленький → медленная сходимость.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент на мини-батче</span><span class="fa-desc">∂L_batch/∂θ — частная производная loss по θ, вычисленная на случайном мини-батче.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">L_batch</span><span class="fa-name">loss на мини-батче</span><span class="fa-desc">Среднее loss по N примерам батча. Шум от случайного батча помогает избежать локальных минимумов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SGD двигает параметры ровно против текущего gradient — просто и прямолинейно. «Стохастический» — потому что g_t вычисляется на случайном мини-батче, а не на всём датасете. Шум батча помогает выйти из резких минимумов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=2.0, η=0.01, g=5.0: θ_{t+1}=2.0−0.01·5.0=1.95. Следующий батч даёт g=−2.0: θ=1.95+0.02=1.97. Зигзаг от шума батча — это нормально.</div>
     </div>
     <p style="margin-top:8px;font-size:.88em;">«Стохастический» — потому что используем случайный мини-батч, а не весь датасет. Это добавляет шум, но ускоряет сходимость и помогает выйти из локальных минимумов.</p>
       <div class="warn" style="margin-top:10px;font-size:.85em;">
@@ -266,15 +433,15 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v_t</span><span class="fa-name">скорость (velocity)</span><span class="fa-desc">EMA градиентов: v_t = β·v_{t-1} + (1−β)·g_t. «Инерция» оптимизации.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β</span><span class="fa-name">momentum coefficient (обычно 0.9)</span><span class="fa-desc">Вес прошлой скорости: β=0.9 → 90% инерции, 10% нового градиента. Эффективное окно ≈ 1/(1−β)=10 шагов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v_{t-1}</span><span class="fa-name">скорость предыдущего шага</span><span class="fa-desc">Накопленная история градиентов. Придаёт «инерцию» — направление меняется плавно.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(1−β)·g_t</span><span class="fa-name">вклад текущего градиента</span><span class="fa-desc">При β=0.9: (1−0.9)·g_t = 0.1·g_t. Маленький вклад = сильное сглаживание шума.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">θ_{t+1} = θ_t − η·v_t</span><span class="fa-name">шаг по скорости</span><span class="fa-desc">Optimizer двигается по накопленной скорости, не по сырому градиенту.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Momentum — физический шарик на рельефе. Он набирает скорость в постоянном направлении и не меняет курс резко при шуме батча. При g=[3,3,3,...] скорость постепенно растёт до 3.0, ускоряя сходимость в 1/(1−β)=10 раз.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=3 (стабильно). v₁=0.3, v₂=0.27+0.3=0.57, v₃=0.51+0.3=0.81, ..., v∞→3.0. «Разгон» по постоянному направлению — ускорение сходимости.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">v_t — «скорость» (velocity). Аналог физической инерции: шарик катится вниз, набирает скорость, не меняет направление резко.</p>
       <br>
@@ -287,15 +454,15 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">EMA</span><span class="fa-name">exponential moving average</span><span class="fa-desc">Взвешенная сумма прошлых градиентов. Каждый предыдущий шаг вносит меньший вклад, убывающий как β^k.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β</span><span class="fa-name">decay factor (обычно 0.9)</span><span class="fa-desc">Вес прошлого EMA. β=0.9: текущий g весит 0.1, предыдущий 0.09, позапрошлый 0.081 и т.д.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(1−β)</span><span class="fa-name">вес текущего градиента</span><span class="fa-desc">При β=0.9: 1−0.9=0.1. Маленький вес = сильное сглаживание шума батча.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β^k</span><span class="fa-name">вес k-го шага назад</span><span class="fa-desc">Экспоненциальный распад: β^1=0.9, β^5≈0.59, β^20≈0.12. Давние градиенты почти не влияют.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1/(1−β)</span><span class="fa-name">эффективное окно памяти</span><span class="fa-desc">При β=0.9: ≈10 последних шагов имеют значимый вес. При β=0.99: ≈100 шагов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> EMA — это «плавное» среднее с памятью. Случайные всплески одного шага не меняют его резко. Постоянный сигнал накапливается: если g_t=1 постоянно, EMA медленно сходится к 1.0. Параметр β контролирует, насколько быстро «забывается» прошлое.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=1 (постоянно). EMA_1=0.1, EMA_2=0.09+0.1=0.19, EMA_5≈0.41, EMA_10≈0.65, EMA_∞→1.0. Постепенный «разгон» к истинному среднему.</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 Эффективное окно памяти ≈ 1/(1−β).<br>
@@ -344,15 +511,16 @@ v̂_t = v_t/(1−β₂ᵗ)
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m_t</span><span class="fa-name">1-й момент (EMA градиентов)</span><span class="fa-desc">m_t = β₁·m_{t-1}+(1−β₁)·g_t. Оценка направления: куда в среднем тянет gradient.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v_t</span><span class="fa-name">2-й момент (EMA g²)</span><span class="fa-desc">v_t = β₂·v_{t-1}+(1−β₂)·g_t². Оценка дисперсии: насколько «шумный» этот параметр.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β₁=0.9, β₂=0.999</span><span class="fa-name">decay для моментов</span><span class="fa-desc">β₁ — инерция направления (окно ≈10 шагов). β₂ — медленное обновление дисперсии (окно ≈1000 шагов).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m̂_t / v̂_t</span><span class="fa-name">bias-corrected моменты</span><span class="fa-desc">m̂_t=m_t/(1−β₁ᵗ), v̂_t=v_t/(1−β₂ᵗ). Компенсируют занижение в начале из-за нулевой инициализации.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε=1e-8</span><span class="fa-name">числовая стабильность</span><span class="fa-desc">Прибавляется к √v̂_t перед делением. Предотвращает деление на 0 при v̂≈0.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η·m̂/(√v̂+ε)</span><span class="fa-name">адаптивный шаг</span><span class="fa-desc">Параметры с высокой дисперсией (v̂ большой) получают меньший шаг. Эффективный lr ≈ η для каждого параметра.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Adam — momentum + адаптивный lr. m̂ задаёт направление (сглаженный gradient), √v̂ нормирует масштаб (параметры с шумным gradient получают меньший шаг). Результат: эффективный шаг ≈ η для каждого параметра, независимо от его масштаба.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> t=1, g₁=0.5. m₁=0.1·0.5=0.05, m̂₁=0.05/0.1=0.5. v₁=0.001·0.25=0.00025, v̂₁=0.00025/0.001=0.25. Шаг: η·0.5/(√0.25+ε)=η·0.5/0.5=η. Adam шаг ≈ η независимо от g!</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:10px;">
         💡 <strong>m̂ / √v̂</strong> — нормированный градиент.<br>
@@ -372,15 +540,15 @@ m̂_1 = 0.1·g_1 / (1−0.9¹) = 0.1·g_1/0.1 = g_1 ✓
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m̂_t</span><span class="fa-name">bias-corrected оценка момента</span><span class="fa-desc">Правильный estimate EMA при конечном t: m̂_t = m_t / (1−β₁ᵗ).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m_t</span><span class="fa-name">«сырой» момент (занижен)</span><span class="fa-desc">Инициализирован 0. На ранних шагах недооценивает истинное среднее — потому что EMA не успело накопить историю.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1−β₁ᵗ</span><span class="fa-name">correction factor</span><span class="fa-desc">На шаге t=1, β₁=0.9: 1−0.9=0.1. m_t делится на 0.1 (умножается на 10!). На t=50: 1−0.9^50≈0.995 — коррекция почти 1.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β₁ᵗ</span><span class="fa-name">степенной распад</span><span class="fa-desc">Убывает экспоненциально: β^1=0.9, β^10≈0.35, β^50≈0.005. Коррекция нужна только в начале — потом β^t → 0.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">номер шага оптимизации</span><span class="fa-desc">Счётчик шагов: t=1,2,3,... Correction factor 1/(1−β^t) стремится к 1 при t→∞.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> EMA инициализируется нулём. На первом шаге m_1=(1−β₁)·g₁ — это лишь 10% от g₁ при β₁=0.9. Без коррекции optimizer видел бы заниженный gradient в начале. Коррекция 1/(1−β^t) восстанавливает правильный масштаб, убывая к 1 по мере накопления истории.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β₁=0.9, t=1, g₁=1.0. m₁=0.1·1.0=0.1 (занижено в 10×). m̂₁=0.1/(1−0.9)=1.0 — правильно! t=50: m̂=m/(1−0.9^50)≈m/0.995≈m — коррекция ≈1, почти не нужна.</div>
     </div>
     <br>
       <h3>Интуиция: Adam = Momentum + RMSProp</h3>
@@ -410,15 +578,15 @@ AdamW (правильно):
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">m̂</span><span class="fa-name">bias-corrected 1-й момент</span><span class="fa-desc">Направление шага — сглаженный gradient. Тот же что в Adam.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">√v̂+ε</span><span class="fa-name">адаптивный нормировщик</span><span class="fa-desc">Корень из bias-corrected 2-го момента + ε. Масштабирует шаг по дисперсии каждого параметра.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">weight decay coefficient</span><span class="fa-desc">Сила убывания весов. Типично 0.01–0.1. Штрафует за большие веса — предотвращает overfitting.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η·λ·θ_t</span><span class="fa-name">weight decay шаг (AdamW)</span><span class="fa-desc">Прямо вычитается из θ — НЕ масштабируется на 1/√v̂. Это ключевое отличие AdamW от Adam.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Adam vs AdamW</span><span class="fa-name">ключевое различие</span><span class="fa-desc">В Adam λ·θ входит в gradient → масштабируется адаптивно (неправильно). В AdamW λ·θ применяется отдельно → правильный L2 weight decay.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В Adam weight decay λ·θ добавляется к gradient перед адаптивным нормированием — он делится на √v̂ и теряет L2-смысл. AdamW разделяет: Adam шаг + прямой weight decay η·λ·θ. Именно AdamW используется в трансформерах (GPT, BERT), где регуляризация важна.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=1.0, η=0.001, λ=0.01, √v̂=0.1. Adam WD шаг в gradient: λ·θ/√v̂=0.01/0.1=0.1 (усилен!). AdamW WD шаг: η·λ·θ=0.00001 (чистый, предсказуемый).</div>
     </div>
     <div class="warn" style="margin-top:10px;font-size:.85em;">
         ⚠️ В Adam+L2 weight decay масштабируется адаптивными ставками v̂, из-за чего параметры с большим v̂ (частые, шумные) регуляризируются слабее. AdamW применяет decay напрямую к параметрам — равномерно.
@@ -462,15 +630,16 @@ Linear decay: η_t = η₀ · (1 − t/T)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">параметры на шаге t</span><span class="fa-desc">текущие веса модели перед optimizer update.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">направление роста loss; optimizer обычно идёт против него.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага: слишком большой даёт divergence, слишком маленький - медленное обучение.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t / m_t</span><span class="fa-name">накопленная скорость</span><span class="fa-desc">память optimizer-а о прошлых градиентах, сглаживающая шум и направление.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_t</span><span class="fa-name">learning rate на шаге t</span><span class="fa-desc">Текущий lr — меняется по расписанию каждый шаг или эпоху.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η₀</span><span class="fa-name">начальный / пиковый lr</span><span class="fa-desc">Максимальный lr, достигаемый после warmup (или с самого начала без warmup). Типично 1e-3 — 1e-4.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">η_min</span><span class="fa-name">минимальный lr (cosine floor)</span><span class="fa-desc">Нижняя граница для cosine schedule. Обычно 0 или η₀/10. При t=T: η_T = η_min.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">общее число шагов</span><span class="fa-desc">Длина обучения в шагах оптимизатора. Cosine и linear decay планируют убывание до шага T.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">t_warmup</span><span class="fa-name">число шагов прогрева</span><span class="fa-desc">На первых t_warmup шагах lr линейно растёт от 0 до η₀. Стабилизирует начало обучения.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">cos(πt/T)</span><span class="fa-name">косинусное затухание</span><span class="fa-desc">cos(0)=1 → cos(π)=−1. η_t идёт от η₀ до η_min по гладкой S-кривой, без резких переходов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> optimizer превращает gradient information в конкретный шаг по параметрам.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как навигация по рельефу: gradient говорит наклон, learning rate - длину шага, momentum - инерцию движения.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> если θ=2, η=0.1 и g=3, SGD даст новый θ=1.7.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Большой lr в начале — быстрое движение к минимуму. Маленький lr в конце — точная «доводка» без прыжков через минимум. Warmup нужен чтобы Adam успел накопить v̂ до начала больших шагов. Cosine decay даёт плавное убывание без резких переходов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η₀=0.001, T=1000, η_min=0. Cosine: t=0→η=0.001, t=500→η=0.0005, t=1000→η=0. Warmup t_warmup=100: шаг 50→η=0.0005, шаг 100→η=0.001 (пик), шаг 550→η≈0.0005 (cosine начинает).</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 <strong>Warmup</strong> важен для Adam: в начале m и v ещё не прогреты, эффективный lr нестабилен. Маленький начальный lr даёт EMA "набрать" статистику. BERT, GPT все используют warmup + cosine decay.
@@ -1107,7 +1276,40 @@ document.getElementById('trajBeta').addEventListener('input', function(){
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем Adam отличается от SGD с momentum?</summary>
+      <div class="ml-quiz__a"><p>SGD с momentum накапливает историю градиентов (первый момент) для ускорения. Adam добавляет второй момент — скользящее среднее квадратов градиентов. Это нормирует шаг: большие частые градиенты → меньший шаг (адаптивный lr). Adam обычно сходится быстрее, но иногда менее аккуратен, чем SGD с lr schedule.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем в Adam используется bias correction (поправка на смещение)?</summary>
+      <div class="ml-quiz__a"><p>В первые итерации скользящие средние m и v инициализированы нулями и занижают истинные оценки. Bias correction: m̂ = m/(1-β₁ᵗ), v̂ = v/(1-β₂ᵗ) исправляет это, масштабируя значения выше в начале обучения. Без этого шаги в начале слишком малы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое weight decay и чем AdamW лучше L2-регуляризованного Adam?</summary>
+      <div class="ml-quiz__a"><p>В оригинальном Adam L2-регуляризация неэффективна: she делится на √v̂ и теряет смысл регуляризации при адаптивном шаге. AdamW применяет weight decay напрямую к весам (w ← w - lr·decay·w), независимо от адаптивного шага, что корректно реализует L2.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда SGD с тщательно подобранным lr превосходит Adam?</summary>
+      <div class="ml-quiz__a"><p>В задачах, где важно хорошее обобщение (не только быстрая сходимость), SGD часто даёт лучший финальный тест (ImageNet classification). Adam быстро находит хорошие области, но SGD с cosine annealing и weight decay часто сходится к более «широким» минимумам с лучшей генерализацией.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -1182,5 +1384,7 @@ document.getElementById('trajBeta').addEventListener('input', function(){
 </div>
 
 <script src="../bundle.js" defer></script>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

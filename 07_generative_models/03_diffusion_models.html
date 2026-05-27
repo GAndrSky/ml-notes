@@ -20,7 +20,7 @@
     @media (max-width:760px){.diffusion-stage{grid-template-columns:1fr}.noise-strip{grid-template-columns:repeat(3,1fr)}}
   </style>
 </head>
-<body>
+<body data-ml-section="generative">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -32,6 +32,30 @@
       <h1>7.3 Diffusion Models</h1>
       <p class="muted">Diffusion learns generation as iterative denoising: corrupt real data with controlled noise, then train a model to reverse that corruption step by step.</p>
     </section>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Диффузионные модели вытеснили GAN как стандарт генерации изображений. Постепенное зашумление + обучение обратному процессу — простая идея, дающая фотореалистичные результаты без нестабильности GAN.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Forward process — как гауссовский шум добавляется за T шагов</li>
+      <li>Closed-form sampling x_t напрямую из x_0 через ᾱ_t</li>
+      <li>Training: почему обучать ε-prediction эффективнее, чем x_0-prediction</li>
+      <li>DDPM vs DDIM — 1000 шагов vs 20 с детерминированным сэмплированием</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Нейронные сети (3.1–3.3)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>VAE (7.1)</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="learning-meta">
       <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/03_probability_theory.html">1.3 Probability</a>, <a href="../03_neural_basics/04_loss_functions.html">3.4 Loss</a>, <a href="01_variational_autoencoders.html">7.1 VAE</a></span></div>
@@ -192,6 +216,81 @@
     <details><summary>[Intermediate] Score matching</summary><p>Как diffusion связан со score? <strong>Решение:</strong> модель учится направлению к более вероятным областям data distribution.</p></details>
     <details><summary>[Hard] Guidance</summary><p>Что делает classifier-free guidance? <strong>Решение:</strong> усиливает conditional signal, смешивая conditional и unconditional predictions.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="gen-7-3"><h2>Checkpoint: 7.3 Diffusion</h2><ul><li>Зачем добавлять шум при обучении?</li><li>Что предсказывает denoiser?</li><li>Почему sampling занимает много шагов?</li><li>Как guidance влияет на fidelity/diversity?</li><li>Rubber duck: объясни diffusion как обучение постепенно убирать шум из картинки.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как работает forward process в диффузионных моделях?</summary>
+      <div class="ml-quiz__a"><p>Forward process постепенно добавляет Гауссов шум к данным x₀: q(xₜ|xₜ₋₁) = N(xₜ; √(1-βₜ)xₜ₋₁, βₜI). После T шагов (обычно T=1000) данные становятся чистым шумом xT ~ N(0,I). Аналитически: q(xₜ|x₀) = N(xₜ; √ᾱₜx₀, (1-ᾱₜ)I), что позволяет сэмплировать любой шаг напрямую.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чему учится нейросеть в диффузионной модели?</summary>
+      <div class="ml-quiz__a"><p>Нейросеть ε_θ(xₜ, t) учится предсказывать добавленный шум ε при данном зашумлённом xₜ и шаге t. Loss = MSE(ε_θ(xₜ,t), ε). При генерации итеративно «убираем» предсказанный шум из xₜ, получая xₜ₋₁, и повторяем T раз.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое classifier-free guidance и как он улучшает генерацию?</summary>
+      <div class="ml-quiz__a"><p>CFG обучает одну модель с условием c и без (с вероятностью 10-20% заменяем c на null). При генерации: ε_guided = ε_uncond + w·(ε_cond - ε_uncond). Коэффициент w (guidance scale) усиливает влияние условия. Высокий w → более качественные, но менее разнообразные изображения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём основной недостаток диффузионных моделей по сравнению с GAN?</summary>
+      <div class="ml-quiz__a"><p>Диффузионные модели требуют T=50-1000 шагов денойзинга при генерации — намного медленнее GAN (один forward pass). DDIM и другие ускоренные семплеры снижают до 10-50 шагов без потери качества. Consistency models пытаются дойти до 1-2 шагов.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-3"><h2>Checkpoint: 7.3 Diffusion</h2><ul><li>Зачем добавлять шум при обучении?</li><li>Что предсказывает denoiser?</li><li>Почему sampling занимает много шагов?</li><li>Как guidance влияет на fidelity/diversity?</li><li>Rubber duck: объясни diffusion как обучение постепенно убирать шум из картинки.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Диффузионные модели</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Используй DDIM для ускоренного sampling (10-50 шагов вместо 1000).</li>
+        <li>Guidance scale (CFG) 7-12 — хороший диапазон для баланса качества и разнообразия.</li>
+        <li>Fine-tune через DreamBooth или LoRA, не с нуля — требует минимум данных.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Использовать слишком высокий CFG scale (>15) — изображения пересвечиваются.</li>
+        <li>Не нормализовать входные изображения перед обучением — нужна нормализация [-1, 1].</li>
+        <li>Игнорировать noise schedule: linear vs cosine по-разному влияет на качество.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Number of diffusion steps (inference) — скорость vs качество.</li>
+        <li>Guidance scale — сила условия: выше → точнее, но менее разнообразно.</li>
+        <li>Noise schedule: cosine обычно лучше linear для изображений высокого разрешения.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="07_generative_models/01_variational_autoencoders.html">← 7.1 VAE</a></li>
+        <li><a href="07_generative_models/05_stable_diffusion_deep_dive.html">7.5 Stable Diffusion →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

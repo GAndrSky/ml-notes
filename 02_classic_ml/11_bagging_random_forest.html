@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/11_bagging_random_forest.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -421,8 +421,207 @@
         почему лес обычно устойчивее одного дерева.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Random Forest — один из самых надёжных алгоритмов «из коробки». Bootstrap + feature subsampling = ансамбль деревьев, устойчивый к шуму и переобучению.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Что такое bagging и как bootstrap снижает дисперсию модели</li>
+      <li>Случайный выбор признаков — почему он снижает корреляцию деревьев</li>
+      <li>Feature importance — permutation vs Gini importance — разница</li>
+      <li>Когда Random Forest лучше XGBoost (и наоборот)</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Деревья решений (2.10)</li>
+      <li>Метрики классификации/регрессии (2.6–2.7)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Bagging — bootstrap и агрегация предсказаний</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Исходный датасет</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>D = {A, B, C, D, E} — 5 обучающих примеров. Обучаем 3 дерева через bootstrap.</p>
+        <div class="wt-formula">D = {A, B, C, D, E}</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Bootstrap sample 1</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Случайная выборка С ВОЗВРАЩЕНИЕМ из D (n=5 раз). Некоторые точки повторяются, другие пропускаются.</p>
+        <div class="wt-formula">Bootstrap₁ = {A, A, C, D, E}  ← A взята дважды
+OOB₁ (out-of-bag) = {B}          ← B не попала</div>
+        <div class="wt-result">OOB — встроенная тест-выборка! Дерево 1 можно оценить на B без отдельного holdout.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Bootstrap sample 2</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Второй bootstrap sample — другая случайная выборка с возвращением.</p>
+        <div class="wt-formula">Bootstrap₂ = {B, B, C, C, D}  ← B и C по два раза
+OOB₂ = {A, E}</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Обучение деревьев + случайные признаки</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Каждое дерево учится только на своём bootstrap sample. В каждом узле рассматривается случайное подмножество признаков (√p из p).</p>
+        <div class="wt-formula">Tree 1: обучен на Bootstrap₁, видит случайные признаки
+Tree 2: обучен на Bootstrap₂, видит случайные признаки
+Tree 3: обучен на Bootstrap₃, ...</div>
+        <div class="wt-result">Случайность признаков снижает корреляцию между деревьями → лучшая генерализация.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Предсказание для новой точки Q</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Каждое дерево голосует за класс (классификация) или даёт число (регрессия).</p>
+        <div class="wt-formula">Tree 1 → класс ● (1)
+Tree 2 → класс ○ (0)
+Tree 3 → класс ● (1)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Агрегация: majority vote</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Финальный ответ — большинство голосов.</p>
+        <div class="wt-formula">● = 2 голоса,  ○ = 1 голос
+Предсказание: ●</div>
+        <div class="wt-result"><strong>Random Forest уменьшает дисперсию</strong> по сравнению с одним деревом: каждое дерево переобучено по-своему, их среднее — нет.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Random Forest: n_estimators и убывающая отдача</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">n_estimators (число деревьев)</span>
+          <span class="ml-slider-lab__param-value" id="sl-rf-disp">100</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-rf"
+               min="1" max="500" step="1" value="100">
+        <div class="ml-slider-lab__range-labels">
+          <span>1 (одно дерево)</span><span>500 (стабилизировано)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-rf"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-rf');
+  var disp = document.getElementById('sl-rf-disp');
+  var out = document.getElementById('sl-out-rf');
+  function render(){
+    var n = +sl.value;
+    disp.textContent = n;
+    var oobErr   = Math.round(5 + 45 * Math.exp(-n / 30));
+    var variance = Math.round(5 + 80 * Math.exp(-n / 25));
+    var time     = Math.min(100, Math.round(n / 5));
+    var verdict, vclass, txt;
+    if (n < 10) {
+      verdict = 'Нестабильно'; vclass = 'sl-verdict-warn';
+      txt = n + ' деревьев: высокая дисперсия предсказаний. Каждый запуск даёт разный результат. OOB error нестабилен.';
+    } else if (n <= 100) {
+      verdict = 'Хороший диапазон'; vclass = 'sl-verdict-ok';
+      txt = n + ' деревьев: ошибка быстро снижается и приближается к плато. Для большинства задач достаточно 50–200 деревьев.';
+    } else {
+      verdict = 'Убывающая отдача'; vclass = 'sl-verdict-ok';
+      txt = n + ' деревьев: ошибка почти не снижается, но время растёт линейно. Увеличивайте n только если важна стабильность предсказания.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>OOB error ↓</span><div class="sl-bar-wrap"><div class="sl-bar ' + (oobErr > 30 ? 'sl-bad' : oobErr > 15 ? 'sl-warn' : 'sl-good') + '" style="width:' + oobErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Дисперсия пред-ния</span><div class="sl-bar-wrap"><div class="sl-bar ' + (variance > 50 ? 'sl-bad' : variance > 20 ? 'sl-warn' : 'sl-good') + '" style="width:' + variance + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Время обучения</span><div class="sl-bar-wrap"><div class="sl-bar ' + (time > 70 ? 'sl-warn' : 'sl-good') + '" style="width:' + time + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Зачем вообще переходить от одного дерева к лесу?</h2>
       <p>
         Одно дерево решений — очень понятная модель, но оно имеет важную слабость:
@@ -600,16 +799,17 @@ P(selected) ≈ 1 - e^(-1) ≈ 0.632</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Var(average)</span><span class="fa-name">дисперсия среднего предсказания ансамбля</span><span class="fa-desc">То, что уменьшается при усреднении B деревьев — именно это bagging и оптимизирует.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρ</span><span class="fa-name">средняя попарная корреляция деревьев</span><span class="fa-desc">Насколько похожи предсказания разных деревьев. ρ=1 — одинаковые деревья, усреднение не помогает; ρ=0 — независимые, максимальный выигрыш.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия одного дерева</span><span class="fa-desc">Variance отдельного base-learner — одинакова для всех деревьев в этой модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρσ²</span><span class="fa-name">несокращаемый остаток variance</span><span class="fa-desc">Эта часть не уменьшается при росте B — только снижение корреляции между деревьями помогает.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1-ρ)σ²/B</span><span class="fa-name">сокращаемая часть variance</span><span class="fa-desc">Уменьшается при увеличении числа деревьев B — именно её снижает bagging.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">число деревьев в ансамбле</span><span class="fa-desc">Больше деревьев → меньше (1-ρ)σ²/B. Но ρσ² не меняется — нужна и диверсификация.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Variance ансамбля = несокращаемый floor (ρσ²) + сокращаемая часть (уменьшается с ростом B и ↓ρ). Random Forest снижает ρ через случайный выбор признаков.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Много независимых жюри дают меньший разброс мнений, чем много похожих — важна независимость, а не только количество.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> σ²=1, ρ=0.5, B=100 → Var = 0.5·1 + 0.5·1/100 = 0.505. Снизить ρ до 0.1: Var = 0.1 + 0.9/100 = 0.109.</div>
     </div>
     <p>
         Тут важны сразу две вещи:
@@ -1869,7 +2069,40 @@ pred = bagging_predict_classification(models, X_valid)</div>
     <details><summary>[Hard] Bias-variance Random Forest</summary><p>Почему лес снижает variance, но не всегда снижает bias? <strong>Решение:</strong> усреднение стабилизирует предсказания, но если все деревья систематически ошибаются, среднее не исправит bias.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-11">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое бутстрэп-выборка и зачем она нужна в Bagging?</summary>
+      <div class="ml-quiz__a"><p>Бутстрэп — случайная выборка с возвращением размером n из n примеров. Примерно 63% уникальных примеров попадает в каждую выборку; остальные ~37% (Out-of-Bag) используются как встроенная валидация. Разные деревья обучаются на разных данных, снижая корреляцию ошибок.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем Random Forest отличается от простого Bagging деревьев?</summary>
+      <div class="ml-quiz__a"><p>В Random Forest каждый сплит рассматривает только случайное подмножество признаков (обычно √p для классификации, p/3 для регрессии). Это снижает корреляцию между деревьями сильнее, чем просто бутстрэп, давая лучшее снижение variance при агрегировании.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему ансамбли снижают variance, но не bias?</summary>
+      <div class="ml-quiz__a"><p>Усреднение k независимых оценщиков с дисперсией σ² даёт дисперсию σ²/k. Но если каждый оценщик смещён (systematic error), среднее тоже смещено. Поэтому Bagging/RF эффективны для снижения переобучения, но не помогут, если базовые модели систематически ошибаются.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как интерпретировать feature importance в Random Forest?</summary>
+      <div class="ml-quiz__a"><p>Feature importance обычно считается как средний прирост чистоты (Gini/entropy) по всем деревьям, где признак использовался для сплита, взвешенный на долю примеров. Высокий importance — признак часто выбирается и даёт большой прирост качества сплитов.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-11">
     <h2>Checkpoint: 2.11 Random Forest</h2>
     <ul>
       <li>Чем bagging отличается от boosting?</li>
@@ -1879,5 +2112,7 @@ pred = bagging_predict_classification(models, X_valid)</div>
       <li>Rubber duck: объясни Random Forest как комитет разных деревьев.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

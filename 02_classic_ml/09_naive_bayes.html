@@ -602,7 +602,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/09_naive_bayes.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -614,8 +614,146 @@
     <h1>2.9 Naive Bayes</h1>
     <p class="muted">Bayes formula for classification, conditional independence, Gaussian / Multinomial / Bernoulli NB</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Naive Bayes — один из самых быстрых классификаторов, основанных на вероятности. «Наивность» — это предположение о независимости признаков, которое работает удивительно хорошо на тексте.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Теорема Байеса применительно к классификации — вывод и интуиция</li>
+      <li>Что значит «наивное» допущение и когда оно оправдано</li>
+      <li>Три версии: Gaussian, Multinomial, Bernoulli NB — для каких данных</li>
+      <li>Почему NB хорош для spam-фильтрации и NLP-задач</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Теорема Байеса</li>
+      <li>Предобработка данных (2.2)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Naive Bayes — классификация письма (spam vs ham)</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Задача и априорные вероятности</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Письмо: «free money now». Spam или ham?</p>
+        <div class="wt-formula">P(Spam) = 0.40,  P(Ham) = 0.60
+(по частоте в обучающем корпусе)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Условные вероятности слов</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Для каждого слова — вероятность появления в спаме/хаме (Multinomial NB).</p>
+        <div class="wt-formula">            Spam   Ham
+P(free|·)   0.30   0.05
+P(money|·)  0.40   0.10
+P(now|·)    0.20   0.30</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Posterior для Spam</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Наивное допущение: слова независимы. Работаем в log-пространстве для численной стабильности.</p>
+        <div class="wt-formula">log P(Spam|письмо) ∝ log P(Spam) + Σ log P(wordᵢ|Spam)
+  = log(0.40) + log(0.30) + log(0.40) + log(0.20)
+  = −0.916 − 1.204 − 0.916 − 1.609 = −4.645</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Posterior для Ham</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>То же для класса Ham.</p>
+        <div class="wt-formula">log P(Ham|письмо) ∝ log(0.60) + log(0.05) + log(0.10) + log(0.30)
+  = −0.511 − 2.996 − 2.303 − 1.204 = −7.014</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Сравнение и предсказание</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Выбираем класс с большим log-posterior.</p>
+        <div class="wt-formula">Spam: −4.645
+Ham:  −7.014
+      ↑ Spam больше!</div>
+        <div class="wt-result"><strong>Предсказание: SPAM</strong>. Слова «free» и «money» с высокой вероятностью в спаме перевешивают prior.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Почему «наивный»?</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Мы предположили, что «free», «money» и «now» — независимые. В реальности это не так: «free money» — устойчивое выражение. Но это «наивное» допущение работает на практике!</p>
+        <div class="wt-result">Naive Bayes — один из лучших baseline для текстовой классификации, несмотря на упрощение.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">Bayes theorem</span>
       <span class="mini-tag">generative model</span>
@@ -638,16 +776,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанный класс</span><span class="fa-desc">Ответ модели — метка класса с наибольшей вероятностью.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_c</span><span class="fa-name">выбор лучшего класса</span><span class="fa-desc">Перебираем все классы c и берём тот, для которого вероятность максимальна.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c|x)</span><span class="fa-name">posterior класса c</span><span class="fa-desc">Вероятность того, что объект принадлежит классу c, при наблюдаемых признаках x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков</span><span class="fa-desc">Набор признаков конкретного объекта, который мы классифицируем.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Модель смотрит на все классы и выбирает тот, которому данный объект с наибольшей вероятностью принадлежит.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как выбор наиболее вероятного диагноза среди всех возможных на основе симптомов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(spam|x)=0.85, P(ham|x)=0.15 → argmax выбирает spam, ŷ = spam.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -704,15 +841,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c|x)</span><span class="fa-name">posterior класса c</span><span class="fa-desc">Вероятность класса c после наблюдения признаков x — то, что модель хочет вычислить.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y=c)</span><span class="fa-name">likelihood признаков</span><span class="fa-desc">Насколько вероятны признаки x, если объект принадлежит классу c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c)</span><span class="fa-name">prior класса c</span><span class="fa-desc">Доля класса c в обучающей выборке — ожидание класса до просмотра признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x)</span><span class="fa-name">нормировочная константа</span><span class="fa-desc">Маргинальная вероятность признаков x по всем классам; одинакова для всех c, поэтому при argmax её можно игнорировать.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Теорема Байеса: posterior пропорционален likelihood × prior. Знаменатель P(x) лишь нормирует сумму до 1.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Врач обновляет вероятность диагноза: prior — базовая частота болезни, likelihood — типичность симптомов при ней.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(spam)=0.3, P(x|spam)=0.8, P(x)=0.4 → P(spam|x) = 0.3·0.8/0.4 = 0.60.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -736,16 +873,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанный класс</span><span class="fa-desc">Метка класса, которую присваивает модель данному объекту.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_c</span><span class="fa-name">выбор максимума по c</span><span class="fa-desc">Перебираем все классы c и берём тот, для которого произведение наибольшее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y=c)</span><span class="fa-name">likelihood признаков</span><span class="fa-desc">Насколько вероятны признаки x при условии класса c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c)</span><span class="fa-name">prior класса c</span><span class="fa-desc">Базовая частота класса c в обучающей выборке.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> P(x) одинаков для всех классов, поэтому его можно убрать — argmax от числителя даёт тот же класс.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как выбор лучшего кандидата: если у всех одинаковый штраф, сравниваем только баллы без него.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(x|spam)·P(spam)=0.24, P(x|ham)·P(ham)=0.14 → выбираем spam, хотя P(x)=0.4 для обоих.</div>
     </div>
     </div>
     </div>
@@ -796,25 +932,25 @@
       Naive Bayes делает сильное упрощение:
     </p>
 
-    <div class="formula">
+    <div class=”formula”>
       P(x_1, x_2, \dots, x_d \mid y)
       =
       \prod_{j=1}^{d} P(x_j \mid y)
     </div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>P(x₁,…,x_d|y)</span><span class=”fa-name”>совместная вероятность признаков</span><span class=”fa-desc”>Вероятность всего вектора признаков при данном классе y — то, что нужно разложить.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>∏_{j=1}^d</span><span class=”fa-name”>произведение по всем признакам</span><span class=”fa-desc”>Перемножаем вероятности каждого признака отдельно — это и есть naive-упрощение.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>P(x_j|y)</span><span class=”fa-name”>вероятность j-го признака</span><span class=”fa-desc”>Условная вероятность отдельного признака при классе y, оценивается независимо от остальных.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>d</span><span class=”fa-name”>число признаков</span><span class=”fa-desc”>Размерность пространства признаков — количество колонок в объекте.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Если признаки условно независимы при известном классе, совместная вероятность распадается в простое произведение отдельных вероятностей.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Вероятность трёх независимых монет = P(монета₁)·P(монета₂)·P(монета₃).</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> 3 признака с P=0.8, 0.6, 0.7 при классе spam → joint likelihood = 0.8·0.6·0.7 = 0.336.</div>
     </div>
-    <div class="warn">
+    <div class=”warn”>
       Это и есть “naive” допущение:
       признаки считаются условно независимыми внутри класса.
     </div>
@@ -829,16 +965,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c|x)</span><span class="fa-name">posterior класса c</span><span class="fa-desc">Вероятность класса c при признаках x — с точностью до нормировки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально</span><span class="fa-desc">P(x) — один и тот же для всех классов, поэтому его можно не вычислять при argmax.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c)</span><span class="fa-name">prior класса c</span><span class="fa-desc">Базовая частота класса c в обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∏_{j=1}^d</span><span class="fa-name">произведение по признакам</span><span class="fa-desc">Перемножаем вероятности всех d признаков — следствие допущения об условной независимости.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x_j|y=c)</span><span class="fa-name">likelihood j-го признака</span><span class="fa-desc">Вероятность значения j-го признака при классе c.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Полная формула Naive Bayes: posterior ∝ prior × произведение отдельных likelihood по всем признакам.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Комбинируем независимые улики: каждая добавляет свой голос за класс через умножение.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(spam)=0.3, P(x₁|spam)=0.8, P(x₂|spam)=0.6 → 0.3·0.8·0.6 = 0.144 (до нормировки).</div>
     </div>
     <div class="success">
       Именно это упрощение превращает потенциально очень сложную вероятностную модель
@@ -861,15 +997,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">i-й признак</span><span class="fa-desc">Один из признаков объекта — например, слово «деньги» в письме.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⊥</span><span class="fa-name">символ независимости</span><span class="fa-desc">Обозначает, что два события (признака) не несут информации друг о друге при условии y.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Другой признак объекта (i ≠ j), независимый от x_i при известном y.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">метка класса</span><span class="fa-desc">Известный класс, на который мы условимся — именно при его фиксации признаки становятся независимыми.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Зная метку класса, знание одного признака не даёт информации о другом — они «разъединяются» через y.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Зная диагноз «грипп», симптом «температура» не говорит нам ничего нового о симптоме «насморк».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> При классе spam: знание, что слово «деньги» есть, не меняет вероятность слова «выиграли».</div>
     </div>
     <div class="grid-2">
       <div>
@@ -987,16 +1123,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∏_{j=1}^d</span><span class="fa-name">произведение по j от 1 до d</span><span class="fa-desc">Перемножаем вероятности всех признаков — именно это произведение уходит в underflow при большом d.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x_j|y=c)</span><span class="fa-name">likelihood j-го признака</span><span class="fa-desc">Вероятность значения j-го признака при условии класса c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">число признаков</span><span class="fa-desc">Размерность признакового пространства — количество множителей в произведении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">класс</span><span class="fa-desc">Конкретный класс, для которого вычисляем joint likelihood признаков.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Произведение многих маленьких вероятностей быстро уходит в численный underflow — нужен переход к логарифмам.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вероятность пяти независимых событий по 0.1 каждое: 0.1⁵ = 0.00001 — число теряется в float.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 500 признаков с P=0.9 каждый → 0.9⁵⁰⁰ ≈ 5·10⁻²³ — почти 0 в числах с плавающей точкой.</div>
     </div>
     <p>
       Это ведёт к численной нестабильности.
@@ -1010,18 +1145,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(y=c|x)</span><span class="fa-name">log-posterior класса c</span><span class="fa-desc">Логарифм вероятности класса c при признаках x — сравниваем по классам вместо posterior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально</span><span class="fa-desc">Константа log P(x) одинакова для всех классов и убрана — argmax не меняется.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(y=c)</span><span class="fa-name">log-prior класса c</span><span class="fa-desc">Логарифм базовой частоты класса c в обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_{j=1}^d</span><span class="fa-name">сумма по признакам</span><span class="fa-desc">Заменяет произведение вероятностей — log превращает ∏ в ∑, что численно стабильнее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log P(x_j|y=c)</span><span class="fa-name">log-likelihood j-го признака</span><span class="fa-desc">Логарифм вероятности j-го признака при классе c — отрицательное число, близкое к 0 при высокой вероятности.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> log монотонен, поэтому argmax не меняется. Произведение вероятностей заменяется суммой логарифмов — числа остаются в нормальном диапазоне.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вместо перемножения 0.001·0.002·0.003 складываем их логарифмы — получаем управляемое число.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> log(0.3) + log(0.8) + log(0.6) = −1.20 + (−0.22) + (−0.51) = −1.93 (vs. 0.144 в исходном пространстве).</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1061,18 +1194,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Числовое значение j-й колонки, которое мы моделируем как нормальное.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y=c</span><span class="fa-name">условие на класс c</span><span class="fa-desc">Внутри каждого класса c у признака своё распределение — параметры разные для разных c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">~N</span><span class="fa-name">распределён нормально</span><span class="fa-desc">Допущение Gaussian NB: условное распределение признака — колокол.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_cj</span><span class="fa-name">среднее признака j в классе c</span><span class="fa-desc">Оценивается как среднее значение признака j по всем объектам класса c в train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²_cj</span><span class="fa-name">дисперсия признака j в классе c</span><span class="fa-desc">Оценивается как дисперсия значений признака j по объектам класса c в train.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Внутри каждого класса у каждого признака свои среднее и разброс — модель учит эти параметры из train.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Рост мужчин и женщин: у каждой группы своя μ и σ² — Gaussian NB делает ровно то же самое.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Признак «длина письма» в классе spam: μ=120, σ²=400. Новое письмо: x_j=140 → вычисляем N(140; 120, 400).</div>
     </div>
     <p>
       Тогда likelihood для одного признака:
@@ -1088,17 +1219,18 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x_j|y=c)</span><span class="fa-name">вероятностная плотность признака j</span><span class="fa-desc">Likelihood значения x_j при классе c — чем ближе к μ_cj, тем выше.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/√(2πσ²_cj)</span><span class="fa-name">нормировочный коэффициент</span><span class="fa-desc">Гарантирует, что интеграл плотности по всему ℝ равен 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">exp(·)</span><span class="fa-name">экспонента</span><span class="fa-desc">Создаёт гауссовский «колокол»: максимум в центре, убывает к краям.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(x_j−μ_cj)²</span><span class="fa-name">квадрат отклонения от среднего</span><span class="fa-desc">Чем дальше x_j от центра класса μ_cj, тем больше число в показателе и тем меньше плотность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2σ²_cj</span><span class="fa-name">удвоенная дисперсия</span><span class="fa-desc">Нормирует отклонение: широкий колокол (большая σ²) менее «придирчив» к значениям признака.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_cj</span><span class="fa-name">среднее признака j в классе c</span><span class="fa-desc">Центр нормального распределения — место максимальной плотности.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²_cj</span><span class="fa-name">дисперсия признака j в классе c</span><span class="fa-desc">Разброс значений признака внутри класса c — оба параметра оцениваются из train.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Чем дальше x_j от μ_cj, тем меньше вклад этого признака в likelihood класса c.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Рост 185 см у мужчин типичен (высокая плотность), у женщин — нет (низкая плотность).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x_j=3, μ_cj=2, σ²_cj=1 → exp(−(3−2)²/(2·1)) = exp(−0.5) ≈ 0.607, нормировка ≈ 0.399.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1186,16 +1318,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y=c)</span><span class="fa-name">likelihood признаков при классе c</span><span class="fa-desc">Вероятность наблюдаемого вектора счётчиков x при классе c — до нормировочной константы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально</span><span class="fa-desc">Полиномиальная нормировочная константа одинакова для всех классов при argmax и убирается.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∏_{j=1}^d</span><span class="fa-name">произведение по токенам</span><span class="fa-desc">Перемножаем вклад каждого токена в likelihood класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ_cj</span><span class="fa-name">вероятность токена j в классе c</span><span class="fa-desc">Параметр модели: доля токена j среди всех токенов документов класса c в train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">счётчик токена j</span><span class="fa-desc">Сколько раз токен j встречается в данном документе — показатель степени для θ_cj.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый токен вносит вклад θ_cj в степени x_j — частый токен класса c сильнее «голосует» за этот класс.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Слово «акция» встречается 3 раза → θ^3; чем типичнее слово для класса и чем чаще оно, тем выше произведение.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ_spam,выиграли = 0.1, x_j=2 → 0.1² = 0.01; θ_spam,деньги = 0.2, x_j=3 → 0.2³ = 0.008.</div>
     </div>
     <p>
       Здесь:
@@ -1243,14 +1375,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ_cj</span><span class="fa-name">оценка вероятности токена j в классе c</span><span class="fa-desc">Параметр Multinomial NB: доля токена j среди всех токенов класса c в обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">класс</span><span class="fa-desc">Конкретная метка, для которой оцениваем параметр — например, «spam».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">индекс токена в словаре</span><span class="fa-desc">Конкретное слово или признак, который ни разу не встретился в классе c в train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нулевая оценка</span><span class="fa-desc">Токен j не встретился ни разу → N_cj = 0 → θ_cj = 0/суммаВсего = 0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Без сглаживания токен, которого не было в train, получает нулевую вероятность — это пробьёт всё произведение.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Официант, который никогда не видел рыбу в меню, решает, что её не существует вовсе.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слово «квантовый» не встречалось в spam-документах → N_spam,квантовый = 0 → θ_spam,квантовый = 0.</div>
     </div>
     <p>
       Тогда если это слово встретится в новом объекте,
@@ -1263,15 +1396,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y=c)</span><span class="fa-name">likelihood вектора признаков при классе c</span><span class="fa-desc">Произведение θ_cj^{x_j} по всем токенам — обнуляется, если хотя бы один θ_cj = 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков нового объекта</span><span class="fa-desc">Документ, в котором встречается токен, не виданный в классе c при обучении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y=c</span><span class="fa-name">рассматриваемый класс</span><span class="fa-desc">Класс, для которого likelihood стал нулём из-за одного нулевого θ_cj.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нулевой likelihood</span><span class="fa-desc">Если в произведении ∏ θ_cj^{x_j} хотя бы один множитель равен 0, всё произведение = 0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Одна нулевая θ_cj пробивает всё произведение — класс c полностью исключается, даже если все другие признаки за него.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Одна красная карточка — и вся команда снимается с соревнования, сколько бы голов она ни забила.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(x|spam) = 0.05 · 0 · 0.3 = 0 из-за одного незнакомого слова → класс spam отброшен.</div>
     </div>
     <p>
       Поэтому почти всегда используют Laplace smoothing:
@@ -1285,19 +1418,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ_cj</span><span class="fa-name">сглаженная вероятность токена j в классе c</span><span class="fa-desc">Параметр модели после Laplace smoothing — никогда не равен нулю при α > 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N_cj</span><span class="fa-name">число появлений токена j в классе c</span><span class="fa-desc">Сырой счётчик из train: сколько раз токен j встречался в документах класса c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">smoothing-параметр</span><span class="fa-desc">Добавляет α виртуальных появлений каждому токену; α=1 — Laplace smoothing, α&lt;1 — мягче.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_k N_ck</span><span class="fa-name">суммарный счётчик токенов класса c</span><span class="fa-desc">Общее число токенов во всех документах класса c в train — знаменатель нормировки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">размер словаря</span><span class="fa-desc">Число уникальных токенов в корпусе — добавляем αV виртуальных наблюдений к знаменателю.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> К каждому счётчику добавляем α — даже нулевой токен получает ненулевую вероятность 1/(суммаВсего + αV).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Добавляем по одной «пустой коробке» к каждому товару на складе — теперь ни один товар не может исчезнуть полностью.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> N_cj=0, α=1, ∑N_ck=500, V=100 → θ_cj = (0+1)/(500+100) = 1/600 ≈ 0.0017.</div>
     </div>
     <p>
       Где:
@@ -1373,15 +1503,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак объекта</span><span class="fa-desc">Бинарный признак: единственное, что знает Bernoulli NB — присутствует ли признак или нет.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∈</span><span class="fa-name">принадлежит множеству</span><span class="fa-desc">Ограничение: x_j может принять только два значения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">{0,1}</span><span class="fa-name">бинарное множество значений</span><span class="fa-desc">0 — признак отсутствует, 1 — признак присутствует. Частота появления не учитывается.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В Bernoulli NB нас интересует только факт присутствия признака — сколько раз он встретился, неважно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> «Был ли кофе на встрече?» — да/нет, а не «сколько чашек».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слово «акция» встречается 5 раз → x_j = 1 (есть); слово «квантовый» не встречается → x_j = 0.</div>
     </div>
     <p>
       Тогда likelihood учитывает и наличие, и отсутствие признака:
@@ -1396,16 +1525,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y=c)</span><span class="fa-name">likelihood вектора бинарных признаков</span><span class="fa-desc">Совместная вероятность всех d бинарных признаков при классе c.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∏_{j=1}^d</span><span class="fa-name">произведение по всем признакам</span><span class="fa-desc">Наивное допущение: признаки независимы при известном классе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x_j=1|y=c)</span><span class="fa-name">вероятность присутствия признака j в классе c</span><span class="fa-desc">Параметр модели: доля объектов класса c, у которых j-й признак равен 1 в train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">^{x_j}</span><span class="fa-name">показатель степени — присутствие</span><span class="fa-desc">Если x_j=1: берём P(x_j=1|c)^1 = P(x_j=1|c). Если x_j=0: берём P(·)^0 = 1 (первый множитель не влияет).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1−P(x_j=1|y=c))^{1−x_j}</span><span class="fa-name">вероятность отсутствия признака j</span><span class="fa-desc">Если x_j=0: берём (1−P)^1 = вероятность отсутствия. Если x_j=1: (1−P)^0 = 1 (не влияет).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> И присутствие, и отсутствие признака несут информацию — Bernoulli NB учитывает оба случая через трюк с показателями степени.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вероятность результата броска монеты учитывает и орёл, и решку: p^x·(1−p)^{1−x}.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(слово есть|spam)=0.7; x_j=1 → 0.7¹·0.3⁰=0.7; x_j=0 → 0.7⁰·0.3¹=0.3.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1525,14 +1654,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(x|y)</span><span class="fa-name">likelihood признаков при классе y</span><span class="fa-desc">Что NB явно моделирует: как признаки «порождаются» внутри каждого класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y)</span><span class="fa-name">prior класса</span><span class="fa-desc">Базовая частота класса y в выборке — тоже явно моделируется.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков</span><span class="fa-desc">Наблюдаемые данные объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">метка класса</span><span class="fa-desc">Латентная переменная, которая «порождает» признаки x в generative story.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Generative модель строит «историю» создания данных: сначала выбирается класс P(y), затем из него генерируются признаки P(x|y).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Детектив, знающий манеру работы каждого преступника — он может воспроизвести улики класса.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P(y=spam)=0.3, P(x|spam) описывает типичный текст спама; из этих двух вычисляем P(spam|x) по Байесу.</div>
     </div>
     <p>
           Модель пытается описать,
@@ -1547,14 +1677,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y|x)</span><span class="fa-name">posterior класса при данных признаках</span><span class="fa-desc">То, что discriminative модель учит напрямую — без моделирования P(x) или P(x|y).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">метка класса</span><span class="fa-desc">Целевая переменная, которую предсказывает модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков</span><span class="fa-desc">Наблюдаемые данные объекта — вход discriminative модели.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Discriminative модель напрямую учит P(y|x), минуя «историю» генерации признаков — эффективнее, когда данных много.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Детектив, который сразу указывает виновного — не зная его манеры работы, но хорошо зная границы между «виновен» и «невиновен».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Logistic Regression выдаёт P(spam|x)=0.87 напрямую, не вычисляя P(x|spam) или P(spam).</div>
     </div>
     <p>
           Модель напрямую учит границу между классами,
@@ -1629,15 +1759,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">P(y=c)</span><span class="fa-name">prior класса c</span><span class="fa-desc">Вероятность класса c до просмотра признаков — базовая частота класса в обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">метка класса</span><span class="fa-desc">Категориальная переменная — принимает одно из K значений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">конкретное значение класса</span><span class="fa-desc">Например, «spam» или «ham» — один из возможных вариантов y.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Prior отражает базовый дисбаланс классов — без просмотра признаков какие-то классы уже более вероятны.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> До чтения письма знаем, что 30% почты — спам: P(spam)=0.3 — это наш prior до любых признаков.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В train 300 spam и 700 ham → P(spam)=0.3, P(ham)=0.7. Эти значения входят в формулу NB как prior.</div>
     </div>
     <p>
       Если какой-то класс встречается реже,
@@ -2132,7 +2261,40 @@ print("predicted class:", pred)</div>
     <details><summary>[Hard] Нарушение independence</summary><p>Почему Naive Bayes может работать, даже если признаки зависимы? <strong>Решение:</strong> для классификации важен правильный ranking классов, а не идеально откалиброванные вероятности.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-9">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему классификатор Naive Bayes называется «наивным»?</summary>
+      <div class="ml-quiz__a"><p>Он предполагает условную независимость признаков при известном классе: P(x₁,x₂,...|y) = Π P(xᵢ|y). Это «наивное» допущение на практике почти всегда нарушается, однако классификатор удивительно хорошо работает в задачах вроде фильтрации спама, где признаки действительно слабо коррелируют.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём различие между Gaussian NB, Multinomial NB и Bernoulli NB?</summary>
+      <div class="ml-quiz__a"><p>Gaussian NB предполагает нормальное распределение непрерывных признаков. Multinomial NB — для счётчиков слов (TF в тексте). Bernoulli NB — для бинарных признаков (слово встречается / не встречается). Выбор зависит от типа данных.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое «проблема нулевой вероятности» и как её решает Laplace smoothing?</summary>
+      <div class="ml-quiz__a"><p>Если слово из тестового документа не встречалось в тренировочных данных класса, P(слово|класс)=0, и всё произведение обнуляется. Laplace smoothing добавляет к счётчику 1 (или α): P(w|c) = (count(w,c)+α)/(count(c)+α·|V|), гарантируя ненулевые вероятности.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему в реализации Naive Bayes используют log-вероятности?</summary>
+      <div class="ml-quiz__a"><p>Произведение многих вероятностей (0<pᵢ<1) быстро уходит в underflow — числовые нули при машинной точности. Логарифм превращает произведение в сумму: log P(x|y) = Σ log P(xᵢ|y), что численно устойчиво и быстрее вычисляется.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-9">
     <h2>Checkpoint: 2.9 Naive Bayes</h2>
     <ul>
       <li>Что именно означает naive assumption?</li>
@@ -2142,5 +2304,7 @@ print("predicted class:", pred)</div>
       <li>Rubber duck: объясни Naive Bayes как взвешивание улик за каждый класс.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

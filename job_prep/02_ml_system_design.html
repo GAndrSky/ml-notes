@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/job_prep/02_ml_system_design.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="job-prep">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -314,7 +314,40 @@
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как подойти к вопросу «спроектируй систему рекомендаций для YouTube»?</summary>
+      <div class="ml-quiz__a"><p>(1) Clarify: DAU, latency requirement, cold start? (2) ML task: maximize watch time / engagement. (3) Data: user history, video metadata, implicit feedback. (4) Architecture: candidate generation (two-tower ANN) → ranking (deep NN) → reranking (diversity, safety). (5) Training: periodic retraining, online learning для свежих данных. (6) Monitoring: CTR, watch time drift.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как обосновать выбор архитектуры модели при system design?</summary>
+      <div class="ml-quiz__a"><p>Начни с требований: latency (<50ms → нужна simple/small model), throughput (1M RPS → batching), size (edge device → quantization). Затем complexity of task (tabular → GBM, image → CNN/ViT, text → transformer). Обосновывай trade-off, а не просто называй «лучшую» модель.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое feature freshness и почему она важна при проектировании?</summary>
+      <div class="ml-quiz__a"><p>Feature freshness — насколько свежи признаки при inference. Для рекомендаций: недавние просмотры важнее, чем история 2 года назад. Real-time features (стриминг) vs batch features (ежедневные) — разная инфраструктура. Staleness может деградировать quality: модель видит «вчерашнего» пользователя.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как рассчитать стоимость ML-системы при system design?</summary>
+      <div class="ml-quiz__a"><p>Training: GPU часы × стоимость. Inference: RPS × latency × GPU/CPU утилизация. Storage: model size + feature store + logs. Для LLM: 1B параметров × 2 байт (fp16) = 2 GB только веса; с KV-cache и активациями × 3-5. При 1000 RPS и 100ms latency: нужно 100 параллельных запросов → оценить batch size → GPU count.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain the same framework without looking at the page?</li>
@@ -333,11 +366,76 @@
       </div>
     </section>
   </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>System Design — это 30–40% ML-собеседования на senior уровне. Без фреймворка ответы выглядят хаотично.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Применять фреймворк clarify→data→model→eval→serving→monitor</li>
+          <li>Делать back-of-envelope расчёты RPS / памяти / GPU</li>
+          <li>Проектировать recommendation и search системы</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>MLOps (09)</li>
+          <li>Model Serving (9.2)</li>
+          <li>Scaling Laws (6.6)</li>
+    </ul>
+  </div>
+</div>
+
 
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
   <section class="card" data-quality-pass="job-2-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>system success = model quality + data quality + serving reliability + monitoring</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">model quality</span><span class="fa-name">качество модели</span><span class="fa-desc">offline metrics и business impact модели.</span></div><div class="formula-anatomy__row"><span class="fa-sym">data quality</span><span class="fa-name">качество данных</span><span class="fa-desc">freshness, labels, coverage и schema stability.</span></div><div class="formula-anatomy__row"><span class="fa-sym">serving reliability</span><span class="fa-name">надёжность сервинга</span><span class="fa-desc">latency, uptime, rollback, backpressure.</span></div><div class="formula-anatomy__row"><span class="fa-sym">monitoring</span><span class="fa-name">наблюдаемость</span><span class="fa-desc">drift, quality, cost и product metrics после запуска.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> system design оценивает не “лучшую модель”, а устойчивую продуктовую систему целиком.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> даже accuracy 0.95 мало значит, если система падает под нагрузкой или не умеет мониторить drift.</div></div></section>
   <section class="ml-study-practice" data-quality-pass="job-2"><h2>Упражнения: ML System Design</h2><details><summary>[Foundational] Clarify step</summary><div class="intuition-content">Для рекомендательной системы перечисли 5 уточняющих вопросов до выбора модели.</div></details><details><summary>[Intermediate] Tradeoff analysis</summary><div class="intuition-content">Сравни online features и batch features для fraud detection по latency и freshness.</div></details><details><summary>[Hard] Failure design</summary><div class="intuition-content">Опиши fallback, если retrieval service или feature store недоступен.</div></details></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: ML System Design</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Фреймворк важнее знания всех деталей: clarify → data → model → eval → serving → monitor.</li>
+        <li>Всегда делай back-of-envelope расчёт: QPS, память, GPU count.</li>
+        <li>Называй конкретные технологии с обоснованием — не абстрактно «vector database».</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Прыгать к архитектуре без clarification вопросов.</li>
+        <li>Не упоминать мониторинг и model degradation — это ключевой признак production опыта.</li>
+        <li>Решать задачу «идеально» вместо MVP + итеративного улучшения.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Объём деталей: 50% на high-level design, 30% на ML specifics, 20% на trade-offs.</li>
+        <li>Акцент по типу роли: MLE → больше ML деталей, MLOps → больше инфраструктуры.</li>
+        <li>Время: 5 мин clarify, 20 мин design, 5 мин trade-offs и вопросы.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="01_interview_question_bank.html">← Q&A Bank</a></li>
+        <li><a href="../09_mlops_deployment/04_ml_system_design_patterns.html">← 9.4 Design Patterns</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

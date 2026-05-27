@@ -602,7 +602,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/08_distance_based_models.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -614,8 +614,212 @@
     <h1>2.8 Distance-based модели</h1>
     <p class="muted">k-NN intuition, distance metrics, choosing k, scaling, curse of dimensionality</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>k-NN — самый простой non-parametric классификатор: посмотри на k ближайших соседей. Дистанция — Евклидова, Manhattan, Косинусная — кардинально влияет на результат.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как k-NN классифицирует и регрессирует — алгоритм шаг за шагом</li>
+      <li>Метрики расстояния — Euclidean, Manhattan, Cosine — когда что</li>
+      <li>Проклятие размерности — почему k-NN разрушается в высоких измерениях</li>
+      <li>Ускорение поиска соседей: KD-tree, Ball-tree, Approximate NN</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Нормы векторов</li>
+      <li>Предобработка данных (2.2)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">k-NN классификация (k=3) — шаг за шагом</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Обучающие данные и запрос</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>5 точек в 2D. k=3. Нужно классифицировать новую точку Q=(4,3).</p>
+        <div class="wt-formula">○ (класс 0): A=(1,2),  B=(2,1)
+● (класс 1): C=(5,4),  D=(6,5),  E=(4,6)
+Запрос: Q = (4, 3)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Расстояние до A и B</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Евклидово расстояние d(Q, P) = √((xQ−xP)² + (yQ−yP)²).</p>
+        <div class="wt-formula">d(Q, A) = √((4−1)²+(3−2)²) = √(9+1) = √10 ≈ 3.16
+d(Q, B) = √((4−2)²+(3−1)²) = √(4+4) = √8  ≈ 2.83</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Расстояние до C, D, E</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Считаем расстояния до оставшихся точек.</p>
+        <div class="wt-formula">d(Q, C) = √((4−5)²+(3−4)²) = √(1+1) = √2  ≈ 1.41  ← ближайший!
+d(Q, D) = √((4−6)²+(3−5)²) = √(4+4) = √8  ≈ 2.83
+d(Q, E) = √((4−4)²+(3−6)²) = √(0+9) = 3.00</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Сортировка по расстоянию</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Упорядочиваем всех соседей от ближнего к дальнему.</p>
+        <div class="wt-formula">1. C (●): 1.41
+2. B (○): 2.83   ← на 2-м месте
+3. D (●): 2.83   ← на 3-м месте (ничья с B)
+4. E (●): 3.00
+5. A (○): 3.16</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">k=3 ближайших соседа</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Берём первых k=3: C(●), B(○), D(●).</p>
+        <div class="wt-formula">Соседи: C=●, B=○, D=●
+Голоса: ● = 2,  ○ = 1</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Предсказание</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Класс большинства голосов — итоговый ответ.</p>
+        <div class="wt-formula">Предсказание: ● (класс 1)</div>
+        <div class="wt-result"><strong>Q относится к классу 1 (●)</strong>. Решение принято 3 ближайшими соседями 2:1.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Как k влияет на k-NN (сложность vs обобщение)</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">k (число соседей)</span>
+          <span class="ml-slider-lab__param-value" id="sl-knn-disp">5</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-knn"
+               min="1" max="50" step="1" value="5">
+        <div class="ml-slider-lab__range-labels">
+          <span>1 (переобучение)</span><span>50 (недообучение)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-knn"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-knn');
+  var disp = document.getElementById('sl-knn-disp');
+  var out = document.getElementById('sl-out-knn');
+  function render(){
+    var k = +sl.value;
+    disp.textContent = k;
+    var complexity = Math.round(100 - (k - 1) / 49 * 95);
+    var bias       = Math.round((k - 1) / 49 * 90);
+    var variance   = Math.round(100 - (k - 1) / 49 * 90);
+    var trainErr   = Math.round((k - 1) / 49 * 40);
+    var testErr    = Math.round(20 + Math.abs(Math.log(k) - Math.log(7)) * 18);
+    var verdict, vclass, txt;
+    if (k <= 2) {
+      verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
+      txt = 'k=1: каждая точка — свой класс. Граница принятия решений идёт через все обучающие точки. Любой шум в данных полностью запоминается.';
+    } else if (k <= 15) {
+      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
+      txt = 'k=' + k + ': хороший баланс bias/variance. Граница сглажена, но всё ещё детализирована. Обычно лучший диапазон — k ∈ [3, 15] с кросс-валидацией.';
+    } else {
+      verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
+      txt = 'k=' + k + ': слишком большой. Граница принятия решений «размывается», локальные паттерны игнорируются. Предсказание → доминирующий класс.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Сложность модели</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + complexity + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Bias ↑ с k</span><div class="sl-bar-wrap"><div class="sl-bar ' + (bias > 60 ? 'sl-bad' : bias > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + bias + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Variance ↓ с k</span><div class="sl-bar-wrap"><div class="sl-bar ' + (variance > 60 ? 'sl-bad' : variance > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + variance + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Train error</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar ' + (testErr > 40 ? 'sl-bad' : testErr > 25 ? 'sl-warn' : 'sl-good') + '" style="width:' + testErr + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">k-NN</span>
       <span class="mini-tag">Euclidean</span>
@@ -712,16 +916,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанный класс</span><span class="fa-desc">Класс, набравший большинство голосов среди k ближайших соседей. При ничьей — применяется tie-breaking правило.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">majority vote</span><span class="fa-name">голосование большинством</span><span class="fa-desc">Каждый из k соседей «голосует» за свой класс. Побеждает класс с наибольшим числом голосов. Простейший, но эффективный aggregation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число ближайших соседей</span><span class="fa-desc">Гиперпараметр: сколько ближайших объектов участвуют в голосовании. Малое k — высокая variance, большое k — высокий bias.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">nearest neighbors</span><span class="fa-name">ближайшие соседи</span><span class="fa-desc">Объекты обучающей выборки, ближайшие к запросу по выбранной метрике (евклидова, манхэттенская и т.д.).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Нет модели — только память. Для нового объекта находим k самых похожих из обучающей выборки и смотрим, к какому классу большинство из них относится.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> «Скажи мне, кто твои соседи» — k-NN буквально спрашивает: чьих классов рядом больше? Как определить район города по соседним домам.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=5, соседи: [кот, кот, собака, кот, собака]. Голоса: кот=3, собака=2. ŷ = «кот».</div>
     </div>
     </div>
       <div>
@@ -732,19 +935,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказанное значение для нового объекта</span><span class="fa-desc">Среднее ответов k ближайших соседей. В регрессии нет «голосования» — усредняем непрерывные значения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/k</span><span class="fa-name">равномерное усреднение по k соседям</span><span class="fa-desc">Все соседи имеют одинаковый вес 1/k. Альтернатива — взвешивать по 1/d_i, чтобы близкие соседи влияли сильнее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i∈N_k(x)}</span><span class="fa-name">сумма по k ближайшим соседям</span><span class="fa-desc">N_k(x) — множество индексов k ближайших к x объектов. Суммируем их ответы, потом делим на k.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го соседа</span><span class="fa-desc">Не прогноз, а метка из обучающей выборки. Это и есть «знания», которые k-NN использует при предсказании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число ближайших соседей</span><span class="fa-desc">Гиперпараметр. Малое k — чувствительность к шуму, большое k — сглаживание за счёт среднего.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для регрессии k-NN спрашивает: «каковы ответы у k самых похожих объектов в train?» и усредняет. Никакой модели нет — чистая локальная интерполяция.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Оцениваем цену квартиры по средней цене k ближайших аналогов в базе. Чем больше k — тем «районнее» оценка, чем меньше — тем точнее к конкретной локации.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=3, ближайшие y: [4.2, 3.8, 4.5]. ŷ = (4.2+3.8+4.5)/3 = 4.17.</div>
     </div>
     </div>
     </div>
@@ -885,16 +1085,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d(x,z)</span><span class="fa-name">евклидово расстояние</span><span class="fa-desc">Длина прямой линии между объектами x и z в d-мерном пространстве.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{j=1}^d</span><span class="fa-name">сумма по признакам</span><span class="fa-desc">Суммирует квадраты разностей по всем d координатам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j, z_j</span><span class="fa-name">j-й признак двух объектов</span><span class="fa-desc">Значение j-й координаты для сравниваемых объектов x и z.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность пространства</span><span class="fa-desc">Число признаков — количество осей, по которым суммируются разности.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Теорема Пифагора в d измерениях: суммируем квадраты разностей по каждому признаку и берём корень.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как расстояние по прямой на карте, только в пространстве с d осями вместо двух.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Точки (0,0) и (3,4): (3-0)²+(4-0)²=25, √25=5.</div>
     </div>
     <h3>Manhattan distance (L1)</h3>
     <div class="formula">
@@ -904,16 +1103,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d(x,z)</span><span class="fa-name">манхэттенское расстояние</span><span class="fa-desc">Сумма абсолютных разностей по каждому признаку — расстояние "по кварталам".</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{j=1}^d</span><span class="fa-name">сумма по признакам</span><span class="fa-desc">Суммирует |x_j − z_j| по всем d координатам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|x_j − z_j|</span><span class="fa-name">модуль разности</span><span class="fa-desc">Абсолютное расстояние по j-й оси без квадрата — нет квадратичного штрафа за большие выбросы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность пространства</span><span class="fa-desc">Число признаков, по которым суммируются разности.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Путь по городской сетке: нельзя ехать по диагонали, только вдоль горизонталей и вертикалей.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как такси по кварталам Манхэттена: каждый квартал считается отдельно, диагональный срез невозможен.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Точки (0,0) и (3,4): |3|+|4|=7 (vs евклидово 5).</div>
     </div>
     <h3>Minkowski distance</h3>
     <div class="formula">
@@ -925,16 +1123,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d_p(x, z)</span><span class="fa-name">Minkowski расстояние порядка p</span><span class="fa-desc">Обобщённая метрика расстояния между x и z. При p=1 — Manhattan, p=2 — Euclidean, p=∞ — Chebyshev (максимум по признакам).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∑_{j=1}^{d} |x_j - z_j|^p</span><span class="fa-name">сумма p-х степеней покоординатных разностей</span><span class="fa-desc">Для каждого из d признаков берём |x_j - z_j|^p и суммируем. Затем извлекаем корень p-й степени для нормировки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|x_j - z_j|</span><span class="fa-name">абсолютная разность по j-му признаку</span><span class="fa-desc">Расстояние между двумя точками по одному измерению. Модуль гарантирует неотрицательность независимо от порядка вычитания.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p</span><span class="fa-name">порядок нормы — управляет формой «шара»</span><span class="fa-desc">Гиперпараметр. p=1: шар — ромб (Manhattan). p=2: шар — сфера (Euclidean). Большой p: шар → куб (Chebyshev).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/p</span><span class="fa-name">показатель при извлечении корня</span><span class="fa-desc">Нормировка, чтобы расстояние масштабировалось правильно. Без неё при p=2 Minkowski давала бы квадрат евклидова расстояния.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Minkowski — это семейство метрик, параметризованное p. Изменяя p, меняем «форму» расстояния: от городских кварталов (p=1) до прямой линии (p=2) и максимума по осям (p=∞).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разные способы измерить расстояние в городе: по прямой (p=2), по улицам с углами под 90° (p=1), по максимуму из двух координат (p=∞).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=(0,0), z=(3,4). p=2: √(9+16)=5. p=1: 3+4=7. p=∞: max(3,4)=4. Одни и те же точки, разные расстояния.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1040,15 +1238,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k↓</span><span class="fa-name">уменьшение числа соседей</span><span class="fa-desc">При малом k модель «запоминает» отдельные точки, граница решения рваная. Высокая чувствительность к шуму и выбросам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">variance↑</span><span class="fa-name">растёт дисперсия предсказаний</span><span class="fa-desc">Разные обучающие выборки дают сильно разные границы — модель нестабильна. Классический признак переобучения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">k↑</span><span class="fa-name">увеличение числа соседей</span><span class="fa-desc">При большом k модель усредняет больше объектов, граница сглаживается. Локальные паттерны могут потеряться.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">bias↑</span><span class="fa-name">растёт смещение</span><span class="fa-desc">Прогнозы систематически далеки от истины в локальных областях — модель «недостаточно гибкая» для этой задачи.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> k играет роль регуляризатора без явного штрафа: малое k — переобучение (запоминание), большое k — недообучение (сглаживание). Оптимальный k ищется через cross-validation.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Решение голосованием: спрашиваем 1 человека (k=1) — риск случайного мнения. Спрашиваем 1000 (k=1000) — получаем «среднюю температуру по больнице». Нужен баланс.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=1 на train: accuracy=100% (запомнил всё). k=1 на test: accuracy=70% (переобучение). k=15: train=82%, test=81% — стабильнее.</div>
     </div>
     <div class="success">
       Выбор <code>k</code> — это ещё один пример bias-variance tradeoff.
@@ -1138,15 +1336,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес i-го соседа в голосовании</span><span class="fa-desc">Чем ближе сосед, тем больше его вес. Обратно пропорционален расстоянию d_i.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально</span><span class="fa-desc">Знак пропорциональности: формула задаёт относительные веса, которые потом нормируются так, чтобы сумма w_i = 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d_i</span><span class="fa-name">расстояние до i-го соседа</span><span class="fa-desc">Расстояние от нового объекта до i-го ближайшего соседа в обучающей выборке (например, евклидово).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">малая константа для численной стабильности</span><span class="fa-desc">Защита от деления на ноль: если d_i=0 (объект совпадает с соседом), вес всё равно конечен. Обычно ε ≈ 1e-6.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ближние соседи «знают» лучше о данном объекте, чем дальние. Distance weighting усиливает их голос обратно пропорционально расстоянию — интуитивная и эффективная идея.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценивать мнение: друзья рядом (d_i малое) влияют сильнее, чем знакомые издалека (d_i большое). 1/d_i переводит «близость» в «важность».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Соседи на расстояниях d=[1, 2, 4]. Веса ∝ [1/1, 1/2, 1/4]=[1, 0.5, 0.25]. Норм. веса: [0.57, 0.29, 0.14]. Ближний вдвое важнее среднего.</div>
     </div>
     <p>
           Более близкие соседи влияют сильнее, чем дальние.
@@ -2052,7 +2250,40 @@ print("Minkowski p=3:", minkowski)</div>
     <details><summary>[Hard] Curse of dimensionality</summary><p>Почему k-NN деградирует в высокой размерности? <strong>Решение:</strong> расстояния становятся похожими друг на друга, локальное соседство теряет смысл.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-8">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему KNN называют «ленивым» обучением (lazy learning)?</summary>
+      <div class="ml-quiz__a"><p>KNN не строит явной модели во время обучения — он просто запоминает все обучающие примеры. Всё вычисление откладывается до момента предсказания, когда ищутся K ближайших соседей. Это делает train O(1), но predict O(n·d), что дорого при больших n.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как выбор K влияет на качество KNN?</summary>
+      <div class="ml-quiz__a"><p>Маленький K (K=1) — высокая variance: модель запоминает шум и переобучается. Большой K — высокий bias: граница решения слишком сглажена. Оптимальный K выбирается через кросс-валидацию; часто хорошей эвристикой служит K≈√n.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему KNN теряет качество в пространстве высокой размерности?</summary>
+      <div class="ml-quiz__a"><p>В высоких измерениях все точки становятся примерно равноудалены («проклятие размерности»). Расстояния перестают быть информативными: ближайший сосед почти так же далёк, как и самый дальний. Нужно либо снижать размерность, либо использовать другие методы.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какая метрика расстояния используется по умолчанию в KNN и когда это неподходящий выбор?</summary>
+      <div class="ml-quiz__a"><p>По умолчанию — Евклидово расстояние (L2). Оно неподходяще, когда признаки имеют разный масштаб (нужна нормализация), когда данные дискретны или категориальны (лучше Hamming distance), или когда нужна устойчивость к выбросам (Manhattan/L1 лучше).</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-8">
     <h2>Checkpoint: 2.8 k-NN / Distance</h2>
     <ul>
       <li>Почему distance-based модели требуют scaling?</li>
@@ -2062,5 +2293,7 @@ print("Minkowski p=3:", minkowski)</div>
       <li>Rubber duck: объясни k-NN как голосование соседей на карте признаков.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/10_projects/03_end_to_end_cv_pipeline.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="projects">
   <main class="page">
     <section class="hero">
       <div class="top-tags">
@@ -25,7 +25,30 @@
       <p class="muted">Build a portfolio-grade computer vision project: dataset, training, evaluation, error analysis, export, and FastAPI inference endpoint.</p>
     </section>
 
-    <section class="card">
+    
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Computer Vision задачи встречаются в большинстве ML-вакансий. End-to-end pipeline — от разметки до деплоя — показывает, как работает CV на практике.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+          <li>Собрать и разметить датасет изображений</li>
+          <li>Fine-tune pretrained CNN/ViT с аугментациями</li>
+          <li>Оценить качество по per-class метрикам и задеплоить через ONNX</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать заранее</div>
+    <ul>
+          <li>CNN (5.1)</li>
+          <li>ViT (5.8)</li>
+          <li>Transfer Learning</li>
+    </ul>
+  </div>
+</div>
+<section class="card">
       <h2>TL;DR</h2>
       <p>The goal is not just a good model. The goal is a reproducible CV system with clear data assumptions, metrics, failure cases, and a deployable inference contract.</p>
     </section>
@@ -124,6 +147,81 @@ async def predict_endpoint(file: UploadFile):
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>pipeline quality = data quality + model quality + serving quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">data quality</span><span class="fa-name">данные и разметка</span><span class="fa-desc">насколько dataset чистый, согласованный и релевантный задаче.</span></div><div class="formula-anatomy__row"><span class="fa-sym">model quality</span><span class="fa-name">качество модели</span><span class="fa-desc">mAP, Dice, F1 или другая выбранная метрика.</span></div><div class="formula-anatomy__row"><span class="fa-sym">serving quality</span><span class="fa-name">качество доставки</span><span class="fa-desc">latency, robustness и совпадение preprocessing на inference с train.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> end-to-end CV pipeline ломается чаще на данных и serving, чем на самой архитектуре.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> даже при хорошем detector serving-time resize mismatch может резко ухудшить mAP в проде.</div></div></section>
   <section class="ml-study-practice" data-quality-pass="proj-10-3"><h2>Упражнения: End-to-End CV Pipeline</h2><details><summary>[Foundational] Dataset audit</summary><div class="intuition-content">Составь checklist для проверки annotation quality, class balance и coordinate format.</div></details><details><summary>[Intermediate] Serving consistency</summary><div class="intuition-content">Опиши, как проверить, что train-time и serving-time preprocessing идентичны.</div></details><details><summary>[Hard] Production rollback</summary><div class="intuition-content">Сформулируй plan rollback, если online false positives резко выросли после деплоя.</div></details></section>
-  <section class="ml-checkpoint-section" data-quality-pass="proj-10-3"><h2>Checkpoint: 10.3 CV Pipeline</h2><ul><li>Где в CV pipeline чаще всего появляется train-serving skew?</li><li>Какая метрика соответствует задаче detection/segmentation?</li><li>Как ты валидируешь качество разметки?</li><li>Какие артефакты нужны для воспроизводимого деплоя?</li><li>Rubber duck: объясни весь CV pipeline от raw image до API ответа.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Из каких этапов состоит end-to-end CV pipeline?</summary>
+      <div class="ml-quiz__a"><p>(1) Data collection & annotation (labelme, CVAT). (2) EDA — распределение классов, качество разметки. (3) Preprocessing & augmentation (albumentations). (4) Model selection (pretrained backbone + fine-tuning). (5) Training + validation monitoring. (6) Evaluation (mAP, confusion matrix). (7) Serving (ONNX export, TorchServe).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему аугментация данных критична для CV?</summary>
+      <div class="ml-quiz__a"><p>Аугментация: random crop, flip, rotation, color jitter, cutout — искусственно увеличивает размер и разнообразие датасета. Модель не «видит» одно и то же изображение дважды, что снижает переобучение. Для медицинских изображений — domain-specific augmentations (elastic deformation).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое transfer learning для CV и как выбрать backbone?</summary>
+      <div class="ml-quiz__a"><p>Обучаем только «голову» (classifier/detector) поверх замороженного ImageNet-pretrained backbone. Или fine-tune весь backbone с маленьким lr. Выбор: ViT лучше при больших данных, EfficientNet/ConvNeXt — universal backbone. Начинай с предобученного — экономит данные и время.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как оценить, достаточно ли данных для обучения CV-модели?</summary>
+      <div class="ml-quiz__a"><p>Правило большого пальца: 1000+ примеров на класс для fine-tuning, 10k+ для обучения с нуля. Признаки нехватки: большой gap train/val, высокая variance результатов. Стратегии при нехватке: transfer learning, data augmentation, self-supervised pretraining (DINO, MAE).</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-3"><h2>Checkpoint: 10.3 CV Pipeline</h2><ul><li>Где в CV pipeline чаще всего появляется train-serving skew?</li><li>Какая метрика соответствует задаче detection/segmentation?</li><li>Как ты валидируешь качество разметки?</li><li>Какие артефакты нужны для воспроизводимого деплоя?</li><li>Rubber duck: объясни весь CV pipeline от raw image до API ответа.</li></ul></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: End-to-End CV Pipeline</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Transfer learning от ImageNet — стандарт, даже при малом объёме данных.</li>
+        <li>Начинай с аугментации после того, как baseline работает — не до.</li>
+        <li>Confusion matrix и per-class metrics — обязательны, accuracy одной недостаточно.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не делать EDA данных перед обучением — дисбаланс и ошибки разметки сразу видны.</li>
+        <li>Применять агрессивную аугментацию без проверки качества аугментированных примеров.</li>
+        <li>Fine-tune весь backbone с тем же lr, что и голову — backbone нужен меньший lr.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Learning rate для backbone vs head: обычно backbone_lr = head_lr / 10.</li>
+        <li>Augmentation strength: albumentations HorizontalFlip + ColorJitter как baseline.</li>
+        <li>Image resolution: выше = точнее, дороже; начинай с 224, увеличивай при необходимости.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="../05_architectures/01_cnn_convolutional_networks.html">← 5.1 CNN</a></li>
+        <li><a href="../05_architectures/08_vision_transformer.html">← 5.8 ViT</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

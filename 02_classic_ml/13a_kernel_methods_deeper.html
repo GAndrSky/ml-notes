@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/13a_kernel_methods_deeper.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -46,21 +46,80 @@
       <h1>2.13a Kernel Methods глубже</h1>
       <p class="muted">Kernel trick — это не магия, а способ работать с линейной моделью в очень богатом пространстве признаков, не выписывая это пространство явно. Здесь связываем SVM, Mercer, RBF и геометрию похожести.</p>
     </div>
-    <div class="card">
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Kernel — это функция схожести, которая неявно отображает данные в бесконечномерное пространство. Reproducing Kernel Hilbert Space — теоретический фундамент SVM и Gaussian Processes.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Reproducing Kernel Hilbert Space (RKHS) — что это и зачем</li>
+      <li>Mercer's theorem — необходимое условие на валидный kernel</li>
+      <li>RBF, Matérn, Polynomial kernels — их свойства и применение</li>
+      <li>Как строить новые kernels через композиционные правила</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>SVM (2.13)</li>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Теория вероятностей (1.3)</li>
+    </ul>
+  </div>
+</div>
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Главная формула</h2>
       <div class="formula" data-render-tex data-tex-source="K(x, x') = \langle \phi(x), \phi(x') \rangle">K(x, x') = &lt;φ(x), φ(x')&gt;</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Что именно объясняет метод интерпретации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовый уровень</span><span class="fa-desc">Средний или ожидаемый прогноз до учёта признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">φ_i</span><span class="fa-name">вклад признака</span><span class="fa-desc">Насколько признак сдвигает прогноз относительно baseline.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K(x, x')</span><span class="fa-name">kernel-функция — сходство двух объектов</span><span class="fa-desc">Скаляр: «насколько x и x' похожи» в скрытом feature space φ. Вычисляется напрямую, без явного построения φ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">⟨·, ·⟩</span><span class="fa-name">скалярное произведение в пространстве φ</span><span class="fa-desc">Внутренне K определяется через скалярное произведение образов объектов. Это гарантирует корректность (теорема Mercer: K должна быть положительно полуопределённой).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">φ(x)</span><span class="fa-name">нелинейное отображение в feature space</span><span class="fa-desc">Функция φ: X → H, переводящая x в (возможно бесконечномерное) пространство Гильберта H. Kernel trick: K(x,x') = ⟨φ(x),φ(x')⟩ — считаем без явного φ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x, x'</span><span class="fa-name">два объекта в исходном пространстве</span><span class="fa-desc">Произвольная пара объектов. Kernel позволяет сравнивать объекты любой природы (векторы, строки, графы), для которых определена функция K.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула раскладывает prediction или качество на вклады признаков, но объясняет модель, а не причинность мира.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разбор чека: видно, какие позиции дали итоговую сумму, но не почему их купили.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline 0.3, prediction 0.8 и вклад признака +0.2, этот признак поднял прогноз модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Kernel = «умный способ сравнивать объекты». Линейная модель в feature space φ даёт нелинейную модель в исходном пространстве. Kernel trick позволяет использовать этот эффект без вычисления φ явно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Сравниваем тексты по числу общих слов (bag-of-words). Вместо хранения длинных векторов считаем только их dot product — это и есть kernel. Сходство без явного признакового пространства.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Полиномиальное ядро K(x,x')=(x^T x'+c)^d. x=[1,2], x'=[3,1], c=0, d=2. K=(1·3+2·1)²=5²=25. Неявно работает в 6-мерном пространстве квадратичных признаков.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -118,15 +177,15 @@ K_ij = K(x_i, x_j),   K = K^T,   z^T K z ≥ 0</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">d(x,y)</span><span class="fa-name">расстояние</span><span class="fa-desc">Численная мера близости между двумя объектами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_i, y_i</span><span class="fa-name">координаты</span><span class="fa-desc">Значения признаков двух сравниваемых объектов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">число соседей</span><span class="fa-desc">Сколько ближайших объектов участвуют в голосовании.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K_RBF(x, x')</span><span class="fa-name">RBF kernel (сходство)</span><span class="fa-desc">Гауссова мера схожести двух объектов: от 0 (далеко) до 1 (x=x').</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">ширина RBF</span><span class="fa-desc">Управляет скоростью затухания сходства: большой γ → только ближайшие соседи влияют на модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||x − x'||²</span><span class="fa-name">квадрат евклидова расстояния</span><span class="fa-desc">Мера удалённости объектов x и x' в исходном пространстве признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x, x'</span><span class="fa-name">два объекта</span><span class="fa-desc">Пара точек, для которых вычисляется kernel-сходство.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт, какие объекты считаются близкими, а значит определяет поведение k-NN и похожих методов.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта: выбранная метрика говорит, идти ли по прямой, по кварталам или сравнивать направление.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Для точек (0,0) и (3,4) евклидово расстояние равно 5.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RBF kernel задаёт "гауссово влияние": объекты близко друг к другу очень похожи (K≈1), далеко — почти не влияют (K≈0). γ задаёт радиус этой "зоны влияния".</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как лампочка: ярко в точке, быстро гаснет с расстоянием. γ регулирует мощность — насколько далеко распространяется свет.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ||x−x'||²=1, γ=1 → K=e^{−1}≈0.37; γ=0.1 → K=e^{−0.1}≈0.90.</div>
     </div>
     <div class="grid-2">
         <div><h3>Маленький gamma</h3><p>Похожесть затухает медленно. Модель гладкая, решение более глобальное, граница менее извилистая.</p></div>
@@ -334,7 +393,40 @@ Z = model.fit_transform(X)</div></div>
     <details><summary>[Hard] Mercer's condition</summary><p>Почему kernel должен быть positive semidefinite? <strong>Решение:</strong> тогда он соответствует корректному скалярному произведению в некотором feature space.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-13a">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Какие условия должна выполнять функция, чтобы быть корректным ядром?</summary>
+      <div class="ml-quiz__a"><p>По теореме Мерсера, функция K(x,z) является корректным ядром, если она симметрична и матрица Грама K_ij = K(xᵢ,xⱼ) является положительно полуопределённой для любого набора точек. Это гарантирует, что K соответствует скалярному произведению в некотором пространстве Гильберта.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между RBF-ядром и полиномиальным ядром?</summary>
+      <div class="ml-quiz__a"><p>RBF K(x,z) = exp(-γ‖x-z‖²) — локальное ядро, зависящее только от расстояния; γ контролирует «ширину» влияния. Полиномиальное K(x,z) = (xᵀz+c)ᵈ — глобальное, улавливает взаимодействия признаков степени d. RBF универсальнее для большинства практических задач.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое kernel PCA и как он отличается от обычного PCA?</summary>
+      <div class="ml-quiz__a"><p>Kernel PCA применяет обычный PCA в пространстве признаков, заданном ядром: вычисляет собственные векторы kernel matrix K_ij=K(xᵢ,xⱼ). Это позволяет найти нелинейные главные компоненты — например, развернуть спираль или разделить концентрические окружности.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему kernel methods работают в «бесконечномерном» пространстве признаков?</summary>
+      <div class="ml-quiz__a"><p>RBF-ядро соответствует скалярному произведению в пространстве бесконечного числа Гауссовых базисных функций. При этом вычислительная стоимость не зависит от размерности этого пространства — нужно лишь вычислить K(xᵢ,xⱼ) = exp(-γ‖xᵢ-xⱼ‖²), что быстро.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-13a">
     <h2>Checkpoint: 2.13a Kernel Methods</h2>
     <ul>
       <li>Что именно делает kernel trick?</li>
@@ -344,5 +436,6 @@ Z = model.fit_transform(X)</div></div>
       <li>Rubber duck: объясни kernel как способ сравнить объекты после невидимого расширения признаков.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

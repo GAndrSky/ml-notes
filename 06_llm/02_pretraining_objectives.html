@@ -28,7 +28,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/02_pretraining_objectives.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -41,6 +41,30 @@
       <h1>6.2 LLM Pre-training</h1>
       <p class="muted">Pre-training — это фаза, где модель учится языковой статистике, фактам, шаблонам рассуждения и формату текста ещё до всякого “полезного поведения” в чате. Без неё instruction tuning просто не на что накладывать.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Задача предобучения определяет, что модель «знает». Causal LM (предсказание следующего токена) vs MLM (заполнение масок) — два разных пути к языковой модели.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Causal Language Modeling — формула loss и почему он авторегрессионный</li>
+      <li>Masked Language Modeling (BERT) — как masked tokens обучают bidirectional attention</li>
+      <li>Span corruption (T5) — encoder-decoder вариант предобучения</li>
+      <li>Как задача предобучения влияет на fine-tuning стратегию</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Трансформер (5.4)</li>
+      <li>Токенизация (6.1)</li>
+      <li>Cross-Entropy loss (3.4)</li>
+    </ul>
+  </div>
+</div>
+
 
     <div class="card">
       <h2>Базовая цель decoder-only LLM</h2>
@@ -48,18 +72,18 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">позиция токена</span><span class="fa-desc">номер шага в sequence, для которого предсказывается следующий токен.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">cross-entropy loss LLM</span><span class="fa-desc">Суммарная ошибка предсказания следующего токена по всей последовательности — то, что минимизируем при pre-training.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">−</span><span class="fa-name">знак минус</span><span class="fa-desc">Превращает log-likelihood в loss: хотим максимизировать log p → минимизируем −log p.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{t=1}^T</span><span class="fa-name">сумма по всем позициям последовательности</span><span class="fa-desc">Суммируем ошибку предсказания каждого токена x_t по всей длине T.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p_θ(x_t|x_{&lt;t})</span><span class="fa-name">log-вероятность токена x_t</span><span class="fa-desc">Логарифм вероятности правильного токена x_t при условии всего предыдущего контекста x_{&lt;t}.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">параметры модели</span><span class="fa-desc">Все веса трансформера — оптимизируются gradient descent по этому loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">t-й токен последовательности</span><span class="fa-desc">Правильный следующий токен, который модель должна предсказать.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_{&lt;t}</span><span class="fa-name">предыдущие токены (контекст)</span><span class="fa-desc">Все токены до позиции t — condition, при котором предсказываем x_t.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Для каждой позиции t: модель видит токены до t и должна предсказать x_t. Loss = суммарный «сюрприз» по всем позициям.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Угадай следующее слово в тексте. Чем меньше удивляешься (высокая p), тем ниже loss — модель хорошо выучила языковые закономерности.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Токен «кот» с p=0.8 → −log(0.8)≈0.22; редкий токен «квазар» с p=0.01 → −log(0.01)≈4.6 — большой вклад в loss.</div>
     </div>
     <p>Модель последовательно предсказывает следующий токен. Это простая цель, но из неё вырастает многое: грамматика, факты, код, стиль, локальные и частично глобальные зависимости.</p>
       <div class="info">Важно не путать: pre-training не учит модель “быть ассистентом”. Он учит её хорошо моделировать распределение текста.</div>
@@ -310,6 +334,40 @@
     <details><summary>[Intermediate] Perplexity</summary><p>Что означает меньшая perplexity? <strong>Решение:</strong> модель в среднем меньше “удивляется” правильным токенам.</p></details>
     <details><summary>[Hard] Objective mismatch</summary><p>Почему хорошая pretraining loss не гарантирует полезного assistant behavior? <strong>Решение:</strong> pretraining учит продолжать текст, а не следовать инструкциям и предпочтениям пользователя.</p></details>
   </section>
-  <section class="ml-checkpoint-section" data-quality-pass="llm-6-2"><h2>Checkpoint: 6.2 Pre-training</h2><ul><li>Что оптимизирует causal LM?</li><li>Как cross-entropy связана с likelihood?</li><li>Почему perplexity не равна качеству ассистента?</li><li>Чем bidirectional objective отличается от autoregressive?</li><li>Rubber duck: объясни pretraining как обучение угадывать следующий кусок текста.</li></ul></section>
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Causal Language Modeling (CLM) и как он отличается от Masked LM?</summary>
+      <div class="ml-quiz__a"><p>CLM (GPT-style): предсказывает следующий токен, видя только предыдущие (авторегрессия). Masked LM (BERT-style): случайно маскирует 15% токенов и предсказывает их по двустороннему контексту. CLM лучше для генерации; Masked LM — для задач понимания (классификация, NER).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое cross-entropy loss при предобучении LLM и что он оптимизирует?</summary>
+      <div class="ml-quiz__a"><p>CE loss = -log P(tₜ | t₁,...,tₜ₋₁): отрицательный логарифм вероятности следующего токена. Модель учится максимизировать вероятность реального следующего токена. Perplexity = exp(CE) — более интуитивная метрика: сколько равновероятных вариантов «воображает» модель на каждом шаге.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему масштаб корпуса данных критически важен для предобучения LLM?</summary>
+      <div class="ml-quiz__a"><p>Язык и мировые знания — богатые, многомерные структуры. GPT-3 обучался на 300B токенов, LLaMA-3 — на 15T. Больше данных позволяет увидеть больше контекстов, паттернов и фактов. Scaling laws показывают, что качество логарифмически растёт с объёмом данных при фиксированном compute.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое data deduplication и почему он важен при подготовке корпуса?</summary>
+      <div class="ml-quiz__a"><p>Дублирование данных вызывает: (1) memorization — модель «заучивает» частые фрагменты вместо обобщения, (2) завышенную оценку perplexity (если test присутствует в train), (3) нежелательные bias. MinHash/Jaccard deduplication удаляет near-duplicate документы, улучшая качество обучения.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="llm-6-2"><h2>Checkpoint: 6.2 Pre-training</h2><ul><li>Что оптимизирует causal LM?</li><li>Как cross-entropy связана с likelihood?</li><li>Почему perplexity не равна качеству ассистента?</li><li>Чем bidirectional objective отличается от autoregressive?</li><li>Rubber duck: объясни pretraining как обучение угадывать следующий кусок текста.</li></ul></section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

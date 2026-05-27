@@ -44,7 +44,7 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/04_training/07_mixed_precision_training.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="training">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -60,6 +60,30 @@ body{margin:0;background:var(--bg);color:var(--text);padding:0;max-width:none;li
       <h1>4.7 Mixed Precision Training</h1>
       <p class="muted">FP16, BF16, autocast, loss scaling и почему ускорение почти никогда не бывает “просто включил и забыл”</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>FP16/BF16 удваивает throughput и вдвое сокращает память по сравнению с FP32. Именно mixed precision позволяет дообучать большие модели на потребительском железе.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Чем FP32, FP16 и BF16 отличаются по диапазону и точности</li>
+      <li>Как loss scaling предотвращает underflow при вычислениях в FP16</li>
+      <li>Что хранится в FP32 (мастер-веса), а что в FP16 (активации, градиенты)</li>
+      <li>Как использовать torch.cuda.amp.GradScaler в PyTorch</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Оптимизаторы (4.2)</li>
+      <li>Численная стабильность (4.9)</li>
+      <li>Базовые float-типы данных</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="card">
   <h2>⚡ Зачем вообще mixed precision</h2>
@@ -407,7 +431,40 @@ scaler.update()
 <!-- learning-exercises:end -->
 
 <!-- learning-checkpoint:start -->
-  <section class="ml-checkpoint-section" data-learning-checkpoint="1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое FP16 и почему его использование ускоряет обучение?</summary>
+      <div class="ml-quiz__a"><p>FP16 (half precision) использует 16 бит вместо 32 (FP32): меньше памяти и выше пропускная способность GPU (на современных GPU FP16 в 2-8× быстрее FP32 для матричных операций через Tensor Cores). Это позволяет увеличить batch size или размер модели.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое loss scaling в mixed precision и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>FP16 имеет малый диапазон: малые градиенты уходят в underflow. Loss scaling умножает loss на большой скаляр (например, 2¹⁶) перед backprop, делая градиенты больше и предотвращая underflow. Затем перед обновлением весов градиенты делятся обратно на тот же скаляр.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между FP16 и BF16?</summary>
+      <div class="ml-quiz__a"><p>FP16: 5 бит экспоненты, 10 бит мантиссы — высокая точность, но малый диапазон (underflow/overflow при обучении). BF16: 8 бит экспоненты, 7 бит мантиссы — тот же диапазон, что у FP32, меньшая точность, но проблема underflow исчезает. BF16 проще использовать (не нужен loss scaling).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему основные параметры хранятся в FP32 даже при mixed precision обучении?</summary>
+      <div class="ml-quiz__a"><p>Обновления параметров (w += -lr·g) требуют высокой точности: при маленьких шагах обучения разность малая и теряется в FP16. Мастер-копия FP32 гарантирует точное обновление весов. Forward/backward в FP16 — для скорости; обновление параметров в FP32 — для численной стабильности.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-learning-checkpoint="1">
     <h2>Learning checkpoint</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
@@ -482,5 +539,6 @@ scaler.update()
 </div>
 
 <script src="../bundle.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

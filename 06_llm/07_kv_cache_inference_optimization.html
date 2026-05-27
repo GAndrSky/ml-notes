@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/06_llm/07_kv_cache_inference_optimization.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="llm">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -25,6 +25,30 @@
       <h1>6.7 KV-Cache and Inference Optimization</h1>
       <p class="muted">LLM inference is usually not limited by the same things as training. During generation, memory bandwidth, KV-cache size, batching strategy, and decoding algorithm often matter more than raw FLOPs.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Без KV-cache каждый новый токен требует пересчёта всего контекста — O(L²) операций. KV-cache хранит ключи и значения, сводя инференс к O(L) за токен.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как autoregressive decoding работает — токен за токеном</li>
+      <li>KV-cache: что кэшируется и почему только K и V, не Q</li>
+      <li>Размер кэша: 2 × L × B × H_kv × D_head — откуда берутся гигабайты</li>
+      <li>Speculative decoding — как черновик ускоряет основную модель</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Трансформер (5.3–5.4)</li>
+      <li>Multi-Head Attention</li>
+      <li>GPU memory</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>TL;DR</h2>
@@ -234,7 +258,40 @@ for step in range(5):
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое KV-кеш и зачем он нужен при авторегрессионной генерации?</summary>
+      <div class="ml-quiz__a"><p>При генерации токена t нужно attention ко всем предыдущим токенам 1..t-1. Без кеша K и V нужно пересчитывать для всех прошлых токенов на каждом шаге — O(t) на токен. KV-кеш хранит уже вычисленные K,V: генерация каждого нового токена занимает O(1) вместо O(t).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему KV-кеш — основной потребитель памяти при инференсе LLM?</summary>
+      <div class="ml-quiz__a"><p>Размер KV-кеша = 2 × num_layers × num_heads × head_dim × seq_len × batch_size × bytes_per_element. Для LLaMA-2 13B при seq_len=4096 и batch=1 в fp16 это ≈ 3GB — сопоставимо с весами модели. При большом batch или длинном контексте KV-кеш доминирует.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое continuous batching и как он повышает пропускную способность?</summary>
+      <div class="ml-quiz__a"><p>Стандартный batching ждёт, пока все запросы в батче завершатся. Continuous batching (PagedAttention в vLLM): слоты памяти выделяются динамически, новые запросы вставляются сразу после завершения предыдущих. Это значительно повышает GPU utilization и throughput при разной длине запросов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое speculative decoding и как он ускоряет генерацию?</summary>
+      <div class="ml-quiz__a"><p>Speculative decoding: маленькая «draft» модель генерирует k токенов, большая «target» модель верифицирует их параллельно за один forward pass. Если черновик верный — генерируем k токенов за 1 шаг вместо k шагов. Ускорение ≈ 2-3× при хорошем соответствии draft и target.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <ul>
         <li>Can you explain why KV-cache helps decode but not the whole prefill cost?</li>
@@ -256,5 +313,47 @@ for step in range(5):
   <script src="../bundle.js" defer></script>
   <script src="../shared-katex.js" defer></script>
   <script src="../shared-code-highlight.js" defer></script>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: KV-Cache и оптимизация инференса</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Применяй KV-cache по умолчанию при любой авторегрессионной генерации.</li>
+        <li>Для production: используй vLLM или TGI с continuous batching.</li>
+        <li>Speculative decoding эффективен, если есть подходящая draft-модель (7B → 70B).</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не измерять latency отдельно для prefill и decode фаз — они сильно различаются.</li>
+        <li>Игнорировать KV-cache при расчёте памяти GPU — он часто больше весов модели.</li>
+        <li>Сравнивать throughput без фиксации seq_len и batch_size.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Batch size при inference: больше = выше throughput, но выше latency.</li>
+        <li>Precision: int8 KV-cache экономит 2× память с минимальной потерей качества.</li>
+        <li>Max sequence length: определяет размер кеша — не ставь больше нужного.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="06_llm/05_lora_qlora.html">← 6.5 LoRA/QLoRA</a></li>
+        <li><a href="09_mlops_deployment/02_model_serving.html">9.2 Model Serving →</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/18_imbalanced_classes.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,67 @@
         Почему accuracy ломается, class weights, over/under-sampling, SMOTE и какие метрики реально важны при imbalance.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Дисбаланс классов — норма в реальных задачах: fraud, медицинская диагностика, rare events. Accuracy 99% при 1% положительных — бесполезная метрика. SMOTE, class weights, threshold tuning — инструменты борьбы.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему accuracy бессмысленна при дисбалансе классов</li>
+      <li>SMOTE — как синтетические примеры генерируются в feature space</li>
+      <li>Class weights — как встроить в loss function</li>
+      <li>Threshold tuning — как сдвинуть operating point на ROC кривой</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Метрики классификации (2.7)</li>
+      <li>Логистическая регрессия (2.5)</li>
+      <li>ROC-AUC</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Почему imbalance — это отдельная проблема</h2>
       <p>
         Во многих реальных задачах классы распределены неравномерно.
@@ -479,9 +538,9 @@ Class 1 = 1%
       <div class="formula-anatomy__row"><span class="fa-sym">TN</span><span class="fa-name">true negatives</span><span class="fa-desc">Отрицательные объекты, найденные правильно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Accuracy считает долю всех правильных ответов (TP+TN) из всех объектов. При дисбалансе модель «всегда 0» имеет высокую TN, нулевые TP → высокая accuracy при нулевом recall редкого класса.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Тест на редкую болезнь (1% популяции): тест «всегда здоров» имеет accuracy=99% (TN=9900 из 10000, TP=0). Но он бесполезен — ни одного больного не нашёл.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 990 класс 0, 10 класс 1. Модель «всегда 0»: TN=990, TP=0, FP=0, FN=10. Accuracy=(990+0)/(990+10)=99%. Recall класса 1 = 0/(0+10)=0% — модель бесполезна.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -656,17 +715,16 @@ L = Σ_i w_{y_i} · loss_i</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">взвешенный loss</span><span class="fa-desc">Суммарная ошибка модели, где каждый объект штрафуется с весом своего класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_i</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем взвешенные ошибки по всей обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_{y_i}</span><span class="fa-name">вес класса объекта i</span><span class="fa-desc">Весовой коэффициент для класса y_i: minority class получает w > 1, majority — меньше.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинная метка i-го объекта</span><span class="fa-desc">Определяет, какой вес w_{y_i} применить к ошибке этого объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">loss_i</span><span class="fa-name">ошибка на i-м объекте</span><span class="fa-desc">Например, cross-entropy или MSE для i-го объекта — умножается на вес класса.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ошибка на minority-объекте стоит дороже — модель вынуждена уделять им больше внимания при обучении.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Штрафные очки в спорте: ошибка за рулём на скользкой дороге стоит дороже, чем на сухой.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Minority class: w=10, loss_i=0.3 → вклад 3.0; majority class: w=1, loss_i=0.3 → вклад 0.3.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -774,7 +832,7 @@ L = Σ_i w_{y_i} · loss_i</div>
         </div>
       </div>
 
-      <div class="formula">Oversampling:
+      <div class=”formula”>Oversampling:
 minority ↑
 
 Undersampling:
@@ -782,17 +840,17 @@ majority ↓
 
 Обе техники меняют обучающую выборку,
 но не меняют реальное распределение мира.</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">minority</span><span class="fa-name">редкий класс</span><span class="fa-desc">Класс, который важен, но встречается редко.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">weight</span><span class="fa-name">вес класса</span><span class="fa-desc">Множитель ошибки для компенсации дисбаланса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Настраивается под precision/recall trade-off.</span></div>
+    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
+      <div class=”formula-anatomy__header”>Что означают символы</div>
+      <div class=”formula-anatomy__grid”>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>minority ↑</span><span class=”fa-name”>oversampling — добавление объектов редкого класса</span><span class=”fa-desc”>Увеличиваем количество minority-объектов в train: простым дублированием (random oversampling) или синтетической генерацией (SMOTE). Риск: дублирование → переобучение на конкретных примерах.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>majority ↓</span><span class=”fa-name”>undersampling — удаление объектов частого класса</span><span class=”fa-desc”>Убираем часть majority-объектов из train, чтобы выровнять соотношение. Риск: теряем полезную информацию — потенциально важные majority-примеры выброшены.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>обучающая выборка</span><span class=”fa-name”>только train меняется — не реальное распределение</span><span class=”fa-desc”>Oversampling/undersampling применяется ТОЛЬКО к train после split. Val и test остаются с реальным дисбалансом — иначе оценка нечестная (leakage распределения).</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула меняет взгляд на качество, когда классы встречаются неравномерно и accuracy становится misleading.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как искать редкую поломку: “почти всегда нет поломки” даёт высокую accuracy, но бесполезно.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> При 1% positives модель “всегда 0” имеет 99% accuracy и 0 recall по редкому классу.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Модель учится на перебалансированных train-данных, но в реальности видит исходный дисбаланс. Это помогает находить minority-объекты, но threshold надо настраивать отдельно под реальное распределение.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Тренировка детектива на случаях, где 50% преступления и 50% не-преступления — хотя в реальности лишь 1% преступлений. Детектив учится лучше распознавать, но в реальном мире будет давать много false positives.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Train: 1000 majority, 50 minority (2% positives). После SMOTE: 1000 majority, 200 minority (17% positives). Val остался: 200 majority, 10 minority (5% positives). Threshold подбираем по реальному Val.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -867,15 +925,16 @@ x_new = x_i + λ(x_j - x_i),   где λ ∈ [0,1]</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_new</span><span class="fa-name">синтетический объект</span><span class="fa-desc">Новая точка minority class, созданная интерполяцией между двумя реальными объектами.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_i</span><span class="fa-name">исходный minority-объект</span><span class="fa-desc">Точка, от которой начинается интерполяция — опорный объект minority класса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">minority-сосед</span><span class="fa-desc">Один из ближайших соседей x_i в пространстве признаков, тоже из minority class.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">случайный коэффициент интерполяции</span><span class="fa-desc">Равномерно случайное число от 0 до 1 — задаёт положение нового объекта между x_i и x_j.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(x_j − x_i)</span><span class="fa-name">вектор от x_i к x_j</span><span class="fa-desc">Направление интерполяции: λ=0 → x_new=x_i, λ=1 → x_new=x_j, λ=0.5 → середина.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SMOTE создаёт новые minority-объекты внутри уже занятой области — не дублирует, а заполняет пространство между соседями.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Рисуем новые точки на прямой между двумя существующими — они всегда окажутся «внутри» области minority class.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x_i=(2,3), x_j=(4,7), λ=0.3 → x_new = (2,3)+0.3·(2,4) = (2.6, 4.2).</div>
     </div>
     <div class="grid-2">
         <div>
@@ -1093,14 +1152,14 @@ validation fold remains untouched</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">валидационная часть</span><span class="fa-desc">Один из разбиений в cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">SMOTE на всём датасете → split</span><span class="fa-name">leakage: синтетики видны в validation</span><span class="fa-desc">Если SMOTE применён до split, синтетические объекты из val-fold были сгенерированы с использованием соседей из val. Модель фактически «видела» val при обучении — оценка завышена.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">в каждом train fold: fit resampling only there</span><span class="fa-name">правильно: resampling внутри каждого fold</span><span class="fa-desc">SMOTE применяется только к train-части текущего fold. Val-fold остаётся с реальным дисбалансом — честная оценка на естественном распределении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">validation fold remains untouched</span><span class="fa-name">val не участвует в resampling</span><span class="fa-desc">Val-fold оценивается с исходным дисбалансом — именно таким будет реальный deployment. Синтетические объекты нужны только для обучения, не для оценки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SMOTE создаёт синтетиков, интерполируя между соседями. Если соседи из val-fold использованы при генерации, синтетики «похожи» на val — оценка нечестная. Pipeline(SMOTE → model) в imbalanced-learn решает это автоматически.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Репетировали на вопросах, списанных с реального экзамена (val). Оценка «100%», но в реальности не готовы. Правильно: репетировать только на train-вопросах, экзамен видеть первый раз.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: 900+50. Val: 100+10. SMOTE до split: генерирует 200 синтетиков из 950+60 — val-объекты были соседями. SMOTE внутри fold: генерирует только из 900+50 train — val изолирован.</div>
     </div>
     <div class="info">
         Иначе synthetic points и дубли могут утечь в validation,
@@ -1808,7 +1867,40 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
     <details><summary>[Hard] Resampling protocol</summary><p>Где применять oversampling/SMOTE в cross-validation? <strong>Решение:</strong> только внутри train-fold; validation-fold нельзя синтетически смешивать с train, иначе будет leakage.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-18">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему имбаланс классов — проблема и как она проявляется?</summary>
+      <div class="ml-quiz__a"><p>Модель стремится минимизировать суммарную ошибку. При 99% примеров класса 0 выгоднее всегда предсказывать 0 — это даёт 99% accuracy. Редкий класс игнорируется. Метрика accuracy вводит в заблуждение; нужны F1, ROC-AUC или Precision-Recall AUC.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между oversampling (SMOTE) и undersampling?</summary>
+      <div class="ml-quiz__a"><p>Undersampling удаляет примеры мажоритарного класса — быстро, но теряет информацию. SMOTE (Synthetic Minority Oversampling) генерирует синтетические примеры минорного класса путём интерполяции между соседями — создаёт «правдоподобные» новые точки. SMOTE применяется только на обучающем наборе, никогда на тестовом.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое class_weight в sklearn и как он помогает при имбалансе?</summary>
+      <div class="ml-quiz__a"><p>class_weight перевзвешивает функцию потерь: примеры редкого класса получают больший вес, что заставляет модель уделять им больше внимания. При class_weight="balanced" вес пропорционален обратной частоте класса: n_samples / (n_classes × count_class). Это просто и эффективно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда threshold подбор (изменение порога 0.5 для бинарной классификации) помогает при имбалансе?</summary>
+      <div class="ml-quiz__a"><p>Если модель выдаёт вероятности, порог 0.5 не всегда оптимален при имбалансе — он занижает recall для редкого класса. Снижение порога (например, до 0.3) увеличивает recall за счёт precision. Оптимальный порог выбирают по кривой Precision-Recall исходя из бизнес-стоимости ошибок.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-18">
     <h2>Checkpoint: 2.18 Imbalanced Classes</h2>
     <ul>
       <li>Почему accuracy опасна при дисбалансе?</li>
@@ -1818,5 +1910,6 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       <li>Rubber duck: объясни дисбаланс как поиск редких событий в огромном потоке нормальных объектов.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

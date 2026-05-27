@@ -596,7 +596,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/06_regression_metrics.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -608,8 +608,67 @@
     <h1>2.6 Метрики регрессии</h1>
     <p class="muted">MSE, RMSE, MAE, R², MAPE, residuals, scale sensitivity, choosing the right metric</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Правильно выбрать метрику — половина успеха. MAE устойчива к выбросам, MAPE бесполезна при y ≈ 0, RMSE штрафует большие ошибки. Неправильная метрика даёт неправильную модель.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>MSE, MAE, RMSE — геометрический смысл и чувствительность к выбросам</li>
+      <li>R² (коэффициент детерминации) — что означает R² = 0.8</li>
+      <li>MAPE и его ограничения при малых значениях целевой переменной</li>
+      <li>Как выбрать метрику под конкретную бизнес-задачу</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная регрессия (2.3)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Базовая статистика</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">MSE</span>
       <span class="mini-tag">RMSE</span>
@@ -636,16 +695,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">metric</span><span class="fa-name">скалярная оценка качества модели</span><span class="fa-desc">Одно число, которое суммирует все prediction errors. Разные метрики по-разному взвешивают ошибки разного размера.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">prediction error</span><span class="fa-name">ошибка предсказания для одного объекта</span><span class="fa-desc">Расстояние между ŷ и y в каком-то смысле (абсолютное, квадратичное, процентное). Метрика агрегирует эти расстояния по всем объектам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное целевое значение из датасета, которое мы пытаемся предсказать.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание модели для i-го объекта</span><span class="fa-desc">Выход модели для i-го объекта. Метрика сравнивает ŷ_i с y_i по всей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов в выборке</span><span class="fa-desc">По скольким объектам усредняется ошибка. Обычно n = размер test/validation выборки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Метрика — формализация вопроса «насколько хороша модель?». Выбор метрики задаёт, что считается «плохой ошибкой»: MSE боится больших промахов, MAE — равномерна, MAPE — в процентах.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценивать стрелка: по среднему промаху (MAE) или по числу «дырок в молоке» за пределами круга (специальные loss). Разные метрики — разные правила игры.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5]: MAE=(1+5)/2=3, MSE=(1+25)/2=13. MSE сильнее штрафует промах 5 — крупный промах доминирует.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -699,14 +758,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Числовой ответ регрессии для i-го объекта — то, что выдала модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное числовое значение из датасета — то, с чем сравниваем прогноз.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс объекта</span><span class="fa-desc">Номер конкретного наблюдения в датасете (i = 1, ..., n).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ŷ^(i) и y^(i) — основа всех регрессионных метрик: каждая по-своему измеряет расхождение между прогнозом и истиной.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как весы и эталон: y^(i) — настоящий вес, ŷ^(i) — показание прибора.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y^(1)=100, ŷ^(1)=92 → ошибка −8. y^(2)=50, ŷ^(2)=55 → ошибка +5.</div>
     </div>
     <p>
       Тогда ошибка / residual:
@@ -718,14 +777,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e^(i)</span><span class="fa-name">residual (ошибка со знаком)</span><span class="fa-desc">Разность прогноза и истины для i-го объекта. Положительный: переоценка; отрицательный: недооценка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Числовой ответ регрессии для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение из датасета.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Знак e^(i) показывает направление ошибки: +e — прогноз завышен, −e — занижен. MSE, MAE, RMSE все строятся из этих residuals.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как термометр с погрешностью: +2° означает "показал больше реального", −2° — "показал меньше".</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ŷ^(1)=110, y^(1)=100 → e^(1)=+10 (переоценка). ŷ^(2)=45, y^(2)=50 → e^(2)=−5 (недооценка).</div>
     </div>
     <div class="grid-2">
       <div>
@@ -758,16 +817,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MSE</span><span class="fa-name">Mean Squared Error — средняя квадратичная ошибка</span><span class="fa-desc">Одно число, резюмирующее качество регрессии. Чем меньше MSE, тем лучше модель. Единицы: (единицы target)².</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">усреднение по всем объектам</span><span class="fa-desc">Делим сумму квадратов ошибок на n, чтобы метрика не зависела от размера выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по всем объектам выборки</span><span class="fa-desc">Суммируем квадраты ошибок по каждому из n объектов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание модели для i-го объекта</span><span class="fa-desc">Выход модели. Разность ŷ^(i) − y^(i) — это signed residual (ошибка со знаком).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное значение из датасета. MSE штрафует за отклонение от него квадратично.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(·)²</span><span class="fa-name">квадрат ошибки</span><span class="fa-desc">Делает все ошибки положительными и сильнее штрафует большие промахи: ошибка 3 → штраф 9, ошибка 10 → штраф 100.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MSE усредняет квадраты отклонений — большие промахи доминируют. Если модель ошиблась на 10 у одного объекта и на 1 у девяти других, MSE «запомнит» ошибку 10.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Оценка стрелка по сумме квадратов промахов: выстрел на 10см от цели штрафуется в 100 раз сильнее, чем выстрел на 1см. Это мотивирует избегать редких, но крупных промахов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5] по 2 объектам. MSE = (1²+5²)/2 = (1+25)/2 = 13. MAE = (1+5)/2 = 3. MSE «боится» ошибки 5 намного сильнее.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -824,16 +884,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">RMSE</span><span class="fa-name">Root Mean Squared Error — корень из MSE</span><span class="fa-desc">Возвращает ошибку в тех же единицах, что и target. Если предсказываем цену в рублях, RMSE тоже в рублях — легче интерпретировать чем MSE.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">√(·)</span><span class="fa-name">квадратный корень</span><span class="fa-desc">Возвращает метрику к исходной шкале target. MSE в (рублях)² → RMSE в рублях. Не меняет порядок моделей: RMSE↑ ⟺ MSE↑.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">усреднение по n объектам</span><span class="fa-desc">Делит сумму квадратов ошибок на число объектов — внутри MSE до взятия корня.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание для i-го объекта</span><span class="fa-desc">Выход модели. Разность ŷ^(i) − y^(i) — residual для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное значение target. RMSE штрафует отклонения от него квадратично (как MSE), но выражает результат в читаемых единицах.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSE = √MSE. По характеру такой же, как MSE (чувствителен к выбросам, квадратичный штраф), но результат в единицах target — легко объяснить бизнесу: «модель ошибается в среднем на X рублей».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Площадь участка в м² — понятно математику. Сторона квадрата = √площади — понятно всем. RMSE — это «сторона» ошибки, которую легко представить.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5]. MSE=13. RMSE=√13≈3.6 рубля. Можно сказать: «в среднем ошибаемся на 3.6 рубля» (с учётом больших выбросов).</div>
     </div>
     <p>
       RMSE — это просто корень из MSE.
@@ -879,16 +939,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MAE</span><span class="fa-name">Mean Absolute Error — средняя абсолютная ошибка</span><span class="fa-desc">Среднее по модулю отклонений между предсказанием и реальностью. Единицы — те же, что у target. Устойчива к выбросам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">усреднение по n объектам</span><span class="fa-desc">Делит сумму абсолютных ошибок на число объектов. Метрика не зависит от размера выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма по всем объектам</span><span class="fa-desc">Суммируем абсолютные ошибки по всем n объектам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|ŷ^(i) − y^(i)|</span><span class="fa-name">абсолютное отклонение для i-го объекта</span><span class="fa-desc">Модуль разности: знак ошибки не важен, важна только величина. Линейный штраф: ошибка в 2 раза больше — штраф в 2 раза больше (в отличие от MSE, где квадратично).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i), y^(i)</span><span class="fa-name">предсказание и истинный ответ</span><span class="fa-desc">Пара (прогноз, реальность) для каждого объекта. MAE одинаково реагирует на ошибки разного знака.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAE — «типичная ошибка» в привычных единицах. Линейный штраф делает её устойчивой к выбросам: один промах на 1000 не доминирует в сумме, как в MSE.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Средняя абсолютная ошибка — как средний промах стрелка без учёта того, в какую сторону. MAE=3 говорит: «в среднем промахиваемся на 3 единицы».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5, 2, 4]. MAE=(1+5+2+4)/4=3. RMSE=√((1+25+4+16)/4)=√11.5≈3.39. MAE меньше реагирует на выброс 5.</div>
     </div>
     <p>
       Здесь мы берём не квадрат ошибки, а модуль.
@@ -1045,16 +1105,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">R²</span><span class="fa-name">коэффициент детерминации</span><span class="fa-desc">Безразмерная метрика в диапазоне (−∞, 1]. R²=1: идеальная модель. R²=0: не лучше предсказания среднего. R²<0: хуже, чем предсказывать среднее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1 − (...)</span><span class="fa-name">«насколько модель лучше baseline»</span><span class="fa-desc">Единица минус отношение ошибок. Если числитель мал (хорошая модель), R² близко к 1. Если числитель ≈ знаменатель (модель не лучше среднего), R²≈0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ(y^(i)−ŷ^(i))²</span><span class="fa-name">RSS — Residual Sum of Squares</span><span class="fa-desc">Сумма квадратов ошибок модели. Числитель дроби — то, что модель «не объяснила».</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ(y^(i)−ȳ)²</span><span class="fa-name">TSS — Total Sum of Squares</span><span class="fa-desc">Общая дисперсия target: сколько «нужно объяснить». Знаменатель нормирует RSS на масштаб задачи.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ȳ</span><span class="fa-name">среднее target по выборке</span><span class="fa-desc">Baseline-предсказание: если бы мы всегда отвечали ȳ. TSS — это MSE такого baseline, умноженное на n.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> R² = 1 − RSS/TSS = «доля дисперсии target, объяснённая моделью». R²=0.85 значит: модель объясняет 85% вариации target, оставшиеся 15% — необъяснённый шум.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Baseline-предсказатель (всегда ȳ) — «стрельба в центр мишени». R² сравнивает ошибки модели с ошибками этого «ленивого» предсказателя.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=[1,2,3,4], ŷ=[1.1,2.2,2.9,3.8]. ȳ=2.5. RSS≈0.1, TSS=5. R²=1−0.1/5=0.98. Отлично — модель объясняет 98% дисперсии.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1072,16 +1132,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ȳ</span><span class="fa-name">выборочное среднее target</span><span class="fa-desc">Среднее значение y по всей выборке. Это предсказание «наивного» baseline: если всегда отвечать ȳ — это минимально возможный MSE без признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">усреднение по n объектам</span><span class="fa-desc">Делит сумму на число объектов, получая арифметическое среднее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{i=1}^n</span><span class="fa-name">сумма всех значений target</span><span class="fa-desc">Суммируем все y^(i) по n объектам выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное значение target для i-го наблюдения. ȳ — это их среднее, знаменатель в R² содержит отклонения от ȳ.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ȳ — это "нулевой уровень" регрессии. Знаменатель R² (TSS) показывает, насколько сильно y колеблется вокруг своего среднего — это максимальная дисперсия, которую модель может объяснить.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Среднее число посетителей в магазине — это «прогноз без модели». TSS = суммарная разброс вокруг этого числа. R² говорит, насколько модель сокращает этот разброс.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=[2,4,6,8]. ȳ=(2+4+6+8)/4=5. TSS=(2−5)²+(4−5)²+(6−5)²+(8−5)²=9+1+1+9=20.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1106,17 +1165,17 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>R²</span><span class=”fa-name”>коэффициент детерминации</span><span class=”fa-desc”>Итоговая метрика: доля дисперсии target, объяснённая моделью. Безразмерна, легко интерпретируется: 0.9 = «модель объясняет 90% вариации».</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>RSS</span><span class=”fa-name”>Residual Sum of Squares — необъяснённый остаток</span><span class=”fa-desc”>Σ(y^(i) − ŷ^(i))²: суммарная ошибка модели. Чем меньше RSS, тем лучше модель. При RSS=0: R²=1.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>TSS</span><span class=”fa-name”>Total Sum of Squares — общая вариация target</span><span class=”fa-desc”>Σ(y^(i) − ȳ)²: вариация target относительно своего среднего. Нормирует RSS на «масштаб задачи».</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>RSS/TSS</span><span class=”fa-name”>доля необъяснённой вариации</span><span class=”fa-desc”>Отношение того, что осталось после модели, к тому, что было. 1 − этот дроби = объяснённая доля.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> R² = 1 − (что не объяснила модель)/(что нужно объяснить). Если модель идеальна — RSS=0, R²=1. Если модель не лучше «всегда ȳ» — RSS=TSS, R²=0.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Сколько шума убрала модель. RSS — шум, оставшийся после модели. TSS — начальный шум (вариация target). R² — процент убранного шума.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> TSS=20, RSS=2. R²=1−2/20=0.9. Модель объяснила 90% дисперсии, оставила 10% остаточного шума.</div>
     </div>
-    <div class="success">
+    <div class=”success”>
       Если модель сильно уменьшает ошибку по сравнению с baseline “предсказывай среднее”,
       то R² близок к 1.
     </div>
@@ -1203,16 +1262,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MAPE</span><span class="fa-name">Mean Absolute Percentage Error</span><span class="fa-desc">Средняя абсолютная ошибка в процентах. Интуитивна для бизнеса: «модель ошибается в среднем на X%». Безразмерна, можно сравнивать модели для разных товаров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">100%/n</span><span class="fa-name">перевод в проценты и усреднение</span><span class="fa-desc">Множитель 100% переводит долю ошибки в проценты. 1/n усредняет по всем объектам.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|y^(i) − ŷ^(i)|</span><span class="fa-name">абсолютная ошибка для i-го объекта</span><span class="fa-desc">Модуль разности прогноза и реального значения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ (знаменатель)</span><span class="fa-desc">Реальное значение target в знаменателе — нормирует ошибку на «масштаб» y. Если y^(i)≈0, MAPE взрывается (деление на ноль). Это главная слабость метрики.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|·| / y^(i)</span><span class="fa-name">относительная ошибка</span><span class="fa-desc">Процент промаха для каждого объекта. Ошибка 10 при y=100 → 10%. Та же ошибка 10 при y=10 → 100%. MAPE штрафует за промахи на «маленьких» значениях сильнее.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAPE — это MAE, выраженный в процентах от реального значения. MAPE=8% значит: «в среднем ошибаемся на 8% от реального y». Удобно, но ломается при y≈0.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Прогноз продаж: ошибка в 100 единиц при продажах 1000 — 10%. Та же ошибка при продажах 50 — 200%. MAPE учитывает «масштаб» задачи для каждого объекта.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=[100, 50], ŷ=[110, 45]. |100−110|/100=10%, |50−45|/50=10%. MAPE=(10%+10%)/2=10%. Обе ошибки одинаковы в процентах.</div>
     </div>
     <p>
       MAPE показывает среднюю ошибку в процентах.
@@ -1292,14 +1351,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e^(i)</span><span class="fa-name">residual</span><span class="fa-desc">Ошибка со знаком для i-го объекта: e^(i) > 0 — переоценка, e^(i) < 0 — недооценка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ^(i)</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Числовой ответ регрессии для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение из датасета.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Residual — не просто число. Его паттерн (по x, по ŷ, по времени) показывает, что именно модель не улавливает.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как карта ошибок измерений: случайный шум — норма, но систематическое смещение — признак проблемы модели.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если residuals всегда +5 для дорогих квартир, модель систематически недооценивает высокие цены.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1462,15 +1521,13 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Что именно объясняет метод интерпретации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">baseline</span><span class="fa-name">базовый уровень</span><span class="fa-desc">Средний или ожидаемый прогноз до учёта признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">φ_i</span><span class="fa-name">вклад признака</span><span class="fa-desc">Насколько признак сдвигает прогноз относительно baseline.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_baseline</span><span class="fa-name">базовое предсказание</span><span class="fa-desc">Простейшая модель: всегда предсказывает одно и то же — среднее по train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ȳ</span><span class="fa-name">среднее target по train</span><span class="fa-desc">ȳ = (1/n) Σ y^(i): среднеарифметическое всех истинных ответов обучающей выборки.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула раскладывает prediction или качество на вклады признаков, но объясняет модель, а не причинность мира.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разбор чека: видно, какие позиции дали итоговую сумму, но не почему их купили.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline 0.3, prediction 0.8 и вклад признака +0.2, этот признак поднял прогноз модели.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Baseline — это нижняя планка: если модель хуже "всегда предсказывать среднее", она хуже нуля. R² измеряет, насколько модель превышает этот baseline.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнить метеоролога с "всегда говорить 15°С": baseline — "всегда 15°С", полезная модель должна быть точнее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=[100,200,150] → ȳ=150. Baseline предсказывает 150 для каждого объекта; MSE_baseline=(50²+50²+0²)/3≈1667.</div>
     </div>
     <p>
       Очень часто разумно сначала проверить,
@@ -1926,7 +1983,40 @@ print("B R² :", r2_score(y_val, pred_model_b))
     <details><summary>[Hard] Metric mismatch</summary><p>Объясни, почему train loss MSE, а production metric MAE могут конфликтовать. <strong>Решение:</strong> MSE толкает модель сильнее исправлять крупные ошибки, MAE равномернее относится к ошибкам.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-6">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём ключевое различие между MAE и MSE как метриками регрессии?</summary>
+      <div class="ml-quiz__a"><p>MSE штрафует большие ошибки квадратично (чувствителен к выбросам), MAE штрафует линейно (устойчив к ним). Если в данных есть аномалии, которые нужно игнорировать — MAE; если большие ошибки критически важны — MSE.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда MAPE (средняя абсолютная процентная ошибка) даёт некорректные результаты?</summary>
+      <div class="ml-quiz__a"><p>MAPE = (1/n)Σ|yᵢ-ŷᵢ|/|yᵢ| неопределена при yᵢ=0 и ассиметрична: недооценка наказывается сильнее переоценки. Для временных рядов с нулями лучше использовать SMAPE или RMSSE.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что показывает R² (коэффициент детерминации) и какой его недостаток?</summary>
+      <div class="ml-quiz__a"><p>R² показывает долю объяснённой дисперсии (1 = идеально, 0 = как среднее). Недостаток: R² никогда не убывает при добавлении новых признаков, даже бесполезных. Adjusted R² исправляет это, штрафуя за число параметров.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда использовать RMSE вместо MAE?</summary>
+      <div class="ml-quiz__a"><p>RMSE удобен, когда ошибка измеряется в тех же единицах, что и целевая переменная (как MAE), но при этом важно особо наказывать крупные промахи. Например, при прогнозе цен на недвижимость ошибка в 100k значительно хуже ошибки в 10k.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-6">
     <h2>Checkpoint: 2.6 Метрики регрессии</h2>
     <ul>
       <li>Когда MAE лучше MSE?</li>
@@ -1936,5 +2026,6 @@ print("B R² :", r2_score(y_val, pred_model_b))
       <li>Rubber duck: объясни, почему “минимальная средняя ошибка” не всегда оптимальная цель.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

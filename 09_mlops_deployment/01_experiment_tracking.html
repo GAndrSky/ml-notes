@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/09_mlops_deployment/01_experiment_tracking.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="mlops">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -24,6 +24,30 @@
       <h1>9.1 Experiment Tracking</h1>
       <p class="muted">Эксперимент без логов — это не эксперимент, а воспоминание. Tracking нужен, чтобы через неделю понять, какие данные, seed, hyperparameters, commit, метрики и артефакты дали конкретный результат.</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Без experiment tracking ML — это хаос. MLflow, W&B, DVC позволяют воспроизвести любой прогон, сравнить метрики и отследить версии данных. Разница между «у меня где-то лучшая модель» и «вот она».</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Что нужно логировать: гиперпараметры, метрики, артефакты, версии данных</li>
+      <li>MLflow Tracking — runs, experiments, artifacts — структура и API</li>
+      <li>W&B Sweeps — автоматический поиск гиперпараметров</li>
+      <li>DVC — как версионировать данные как git-репозиторий</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Любой ML-алгоритм</li>
+      <li>Git basics</li>
+      <li>Python</li>
+    </ul>
+  </div>
+</div>
+
 
     <section class="card">
       <h2>Главная идея</h2>
@@ -101,7 +125,40 @@ for step in range(3):
       </div>
     </section>
 
-    <section class="ml-checkpoint-section">
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое experiment tracking и зачем он нужен?</summary>
+      <div class="ml-quiz__a"><p>Experiment tracking — запись параметров, метрик, артефактов и кода каждого эксперимента. Без него невозможно воспроизвести лучший результат, сравнить модели или объяснить коллеге, что именно работает. MLflow, W&B, Neptune — популярные инструменты.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что должны включать метаданные каждого ML-эксперимента?</summary>
+      <div class="ml-quiz__a"><p>Минимум: гиперпараметры, версия данных (хеш), git commit, метрики по эпохам, итоговые тест-метрики, время обучения. Желательно: артефакты (модель, логи), окружение (requirements.txt), случайные seed, конфигурационный файл. Это гарантирует полную воспроизводимость.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое model registry и чем он отличается от artifact store?</summary>
+      <div class="ml-quiz__a"><p>Artifact store хранит все артефакты (модели, данные) без структуры. Model registry добавляет жизненный цикл: стадии (staging, production, archived), версионирование, метаданные о deployment. Это позволяет управлять «живыми» моделями в production и контролировать переходы между версиями.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как организовать сравнение экспериментов при тюнинге гиперпараметров?</summary>
+      <div class="ml-quiz__a"><p>Фиксируй случайный seed и данные (одинаковые splits). Меняй один параметр за раз или используй structured search (grid/random/Bayesian). В W&B/MLflow используй sweep/group для визуализации корреляций параметр-метрика. Логируй validation metric на каждой эпохе, не только финальный.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
       <h2>Learning checkpoint</h2>
       <div class="ml-checkpoint-card">
         <ul class="ml-checkpoint-list">
@@ -117,5 +174,47 @@ for step in range(3):
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="mlops-9-1-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>run = code + config + data version + metrics + artifacts</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">code</span><span class="fa-name">версия кода</span><span class="fa-desc">commit или snapshot логики обучения.</span></div><div class="formula-anatomy__row"><span class="fa-sym">config</span><span class="fa-name">конфигурация</span><span class="fa-desc">гиперпараметры, seeds, training recipe.</span></div><div class="formula-anatomy__row"><span class="fa-sym">data version</span><span class="fa-name">версия данных</span><span class="fa-desc">какой dataset snapshot реально использовался.</span></div><div class="formula-anatomy__row"><span class="fa-sym">metrics + artifacts</span><span class="fa-name">результаты</span><span class="fa-desc">что получилось и какие файлы нужно сохранить для воспроизводимости.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> experiment tracking нужен не для красоты dashboard, а для точного воспроизведения run.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если metric вырос с 0.81 до 0.84, без версии кода и данных нельзя понять, что именно дало улучшение.</div></div></section>
+
+<!-- step1-learning:start -->
+  <section class="ml-endcap-section" data-step1-learning-layer="1">
+    <h2>Как закрепить тему: Отслеживание экспериментов</h2>
+    <p class="muted">Блок связывает теорию с практикой: где применять идею, какие ошибки проверять и как развиваться дальше.</p>
+    <div class="ml-endcap-grid">
+      <article class="ml-endcap-card">
+        <h3>Когда применять</h3>
+        <ul class="ml-endcap-list">
+        <li>Логируй каждый запуск с самого начала — восстановить историю задним числом невозможно.</li>
+        <li>Используй config files (YAML/JSON) + логирование всего config в трекер.</li>
+        <li>W&B sweeps или MLflow Tracking + Optuna — мощная связка для гиперпараметрического поиска.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Типичные ошибки</h3>
+        <ul class="ml-endcap-list">
+        <li>Не сохранять random seed — результат невоспроизводим.</li>
+        <li>Логировать только финальную метрику без кривых обучения.</li>
+        <li>Смешивать staging и production модели в одном registry.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Что тюнить / проверить</h3>
+        <ul class="ml-endcap-list">
+        <li>Число запускаемых параллельно экспериментов — зависит от GPU бюджета.</li>
+        <li>Метрики для сравнения: определяй заранее, не после просмотра результатов.</li>
+        <li>Retention policy для артефактов — модели занимают место.</li>
+        </ul>
+      </article>
+      <article class="ml-endcap-card">
+        <h3>Связи с другими темами</h3>
+        <ul class="ml-endcap-list">
+        <li><a href="09_mlops_deployment/02_model_serving.html">9.2 Model Serving →</a></li>
+        <li><a href="02_classic_ml/17_validation_and_hyperparameter_tuning.html">← 2.17 Hyperparameter Tuning</a></li>
+        <li><a href="../index.html">Карта курса</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+<!-- step1-learning:end -->
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

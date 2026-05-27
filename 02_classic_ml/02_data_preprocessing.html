@@ -570,7 +570,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/02_data_preprocessing.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -583,8 +583,67 @@
     <h1>2.2 Предобработка данных</h1>
     <p class="muted">Scaling, encoding, missing values, leakage, train-only fitting, pipeline mindset</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Garbage in, garbage out. Качество данных определяет потолок любой модели. Нормализация, missing values, кодирование категорий — это половина успеха в любом реальном проекте.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Почему масштаб признаков важен и как StandardScaler vs MinMaxScaler</li>
+      <li>Стратегии обработки пропущенных значений — удалять, заполнять, моделировать</li>
+      <li>Кодирование категориальных признаков — One-Hot, Ordinal, Target Encoding</li>
+      <li>Feature engineering — как создать признаки, которые помогают модели</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Введение в классический ML (2.1)</li>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Python/Pandas (желательно)</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  <div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">data quality</span>
       <span class="mini-tag">feature engineering</span>
@@ -669,14 +728,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Пропущенные положительные объекты.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Raw data</span><span class="fa-name">исходные данные</span><span class="fa-desc">Необработанный датасет: могут быть пропуски, выбросы, разные шкалы, строковые категории.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">split</span><span class="fa-name">разбивка на train/val/test</span><span class="fa-desc">Делается ДО fit preprocessing — иначе параметры scaler/imputer «видят» val/test (leakage).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">fit on train</span><span class="fa-name">обучение preprocessing на train</span><span class="fa-desc">mean, std, min, max, percentiles — всё считается только по train. Именно эти параметры будут применяться к любым новым данным.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">transform val/test</span><span class="fa-name">применение fitted preprocessing</span><span class="fa-desc">Те же параметры из train (μ_train, σ_train) применяются к val/test. Val/test сами ничего не «обучают» в preprocessing.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Preprocessing — это тоже часть модели: он должен fit на train и только transform на val/test. Иначе метрики оказываются оптимистично смещены, потому что test косвенно повлиял на preprocessing.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Мерная лента откалибрована по одним объектам (train) — той же лентой измеряем новые объекты (test). Калибровать ленту заново по тестовым объектам — это жульничество.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: salary=[30K, 50K, 80K] → μ=53.3K, σ=20.8K. Test salary=200K → z=(200-53.3)/20.8≈7.0. Если бы std считался на всём dataset (включая 200K), σ стал бы больше, и z уменьшился бы — test «помог» себе в preprocessing.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -730,14 +790,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_missing</span><span class="fa-name">пропущенное значение</span><span class="fa-desc">NaN, null, пустая строка или специальный код (-999, 0 вместо «нет данных») — значение, которое нужно заполнить перед подачей в модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x̂</span><span class="fa-name">заполненное значение (импутация)</span><span class="fa-desc">Результат: NaN заменяется на оценку. Качество x̂ прямо влияет на то, что «увидит» модель на этом признаке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">mean(train)</span><span class="fa-name">среднее по train</span><span class="fa-desc">Вычисляется только на train. Чувствителен к выбросам: один объект с зарплатой 10M руб исказит mean всех зарплат.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">median(train)</span><span class="fa-name">медиана по train</span><span class="fa-desc">Робастная альтернатива: 50-й перцентиль, не реагирует на выбросы. При асимметричных распределениях (доходы, цены) обычно лучше mean.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Заполнение NaN — это компромисс: любой выбор (mean, median, mode, 0, модельная импутация) добавляет шум или смещение. Ключевое правило: fit imputer только на train, применять к val/test с теми же параметрами.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Если в ведомости не указана оценка студента, пишем среднюю оценку по группе (train). Нельзя подглядывать в оценки экзаменационного листа (test), чтобы уточнить «среднюю».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> age в train: [25, 30, NaN, 45, 50] → mean=37.5. Test: age=[NaN, 60] → заполняем 37.5, не пересчитываем mean по test. Если выброс 150 лет: mean=57 (сдвинут), median=37.5 (устойчив).</div>
     </div>
     <div class="intuition">
       Если распределение признака асимметричное или с выбросами,
@@ -835,16 +896,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Значение до преобразования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ / mean</span><span class="fa-name">центр признака</span><span class="fa-desc">Среднее значение, вычисленное только на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ / std</span><span class="fa-name">масштаб признака</span><span class="fa-desc">Разброс, на который делят после центрирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">стандартизированное значение признака</span><span class="fa-desc">Результат преобразования: сколько стандартных отклонений данное значение x отстоит от среднего. После standardization: E[z]≈0, Std[z]≈1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходное значение признака</span><span class="fa-desc">Необработанное числовое значение до масштабирования. Может иметь любой диапазон (например, зарплата в тысячах рублей).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее признака на train</span><span class="fa-desc">Вычисляется только по обучающей выборке. Центрирует признак: z = (x − μ)/σ смещает распределение так, что среднее становится 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение признака на train</span><span class="fa-desc">Тоже вычисляется только на train. Нормирует масштаб: после деления на σ std признака становится 1. При σ=0 делить нельзя — признак-константа удаляется.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает преобразование признака перед обучением, то есть меняет геометрию данных для модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как привести разные единицы измерения к одной шкале, чтобы метры и миллиметры не спорили друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак был 100 при среднем 80 и std 10, standard scaling даст (100-80)/10 = 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Standardization переводит все признаки в единицы стандартных отклонений. Признак «возраст» в годах и «зарплата» в рублях становятся сопоставимы — модель не перекошена в сторону больших чисел.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценки в школе: вместо «получил 87 баллов из 100» — «на 1.5 стандартных отклонения выше среднего». Позволяет сравнивать результаты из разных предметов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=100, μ=80, σ=10. z = (100−80)/10 = 2. Значение на 2 стандартных отклонения выше среднего — довольно «высокое».</div>
     </div>
     <p>
       Здесь <span class="inline-math">μ</span> — mean на train,
@@ -859,15 +919,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Значение до преобразования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ / mean</span><span class="fa-name">центр признака</span><span class="fa-desc">Среднее значение, вычисленное только на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ / std</span><span class="fa-name">масштаб признака</span><span class="fa-desc">Разброс, на который делят после центрирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x'</span><span class="fa-name">нормализованное значение в [0,1]</span><span class="fa-desc">Результат: x' всегда в диапазоне [0,1] для значений, которые модель видела на train. На test может выйти за [0,1] при выбросах.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходное значение признака</span><span class="fa-desc">Необработанное значение до масштабирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_min</span><span class="fa-name">минимум признака на train</span><span class="fa-desc">Нижняя граница диапазона, вычисленная на обучающей выборке. Выносить на test нельзя (data leakage).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_max</span><span class="fa-name">максимум признака на train</span><span class="fa-desc">Верхняя граница диапазона на train. x_max − x_min — диапазон, на который нормируем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_max − x_min</span><span class="fa-name">диапазон признака</span><span class="fa-desc">Размах значений на train. На него делится отклонение от минимума. При x_max=x_min признак-константа — деление невозможно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает преобразование признака перед обучением, то есть меняет геометрию данных для модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как привести разные единицы измерения к одной шкале, чтобы метры и миллиметры не спорили друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак был 100 при среднем 80 и std 10, standard scaling даст (100-80)/10 = 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Min-Max scaling линейно сжимает все значения в [0,1]. Удобно для нейросетей (активации часто работают в [0,1]) и визуализации. Слабость: один выброс сжимает всё остальное к нулю.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как проценты: если самый тихий звук=0dB, самый громкий=120dB, то звук в 60dB — ровно 50%. Min-Max делает то же самое с любым признаком.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=70, x_min=20, x_max=120. x' = (70−20)/(120−20) = 50/100 = 0.5. Ровно середина диапазона.</div>
     </div>
     <p>
       Сжимает признак в диапазон вроде <code>[0,1]</code>.
@@ -882,15 +943,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Значение до преобразования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ / mean</span><span class="fa-name">центр признака</span><span class="fa-desc">Среднее значение, вычисленное только на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ / std</span><span class="fa-name">масштаб признака</span><span class="fa-desc">Разброс, на который делят после центрирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x'</span><span class="fa-name">масштабированный признак (robust)</span><span class="fa-desc">Результат: сколько IQR данное значение отстоит от медианы. Не ограничен в [0,1] — может быть любым числом.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходное значение признака</span><span class="fa-desc">Необработанное значение до масштабирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">median</span><span class="fa-name">медиана признака на train</span><span class="fa-desc">50-й перцентиль. Робастная замена среднего μ: на неё не влияют экстремальные выбросы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">IQR</span><span class="fa-name">межквартильный размах</span><span class="fa-desc">IQR = Q_0.75 − Q_0.25. Робастная замена стандартного отклонения: охватывает средние 50% данных, не реагирует на выбросы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Q_0.75, Q_0.25</span><span class="fa-name">третий и первый квартили</span><span class="fa-desc">Вычисляются на train. Q_0.75 — значение, ниже которого 75% данных; Q_0.25 — ниже которого 25%.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает преобразование признака перед обучением, то есть меняет геометрию данных для модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как привести разные единицы измерения к одной шкале, чтобы метры и миллиметры не спорили друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак был 100 при среднем 80 и std 10, standard scaling даст (100-80)/10 = 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Robust scaling — как standardization, но вместо mean/std используются median/IQR. Выброс в 1000× не смещает медиану и не раздувает IQR, поэтому «нормальные» объекты масштабируются корректно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Медиана зарплаты по городу vs. среднее: один миллиардер не обрушивает медиану, но значительно сдвигает среднее. Robust scaling «иммунен» к таким выбросам.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=200, median=100, Q_0.25=70, Q_0.75=130. IQR=60. x' = (200−100)/60 ≈ 1.67. Значение умеренно выше медианы.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -993,14 +1055,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Значение до преобразования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ / mean</span><span class="fa-name">центр признака</span><span class="fa-desc">Среднее значение, вычисленное только на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ / std</span><span class="fa-name">масштаб признака</span><span class="fa-desc">Разброс, на который делят после центрирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">city</span><span class="fa-name">исходный категориальный признак</span><span class="fa-desc">Строковая переменная {Riga, Tallinn, Vilnius}. Модели не воспринимают строки: нужно превратить их в числа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">[1,0,0]</span><span class="fa-name">one-hot вектор для Riga</span><span class="fa-desc">Бинарный вектор длиной 3 (по числу уникальных городов). Ровно один элемент = 1 (индекс Riga), остальные = 0. Нет ложного порядка: Riga ≠ 1, Tallinn ≠ 2.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">→</span><span class="fa-name">операция one-hot кодирования</span><span class="fa-desc">Одна категориальная колонка разворачивается в K бинарных признаков, где K = число уникальных значений. Для K=3: city_Riga, city_Tallinn, city_Vilnius.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">мощность категории</span><span class="fa-desc">Число уникальных значений признака. При K=1000 одна категория → 1000 новых признаков (high-cardinality проблема). Решение: target encoding, embedding.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает преобразование признака перед обучением, то есть меняет геометрию данных для модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как привести разные единицы измерения к одной шкале, чтобы метры и миллиметры не спорили друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак был 100 при среднем 80 и std 10, standard scaling даст (100-80)/10 = 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> One-hot устраняет ложный числовой порядок (Riga=1, Tallinn=2 — модель думала бы, что Tallinn «больше» Riga). Каждый город — независимый бинарный признак. Линейная модель учит отдельный коэффициент для каждого города.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Анкета с вопросом «В каком городе вы живёте?» с галочками: [✓Riga, Tallinn, Vilnius] = [1,0,0]. Галочка — не числовой балл.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> city∈{Riga, Tallinn, Vilnius, Helsinki} — K=4. Riga→[1,0,0,0], Helsinki→[0,0,0,1]. Для линейной модели: β_Riga·1 + β_Tallinn·0 + β_Vilnius·0 + β_Helsinki·0 = β_Riga. Модель выучит отдельный вклад каждого города.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1124,15 +1187,15 @@ Vilnius</textarea>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Значение до преобразования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ / mean</span><span class="fa-name">центр признака</span><span class="fa-desc">Среднее значение, вычисленное только на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ / std</span><span class="fa-name">масштаб признака</span><span class="fa-desc">Разброс, на который делят после центрирования.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x'</span><span class="fa-name">преобразованный признак</span><span class="fa-desc">Результат лог-преобразования. Имеет более симметричное распределение: большие значения «сжались», маленькие изменились меньше.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">исходный признак</span><span class="fa-desc">Должен быть ≥ 0 (зарплаты, просмотры, цены). Если x может быть отрицательным, log не применяется без дополнительного сдвига.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">натуральный логарифм</span><span class="fa-desc">Сжимает масштаб: log(1+10)≈2.4, log(1+1000)≈6.9 — разница в 100 раз по x становится разницей в ~2.9 раза по x'. Подходит для степенных распределений.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">+1</span><span class="fa-name">сдвиг для нулевых значений</span><span class="fa-desc">Позволяет применять лог при x=0: log(1+0)=0, а не −∞. Без +1: log(0) не определён. При x>0 везде +1 часто не обязателен, но безопаснее.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает преобразование признака перед обучением, то есть меняет геометрию данных для модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как привести разные единицы измерения к одной шкале, чтобы метры и миллиметры не спорили друг с другом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если признак был 100 при среднем 80 и std 10, standard scaling даст (100-80)/10 = 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Признаки с правосторонней асимметрией (зарплаты: большинство у нуля, редкие у 10M) плохо обрабатываются линейными моделями. log(1+x) «сжимает» хвост, делая распределение ближе к нормальному — модели легче выявить линейные закономерности.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Население городов: Москва 12M, малый город 50K — разница в 240 раз. После log: ln(12M)≈16.3, ln(50K)≈10.8 — разница всего в 1.5 раза. Логарифмическая шкала «выравнивает» асимметрию.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> salary=[1000, 5000, 10000, 500000]. log(1+x): [6.9, 8.5, 9.2, 13.1]. Std исходного признака: 218K. Std лог-признака: 2.6. Линейная модель теперь видит более равномерно распределённые значения.</div>
     </div>
     <p>
       Полезно для положительных признаков с сильной правой асимметрией:
@@ -1211,14 +1274,15 @@ Vilnius</textarea>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fold</span><span class="fa-name">часть CV</span><span class="fa-desc">Один train/validation split внутри cross-validation.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">метрика качества</span><span class="fa-desc">Значение, по которому выбирают гиперпараметры.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">θ</span><span class="fa-name">гиперпараметры</span><span class="fa-desc">Настройки модели, выбранные по validation.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Leakage</span><span class="fa-name">утечка данных</span><span class="fa-desc">Ситуация, когда модель получает информацию, недоступную в реальном времени — результат метрики завышен, реальное качество хуже.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">future</span><span class="fa-name">будущие данные</span><span class="fa-desc">Данные, которые в реальном deployment ещё не известны на момент предсказания (например, итог события, которого ещё не было).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">val/test</span><span class="fa-name">данные валидации и теста</span><span class="fa-desc">Части датасета, отложенные для честной оценки; любая информация из них не должна проникать в train-процесс.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">train-процесс</span><span class="fa-name">обучение модели и preprocessing</span><span class="fa-desc">Всё, что видит модель при обучении: fit скейлера, импьютера, энкодера — всё это должно использовать только train.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Leakage — это «подглядывание в ответы». Если scaler fitted на train+test, он «знает» статистику test и z-нормализация теряет смысл. Модель кажется хорошей, но на новых данных провалится.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Учитель случайно дал ученику листок с ответами перед контрольной — оценка «5», но знаний нет. Правильно: split сначала, fit preprocessing только на train, transform val/test теми же объектами.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Признак «средняя зарплата по городу» посчитан по всему датасету включая test → scaler видит будущее. Правильно: посчитать mean только по train (например, 53 K), а test-строки трансформировать этим же числом.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1859,7 +1923,40 @@ pred = full_pipe.predict(X_test)</div>
     <details><summary>[Hard] Target encoding без утечки</summary><p>Опиши, как сделать target encoding для категорий. <strong>Решение:</strong> encoding должен считаться out-of-fold на train и отдельно применяться к validation/test, иначе target попадёт в признаки.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-2">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему стандартизация (StandardScaler) важна для алгоритмов вроде SVM и KNN?</summary>
+      <div class="ml-quiz__a"><p>KNN и SVM используют расстояния между точками. Если один признак имеет диапазон [0, 1000], а другой [0, 1], первый признак будет доминировать в расстоянии. Стандартизация (z = (x-μ)/σ) приводит все признаки к единому масштабу, устраняя эту проблему.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между imputation mean и imputation median для пропущенных значений?</summary>
+      <div class="ml-quiz__a"><p>Mean imputation чувствителен к выбросам: один аномальный результат сдвигает среднее, и все заполненные значения оказываются нереалистичными. Median imputation устойчив к выбросам. Для сильно скошенных распределений медиана обычно лучше.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое data leakage и как его избежать?</summary>
+      <div class="ml-quiz__a"><p>Data leakage — когда информация из тестовой выборки проникает в обучение, завышая оценку качества. Пример: fit StandardScaler на всём датасете до train/test split. Правило: fit любого препроцессора только на train, а transform применять к test отдельно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда использовать one-hot encoding, а когда ordinal encoding для категориальных признаков?</summary>
+      <div class="ml-quiz__a"><p>One-hot encoding подходит для номинальных категорий (цвет, страна), где нет порядка — он не вносит ложной метрики. Ordinal encoding используют, когда порядок значим (маленький < средний < большой), или для деревьев решений, которым не важен масштаб.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-2">
     <h2>Checkpoint: 2.2 Предобработка данных</h2>
     <ul>
       <li>Почему preprocessing нужно обучать только на train?</li>
@@ -1869,5 +1966,6 @@ pred = full_pipe.predict(X_test)</div>
       <li>Rubber duck: объясни pipeline так, будто это производственная линия для данных.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

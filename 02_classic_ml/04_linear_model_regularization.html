@@ -576,7 +576,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/04_linear_model_regularization.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -589,8 +589,134 @@
     <h1>2.4 Регуляризация линейных моделей</h1>
     <p class="muted">Ridge, Lasso, Elastic Net, shrinkage, sparsity, multicollinearity, MAP and priors</p>
   </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Без регуляризации линейные модели переобучаются на мусоре в данных. L1 (Lasso) создаёт разреженные решения, L2 (Ridge) уменьшает коэффициенты — математически разные стратегии борьбы с overfitting.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как L2 регуляризация меняет решение Normal Equation (Ridge)</li>
+      <li>Почему L1 создаёт нули в коэффициентах — геометрия ромба vs окружности</li>
+      <li>Elastic Net — когда нужен компромисс между L1 и L2</li>
+      <li>Как выбрать λ через кросс-валидацию</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная регрессия (2.3)</li>
+      <li>Оптимизация (1.5)</li>
+      <li>Bias-variance tradeoff</li>
+    </ul>
+  </div>
+</div>
 
-  <div class="card">
+
+  
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Как λ влияет на регуляризацию (Ridge)</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">λ (сила регуляризации)</span>
+          <span class="ml-slider-lab__param-value" id="sl-lambda-disp">10</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-lambda"
+               min="0" max="100" step="1" value="10">
+        <div class="ml-slider-lab__range-labels">
+          <span>0 (нет рег.)</span><span>100 (максимум)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-lambda"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-lambda');
+  var disp = document.getElementById('sl-lambda-disp');
+  var out = document.getElementById('sl-out-lambda');
+  function render(){
+    var v = +sl.value; // 0..100
+    disp.textContent = (v / 10).toFixed(1);
+    var lam = v / 10; // 0..10
+    // bias increases with lambda, variance decreases
+    var bias = Math.min(100, Math.round(lam * 10));
+    var variance = Math.max(0, Math.round(100 - lam * 8));
+    var trainErr = Math.round(lam * 6);
+    var testErr  = Math.round(20 + Math.abs(lam - 3) * 12);
+    var coefMag  = Math.max(5, Math.round(100 - lam * 9));
+    var verdict, vclass, txt;
+    if (lam < 0.5) {
+      verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
+      txt = 'λ ≈ 0: Ridge превращается в обычную линейную регрессию. Коэффициенты не ограничены, модель переобучается на выбросах.';
+    } else if (lam < 5) {
+      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
+      txt = 'λ ≈ ' + lam.toFixed(1) + ': хороший баланс. Веса умеренно уменьшены, validation error минимален.';
+    } else {
+      verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
+      txt = 'λ = ' + lam.toFixed(1) + ': слишком сильная регуляризация. Коэффициенты стремятся к нулю, модель не обучается.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Смещение (bias)</span><div class="sl-bar-wrap"><div class="sl-bar ' + (bias > 60 ? 'sl-bad' : bias > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + bias + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Дисперсия (var)</span><div class="sl-bar-wrap"><div class="sl-bar ' + (variance > 60 ? 'sl-bad' : variance > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + variance + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Train error</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + testErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Размер весов</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + coefMag + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
     <div class="mini-tag-row">
       <span class="mini-tag">ridge</span>
       <span class="mini-tag">lasso</span>
@@ -612,16 +738,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ŷ</span><span class="fa-name">предсказание модели</span><span class="fa-desc">Линейная комбинация признаков — то, что модель выдаёт для объекта x.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов</span><span class="fa-desc">Обучаемые параметры: каждый w_j показывает, насколько сильно j-й признак влияет на предсказание.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вектор признаков</span><span class="fa-desc">Числовое описание объекта; w^T x — скалярное произведение весов и признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">свободный член (bias)</span><span class="fa-desc">Смещение прямой/гиперплоскости относительно начала координат. Обеспечивает предсказание ненулевых значений при x=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Модель предсказывает ŷ как взвешенную сумму признаков плюс константа. Задача обучения — подобрать w и b, чтобы ŷ было как можно ближе к истинным y.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как расчёт стоимости поездки: базовый тариф (b) плюс цена за каждый км (w_j) умножить на расстояние (x_j). Итог — предсказание стоимости.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[2,−1], x=[3,1], b=0.5 → ŷ = 2·3 + (−1)·1 + 0.5 = 5.5.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -646,14 +771,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Objective</span><span class="fa-name">полная целевая функция</span><span class="fa-desc">То, что минимизирует обучение. Складывается из двух частей: качества подгонки и штрафа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">data fit</span><span class="fa-name">качество подгонки к данным</span><span class="fa-desc">Насколько хорошо модель объясняет train-выборку. Обычно это MSE для регрессии или log-loss для классификации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Гиперпараметр, задающий баланс: λ=0 — только data fit, λ→∞ — модель полностью определяется штрафом.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">penalty</span><span class="fa-name">штраф за сложность</span><span class="fa-desc">Мера сложности модели, например ||w||₂² (L2) или ||w||₁ (L1). Модель платит за большие веса.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Без регуляризации модель минимизирует только ошибку на train и может переобучиться. Добавляя λ·penalty, мы говорим: «объясняй данные хорошо, но не делай веса без необходимости большими».</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с бюджетом: можно добиться хорошего результата, но за каждый дополнительный ресурс (большой вес) нужно платить. Итоговая оценка — качество минус штраф за расходы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> data fit=10, λ=0.5, penalty=||w||₂²=6 → Objective=10+0.5·6=13. Модель выберет такой w, чтобы эта сумма была минимальна.</div>
     </div>
     <div class="info">
       <strong>Главная идея:</strong>
@@ -690,18 +816,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(w,b)</span><span class="fa-name">MSE loss — функция ошибки</span><span class="fa-desc">Среднеквадратичная ошибка по всем n объектам. Это то, что обычная линейная регрессия минимизирует без регуляризации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">усреднение по объектам</span><span class="fa-desc">Делит сумму квадратов ошибок на число объектов — чтобы loss не рос с ростом размера выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по объектам</span><span class="fa-desc">Суммирует квадраты остатков по всем n объектам обучающей выборки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w^T x^(i)+b</span><span class="fa-name">предсказание для i-го объекта</span><span class="fa-desc">Линейная комбинация признаков. Разность с y^(i) — это остаток (residual).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное значение целевой переменной. Квадрат разности (ŷ-y)² — штраф за ошибку на этом объекте.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Это базовый MSE без регуляризации. Модель может сделать L сколько угодно маленьким, раздувая веса w — особенно при шуме или коррелированных признаках.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка стрелка только по среднему промаху. Без ограничений стрелок может выбрать нестандартную стойку и попасть в train, но провалиться на новых мишенях.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=2, ŷ=[3,5], y=[4,5] → L=(1/2)·((3-4)²+(5-5)²)=(1/2)·1=0.5.</div>
     </div>
     <p>
       В регуляризованной версии добавляем штраф на веса:
@@ -716,18 +840,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J(w,b)</span><span class="fa-name">регуляризованный loss</span><span class="fa-desc">Полная целевая функция: MSE-ошибка плюс штраф за веса. Именно J(w,b) минимизирует алгоритм при обучении.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n Σ (w^T x^(i)+b−y^(i))²</span><span class="fa-name">MSE — ошибка на данных</span><span class="fa-desc">Среднеквадратичная ошибка: насколько плохо текущие веса описывают train. Без регуляризации оптимизируется только это.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Гиперпараметр балансировки: λ=0 → обычный MSE, λ→∞ → веса стремятся к нулю вне зависимости от данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Ω(w)</span><span class="fa-name">штраф за сложность модели</span><span class="fa-desc">Функция от весов, измеряющая «сложность». Для Ridge: ||w||₂² = Σ w_j². Для Lasso: ||w||₁ = Σ|w_j|.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> J(w,b) = MSE + λ·Ω(w). Первое слагаемое заставляет хорошо предсказывать, второе не даёт весам расти без ограничений. λ контролирует, что важнее.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка проекта: качество (MSE) + стоимость ресурсов (Ω(w)) × коэффициент важности стоимости (λ). Лучший проект — не просто качественный, но и не слишком дорогой.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> MSE=4, λ=0.5, ||w||₂²=6 → J=4+0.5·6=7. Другой вектор w с MSE=5 и ||w||₂²=2 даёт J=5+1=6 — лучше!</div>
     </div>
     <p>
       Где:
@@ -779,18 +900,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_ridge(w,b)</span><span class="fa-name">Ridge loss</span><span class="fa-desc">MSE плюс L2-штраф на веса. Именно её минимизирует Ridge regression.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n Σ (·)²</span><span class="fa-name">MSE по объектам</span><span class="fa-desc">Среднеквадратичная ошибка по всем n объектам. Первое слагаемое — качество подгонки данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила L2-регуляризации</span><span class="fa-desc">Контролирует, насколько сильно штрафуются большие веса. Подбирается по validation/CV.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_j w_j²</span><span class="fa-name">L2-штраф — сумма квадратов весов</span><span class="fa-desc">Каждый вес штрафуется пропорционально своему квадрату. Большой w_j стоит дорого — модель предпочитает малые равномерные веса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">j-й вес модели</span><span class="fa-desc">Коэффициент при j-м признаке. Ridge сжимает все w_j к нулю, но почти никогда не занулят их точно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ridge добавляет штраф λΣw_j² к MSE. Квадраты растут быстро, поэтому большие веса очень дорогие — модель распределяет вклад равномернее между признаками, а не «ставит всё» на один.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как бюджет с прогрессивным налогом: первый рубль расхода дёшев, но каждый следующий всё дороже. Поэтому лучше потратить понемногу на всё, чем много на одно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ=0.1, w=[3,4] → штраф=0.1·(9+16)=2.5. Тот же λ, w=[2,2,2,2]: штраф=0.1·(4+4+4+4)=1.6 — меньше при том же суммарном вкладе.</div>
     </div>
     <p>
       Или в векторной форме:
@@ -805,16 +924,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_ridge(w,b)</span><span class="fa-name">Ridge loss в матричной форме</span><span class="fa-desc">То же Ridge objective, но компактно через матричное умножение. Удобно для аналитического решения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n · ||Xw+b1−y||₂²</span><span class="fa-name">MSE в матричной форме</span><span class="fa-desc">||·||₂² — квадрат евклидовой нормы вектора ошибок (n-мерный вектор невязок). Xw+b1 — все предсказания сразу.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">матрица данных (n×d)</span><span class="fa-desc">Каждая строка — один объект, каждый столбец — один признак.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ · ||w||₂²</span><span class="fa-name">L2-штраф в матричной форме</span><span class="fa-desc">||w||₂² = w^T w — сумма квадратов всех весов. λ задаёт вес штрафа относительно ошибки на данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b1</span><span class="fa-name">вектор bias-сдвигов</span><span class="fa-desc">b·1 — bias b, умноженный на единичный вектор 1 размером n. Добавляет константу ко всем предсказаниям.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матричная форма удобна для вывода аналитического решения Ridge: w_ridge=(X^TX+λI)^{-1}X^Ty. Добавление λI стабилизирует матрицу и гарантирует инвертируемость.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вместо n отдельных уравнений одно матричное. Как записать список покупок строчкой вместо столбцом — информация та же, форма удобнее для вычислений.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X(2×2)=[[1,2],[3,4]], w=[1,-1], b=0, y=[0,1]. Xw=[-1,-1], ||Xw-y||₂²=(−1)²+(−2)²=5. λ=1, ||w||₂²=2 → J=5/2+2=4.5.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -857,18 +976,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_lasso(w,b)</span><span class="fa-name">Lasso loss</span><span class="fa-desc">MSE плюс L1-штраф на веса. Именно её минимизирует Lasso regression.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n Σ (·)²</span><span class="fa-name">MSE по объектам</span><span class="fa-desc">Среднеквадратичная ошибка по всем n объектам — качество подгонки данных.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила L1-регуляризации</span><span class="fa-desc">Контролирует степень разреженности (sparsity). Большой λ занулит больше весов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_j |w_j|</span><span class="fa-name">L1-штраф — сумма модулей весов</span><span class="fa-desc">Каждый вес штрафуется пропорционально своему модулю. В отличие от L2, «наклон» штрафа одинаков для любого ненулевого w_j — это создаёт эффект спарсити.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|w_j|</span><span class="fa-name">модуль j-го веса</span><span class="fa-desc">Штраф за j-й вес. Производная |w_j| по w_j = sign(w_j) — постоянна по модулю. Именно поэтому Lasso может занулять коэффициенты точно.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> L1-штраф создаёт «угловую» геометрию оптимизации: оптимум J_lasso часто попадает в точки, где часть весов ровно нулевая — то есть Lasso делает feature selection.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как линейный тариф: каждый ненулевой признак стоит λ за единицу. Если признак не очень полезен — дешевле занулить его, чем платить штраф.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ=0.5, w=[2,0,1] → штраф=0.5·(2+0+1)=1.5. При w=[3,0,0]: штраф=0.5·3=1.5 тот же, но второй вариант проще (sparsity).</div>
     </div>
     <p>
       Или в векторной форме:
@@ -883,16 +1000,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_lasso(w,b)</span><span class="fa-name">Lasso loss в матричной форме</span><span class="fa-desc">Компактная запись Lasso objective через нормы. Удобна для теоретического анализа и интерпретации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1/n)||Xw+b1−y||₂²</span><span class="fa-name">MSE в матричной форме</span><span class="fa-desc">Квадрат евклидовой нормы вектора ошибок, делённый на n. Xw — матрично-векторное произведение, b1 добавляет bias ко всем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ · ||w||₁</span><span class="fa-name">L1-штраф в матричной форме</span><span class="fa-desc">||w||₁ = Σ|w_j| — L1-норма вектора весов. Линейная зависимость штрафа от |w_j| — геометрическая причина sparsity.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||·||₁</span><span class="fa-name">L1-норма</span><span class="fa-desc">Сумма модулей компонент вектора. В отличие от L2-нормы, не дифференцируема в нуле — поэтому для Lasso нет simple closed-form solution.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Матричная форма подчёркивает роль ||w||₁ как penalization. L1-норма не гладкая в нуле — именно это создаёт «углы» в области ограничений и приводит к точным нулям в w.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как аренда нескольких комнат с фиксированной ставкой за каждую. Если комната почти не нужна — дешевле совсем отказаться, чем платить ставку за нулевой вклад.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[2,0,−1,0], λ=0.3. ||w||₁=2+0+1+0=3. Lasso штраф=0.3·3=0.9. Нулевые веса не платят штраф вообще.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -937,18 +1053,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_EN(w,b)</span><span class="fa-name">Elastic Net loss</span><span class="fa-desc">MSE плюс оба штрафа — L1 и L2 одновременно. Объединяет sparsity (Lasso) и стабильность (Ridge).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n Σ (·)²</span><span class="fa-name">MSE по объектам</span><span class="fa-desc">Среднеквадратичная ошибка — качество подгонки данных. Одинакова во всех трёх методах (Ridge, Lasso, EN).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ₁ · ||w||₁</span><span class="fa-name">L1-слагаемое — для sparsity</span><span class="fa-desc">Штраф за сумму модулей весов. Задаёт силу спарсификации: большой λ₁ зануляет больше коэффициентов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ₂ · ||w||₂²</span><span class="fa-name">L2-слагаемое — для стабильности</span><span class="fa-desc">Штраф за сумму квадратов весов. Стабилизирует решение при коррелирующих признаках, где Lasso нестабилен.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Elastic Net = Lasso + Ridge. L1-часть занулит незначимые признаки, L2-часть стабилизирует коэффициенты у коррелирующих признаков. Можно настраивать оба штрафа независимо.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как жилец, который выбирает квартиры: L1 предпочтёт одну большую (sparsity), L2 предпочтёт несколько небольших (распределение). Elastic Net найдёт разумный компромисс.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ₁=0.3, λ₂=0.1, w=[2,0,1]. L1-штраф=0.3·3=0.9. L2-штраф=0.1·5=0.5. Суммарный штраф=1.4.</div>
     </div>
     <p>
       Часто записывают через один общий коэффициент и mixing parameter:
@@ -965,16 +1078,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J_EN</span><span class="fa-name">Elastic Net loss (параметризация sklearn)</span><span class="fa-desc">MSE + комбинированный штраф, параметризованный через α и ρ. Так устроен параметр alpha/l1_ratio в sklearn.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MSE</span><span class="fa-name">среднеквадратичная ошибка</span><span class="fa-desc">Качество подгонки к данным. Одинаково для Ridge, Lasso, EN — меняется только штраф.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">общая сила регуляризации</span><span class="fa-desc">Аналог λ — общий коэффициент штрафа. Чем больше α, тем сильнее оба штрафа.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρ</span><span class="fa-name">mixing parameter — доля L1</span><span class="fa-desc">ρ∈[0,1] задаёт пропорцию L1 к L2. ρ=1 → чистый Lasso, ρ=0 → чистый Ridge, 0&lt;ρ&lt;1 → Elastic Net.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρ||w||₁ + (1-ρ)/2·||w||₂²</span><span class="fa-name">взвешенная комбинация L1 и L2</span><span class="fa-desc">Штраф = доля_L1·|w| + доля_L2·w². Множитель 1/2 перед L2 — стандартная конвенция для удобства градиентов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Один α управляет общей силой штрафа, ρ — балансом между sparsity (L1) и стабильностью (L2). Эта параметризация удобна: два разделённых по смыслу гиперпараметра.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как микшер с двумя регуляторами: «громкость» (α) и «баланс L/R» (ρ). Один задаёт силу, другой — форму штрафа.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> α=1, ρ=0.7, ||w||₁=3, ||w||₂²=5. Штраф=1·(0.7·3+0.3/2·5)=1·(2.1+0.75)=2.85.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1019,14 +1132,13 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|w_j|</span><span class="fa-name">модуль j-го веса</span><span class="fa-desc">Абсолютная величина коэффициента признака. Shrinkage — это уменьшение |w_j| по сравнению с нерегуляризованным решением.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">↓</span><span class="fa-name">уменьшение (shrinkage)</span><span class="fa-desc">Регуляризация тянет |w_j| к нулю. Оба метода — Ridge и Lasso — дают shrinkage, но механизм разный.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Shrinkage означает, что регуляризованные веса по модулю меньше, чем нерегуляризованные MLE-веса. Это снижает variance модели за счёт небольшого роста bias.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как подстрижка деревьев: срезаем лишние ветви (уменьшаем веса). Дерево становится компактнее, хотя теряет чуть-чуть покрытия.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Без регуляризации w_j=5.2. Ridge с λ=1: w_j_ridge=3.8. Вес уменьшился (shrinkage), но не стал нулём.</div>
     </div>
     </div>
       <div>
@@ -1041,14 +1153,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j = 0</span><span class="fa-name">точный ноль у j-го веса</span><span class="fa-desc">Признак j полностью исключён из предсказания. Это сильнее, чем просто маленький вес — нулевой вес не влияет совсем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">для многих j</span><span class="fa-name">sparsity — разреженность решения</span><span class="fa-desc">Многие коэффициенты модели равны нулю. Lasso может давать такое решение — это встроенный feature selection.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">j</span><span class="fa-name">индекс признака</span><span class="fa-desc">Перебирает признаки от 1 до d. «Для многих j» означает, что sparsity затрагивает большинство координат вектора w.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Sparsity — это когда много w_j ровно равны нулю. Ridge сжимает веса, но почти никогда не занулит их. Lasso, благодаря L1-штрафу, регулярно даёт точные нули.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как отбор командой игроков: Ridge оставляет всех, но ограничивает роль каждого. Lasso говорит некоторым «ты не нужен» и полностью исключает.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d=10 признаков. Ridge: w=[0.2,0.1,...,0.05] — все ненулевые. Lasso: w=[1.5,0,0,0.8,0,...,0] — 7 из 10 равны нулю.</div>
     </div>
     </div>
     </div>
@@ -1119,15 +1231,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||₂²</span><span class="fa-name">квадрат L2-нормы вектора весов</span><span class="fa-desc">Сумма квадратов всех весов модели. Это L2 penalty в Ridge. Гладкий по всем w_j, включая ноль.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_j</span><span class="fa-name">сумма по признакам</span><span class="fa-desc">Суммирует квадраты весов по всем d признакам. Каждый признак вносит w_j² в общий штраф.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j²</span><span class="fa-name">квадрат j-го веса</span><span class="fa-desc">Растёт быстро с увеличением |w_j|. Гладкость в нуле означает: «тяга к нулю» есть, но она ослабевает вблизи нуля — поэтому Ridge редко даёт точные нули.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> ||w||₂² — квадратичная функция весов. Её градиент = 2w, то есть тяга к нулю пропорциональна w_j. Вблизи нуля тяга ослабевает — Ridge сжимает, но не обнуляет.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пружина: чем сильнее растянута (большой |w_j|), тем сильнее тянет обратно. Но чем ближе к нулю — тем слабее тяга. Ровно в ноль не дотягивает.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,4] → ||w||₂²=9+16=25. w=[0.1,0.1] → ||w||₂²=0.01+0.01=0.02. Маленькие веса почти бесплатны.</div>
     </div>
     <p>
           Квадрат гладкий около нуля. Он мягко тянет веса к нулю,
@@ -1142,15 +1253,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>||w||₁</span><span class=”fa-name”>L1-норма вектора весов</span><span class=”fa-desc”>Сумма модулей всех весов модели. Это L1 penalty в Lasso. Не дифференцируема в нуле — именно это создаёт sparsity.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>Σ_j</span><span class=”fa-name”>сумма по признакам</span><span class=”fa-desc”>Суммирует |w_j| по всем d признакам. Каждый признак вносит |w_j| в общий L1-штраф.</span></div>
+      <div class=”formula-anatomy__row”><span class=”fa-sym”>|w_j|</span><span class=”fa-name”>модуль j-го веса</span><span class=”fa-desc”>Производная |w_j| = sign(w_j) — постоянна по модулю. Тяга к нулю не слабеет вблизи нуля, поэтому Lasso легко «перепрыгивает» в ноль.</span></div>
       </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <hr class=”formula-anatomy__divider”>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> ||w||₁ — кусочно-линейная функция. Градиент = sign(w_j): тяга к нулю одинакова независимо от |w_j|. Если данные не требуют ненулевого w_j — Lasso обнулит его точно.</div>
+      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Как стальная пружина с постоянным усилием (не зависит от растяжения). Возвращает в ноль с одинаковой силой — поэтому доходит до нуля в отличие от Ridge.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> w=[3,−2,0.01] → ||w||₁=3+2+0.01=5.01. При достаточно большом λ Lasso занулит 0.01, сэкономив штраф.</div>
     </div>
     <p>
           У модуля есть “излом” в нуле. Геометрически это делает решение,
@@ -1287,14 +1397,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ↑</span><span class="fa-name">рост силы регуляризации</span><span class="fa-desc">Увеличение λ усиливает штраф на веса, заставляя их быть меньше. Модель становится проще и менее чувствительна к train.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">bias↑</span><span class="fa-name">рост смещения</span><span class="fa-desc">Более сильная регуляризация ограничивает гибкость модели. Она хуже подстраивается под данные — появляется систематическое отклонение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">variance↓</span><span class="fa-name">снижение разброса</span><span class="fa-desc">Модель становится стабильнее: её предсказания меньше меняются от выборки к выборке. Меньше overfitting.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Bias-variance tradeoff под действием λ: маленький λ → гибкая модель (низкий bias, высокий variance). Большой λ → жёсткая модель (высокий bias, низкий variance). Оптимум — посередине.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как регулировка чувствительности радара: слишком чувствительный (λ=0) видит каждый шум, слишком «глухой» (λ большой) пропускает настоящие цели. Нужна золотая середина.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ=0: train RMSE=1.0, val RMSE=3.5 (overfit). λ=1: train RMSE=1.8, val RMSE=1.9 (оптимум). λ=100: train RMSE=4.0, val RMSE=4.1 (underfit).</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -1329,15 +1439,13 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T X</span><span class="fa-name">матрица Грама — произведение признаков</span><span class="fa-desc">Квадратная d×d матрица. В OLS нужно инвертировать X^TX. При мультиколлинеарности она плохо обусловлена или вовсе необратима.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">≈ плохо обусловлена</span><span class="fa-name">плохая обусловленность матрицы</span><span class="fa-desc">Когда признаки коррелируют, строки/столбцы X^TX почти линейно зависимы. Инверсия нестабильна: малый шум в данных → огромный разброс весов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Мультиколлинеарность → X^TX плохо обусловлена → OLS-решение w=(X^TX)^{-1}X^Ty нестабильно. Ridge добавляет λI и делает X^TX+λI обусловленной — инверсия стабилизируется.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как попытка решить систему уравнений, где два из них почти одинаковые. Небольшая ошибка в данных приводит к огромной ошибке в ответе. Ridge «расталкивает» уравнения, делая систему решаемой.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X^TX=[[1,0.99],[0.99,1]], определитель=1-0.99²≈0.02 — почти сингулярная. X^TX+0.5I=[[1.5,0.99],[0.99,1.5]], определитель=1.5²-0.99²≈1.27 — хорошо обусловлена.</div>
     </div>
     <p>
       В Ridge к матрице добавляется диагональный стабилизатор:
@@ -1349,15 +1457,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_ridge</span><span class="fa-name">оптимальные веса Ridge regression</span><span class="fa-desc">Аналитическое решение Ridge. Получается путём приравнивания градиента J_ridge к нулю. Всегда существует, в отличие от OLS при мультиколлинеарности.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T X + λI</span><span class="fa-name">регуляризованная матрица Грама</span><span class="fa-desc">K λI добавляется диагональный сдвиг. Делает матрицу строго положительно определённой, гарантируя обратимость при любом λ&gt;0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(·)^{-1}</span><span class="fa-name">обратная матрица</span><span class="fa-desc">Инверсия (X^TX+λI). Благодаря λI матрица всегда обратима — даже когда признаки коррелируют.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T y</span><span class="fa-name">корреляция признаков с целевой переменной</span><span class="fa-desc">d-мерный вектор, отражающий, как каждый признак связан с целевой переменной y. Это «правая часть» нормального уравнения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Прибавление λ к диагонали X^TX. Большой λ → матрица ближе к λI → веса стремятся к нулю.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ridge имеет closed-form решение, как OLS, но с защитой от вырожденности: добавление λI к X^TX гарантирует обратимость. Это стабилизирует веса при мультиколлинеарности.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как решение системы уравнений с «демпфером»: добавление λ на диагональ — как небольшое возмущение, разделяющее почти параллельные уравнения и делающее решение устойчивым.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> OLS: w=(X^TX)^{-1}X^Ty, если X^TX=[1,0.99;0.99,1] — нестабильно. Ridge: w=(X^TX+0.5I)^{-1}X^Ty=[1.5,0.99;0.99,1.5]^{-1}X^Ty — стабильно.</div>
     </div>
     <div class="success">
       Это одна из причин, почему Ridge очень любят:
@@ -1395,15 +1504,16 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">min MSE</span><span class="fa-name">минимизировать ошибку подгонки</span><span class="fa-desc">Оптимизационная задача: ищем w, при которых MSE минимален. Это не unconstrained — есть ограничение на веса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||_p ≤ c</span><span class="fa-name">ограничение на норму весов</span><span class="fa-desc">Веса должны лежать внутри шара радиуса c в L_p-норме. p=2 → шар (Ridge), p=1 → ромб (Lasso).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||_p</span><span class="fa-name">L_p-норма вектора весов</span><span class="fa-desc">p=2: евклидова норма, ||w||₂=√(Σw_j²) — гладкий шар. p=1: Manhattan норма, ||w||₁=Σ|w_j| — ромб с углами.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">радиус допустимой области</span><span class="fa-desc">Максимально допустимая норма весов. Чем меньше c, тем сильнее ограничение — аналог большого λ в штрафной формулировке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p</span><span class="fa-name">порядок нормы</span><span class="fa-desc">Задаёт форму области ограничений. p=1 → ромб (углы на осях → нулевые веса). p=2 → шар (гладкий → веса сжимаются равномерно).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Constrained formulation эквивалентна penalized: минимизировать MSE при ||w||_p ≤ c ↔ минимизировать MSE+λ·||w||_p. Форма допустимой области определяет, есть ли нулевые веса в оптимуме.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как поиск лучшего решения с ограниченным бюджетом: найти минимальную ошибку, но «стоимость» (норма весов) не должна превышать c. p задаёт правила расчёта стоимости.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,4]. ||w||₂=5, ||w||₁=7. При c=4: w лежит вне L2-шара (5&gt;4) и вне L1-ромба (7&gt;4). Ridge/Lasso придётся уменьшить w.</div>
     </div>
     <table>
       <thead>
@@ -1448,14 +1558,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_MAP</span><span class="fa-name">MAP-оценка весов</span><span class="fa-desc">Maximum A Posteriori оценка параметров w. Максимизирует posterior — вероятность весов после наблюдения данных D.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_w</span><span class="fa-name">аргмакс по w</span><span class="fa-desc">Возвращает вектор весов w, при котором posterior p(w|D) максимален.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(w|D)</span><span class="fa-name">posterior весов — что думаем о w после данных</span><span class="fa-desc">Вероятность того, что веса равны w, при условии наблюдённых данных D. Включает как информацию из данных, так и prior убеждение о w.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP для весов — это MLE с регуляризацией. Вместо «каких w лучше всего объясняют данные?» спрашиваем «какие w наиболее вероятны с учётом и данных, и prior?»</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как подбор параметров с «предубеждением»: prior говорит «ожидаем малые веса», данные корректируют. MAP находит баланс.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Gaussian prior p(w)∝exp(−||w||²/(2σ²)) → MAP = Ridge regression. Laplace prior → Lasso. Оба случая — MAP с разными priors.</div>
     </div>
     <div class="formula">
       p(\mathbf{w}\mid D) \propto p(D\mid \mathbf{w})p(\mathbf{w})
@@ -1463,14 +1573,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(w|D)</span><span class="fa-name">posterior — вероятность весов w после данных D</span><span class="fa-desc">То, что мы хотим максимизировать. Обновлённое убеждение о весах с учётом и данных, и prior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально — evidence p(D) убран</span><span class="fa-desc">p(D) не зависит от w, поэтому argmax posterior совпадает с argmax числителя. Для оптимизации evidence можно игнорировать.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(D|w)</span><span class="fa-name">likelihood — насколько w объясняет данные D</span><span class="fa-desc">Стандартный likelihood. Для регрессии с Gaussian шумом: p(D|w)∝exp(−MSE). Это «голос данных» в posterior.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(w)</span><span class="fa-name">prior — убеждение о весах до данных</span><span class="fa-desc">Априорное распределение весов. Gaussian prior → Ridge. Laplace prior → Lasso. Это «голос регуляризации» в posterior.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Posterior = likelihood × prior. Данные говорят «какие w лучше объясняют D», prior говорит «какие w мы ожидали». MAP находит баланс.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как судебный приговор: улики (likelihood) + предположения о подозреваемом (prior) → вместе дают posterior оценку «вероятности виновности».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w скалярный. Данные дают MLE w=5, Gaussian prior N(0,1) «тянет» к 0. MAP при λ=1: w_MAP=5/(1+λ)=2.5. Компромисс.</div>
     </div>
     <p>
       После логарифмирования:
@@ -1482,15 +1593,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">log</span><span class="fa-name">логарифм</span><span class="fa-desc">Сжимает вероятности и превращает произведения в суммы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">argmax_w</span><span class="fa-name">аргмакс по весам w</span><span class="fa-desc">Ищем w, при котором сумма log-likelihood + log-prior максимальна. argmax не меняется при переходе от произведения к сумме логарифмов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p(D|w)</span><span class="fa-name">log-likelihood — соответствие данным</span><span class="fa-desc">Насколько хорошо веса w объясняют данные. Для Gaussian шума = −MSE (с константой). Это «данные» в оптимизации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">log p(w)</span><span class="fa-name">log-prior — регуляризация</span><span class="fa-desc">Логарифм prior. Gaussian prior: log p(w)∝−λ||w||² → L2 penalty. Laplace prior: log p(w)∝−λ||w||₁ → L1 penalty.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">+</span><span class="fa-name">сумма = log-likelihood плюс log-prior</span><span class="fa-desc">log(a·b) = log a + log b. Произведение likelihood×prior превращается в сумму. MAP = MLE + регуляризация.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> argmax [log p(D|w) + log p(w)] — это и есть регуляризованное обучение. log-likelihood отвечает за fit, log-prior добавляет штраф за «неправдоподобные» веса.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как смешанная оценка: «насколько хорошо объяснил данные» + «насколько разумны твои параметры». Лучший студент набирает баллы по обоим критериям.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> log p(D|w)=−MSE=−4, Gaussian prior: log p(w)=−λ||w||²=−0.5·2=−1. Сумма=−5. Ridge maximizes this = минимизирует MSE+λ||w||².</div>
     </div>
     <p>
       То есть:
@@ -1509,15 +1620,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_j</span><span class="fa-name">j-й вес модели</span><span class="fa-desc">Один коэффициент из вектора w. Gaussian prior задаётся независимо для каждого компонента w_j.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">~N(0, σ²)</span><span class="fa-name">нормальный prior — вес распределён как N(0, σ²)</span><span class="fa-desc">Априорное убеждение: веса должны быть близки к 0. σ² — «ширина» prior: большой σ² → слабый prior, маленький → сильная регуляризация.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">0</span><span class="fa-name">нулевое среднее prior</span><span class="fa-desc">Ожидаем, что веса близки к 0 (малая сложность модели). MLE может дать любые w, MAP с этим prior «притягивает» к 0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия prior — обратно пропорциональна λ</span><span class="fa-desc">σ²=1/(2λ). Малый σ² (сильный prior) = большой λ = сильная L2-регуляризация. −log p(w_j) ∝ w_j²/(2σ²) = λ w_j².</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Gaussian prior на веса → Ridge regression. −log N(0,σ²) = w²/(2σ²) + const. Это и есть L2 penalty. Чем меньше σ², тем сильнее штраф за большие w.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как «разрешённый диапазон» для весов. N(0,σ²) — «колокол» вокруг 0. Большой w маловероятен, MAP предпочтёт меньший w при той же ошибке.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> σ²=0.5 (λ=1). w_j=2: log p(w_j)=−2²/(2·0.5)=−4. w_j=1: log p=−1. w_j=0.5: log p=−0.25. MAP «предпочитает» меньшие w.</div>
     </div>
     <p>
           Тогда отрицательный log-prior даёт квадрат коэффициента,
@@ -1532,15 +1643,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C|x)</span><span class="fa-name">posterior класса</span><span class="fa-desc">Вероятность класса после наблюдения признаков.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(x|C)</span><span class="fa-name">likelihood</span><span class="fa-desc">Насколько признаки типичны для этого класса.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">P(C)</span><span class="fa-name">prior класса</span><span class="fa-desc">Частота или ожидание класса до признаков.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p(w_j)</span><span class="fa-name">prior на j-й вес</span><span class="fa-desc">Априорное убеждение о w_j. Laplace prior «предпочитает» точно нулевые веса сильнее, чем Gaussian — отсюда sparsity в Lasso.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∝</span><span class="fa-name">пропорционально — нормировка опущена</span><span class="fa-desc">Нормировочная константа Laplace распределения не зависит от w_j и не влияет на argmax. Важна только форма exp(−c|w_j|).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">e^{-c|w_j|}</span><span class="fa-name">экспонента от модуля веса</span><span class="fa-desc">Laplace распределение: пик в 0, убывает по |w_j|. −log p(w_j) ∝ c·|w_j| — это L1 penalty. Для Lasso: c=λ.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">c</span><span class="fa-name">параметр Laplace prior — сила регуляризации</span><span class="fa-desc">c=λ в Lasso. Больший c → более острый пик prior в 0 → более агрессивное обнуление весов → более sparse модель.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула обновляет вероятность класса по наблюдаемым признакам и их likelihood.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как диагноз: prior задаёт исходное ожидание, симптомы уточняют его.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если prior класса 0.5, а признаки дают likelihood в 4 раза выше, posterior сильно сдвигается к этому классу.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Laplace prior → Lasso. −log p(w_j) ∝ |w_j| — это L1. Острый пик в нуле у Laplace делает MAP решение sparse: многие w_j становятся ровно 0.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Laplace prior — как «налог на использование признака»: каждый ненулевой вес облагается налогом c·|w_j|. Модель отбрасывает слабые признаки совсем.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> c=1. w_j=2: log p∝−2. w_j=0.5: log p∝−0.5. w_j=0: log p=0. MAP предпочтёт w_j=0 если gain от ненулевого w невелик.</div>
     </div>
     <p>
           Тогда отрицательный log-prior даёт модуль коэффициента,
@@ -1614,15 +1725,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J(w)</span><span class="fa-name">целевая функция Ridge</span><span class="fa-desc">MSE плюс квадратичный штраф за большие веса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MSE</span><span class="fa-name">средняя квадратичная ошибка</span><span class="fa-desc">(1/n)Σ(ŷ_i − y_i)²: потеря на обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">коэффициент регуляризации</span><span class="fa-desc">Насколько сильно штрафуются большие веса; λ=0 → чистый MSE, λ→∞ → w→0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||₂²</span><span class="fa-name">квадрат L2-нормы</span><span class="fa-desc">Σ_j w_j² — сумма квадратов всех весов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ridge добавляет к MSE квадратичный штраф: чем крупнее веса, тем выше штраф. λ управляет компромиссом bias–variance.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как налог на роскошь: большие числа облагаются дополнительным сбором, пропорциональным их квадрату.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,4], λ=0.1 → ||w||₂²=9+16=25, штраф=2.5 добавляется к MSE.</div>
     </div>
     <div class="formula">
       \nabla_{\mathbf{w}} J = \nabla_{\mathbf{w}} \text{MSE} + 2\lambda \mathbf{w}
@@ -1630,15 +1741,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇_w J</span><span class="fa-name">градиент целевой функции</span><span class="fa-desc">Направление, в котором надо двигать веса при gradient descent.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇_w MSE</span><span class="fa-name">градиент ошибки</span><span class="fa-desc">(2/n)X^T(Xw − y): стандартный градиент квадратичной ошибки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">2λw</span><span class="fa-name">регуляризационный вклад</span><span class="fa-desc">Сдвигает каждый вес к нулю пропорционально его текущей величине — эффект weight decay.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор весов</span><span class="fa-desc">Коэффициенты модели, которые обновляются на каждом шаге.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Регуляризация просто добавляет 2λw к стандартному градиенту — на каждом шаге вес немного уменьшается (weight decay).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пружина: чем дальше вес от нуля, тем сильнее тянется назад к нулю.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w_j=3, λ=0.1 → вклад регуляризации 2·0.1·3=0.6 вычитается из w_j при каждом шаге.</div>
     </div>
     <h3>Lasso</h3>
     <div class="formula">
@@ -1647,15 +1758,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">J(w)</span><span class="fa-name">целевая функция Lasso</span><span class="fa-desc">MSE плюс сумма модулей весов — L1-штраф.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">MSE</span><span class="fa-name">средняя квадратичная ошибка</span><span class="fa-desc">(1/n)Σ(ŷ_i − y_i)²: потеря на обучающей выборке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">коэффициент регуляризации</span><span class="fa-desc">Сила L1-штрафа; при достаточно большом λ часть весов занулится точно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">||w||₁</span><span class="fa-name">L1-норма весов</span><span class="fa-desc">Σ_j |w_j| — сумма модулей всех весов.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> L1-штраф создаёт "острые углы" в пространстве весов — оптимум часто попадает на ось координат, то есть вес точно зануляется. Это встроенный feature selection.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как штраф за перевес в самолёте: каждый лишний килограмм стоит одинаково, поэтому легче оставить дома отдельные вещи совсем.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,0.1], λ=0.5 → ||w||₁=3.1, штраф=1.55. При λ=1 Lasso скорее всего занулит w₂=0.1 полностью.</div>
     </div>
     <div class="formula">
       \nabla_{\mathbf{w}} J \approx \nabla_{\mathbf{w}} \text{MSE} + \lambda \cdot \text{sign}(\mathbf{w})
@@ -1663,15 +1774,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇_w J</span><span class="fa-name">subgradient целевой функции</span><span class="fa-desc">Направление для обновления весов при gradient descent для Lasso.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">∇_w MSE</span><span class="fa-name">градиент ошибки</span><span class="fa-desc">(2/n)X^T(Xw − y): стандартный градиент квадратичной ошибки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">коэффициент регуляризации</span><span class="fa-desc">Сила L1-штрафа, определяет величину константного шага к нулю для каждого веса.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sign(w)</span><span class="fa-name">знак веса</span><span class="fa-desc">+1 если w_j &gt; 0, −1 если w_j &lt; 0: толкает вес к нулю на константную величину λ.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В отличие от Ridge (2λw), Lasso сдвигает вес к нулю на константную величину λ независимо от его размера — отсюда "мягкое пороговое обнуление".</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как фиксированный налог: независимо от размера кошелька вы платите ровно λ, а не процент от суммы.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w_j=0.05, λ=0.1 → subgradient добавляет sign(0.05)·0.1=0.1, что легко занулит w_j за одну итерацию.</div>
     </div>
     <div class="warn">
       Для L1 в нуле обычный градиент не определён,
@@ -1734,17 +1845,15 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">j-й признак</span><span class="fa-desc">Значение конкретной колонки объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее / центр</span><span class="fa-desc">Центр распределения, кластера или масштабируемого признака.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">сила штрафа</span><span class="fa-desc">В SVM задаёт цену margin-нарушений.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила регуляризации</span><span class="fa-desc">Чем больше λ, тем сильнее штраф за сложность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x'_j</span><span class="fa-name">стандартизованное значение j-го признака</span><span class="fa-desc">Признак после z-score нормализации. Имеет нулевое среднее и единичное стандартное отклонение — все признаки в одном масштабе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x_j</span><span class="fa-name">исходное значение j-го признака</span><span class="fa-desc">Необработанное значение из данных. Признаки могут быть в разных единицах и масштабах — это проблема для регуляризации.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">μ_j</span><span class="fa-name">среднее j-го признака</span><span class="fa-desc">Центрирует признак: после вычитания μ_j среднее становится нулём. Штраф на w_j теперь не зависит от сдвига признака.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ_j</span><span class="fa-name">стандартное отклонение j-го признака</span><span class="fa-desc">Масштабирует признак: после деления на σ_j дисперсия равна 1. Регуляризация теперь одинаково штрафует w_j для всех признаков.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Без стандартизации регуляризация несправедлива: признак с крупными значениями нуждается в маленьком w_j — а штраф одинаковый. После стандартизации все w_j сопоставимы и штраф осмысленен.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сравнение спортсменов в разных дисциплинах: без перевода в единицы рейтинга — несравнимо. Стандартизация — это «общая единица измерения» для признаков.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Признак «возраст»: μ=35, σ=10, x=45 → x'=(45-35)/10=1.0. Признак «доход»: μ=50000, σ=20000, x=70000 → x'=1.0. Оба = 1.0 стандартного отклонения.</div>
     </div>
     <div class="grid-2">
       <div>
@@ -1871,15 +1980,16 @@ print("best score:", search.best_score_)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес признака</span><span class="fa-desc">Коэффициент модели, который штрафуется регуляризацией.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">L_reg</span><span class="fa-name">итоговый loss</span><span class="fa-desc">Ошибка модели плюс штраф за сложность.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_ridge</span><span class="fa-name">аналитическое Ridge-решение</span><span class="fa-desc">Закрытая формула для оптимальных весов Ridge. Получается приравниванием градиента J_ridge(w) к нулю и решением относительно w.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T X + λI</span><span class="fa-name">регуляризованная матрица Грама</span><span class="fa-desc">d×d матрица. λI прибавляет λ к каждому диагональному элементу — делает матрицу строго положительно определённой и обратимой при λ&gt;0.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(·)^{-1}</span><span class="fa-name">обратная матрица</span><span class="fa-desc">np.linalg.inv(XtX + lam*I) в коде. Благодаря λI всегда существует — численно стабильно.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X^T y</span><span class="fa-name">вектор корреляций признаков с целевой</span><span class="fa-desc">d-мерный вектор X^Ty: j-я компонента = скалярное произведение j-го признака на y. Правая часть нормального уравнения.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">I</span><span class="fa-name">единичная матрица (d×d)</span><span class="fa-desc">np.eye(d). Добавление λI к X^TX — диагональный сдвиг, который стабилизирует обращение матрицы.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет к ошибке штраф за сложность, чтобы модель не опиралась на слишком большие веса.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как договор с лимитом бюджета: можно улучшать качество, но дорогие решения должны окупаться.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если λ=0.1 и сумма квадратов весов 20, регуляризационный штраф равен 2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Ridge имеет точное аналитическое решение. Для n=1000, d=10 быстрее OLS при мультиколлинеарности. Для больших d предпочтителен gradient descent, но формула даёт ясное понимание роли λ.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как решение линейной системы уравнений с регуляризацией: (A+λI)w=b. λI «распирает» матрицу — нет численных проблем с обратимостью. Это то же, что scipy.linalg.solve с регуляризацией.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d=2, λ=1.0. XtX=[[4,3],[3,4]], I=[[1,0],[0,1]]. XtX+λI=[[5,3],[3,5]], det=25-9=16&gt;0 — обратима. w_ridge=(XtX+I)^{-1}Xty.</div>
     </div>
     <div class="code-block">import numpy as np
 
@@ -2269,7 +2379,40 @@ print("ridge weights:", w_ridge)</div>
     <details><summary>[Hard] Elastic Net</summary><p>Когда Elastic Net предпочтительнее Lasso? <strong>Решение:</strong> при группах коррелирующих признаков: Lasso выбирает один, Elastic Net может держать группу стабильнее.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-4">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём принципиальное различие между L1 (Lasso) и L2 (Ridge) регуляризацией?</summary>
+      <div class="ml-quiz__a"><p>L2 добавляет штраф Σwᵢ² — это равномерно уменьшает все коэффициенты, но не обнуляет. L1 добавляет Σ|wᵢ| — геометрически это создаёт угловые точки, в которых коэффициенты обнуляются полностью, делая Lasso инструментом отбора признаков.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Elastic Net и когда его предпочесть чистому Lasso?</summary>
+      <div class="ml-quiz__a"><p>Elastic Net = α·L1 + (1-α)·L2. Lasso нестабилен при коррелированных признаках: он произвольно выбирает один из группы. Elastic Net выбирает группу целиком, оставаясь при этом разреженным. Применяется при p >> n и наличии групп коррелированных признаков.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как λ (сила регуляризации) влияет на bias и variance?</summary>
+      <div class="ml-quiz__a"><p>При λ→0 регуляризация исчезает, модель может переобучиться (высокая variance). При λ→∞ все коэффициенты стремятся к нулю — модель слишком простая (высокий bias). Оптимальный λ находят через кросс-валидацию.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему регуляризацию, как правило, не применяют к bias-члену (intercept)?</summary>
+      <div class="ml-quiz__a"><p>Штраф за bias сдвигает предсказания целиком, не улучшая обобщение. Регуляризуют именно веса признаков, чтобы предотвратить чрезмерную зависимость от конкретных входов. Включение bias в штраф лишь ухудшает подбор правильного смещения.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-4">
     <h2>Checkpoint: 2.4 Регуляризация</h2>
     <ul>
       <li>Как регуляризация меняет bias и variance?</li>
@@ -2279,5 +2422,6 @@ print("ridge weights:", w_ridge)</div>
       <li>Rubber duck: объясни регуляризацию как цену за слишком сложное объяснение данных.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

@@ -405,7 +405,7 @@
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/12_boosting.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <div class="hero">
       <div class="top-tags">
@@ -420,8 +420,207 @@
         AdaBoost, Gradient Boosting, XGBoost, LightGBM, CatBoost и ключевые гиперпараметры boosting-моделей.
       </p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Бустинг — последовательный ансамбль, где каждая модель исправляет ошибки предыдущей. AdaBoost → Gradient Boosting → XGBoost: эволюция одной идеи.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Как AdaBoost взвешивает ошибочно классифицированные примеры</li>
+      <li>Gradient Boosting — оптимизация в пространстве функций</li>
+      <li>Regularization в GB: learning rate, shrinkage, subsampling</li>
+      <li>Чем XGBoost отличается от классического GB по скорости и качеству</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Деревья решений (2.10)</li>
+      <li>Bagging (2.11)</li>
+      <li>Математический анализ (1.2)</li>
+    </ul>
+  </div>
+</div>
 
-    <div class="card">
+
+    
+<!-- ml-walkthrough: step-by-step algorithm -->
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">AdaBoost — обновление весов за один шаг</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev disabled>← Назад</button>
+      <span class="ml-walkthrough__counter">Шаг <span data-wt-cur>1</span> из <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next>Далее →</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 1</span>
+      <h3 class="ml-walkthrough__step-heading">Данные и стартовые веса</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>4 точки, y ∈ {−1, +1}. Начальные веса одинаковые.</p>
+        <div class="wt-formula">Точки: P1(y=+1), P2(y=+1), P3(y=−1), P4(y=−1)
+Веса:  w = [0.25, 0.25, 0.25, 0.25]</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 2</span>
+      <h3 class="ml-walkthrough__step-heading">Слабый классификатор h₁</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>h₁ предсказывает по правилу: x < порог → y=+1. Допустим, h₁ ошибается только на P3.</p>
+        <div class="wt-formula">Предсказания h₁: [+1, +1, +1, −1]
+Истинные метки:  [+1, +1, −1, −1]
+                       ↑
+              Ошибка на P3 (предсказал +1, правильно −1)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 3</span>
+      <h3 class="ml-walkthrough__step-heading">Взвешенная ошибка ε₁</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>ε — сумма весов ошибочно классифицированных точек.</p>
+        <div class="wt-formula">ε₁ = w(P3) = 0.25</div>
+        <div class="wt-result"><strong>ε₁ = 0.25</strong>. Случайный классификатор даёт ε=0.5, значит h₁ лучше случайного.</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 4</span>
+      <h3 class="ml-walkthrough__step-heading">Вес классификатора α₁</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>α — насколько доверяем h₁ в финальном ансамбле. Больший α у более точных.</p>
+        <div class="wt-formula">α₁ = 0.5 × ln((1 − ε₁) / ε₁) = 0.5 × ln(0.75/0.25)
+   = 0.5 × ln(3) ≈ 0.5 × 1.099 ≈ 0.549</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 5</span>
+      <h3 class="ml-walkthrough__step-heading">Обновление весов</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Ошибочно классифицированные точки получают больший вес, правильные — меньший.</p>
+        <div class="wt-formula">w_new(P3) = 0.25 × e^(+0.549) = 0.25 × 1.732 ≈ 0.433   ← вырос
+w_new(P1) = 0.25 × e^(−0.549) = 0.25 × 0.577 ≈ 0.144   ← упал
+(аналогично P2, P4 ≈ 0.144)</div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 6</span>
+      <h3 class="ml-walkthrough__step-heading">Нормализация и итог</h3>
+      <div class="ml-walkthrough__step-body">
+        <p>Нормализуем веса, чтобы сумма = 1.</p>
+        <div class="wt-formula">Сумма: 0.144+0.144+0.433+0.144 = 0.865
+w_norm = [0.167, 0.167, 0.500, 0.167]</div>
+        <div class="wt-result">P3 теперь весит <strong>50%</strong> — следующий классификатор h₂ будет вынужден исправить эту ошибку.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress">
+    <div class="ml-walkthrough__progress-bar"></div>
+  </div>
+</div>
+
+<!-- ml-slider-lab: interactive parameter explorer -->
+<div class="ml-slider-lab">
+  <div class="ml-slider-lab__header">
+    <span class="ml-slider-lab__label">Интерактив</span>
+    <span class="ml-slider-lab__title">Boosting: n_estimators и риск переобучения</span>
+  </div>
+  <div class="ml-slider-lab__body">
+    <div class="ml-slider-lab__controls">
+      <div>
+        <div class="ml-slider-lab__param-header">
+          <span class="ml-slider-lab__param-name">n_estimators (число деревьев)</span>
+          <span class="ml-slider-lab__param-value" id="sl-boost-disp">50</span>
+        </div>
+        <input type="range" class="ml-slider-lab__range" id="sl-boost"
+               min="1" max="500" step="1" value="50">
+        <div class="ml-slider-lab__range-labels">
+          <span>1 (слабо)</span><span>500 (много)</span>
+        </div>
+      </div>
+    </div>
+    <div class="ml-slider-lab__output" id="sl-out-boost"></div>
+  </div>
+</div>
+<script>
+
+(function(){
+  var sl = document.getElementById('sl-boost');
+  var disp = document.getElementById('sl-boost-disp');
+  var out = document.getElementById('sl-out-boost');
+  function render(){
+    var n = +sl.value;
+    disp.textContent = n;
+    var trainErr = Math.max(2, Math.round(60 * Math.exp(-n / 30)));
+    var testErr  = Math.round(15 + Math.max(0, (n - 100) / 500 * 25) + 40 * Math.exp(-n / 40));
+    var time     = Math.min(100, Math.round(n / 5));
+    var verdict, vclass, txt;
+    if (n < 10) {
+      verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
+      txt = n + ' деревьев — слишком мало. Ансамбль ещё не исправил ошибки слабых классификаторов. High bias.';
+    } else if (n <= 150) {
+      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
+      txt = n + ' деревьев: хороший диапазон. Train error падает, val error минимален. Early stopping обычно срабатывает здесь.';
+    } else {
+      verdict = 'Осторожно'; vclass = 'sl-verdict-warn';
+      txt = n + ' деревьев: Boosting без регуляризации начинает переобучаться при большом n. Используйте early stopping или снижайте learning_rate.';
+    }
+    out.innerHTML = (
+      '<p class="sl-effect-text">' + txt + '</p>' +
+      '<div class="sl-bars">' +
+        '<div class="sl-bar-row"><span>Train error ↓</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar ' + (testErr > 35 ? 'sl-bad' : testErr > 22 ? 'sl-warn' : 'sl-good') + '" style="width:' + testErr + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Время обучения</span><div class="sl-bar-wrap"><div class="sl-bar ' + (time > 70 ? 'sl-bad' : time > 40 ? 'sl-warn' : 'sl-good') + '" style="width:' + time + '%"></div></div></div>' +
+      '</div>' +
+      '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
+    );
+  }
+  sl.addEventListener('input', render); render();
+})();
+
+</script>
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
+<div class="card">
       <h2>Почему boosting — это не просто “много деревьев”</h2>
       <p>
         В bagging модели учатся <strong>независимо и параллельно</strong>. В boosting — наоборот:
@@ -436,14 +635,14 @@ Boosting:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Реальное значение target.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">variance</span><span class="fa-name">разброс предсказаний</span><span class="fa-desc">Насколько сильно меняется прогноз при замене обучающей выборки. Bagging снижает его через усреднение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">bias</span><span class="fa-name">систематическая ошибка</span><span class="fa-desc">Насколько прогноз систематически промахивается. Boosting снижает его через последовательные поправки.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">residual</span><span class="fa-name">остаток</span><span class="fa-desc">Разница между истинным ответом и текущим прогнозом — то, что boosting пытается исправить следующей моделью.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Bagging берёт много независимых экспертов и усредняет — это снижает variance. Boosting строит цепочку: каждая модель исправляет то, что не смогла предыдущая — это снижает bias.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Bagging — голосование независимых жюри. Boosting — репетитор после каждого теста разбирает только допущенные ошибки.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> После 3 деревьев bias=2. 4-е дерево предсказывает эти оставшиеся 2 → суммарный bias снижается.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -496,17 +695,16 @@ M — число итераций boosting</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F_M(x)</span><span class="fa-name">итоговый ансамбль из M моделей</span><span class="fa-desc">Предсказание всего ансамбля для объекта x. Сумма взвешенных вкладов всех M слабых learners.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_{m=1..M}</span><span class="fa-name">сумма по всем итерациям boosting</span><span class="fa-desc">Суммирует вклады от m=1 до M. Каждая итерация добавляет один слабый learner h_m с весом γ_m.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ_m</span><span class="fa-name">вес m-го слабого learner</span><span class="fa-desc">Скалярный коэффициент, показывающий, насколько доверяем m-й модели. В AdaBoost вычисляется через ошибку: γ_m = 0.5 ln((1-err_m)/err_m).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">m-й слабый learner</span><span class="fa-desc">Базовая модель ансамбля (обычно неглубокое дерево). Обучается на взвешенной или остаточной ошибке предыдущих m-1 итераций.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">M</span><span class="fa-name">число итераций (слабых моделей)</span><span class="fa-desc">Гиперпараметр boosting — сколько слабых learners добавлять в ансамбль. Больше M → сильнее ансамбль, но риск переобучения.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый h_m(x) исправляет ошибки предыдущих. F_M(x) — это накопленная «мудрость» ансамбля: взвешенная сумма всех слабых learners. Boosting последовательно строит и складывает их.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как экзаменационные оценки от нескольких преподавателей. Каждый следующий обращает внимание на то, что предыдущие пропустили. Итоговая оценка — взвешенное голосование всех.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> M=3, γ=[0.5,0.3,0.2], h_1(x)=1, h_2(x)=-1, h_3(x)=1. F_3(x)=0.5·1+0.3·(-1)+0.2·1=0.4 → предсказание класс 1.</div>
     </div>
     <div class="info">
             В классическом boosting weak learner обычно — это
@@ -595,19 +793,17 @@ w_i ← w_i · exp(-α_m y_i h_m(x_i))
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">α</span><span class="fa-name">коэффициент шага/штрафа</span><span class="fa-desc">В зависимости от темы: сила learner-а, pruning или регуляризации.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">z</span><span class="fa-name">logit</span><span class="fa-desc">Сырой линейный score до sigmoid.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ(z)</span><span class="fa-name">вероятность</span><span class="fa-desc">Score, сжатый в диапазон от 0 до 1.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">threshold</span><span class="fa-name">порог решения</span><span class="fa-desc">Граница, после которой вероятность переводится в класс 1.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w_i</span><span class="fa-name">вес i-го объекта</span><span class="fa-desc">Важность объекта при обучении текущего weak learner. Инициализируется 1/N, затем обновляется: неверно классифицированные объекты получают больший вес.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">N</span><span class="fa-name">число объектов в выборке</span><span class="fa-desc">Общее количество обучающих примеров. Начальный вес каждого: w_i=1/N — все объекты равноправны.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">err_m</span><span class="fa-name">взвешенная ошибка m-й модели</span><span class="fa-desc">Сумма весов объектов, на которых h_m ошибся: err_m = Σ_i w_i · [y_i ≠ h_m(x_i)]. Чем меньше err_m, тем доверяемей модель.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">α_m</span><span class="fa-name">вес m-й слабой модели в ансамбле</span><span class="fa-desc">α_m = 0.5·ln((1-err_m)/err_m). Большой α_m у хорошей модели (err_m маленький), отрицательный — у хуже-случайной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный класс i-го объекта</span><span class="fa-desc">В AdaBoost y_i ∈ {-1, +1}. Произведение y_i·h_m(x_i)=+1 при верной классификации, -1 при ошибке.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">exp(·)</span><span class="fa-name">экспонента в правиле обновления весов</span><span class="fa-desc">w_i ← w_i·exp(-α_m·y_i·h_m(x_i)). При ошибке exp(-α_m·(-1))=exp(α_m)&gt;1 — вес растёт. При верном ответе — вес падает.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула переводит линейный score в вероятность и затем в решение через threshold.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как индикатор риска: сырой балл превращается в вероятность события.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если logit=0, sigmoid даёт 0.5; если logit=2, вероятность уже около 0.88.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> AdaBoost обучает модели последовательно. Каждая следующая фокусируется на объектах, которые предыдущие пропустили — за счёт роста их весов w_i. α_m определяет, насколько доверяем новой модели.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как учитель, который после теста сосредотачивается на темах, где ученики ошиблись больше всего. Каждый раунд — новый тест с акцентом на слабые места.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> err_m=0.3. α_m=0.5·ln(0.7/0.3)=0.5·0.847=0.42. Объект с ошибкой: w_i·exp(0.42)=w_i·1.52 — вес вырос на 52%.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -747,14 +943,16 @@ r_im = - [∂L(y_i, F(x_i)) / ∂F(x_i)] at F = F_{m-1}
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">r_im</span><span class="fa-name">псевдорезидуал</span><span class="fa-desc">Отрицательный градиент loss по F(x_i): направление и величина поправки для объекта i на шаге m.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">L(y_i, F(x_i))</span><span class="fa-name">функция потерь</span><span class="fa-desc">Мера ошибки между истинным y_i и текущим прогнозом F(x_i).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F_{m-1}</span><span class="fa-name">предыдущий ансамбль</span><span class="fa-desc">Прогноз ансамбля до добавления m-го дерева: точка вычисления производной.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новое дерево</span><span class="fa-desc">Weak learner, обучаемый предсказывать псевдорезидуалы r_im.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Gradient boosting находит "ошибки ошибок": на каждой итерации новое дерево учится предсказывать псевдорезидуалы — куда и насколько двинуть прогноз.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как редактор с пометками: каждый раз указывает только оставшиеся проблемы, не перечитывая уже исправленные места.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> MSE: r_im = y_i − F_{m-1}(x_i). Если y=10, F=7, r=3 — дерево учится предсказать +3 для этого объекта.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -850,19 +1048,17 @@ w_j — веса листьев
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма</span><span class="fa-desc">Складывает вклад объектов, классов, признаков или моделей.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">сила штрафа</span><span class="fa-desc">Гиперпараметр, управляющий регуляризацией или ограничением.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">y_i</span><span class="fa-name">истинный ответ</span><span class="fa-desc">Правильное значение для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ŷ_i</span><span class="fa-name">предсказание</span><span class="fa-desc">Ответ модели для i-го объекта.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">t</span><span class="fa-name">порог</span><span class="fa-desc">Граница, по которой объект отправляется в одну из групп.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ</span><span class="fa-name">стандартное отклонение</span><span class="fa-desc">Мера разброса вокруг среднего.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">gamma / responsibility</span><span class="fa-desc">В kernel это ширина RBF, в GMM — мягкая принадлежность.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Сколько ошибок усредняется в метрике.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Obj</span><span class="fa-name">целевая функция XGBoost</span><span class="fa-desc">Полная objective: сумма loss по всем объектам + регуляризация всех деревьев. XGBoost минимизирует именно её.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ_i L(y_i, ŷ_i)</span><span class="fa-name">суммарный loss по объектам</span><span class="fa-desc">Насколько плохо ансамбль предсказывает каждый объект. L может быть MSE, logloss и т.д. — XGBoost гибок по выбору loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Ω(f)</span><span class="fa-name">регуляризация одного дерева</span><span class="fa-desc">Ω(f)=γT+(λ/2)Σw_j². Штрафует как за количество листьев (сложность структуры), так и за величину весов листьев.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">штраф за каждый лист дерева</span><span class="fa-desc">Чем больше γ, тем дороже каждый лист. Стимулирует деревья быть менее глубокими — уменьшает T (число листьев).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">число листьев дерева</span><span class="fa-desc">Количество листовых узлов дерева. Больше листьев → сложнее дерево → больше штраф γT.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">λ · Σ_j w_j²</span><span class="fa-name">L2-штраф на веса листьев</span><span class="fa-desc">Штрафует за большие значения в листьях. Аналог L2-регуляризации в обычной регрессии, но применённый к листовым весам дерева.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула измеряет размер числовой ошибки и задаёт, какие промахи модель должна бояться сильнее.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка точности стрелка: можно считать средний промах или особенно штрафовать дальние попадания.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки 1 и 5 дают MAE=3, но MSE=(1&#178;+5&#178;)/2=13, поэтому крупный промах доминирует.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> XGBoost минимизирует не только ошибку на данных (Σ L), но и регуляризирует структуру каждого дерева (Ω). Это отличает его от «голого» gradient boosting и делает устойчивее к переобучению.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценка проекта: качество результата (L) + стоимость команды (γT) + перерасход ресурсов (λΣw_j²). Хороший проект оптимален по всем трём критериям.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> ΣL=5, γ=0.1, T=8, λ=1, Σw_j²=3. Obj=5+0.1·8+0.5·3=5+0.8+1.5=7.3. Дерево с T=4 и Σw_j²=4: Obj=5+0.4+2=7.4 — чуть хуже.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -2028,7 +2224,40 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     <details><summary>[Hard] Bagging vs boosting</summary><p>Почему boosting чаще чувствителен к шумным labels? <strong>Решение:</strong> он последовательно фокусируется на ошибках, включая ошибочные/шумные объекты.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-12">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём принципиальная идея бустинга в отличие от бэггинга?</summary>
+      <div class="ml-quiz__a"><p>Бэггинг обучает независимые модели параллельно и усредняет их. Бустинг обучает модели последовательно: каждая следующая фокусируется на ошибках предыдущих, исправляя их. В итоге бустинг снижает и bias, и variance, тогда как бэггинг — преимущественно variance.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как AdaBoost перераспределяет веса примеров после каждой итерации?</summary>
+      <div class="ml-quiz__a"><p>Примеры, на которых текущий классификатор ошибся, получают больший вес — они становятся важнее для следующего учителя. Вес слабого классификатора α = 0.5·ln((1-ε)/ε), где ε — взвешенная ошибка. Высокое качество → большой α → сильный голос в итоговом ансамбле.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему n_estimators в бустинге не улучшает модель бесконечно, как в Random Forest?</summary>
+      <div class="ml-quiz__a"><p>В отличие от RF, бустинг может переобучиться при очень большом числе итераций, особенно при наличии шума в данных. Нужно подбирать n_estimators через кросс-валидацию. Хорошей практикой является ранняя остановка (early stopping) по валидационной кривой.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Gradient Boosting в отличие от AdaBoost?</summary>
+      <div class="ml-quiz__a"><p>AdaBoost перевзвешивает примеры. Gradient Boosting обучает каждое следующее дерево на псевдоостатках — градиентах функции потерь. Это позволяет оптимизировать произвольную дифференцируемую потерю (MAE, log-loss, custom), делая метод универсальным.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-12">
     <h2>Checkpoint: 2.12 Boosting</h2>
     <ul>
       <li>Что значит “следующая модель исправляет ошибки предыдущих”?</li>
@@ -2038,5 +2267,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       <li>Rubber duck: объясни boosting как редактора, который правит текст по замечаниям предыдущих версий.</li>
     </ul>
   </section>
+<script src="../shared-walkthrough.js" defer></script>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>

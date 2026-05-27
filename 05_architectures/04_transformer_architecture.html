@@ -77,12 +77,36 @@ td{padding:7px 10px;border-bottom:1px solid #21262d}
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/05_architectures/04_transformer_architecture.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="architectures">
   <div class="page">
     <div class="hero">
       <h1>5.4 — Transformer (Часть 2): Архитектура</h1>
       <p class="muted">Positional Encoding · Encoder/Decoder · FFN · Layer Norm · обучение</p>
     </div>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Трансформер лежит в основе GPT, BERT, T5 и почти всего современного NLP и CV. Понять Positional Encoding, FFN и Pre-LN — значит понять фундамент большинства SOTA-моделей.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Positional Encoding — зачем и как (sinusoidal vs learned vs RoPE)</li>
+      <li>Feed-Forward Network в трансформере — d_ff = 4·d_model и почему</li>
+      <li>Pre-LN vs Post-LN — как нормализация влияет на стабильность обучения</li>
+      <li>Полный Encoder-Decoder: как устроен decoder с cross-attention</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Self-Attention (5.3)</li>
+      <li>Layer Normalization</li>
+      <li>Residual connections (5.5)</li>
+    </ul>
+  </div>
+</div>
+
 
 <div class="tabs">
   <button class="tab active" onclick="sw('t-pe')">Positional Encoding</button>
@@ -118,15 +142,15 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">pos</span><span class="fa-name">позиция токена</span><span class="fa-desc">порядковый номер токена в последовательности (0, 1, …, T−1). Одно и то же слово на разных позициях получит разный PE-вектор.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс измерения</span><span class="fa-desc">пробегает 0…d_model/2−1. Малый i → низкая частота (длинные волны); большой i → высокая частота (короткие волны).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">10000^(2i/d_model)</span><span class="fa-name">базовая длина волны</span><span class="fa-desc">знаменатель растёт геометрически с i. При i=0: 10000⁰=1 (быстрые колебания), при i=d_model/2−1: ≈10000 (медленные). Разные частоты кодируют разные масштабы расстояний.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d_model</span><span class="fa-name">размерность модели</span><span class="fa-desc">полная размерность PE-вектора. PE добавляется к embedding токена, поэтому их размерности совпадают.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждое измерение PE колышется со своей частотой — как набор часов разной скорости. Вместе они однозначно идентифицируют любую позицию, не требуя обучения.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> двоичный счётчик в аналоговом виде: младший бит (высокая частота) меняется каждый шаг, старший (низкая) — раз в тысячи шагов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, i=0: знаменатель=1 → PE[10,0]=sin(10)≈−0.54, PE[11,0]=sin(11)≈−1.0. i=128: знаменатель=10000 → PE[10,256]=sin(0.001)≈0.001. Быстрые измерения различают соседей, медленные — далёкие позиции.</div>
     </div>
     <p>pos — позиция в последовательности, i — индекс измерения (0..d_model/2-1)</p>
 
@@ -143,15 +167,14 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">PE</span><span class="fa-name">матрица позиционных эмбеддингов</span><span class="fa-desc">таблица размера max_len × d_model. Строка PE[pos] — вектор, который прибавляется к токену на позиции pos. Инициализируется случайно, обучается градиентным спуском.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">max_len</span><span class="fa-name">максимальная длина последовательности</span><span class="fa-desc">число строк в таблице. BERT: 512, GPT-2: 1024. На позиции больше max_len модель не имеет PE → extrapolation невозможна без fine-tuning.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d_model</span><span class="fa-name">размерность модели</span><span class="fa-desc">число столбцов в таблице. PE[pos] прибавляется к token embedding той же размерности: input = token_emb[id] + PE[pos].</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> вместо фиксированной математической формулы модель сама учится, какой вектор назначить каждой позиции. Это гибче, но ограничено max_len — за её пределами позиции не определены.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> словарь (lookup table): по номеру позиции достаём готовый вектор, как по ID слова достаём его embedding.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> BERT: max_len=512, d_model=768 → таблица 512×768 = 393216 параметров (~0.4M из 110M всего). Позиция 0 всегда получает PE[0], позиция 511 — PE[511]. Позицию 600 BERT без дополнительного fine-tuning обработать не может.</div>
     </div>
     <p class="muted">Гибче, но не обобщается за пределы max_len. BERT: max_len=512, GPT-2: max_len=1024.</p>
 
@@ -161,15 +184,15 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">q', k'</span><span class="fa-name">повёрнутые query и key</span><span class="fa-desc">исходные q и k после применения функции вращения f. RoPE не добавляет PE к embedding — он вращает q и k непосредственно перед вычислением dot product.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">f(q, pos_q)</span><span class="fa-name">функция вращения</span><span class="fa-desc">поворачивает пары координат q на угол θ·pos_q, где θ зависит от индекса измерения. Реализуется умножением на комплексную экспоненту e^{i·pos·θ}.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">pos_q, pos_k</span><span class="fa-name">абсолютные позиции</span><span class="fa-desc">позиции токенов query и key. Важно: в dot product q'·k' эти позиции входят только через их разность, так что результат зависит лишь от |pos_q − pos_k|.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">|pos_q − pos_k|</span><span class="fa-name">относительное расстояние</span><span class="fa-desc">ключевое свойство RoPE: attention score зависит только от расстояния между токенами, а не от их абсолютных позиций. Это обеспечивает лучшую экстраполяцию на длинные контексты.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RoPE встраивает позицию в геометрию Q и K — два токена «узнают» своё расстояние через угол между их векторами. Чем дальше токены, тем иначе ориентированы их вращёные представления.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> часовые стрелки: по углу между стрелками двух часов сразу видно разницу во времени, не зная абсолютного времени каждых.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> q на позиции 5, k на позиции 3 → |5−3|=2. То же самое расстояние у q=105, k=103 → q'·k' будет одинаковым. Это и есть трансляционная инвариантность RoPE.</div>
     </div>
     <p class="muted">Кодирует относительные позиции прямо в attention, обобщается за max_len.</p>
 </div>
@@ -303,14 +326,16 @@ d_ff = 4·d_model  (стандарт)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор токена</span><span class="fa-desc">представление одного токена после attention, размерность d_model. FFN применяется к каждому токену независимо — нет взаимодействия между токенами.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W₁, b₁</span><span class="fa-name">первый линейный слой</span><span class="fa-desc">проекция d_model → d_ff. Расширяет представление в 4 раза. Именно здесь модель «думает» — большинство знаний хранится в этих весах.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ReLU</span><span class="fa-name">нелинейность</span><span class="fa-desc">max(0, x). В современных моделях часто заменяют на GeLU или SiLU. Без нелинейности два линейных слоя свёртываются в один — FFN потерял бы смысл.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W₂, b₂</span><span class="fa-name">второй линейный слой</span><span class="fa-desc">проекция d_ff → d_model. Сжимает обратно до исходной размерности. Вместе W₁ и W₂ содержат 2·d_model·d_ff = 8·d_model² параметров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d_ff = 4·d_model</span><span class="fa-name">размер скрытого слоя FFN</span><span class="fa-desc">стандартный коэффициент расширения = 4. При d_model=512: d_ff=2048. FFN содержит больше параметров, чем MHA (~8·d² vs 4·d²).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MHA смешивает информацию между токенами, FFN перерабатывает её внутри каждого токена. Расширение до 4·d_model даёт «рабочее пространство» для сложных нелинейных преобразований.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> если MHA — это совещание (обмен информацией между людьми), то FFN — индивидуальная обработка услышанного каждым участником.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, d_ff=2048. W₁: 512×2048=1M параметров, W₂: 2048×512=1M. Итого FFN: ~2M на слой, MHA: ~1M. В GPT-3 (d_model=12288, 96 слоёв): FFN содержит ~57% всех параметров.</div>
     </div>
     <div class="info-box"><strong>Зачем FFN?</strong> MHA — линейная операция над значениями (V взвешиваются, не трансформируются). FFN добавляет нелинейность <em>внутри каждой позиции</em>. Интерпретация: FFN хранит «фактические знания» (Geva et al., 2021 — «Transformer Feed-Forward Layers Are Key-Value Memories»).</div>
 
@@ -331,15 +356,16 @@ d_ff = 4·d_model  (стандарт)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор токена</span><span class="fa-desc">вектор размерности d_model до нормализации. LayerNorm нормирует по всем d_model измерениям одного токена (в отличие от BatchNorm — по батчу).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">μ</span><span class="fa-name">среднее по измерениям</span><span class="fa-desc">μ = (1/d_model)·Σxⱼ — среднее по d_model компонентам одного токена. Вычитается для центрирования.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия по измерениям</span><span class="fa-desc">σ² = (1/d_model)·Σ(xⱼ−μ)² — дисперсия одного токена. После нормировки: x̂ = (x−μ)/√(σ²+ε) имеет нулевое среднее и единичную дисперсию.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">числовая стабильность</span><span class="fa-desc">малая константа (~1e-5) в знаменателе. Предотвращает деление на ноль, когда все компоненты токена одинаковы (σ²=0).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ, β</span><span class="fa-name">обучаемые scale и shift</span><span class="fa-desc">γ (gain) и β (bias) размера d_model. Позволяют модели вернуть любой масштаб и сдвиг после нормировки — без них LN принудительно фиксировал бы N(0,1).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> LayerNorm делает каждый токен «стандартизированным» независимо от батча и длины. Это стабилизирует обучение глубоких Transformer: градиенты не взрываются и не затухают через десятки слоёв.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> перевести оценки разных экзаменов в единую шкалу — теперь 80 баллов означает одно и то же вне зависимости от сложности теста.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,4,6,8], d=4. μ=5, σ²=5. x̂=[(2−5)/√5,(4−5)/√5,(6−5)/√5,(8−5)/√5]≈[−1.34,−0.45,0.45,1.34]. После γ=1,β=0: выход=x̂. Модель может обучить γ=[2,2,2,2] β=[1,1,1,1] для нужного масштаба.</div>
     </div>
     <h3>Residual + Pre-LN в формулах</h3>
 <div class="formula">Encoder слой l:
@@ -349,14 +375,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">FN</span><span class="fa-name">false negatives</span><span class="fa-desc">Положительные объекты, которые модель пропустила.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">TP</span><span class="fa-name">true positives</span><span class="fa-desc">Положительные объекты, найденные моделью правильно.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">FP</span><span class="fa-name">false positives</span><span class="fa-desc">Ложные срабатывания модели.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входное состояние слоя</span><span class="fa-desc">residual stream до этого слоя. Прибавляется напрямую к выходам MHA и FFN — это и есть skip connection. Градиент течёт через + без затухания.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">LN(x)</span><span class="fa-name">Pre-LayerNorm</span><span class="fa-desc">нормировка применяется ДО sublayer (Pre-LN), а не после (Post-LN). Pre-LN стабилизирует обучение: отклонения не накапливаются перед attention и FFN.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x' = x + MHA(...)</span><span class="fa-name">residual после attention</span><span class="fa-desc">сумма исходного x и выхода MHA. MHA добавляет только дельту — то, чего не хватало в x. Это предотвращает «забывание» предыдущего представления.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x'' = x' + FFN(...)</span><span class="fa-name">residual после FFN</span><span class="fa-desc">аналогично: FFN добавляет дельту к x'. Каждый sublayer вносит инкрементальный вклад в residual stream, не перезаписывая предыдущее состояние.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула считает качество классификации через типы правильных и неправильных решений.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как медицинский тест: важно отдельно считать найденных больных и ложные тревоги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если TP=80 и FP=20, precision=80/(80+20)=0.8.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> residual stream — это «магистраль» информации через всю модель. Каждый слой лишь добавляет к ней поправки. Это позволяет градиентам беспрепятственно течь от loss до первых слоёв, как в ResNet.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> черновик статьи, который редакторы правят по очереди — каждый добавляет правки поверх предыдущего, а не переписывает с нуля.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[1.0, 0.5, −0.3]. MHA(LN(x))=[0.1, −0.2, 0.4]. x'=[1.1, 0.3, 0.1]. FFN(LN(x'))=[−0.05, 0.3, 0.2]. x''=[1.05, 0.6, 0.3]. Каждый sublayer изменил вектор на ~10–30% — постепенное уточнение.</div>
     </div>
     <div class="info-box"><strong>Почему residual stream важен?</strong> Residual connection создаёт «прямой путь» для градиента от loss до эмбеддингов — аналог LSTM cell state. Можно думать об архитектуре как о последовательном уточнении residual stream через добавление информации от attention и FFN.</div>
 
@@ -374,15 +401,16 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">L</span><span class="fa-name">loss (потери)</span><span class="fa-desc">среднее negative log-likelihood по всем токенам последовательности. Минимизируем градиентным спуском. Связан с перплексией: PPL = e^L.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">T</span><span class="fa-name">длина последовательности</span><span class="fa-desc">число токенов в примере. Деление на T нормирует loss: более длинные последовательности не дают автоматически больший суммарный loss.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_t</span><span class="fa-name">целевой токен в позиции t</span><span class="fa-desc">следующий токен, который модель должна предсказать. В авторегрессивном LM вход сдвинут на 1: модель видит x_{1..t−1} и должна выдать x_t.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x_{&lt;t}</span><span class="fa-name">контекст (все предыдущие токены)</span><span class="fa-desc">x_1, x_2, …, x_{t−1}. Благодаря causal mask attention видит только прошлое — именно это делает предсказание x_t валидным без data leakage.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">log p(x_t | x_{&lt;t}; θ)</span><span class="fa-name">log-вероятность правильного токена</span><span class="fa-desc">logit правильного токена минус log-sum-exp всех logits (log-softmax). Чем выше вероятность, тем меньше потери. При p=1: log(1)=0; при p=0.01: log(0.01)=−4.6.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> модель обучается предсказывать каждый следующий токен по его контексту. Единственный сигнал — является ли предсказанный токен правильным. Масштабируя это на миллиарды токенов, модель вынуждена выучить язык, факты и рассуждения.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> угадывать следующее слово в тексте, прочитав все предыдущие — школьное упражнение, но в масштабе всего интернета даёт emergent capabilities.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=5, токены [«Кот», «сидит», «на», «тёплом», «коврике»]. loss = −(log p(сидит|Кот) + log p(на|…) + … + log p(коврике|…))/5. Если модель даёт p=0.9 каждому: L = −log(0.9) ≈ 0.105. PPL = e^0.105 ≈ 1.11 — отличный результат.</div>
     </div>
     <p>В seq2seq: суммируем CE по всем целевым токенам. В языковом моделировании (GPT): предсказываем следующий токен авторегрессивно.</p>
 
@@ -392,15 +420,16 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y_smooth</span><span class="fa-name">сглаженная целевая метка</span><span class="fa-desc">вместо жёсткого one-hot [0,0,1,0,…] целевое распределение становится мягким: правильный класс получает (1−ε), остальные — малую вероятность ε/V.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">y_onehot</span><span class="fa-name">жёсткая one-hot метка</span><span class="fa-desc">исходная метка: 1 на правильном классе, 0 на остальных. Умножается на (1−ε) — правильный класс «теряет» долю своей вероятности в пользу неправильных.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε</span><span class="fa-name">коэффициент сглаживания</span><span class="fa-desc">доля вероятности, перераспределённая от правильного класса равномерно по всем V классам. В оригинальном Transformer: ε=0.1. Правильный класс: 1−0.1=0.9 вместо 1.0.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε/V</span><span class="fa-name">вероятность каждого неправильного класса</span><span class="fa-desc">при V=30000 и ε=0.1: каждый неправильный токен получает 0.1/30000 ≈ 3.3e−6. Не ноль — модель не может быть бесконечно уверена в неправильных ответах.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">V</span><span class="fa-name">размер словаря</span><span class="fa-desc">число классов в softmax. В Transformer (2017): V≈37000. GPT-2: 50257. Чем больше V, тем меньше ε/V, но регуляризующий эффект сохраняется.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> hard labels заставляют модель предсказывать ровно один правильный ответ с вероятностью 1. Но в языке много валидных следующих токенов. Smoothing говорит: «будь немного неуверен» — это предотвращает overconfidence и улучшает calibration.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> учитель, ставящий 95 вместо 100: «правильно, но всегда есть место для сомнения». Модель перестаёт выдавать logits ±∞.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> V=4, правильный класс=2, ε=0.1. y_onehot=[0,0,1,0]. y_smooth=[0.1/4, 0.1/4, 0.9+0.1/4, 0.1/4]=[0.025, 0.025, 0.925, 0.025]. Loss = −(0.025·log p_0 + 0.025·log p_1 + 0.925·log p_2 + 0.025·log p_3) — штрафует за слишком малые вероятности и на неправильных классах.</div>
     </div>
     <p class="muted">Регуляризует модель, предотвращает сверхуверенные предсказания. Связь с блоком 1.4 (label smoothing через KL).</p>
 
@@ -409,15 +438,15 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d_model^(-0.5)</span><span class="fa-name">масштабирующий фактор</span><span class="fa-desc">пиковый lr ∝ 1/√d_model. Большие модели получают меньший lr автоматически: d_model=512 → пик ≈ 0.044×min(...); d_model=2048 → ≈ 0.022×min(...).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">step</span><span class="fa-name">текущий шаг обучения</span><span class="fa-desc">счётчик шагов градиентного спуска. При step &lt; warmup: lr растёт линейно (step · warmup^{−1.5} &lt; step^{−0.5}). При step &gt; warmup: lr убывает как 1/√step.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">warmup</span><span class="fa-name">число шагов прогрева</span><span class="fa-desc">в оригинале warmup=4000. До этого шага lr линейно растёт — Adam нужно накопить статистику моментов, прежде чем делать большие шаги.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">min(...)</span><span class="fa-name">выбор фазы</span><span class="fa-desc">min(step^{−0.5}, step·warmup^{−1.5}) автоматически переключает фазы: прогрев (второй аргумент меньше) → спад (первый аргумент меньше). Пик достигается ровно при step=warmup.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> прогрев нужен, потому что Adam в начале не знает дисперсии градиентов — большой lr на старте нестабилен. После прогрева lr снижается, чтобы обучение сходилось, а не осциллировало.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> разгон и торможение машины: сначала плавно набрать скорость, потом снизить у места назначения — вместо резкого старта и экстренного торможения.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, warmup=4000. step=1000: lr=512^{−0.5}·min(1000^{−0.5}, 1000·4000^{−1.5})=0.044·min(0.0316, 0.00395)=0.044·0.00395≈1.74e−4. step=4000 (пик): 0.044·min(0.0158, 0.0158)≈6.95e−4. step=16000: 0.044·0.0079≈3.47e−4.</div>
     </div>
     <div class="sr"><span>warmup steps</span><input type="range" id="lr-w" min="100" max="10000" step="100" value="4000" oninput="drawLRSchedule()"><span class="sv" id="lr-w-v">4000</span></div>
 <div class="sr"><span>d_model</span><input type="range" id="lr-d" min="64" max="1024" step="64" value="512" oninput="drawLRSchedule()"><span class="sv" id="lr-d-v">512</span></div>
@@ -429,15 +458,14 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β₁ = 0.9</span><span class="fa-name">коэффициент первого момента</span><span class="fa-desc">EMA по градиентам. Стандартное значение — работает стабильно для Transformer. Определяет, насколько быстро «забывается» прошлая история градиентов.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">β₂ = 0.98</span><span class="fa-name">коэффициент второго момента</span><span class="fa-desc">в стандартном Adam β₂=0.999, здесь 0.98 — агрессивнее реагирует на изменение масштаба градиентов. Важно в начале обучения, когда градиенты нестабильны и Noam schedule ещё на прогреве.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε = 10⁻⁹</span><span class="fa-name">числовая стабильность</span><span class="fa-desc">в знаменателе Adam: θ ← θ − lr · m̂ / (√v̂ + ε). Стандарт: 10⁻⁸, здесь 10⁻⁹ — ближе к нулю, значит эффективный lr = lr/√v̂ точнее адаптируется к малым градиентам в начале.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> β₂=0.98 вместо 0.999 означает, что второй момент обновляется быстрее — Adam лучше отслеживает резкие изменения масштаба градиентов, которые типичны при обучении Transformer с Noam schedule.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> настройка амортизации автомобиля под конкретную дорогу — стандартные значения оптимальны в среднем, но для трассы (Transformer + Noam) нужна своя настройка.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> после 1 шага с g=0.01: β₂=0.999 → v̂≈0.001, √v̂≈0.032; β₂=0.98 → v̂≈0.0002, √v̂≈0.014. Меньший знаменатель → больший эффективный шаг → Adam не «осторожничает» излишне при малых начальных градиентах.</div>
     </div>
     <h3>Dropout в Transformer</h3>
 <div class="step-box"><span class="sn">1.</span>После каждого Sublayer перед сложением с residual: p=0.1</div>
@@ -476,15 +504,15 @@ MQA: h голов Q, 1 голова K, 1 голова V</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">h</span><span class="fa-name">число Query-голов</span><span class="fa-desc">не меняется ни в MHA, ни в GQA, ни в MQA. Каждая из h голов строит свой attention — разные головы смотрят на разные аспекты.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">g</span><span class="fa-name">число KV-групп (GQA)</span><span class="fa-desc">g &lt;&lt; h голов K и V. Каждые h/g голов Q разделяют одну голову K и V. Компромисс: g=h — это MHA, g=1 — это MQA.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">MQA (g=1)</span><span class="fa-name">Multi-Query Attention</span><span class="fa-desc">одна голова K и V для всех h Query-голов. Максимальная экономия KV-cache: в h раз меньше памяти, но качество может снижаться.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">KV-cache</span><span class="fa-name">кэш ключей и значений</span><span class="fa-desc">при инференсе K и V для уже сгенерированных токенов не пересчитываются. GQA уменьшает KV-cache в h/g раз — критично для длинного контекста и batch inference.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> KV-cache растёт с длиной контекста и числом голов. GQA сокращает его, оставляя полное число Q-голов — выразительность attention сохраняется, а память на K,V уменьшается в h/g раз.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> h аналитиков задают вопросы (Q), но обращаются к g общим базам знаний (K,V) вместо h отдельных — ответ разнообразный, но хранилище компактнее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> LLaMA-3 8B: h=32 Q-головы, g=8 KV-групп. KV-cache в 4× меньше, чем в MHA. При контексте 8192 токенов, d_k=128: MHA KV=2×32×8192×128×2байта=1GB; GQA: 250MB на слой.</div>
     </div>
     <p class="muted">GQA в LLaMA-3 (h=32, g=8): K,V в 4× меньше — KV-Cache в 4× меньше памяти.</p>
 
@@ -494,15 +522,15 @@ RMS(x) = √(1/d · Σ xᵢ²)   ← без вычитания среднего<
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">token representations</span><span class="fa-desc">матрица скрытых состояний всех токенов слоя.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Attention</span><span class="fa-name">mixing по sequence</span><span class="fa-desc">обмен информацией между токенами.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">MLP / FFN</span><span class="fa-name">token-wise transform</span><span class="fa-desc">нелинейная обработка каждого токена отдельно после attention.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">LayerNorm + residual</span><span class="fa-name">стабилизация</span><span class="fa-desc">сохраняют gradient flow и масштаб активаций по глубине.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">входной вектор токена</span><span class="fa-desc">вектор размерности d перед нормировкой. В отличие от LayerNorm, среднее μ не вычитается — только масштабируется по RMS.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">RMS(x)</span><span class="fa-name">среднеквадратичный корень</span><span class="fa-desc">√(1/d · Σxᵢ²) — среднеквадратичное значение компонент x. Нормировка делает выход x/RMS(x) «единичным» по энергии. Нет вычитания μ → меньше операций, быстрее.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">обучаемый scale (gain)</span><span class="fa-desc">вектор размера d. Умножается поэлементно на x/RMS(x). Нет β (bias) — RMSNorm убрал его как избыточный при наличии residual connection и достаточной гибкости γ.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность вектора</span><span class="fa-desc">число компонент токена (d_model). Усреднение по d компонентам делает RMS инвариантным к масштабу — если все xᵢ умножить на c, RMS тоже умножится на c и сократится.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Transformer чередует обмен информацией между токенами и локальную переработку каждого токена.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как команда: сначала все обмениваются контекстом, потом каждый перерабатывает выводы у себя.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> при sequence length 128 и d_model 768 слой хранит матрицу 128x768 скрытых состояний.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSNorm проще LayerNorm — не вычитает среднее и не использует β. Гипотеза: именно масштабная инвариантность (re-scaling invariance) важна для стабильности, а центрирование (re-centering) избыточно.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> нормировать вектор на его длину — каждый вектор приводится к единичной «энергии», направление сохраняется, затем γ настраивает нужный масштаб.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,4,0,−2], d=4. Σxᵢ²=4+16+0+4=24. RMS=√(24/4)=√6≈2.45. x/RMS≈[0.82, 1.63, 0, −0.82]. При γ=[1,1,1,1]: выход=[0.82,1.63,0,−0.82]. LayerNorm также вычел бы μ=1 — разница минимальна, но RMSNorm на 10–20% быстрее.</div>
     </div>
     <p class="muted">Нет bias — на 7% быстрее LN, аналогичное качество.</p>
 </div>
@@ -937,7 +965,40 @@ drawArch();calcTFParams();drawResid();drawLRSchedule();
     <details><summary>[Hard] Encoder vs decoder</summary><p>Чем encoder block отличается от decoder block? <strong>Решение:</strong> decoder использует causal self-attention и может иметь cross-attention к encoder states.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="arch-5-4">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Из каких блоков состоит один слой трансформера-энкодера?</summary>
+      <div class="ml-quiz__a"><p>Слой энкодера: (1) Multi-Head Self-Attention + Residual + LayerNorm, (2) Feed-Forward Network (два линейных с активацией) + Residual + LayerNorm. FFN обрабатывает каждую позицию независимо, тогда как attention смешивает информацию между позициями.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем нужны residual connections (skip-connections) в трансформере?</summary>
+      <div class="ml-quiz__a"><p>Residual connections: x + Sublayer(x). Они обеспечивают прямой путь градиента через все слои, предотвращая vanishing. Также позволяют «добавлять» информацию, а не полностью её трансформировать — сохраняется входная информация, которую сложно восстановить иначе.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем энкодер отличается от декодера в трансформере Encoder-Decoder (seq2seq)?</summary>
+      <div class="ml-quiz__a"><p>Энкодер видит всю входную последовательность (bidirectional attention) и строит контекстные представления. Декодер авторегрессионен: использует causal attention на уже сгенерированных токенах и cross-attention к выходу энкодера. Это стандарт для перевода, суммаризации.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как масштабируется память трансформера с длиной последовательности?</summary>
+      <div class="ml-quiz__a"><p>Self-attention требует O(n²) памяти и вычислений — матрица attention n×n. При n=32768 (длинный контекст) это становится критичным. Поэтому используют FlashAttention (IO-efficient), sliding window attention (Longformer), или линейные аппроксимации attention для длинных контекстов.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="arch-5-4">
     <h2>Checkpoint: 5.4 Transformer Architecture</h2>
     <ul>
       <li>Что делает attention, а что делает MLP?</li>
@@ -947,6 +1008,7 @@ drawArch();calcTFParams();drawResid();drawLRSchedule();
       <li>Rubber duck: объясни Transformer block как обмен контекстом плюс локальное мышление каждого токена.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
 

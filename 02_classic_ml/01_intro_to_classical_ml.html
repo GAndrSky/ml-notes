@@ -311,7 +311,7 @@ canvas { border-radius: 8px; }
   <meta property="og:url" content="https://gandrsky.github.io/ml-notes/02_classic_ml/01_intro_to_classical_ml.html" />
   <link rel="icon" type="image/png" href="../favicon.png" />
 </head>
-<body>
+<body data-ml-section="classic-ml">
   <div class="page">
     <header class="hero">
       <div class="top-tags">
@@ -324,8 +324,67 @@ canvas { border-radius: 8px; }
   <h1>2.1 Введение в классическое машинное обучение</h1>
   <p class="muted">Supervised / unsupervised / semi-supervised · объект / признак / таргет · train / validation / test · bias / variance · underfitting / overfitting · pipeline модели</p>
 </header>
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <span class="ml-learning-path__label">Почему важно</span>
+    <p>Классический ML — не устаревший дедушка глубокого обучения, а рабочий инструмент для большинства реальных задач. Таблицы, feature engineering, интерпретируемость — здесь XGBoost бьёт нейросети.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <span class="ml-learning-path__label">Что узнаешь</span>
+    <ul>
+      <li>Чем классический ML отличается от нейронных сетей по подходу и применению</li>
+      <li>Supervised vs Unsupervised vs Reinforcement Learning — когда что</li>
+      <li>Типичный ML-пайплайн от данных до продакшена</li>
+      <li>Как оценивать модели — train/val/test split, cross-validation</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <span class="ml-learning-path__label">Нужно знать</span>
+    <ul>
+      <li>Линейная алгебра (1.1)</li>
+      <li>Теория вероятностей (1.3)</li>
+      <li>Базовое программирование на Python</li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- SECTION 1 -->
+<div class="ml-dataset-ref">
+  <div class="ml-dataset-ref__header">
+    <span class="ml-dataset-ref__label">Датасет</span>
+    <span class="ml-dataset-ref__name">«Экзамен» — 6 студентов</span>
+    <span class="ml-dataset-ref__note">Единый пример для всего раздела 02</span>
+  </div>
+  <div class="ml-dataset-ref__body">
+    <table class="ml-dataset-ref__table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>x₁ учёба (ч)</th>
+          <th>x₂ сон (ч)</th>
+          <th>y (балл)</th>
+          <th>класс</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td>1</td><td>5</td><td>2</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>B</td><td>2</td><td>4</td><td>3</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>C</td><td>3</td><td>8</td><td>5</td><td class="ml-ds-fail">✗</td></tr>
+        <tr><td>D</td><td>5</td><td>6</td><td>7</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>E</td><td>7</td><td>7</td><td>8</td><td class="ml-ds-pass">✓</td></tr>
+        <tr><td>F</td><td>9</td><td>8</td><td>9</td><td class="ml-ds-pass">✓</td></tr>
+      </tbody>
+    </table>
+    <p class="ml-dataset-ref__desc">
+      <strong>Задача:</strong> предсказать, сдал ли студент (балл ≥ 6), по двум признакам.<br>
+      <code>x₁</code> — часы подготовки, <code>x₂</code> — часы сна перед экзаменом.<br>
+      Для регрессии используй <code>y</code> как непрерывную цель.<br>
+      Для классификации — столбец «класс» (✗ = 0, ✓ = 1).
+    </p>
+  </div>
+</div>
+
 <div class="card">
   <h2>🤖 Что вообще называется классическим машинным обучением?</h2>
   <p>Под классическим ML обычно понимают методы, которые работают с <strong>табличными признаками</strong>, статистическими моделями, деревьями, ядровыми методами, линейными моделями и ансамблями — без глубокой многослойной нейросетевой архитектуры как основной идеи.</p>
@@ -392,15 +451,16 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер выборки, узла, fold-а или группы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">X</span><span class="fa-name">матрица признаков</span><span class="fa-desc">Таблица данных: n строк (объекты) и d столбцов (признаки). Строка i — это i-й объект xᵢ ∈ ℝ^d.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">n</span><span class="fa-name">число объектов</span><span class="fa-desc">Размер обучающей выборки; количество строк в X. Больше n → лучше оценки, меньше риск overfitting.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">число признаков</span><span class="fa-desc">Количество колонок в X; каждая колонка — один признак/атрибут объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">вектор целевых значений</span><span class="fa-desc">n-мерный вектор правильных ответов. Элемент yᵢ — метка или значение для i-го объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ℝ^{n×d}</span><span class="fa-name">пространство матриц</span><span class="fa-desc">X живёт в пространстве вещественных матриц размера n×d.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует базовую логику ML: есть данные, модель, ошибка и проверка на новых примерах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пробная настройка прибора: важен не только сам прибор, но и честная проверка измерений.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline даёт 0.70 accuracy, а новая модель 0.72 на одном split, это ещё не доказательство улучшения: нужна валидация.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Любая задача supervised ML сводится к: дана матрица X и вектор y — найти правило, которое из новых x предсказывает y. Форма X и y задаёт всё остальное: тип задачи, выбор лосса, интерпретацию.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Таблица в Excel: строки — клиенты, столбцы — характеристики, последний столбец — ответ. ML учится заполнять ответ для новых строк.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 домов, 20 признаков каждого → X∈ℝ^{1000×20}. Вектор цен y∈ℝ^{1000}. Задача: предсказать цену нового дома.</div>
     </div>
     <p>Где:</p>
   <div class="step">n — число объектов</div>
@@ -469,15 +529,14 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число групп/классов</span><span class="fa-desc">В зависимости от темы: число классов, кластеров или компонент.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">целевой класс</span><span class="fa-desc">Метка объекта; принимает одно из K дискретных значений. Модель должна предсказать, к какому классу принадлежит объект.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">{1, 2, ..., K}</span><span class="fa-name">множество классов</span><span class="fa-desc">Допустимые метки. Для бинарной классификации K=2 (например, {0,1}), для multiclass K>2.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число классов</span><span class="fa-desc">Количество различных вариантов ответа. K=10 для цифр MNIST, K=1000 для ImageNet.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует базовую логику ML: есть данные, модель, ошибка и проверка на новых примерах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пробная настройка прибора: важен не только сам прибор, но и честная проверка измерений.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline даёт 0.70 accuracy, а новая модель 0.72 на одном split, это ещё не доказательство улучшения: нужна валидация.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В классификации ответ y не непрерывный, а дискретный — один из K вариантов. Модель либо напрямую предсказывает метку, либо вероятности всех K классов.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Определить породу собаки по фото: у неё нет «степени лабрадора» — она либо лабрадор, либо нет.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Спам-фильтр: K=2, y∈{0=норм, 1=спам}. Классификация цветков ириса: K=3. Распознавание рукописных цифр: K=10.</div>
     </div>
     <p>Модель предсказывает класс или вероятность классов.</p>
       <div class="step">binary classification</div>
@@ -492,14 +551,13 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">y</span><span class="fa-name">целевое значение</span><span class="fa-desc">То, что модель должна предсказать. В задаче регрессии y — непрерывное вещественное число, а не метка из дискретного множества.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ℝ</span><span class="fa-name">вещественные числа</span><span class="fa-desc">y принимает любое значение на числовой прямой. Это отличает регрессию от классификации, где ответ дискретный.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует базовую логику ML: есть данные, модель, ошибка и проверка на новых примерах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пробная настройка прибора: важен не только сам прибор, но и честная проверка измерений.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline даёт 0.70 accuracy, а новая модель 0.72 на одном split, это ещё не доказательство улучшения: нужна валидация.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В регрессии ответ — число. Не «дорогой/дешёвый», а конкретная стоимость. Не «много/мало», а точное количество. Это задаёт и выбор лосса (MSE, MAE), и интерпретацию ошибки.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Предсказать температуру на завтра — регрессия. Предсказать «будет ли дождь» — классификация.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y=285000 (цена дома, руб.), y=23.5 (температура, °C), y=0.042 (CTR объявления). Все — регрессии на ℝ.</div>
     </div>
     <p>Модель предсказывает численное значение.</p>
       <div class="step">стоимость</div>
@@ -628,14 +686,15 @@ canvas { border-radius: 8px; }
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">вход</span><span class="fa-desc">Данные, которые формула обрабатывает.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f(x)</span><span class="fa-name">правило модели</span><span class="fa-desc">Преобразование входа в score, прогноз или критерий.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">score</span><span class="fa-name">измеримый результат</span><span class="fa-desc">Число, по которому принимается решение или сравнение.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Test Error</span><span class="fa-name">ошибка на новых данных</span><span class="fa-desc">Обобщающая ошибка модели; то, что реально важно в production. Не совпадает с train error из-за bias и variance.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Bias²</span><span class="fa-name">систематическая ошибка в квадрате</span><span class="fa-desc">Насколько усреднённые предсказания модели отклоняются от истинного значения. Высокий Bias = underfitting (слишком простая модель).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Variance</span><span class="fa-name">разброс предсказаний</span><span class="fa-desc">Насколько сильно модель меняется при смене обучающей выборки. Высокая Variance = overfitting (слишком сложная модель).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Noise</span><span class="fa-name">неустранимый шум</span><span class="fa-desc">Ошибка, вносимая случайностью в самих данных; не зависит от модели. Нижний предел Test Error при любом методе.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует базовую логику ML: есть данные, модель, ошибка и проверка на новых примерах.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как пробная настройка прибора: важен не только сам прибор, но и честная проверка измерений.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если baseline даёт 0.70 accuracy, а новая модель 0.72 на одном split, это ещё не доказательство улучшения: нужна валидация.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Test Error — сумма трёх независимых источников. Уменьшая Bias (усложняя модель), мы рискуем поднять Variance. Уменьшая Variance (упрощая), поднимаем Bias. Noise — потолок, через который не пройти.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Стрелок из лука: Bias — систематический сдвиг прицела, Variance — разброс попаданий, Noise — порывы ветра. Идеальный лук убирает первые два, но не третье.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Линейная модель: Bias²=0.15, Variance=0.02, Noise=0.05 → Test Error=0.22. Дерево 10 уровней: Bias²=0.01, Variance=0.20, Noise=0.05 → Test Error=0.26.</div>
     </div>
     <div class="info">
     ℹ️ Эта формула в строгом виде зависит от постановки задачи, но как интуитивная рамка она крайне полезна: слишком простая модель даёт большой bias, слишком сложная — большую variance.
@@ -1135,7 +1194,40 @@ updateLifecycle();
     <details><summary>[Hard] Объясни tradeoff модели</summary><p>Сравни k-NN, linear model, decision tree и random forest по bias, variance, интерпретируемости и latency. <strong>Решение:</strong> линейные модели часто high-bias/low-variance, деревья low-bias/high-variance, ансамбли уменьшают variance ценой latency.</p></details>
   </section>
 
-  <section class="ml-checkpoint-section" data-quality-pass="classic-2-1">
+  <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">В чём разница между обучением с учителем и без учителя?</summary>
+      <div class="ml-quiz__a"><p>При обучении с учителем каждый пример в обучающей выборке имеет метку (правильный ответ), и задача — научиться предсказывать её. При обучении без учителя меток нет: модель ищет структуру в данных самостоятельно (кластеры, плотность, сжатые представления).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое Bias-Variance Tradeoff?</summary>
+      <div class="ml-quiz__a"><p><strong>Bias</strong> — систематическая ошибка модели (слишком простая модель недообучается). <strong>Variance</strong> — чувствительность к конкретной обучающей выборке (слишком сложная модель переобучается). Оптимальная модель балансирует между ними, минимизируя суммарную ошибку на новых данных.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему нельзя оценивать качество модели на обучающей выборке?</summary>
+      <div class="ml-quiz__a"><p>Модель может «заучить» обучающие примеры (overfit), показывая почти нулевую ошибку на трейне, но плохо обобщаясь на новые данные. Для объективной оценки нужна отдельная тестовая выборка, которую модель никогда не видела во время обучения.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что означает «нет бесплатного обеда» (No Free Lunch theorem) в ML?</summary>
+      <div class="ml-quiz__a"><p>Теорема NFL говорит: не существует алгоритма, который лучше всех остальных на всех задачах. Каждый алгоритм делает неявные предположения о структуре данных. Поэтому выбор модели должен опираться на знание предметной области и эмпирическое сравнение.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section" data-quality-pass="classic-2-1">
     <h2>Checkpoint: 2.1 Введение в классическое ML</h2>
     <ul>
       <li>Можешь ли ты объяснить разницу между задачей, моделью, loss и metric?</li>
@@ -1145,5 +1237,6 @@ updateLifecycle();
       <li>Rubber duck: объясни новичку, почему “самая сложная модель” не всегда лучший выбор.</li>
     </ul>
   </section>
+<script src="../shared-prevnext.js" defer></script>
 </body>
 </html>
