@@ -264,6 +264,12 @@
 
     .track-panel.is-active {
       display: block;
+      animation: track-fadein 0.22s ease both;
+    }
+
+    @keyframes track-fadein {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .track-grid,
@@ -554,90 +560,6 @@
       }
     }
 
-    /* Final safety override for index topic cards.
-       shared-theme.css contains older experimental index layouts later in the file;
-       keep the homepage on the practical rectangular grid regardless of cascade order. */
-    body.ml-index-theme .section {
-      display: block !important;
-      padding: clamp(42px, 6vw, 74px) 0 !important;
-    }
-
-    body.ml-index-theme .section-head {
-      display: grid !important;
-      grid-template-columns: minmax(240px, 340px) minmax(0, 1fr) !important;
-      gap: 18px 34px !important;
-      align-items: end !important;
-      margin-bottom: 24px !important;
-    }
-
-    body.ml-index-theme .grid {
-      display: grid !important;
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      gap: 18px !important;
-      align-items: stretch !important;
-      padding-top: 0 !important;
-    }
-
-    body.ml-index-theme .card {
-      display: block !important;
-      width: auto !important;
-      min-width: 0 !important;
-      max-width: none !important;
-      min-height: 214px !important;
-      height: auto !important;
-      aspect-ratio: auto !important;
-      flex: none !important;
-      padding: 24px 56px 22px 24px !important;
-      border-radius: 26px !important;
-      text-align: left !important;
-      transform: none !important;
-    }
-
-    body.ml-index-theme .card h3 {
-      font-size: 1.16rem !important;
-      line-height: 1.28 !important;
-    }
-
-    body.ml-index-theme .card p {
-      position: static !important;
-      display: block !important;
-      width: auto !important;
-      max-width: none !important;
-      min-height: 0 !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: 0 !important;
-      border-radius: 0 !important;
-      background: transparent !important;
-      opacity: 1 !important;
-      box-shadow: none !important;
-      pointer-events: auto !important;
-      transform: none !important;
-      text-align: left !important;
-    }
-
-    body.ml-index-theme .index-subgroup {
-      grid-column: 1 / -1 !important;
-      padding: 10px 0 2px !important;
-    }
-
-    @media (max-width: 980px) {
-      body.ml-index-theme .section-head {
-        grid-template-columns: 1fr !important;
-      }
-
-      body.ml-index-theme .grid {
-        grid-template-columns: 1fr !important;
-      }
-    }
-
-    @media (max-width: 720px) {
-      body.ml-index-theme .card {
-        min-height: 0 !important;
-        padding: 20px 48px 18px 18px !important;
-        border-radius: 22px !important;
-      }
-    }
   </style>
 </head>
 <body class="ml-index-theme">
@@ -667,17 +589,17 @@
       </div>
       <div class="mindmap-graph" aria-label="Связи между блоками курса">
         <svg class="mindmap-graph__links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M50 50 L18 50" />
-          <path d="M50 50 L24 25" />
-          <path d="M50 50 L40 15" />
-          <path d="M50 50 L60 15" />
-          <path d="M50 50 L76 25" />
-          <path d="M50 50 L82 50" />
-          <path d="M50 50 L76 75" />
-          <path d="M50 50 L60 85" />
-          <path d="M50 50 L40 85" />
-          <path d="M50 50 L24 75" />
-          <path d="M50 50 L62 63" />
+          <path data-node="practice" d="M50 50 L18 50" />
+          <path data-node="math" d="M50 50 L24 25" />
+          <path data-node="classic" d="M50 50 L40 15" />
+          <path data-node="neural" d="M50 50 L60 15" />
+          <path data-node="jobprep" d="M50 50 L76 25" />
+          <path data-node="training" d="M50 50 L82 50" />
+          <path data-node="projects" d="M50 50 L76 75" />
+          <path data-node="arch" d="M50 50 L60 85" />
+          <path data-node="llm" d="M50 50 L40 85" />
+          <path data-node="gen" d="M50 50 L24 75" />
+          <path data-node="mlops" d="M50 50 L62 63" />
           <path d="M18 50 C18 37 20 30 24 25" />
           <path d="M24 25 C29 19 34 16 40 15" />
           <path d="M40 15 C46 13 54 13 60 15" />
@@ -1408,37 +1330,43 @@
           ? Array.prototype.slice.call(section.querySelectorAll(".card")).slice(0, 8)
           : [];
 
-        preview.querySelector(".mindmap-preview__kicker").textContent = section
-          ? "Theme " + (section.dataset.block || "")
-          : "Core graph";
-        preview.querySelector("h3").textContent = title;
-        preview.querySelector("p").textContent = description
-          ? description.textContent.trim()
-          : "Центральный узел связывает все блоки курса в одну карту.";
-        preview.querySelector(".mindmap-preview__count").textContent = section
-          ? cards.length + " из " + section.querySelectorAll(".card").length + " тем показано"
-          : "11 разделов · 87 тем";
+        preview.style.transition = "opacity 0.1s ease";
+        preview.style.opacity = "0";
 
-        var list = preview.querySelector(".mindmap-preview__list");
-        list.innerHTML = "";
-        if (!cards.length) {
-          ["Математика", "Классическое ML", "Архитектуры", "LLM"].forEach(function (item) {
-            var li = document.createElement("li");
-            li.textContent = item;
-            list.appendChild(li);
-          });
-          return;
-        }
+        setTimeout(function () {
+          preview.querySelector(".mindmap-preview__kicker").textContent = section
+            ? "Theme " + (section.dataset.block || "")
+            : "Core graph";
+          preview.querySelector("h3").textContent = title;
+          preview.querySelector("p").textContent = description
+            ? description.textContent.trim()
+            : "Центральный узел связывает все блоки курса в одну карту.";
+          preview.querySelector(".mindmap-preview__count").textContent = section
+            ? cards.length + " из " + section.querySelectorAll(".card").length + " тем показано"
+            : "11 разделов · 87 тем";
 
-        cards.forEach(function (card) {
-          var badge = card.querySelector(".badge");
-          var heading = card.querySelector("h3");
-          var li = document.createElement("li");
-          li.textContent =
-            (badge ? badge.textContent.trim() + " · " : "") +
-            (heading ? heading.textContent.trim() : card.textContent.trim());
-          list.appendChild(li);
-        });
+          var list = preview.querySelector(".mindmap-preview__list");
+          list.innerHTML = "";
+          if (!cards.length) {
+            ["Математика", "Классическое ML", "Архитектуры", "LLM"].forEach(function (item) {
+              var li = document.createElement("li");
+              li.textContent = item;
+              list.appendChild(li);
+            });
+          } else {
+            cards.forEach(function (card) {
+              var badge = card.querySelector(".badge");
+              var heading = card.querySelector("h3");
+              var li = document.createElement("li");
+              li.textContent =
+                (badge ? badge.textContent.trim() + " · " : "") +
+                (heading ? heading.textContent.trim() : card.textContent.trim());
+              list.appendChild(li);
+            });
+          }
+
+          preview.style.opacity = "1";
+        }, 110);
       }
 
       function setActiveNode(node) {
@@ -1446,9 +1374,32 @@
           activeNode.classList.remove("is-previewed");
         }
         activeNode = node;
+
+        // Update spoke path highlighting
+        var graph = document.querySelector(".mindmap-graph");
+        var spokePaths = Array.prototype.slice.call(
+          document.querySelectorAll(".mindmap-graph__links path[data-node]")
+        );
+        spokePaths.forEach(function (p) { p.classList.remove("is-connected"); });
+
         if (activeNode) {
           activeNode.classList.add("is-previewed");
           renderPreview(activeNode);
+
+          var cls = activeNode.className || "";
+          var match = cls.match(/mindmap-node--(\w+)/);
+          var nodeType = match ? match[1] : null;
+          if (nodeType && nodeType !== "core") {
+            var spoke = document.querySelector(
+              '.mindmap-graph__links path[data-node="' + nodeType + '"]'
+            );
+            if (spoke) spoke.classList.add("is-connected");
+            if (graph) graph.classList.add("has-preview");
+          } else {
+            if (graph) graph.classList.remove("has-preview");
+          }
+        } else {
+          if (graph) graph.classList.remove("has-preview");
         }
       }
 
@@ -1463,6 +1414,18 @@
 
       if (graphNodes.length) {
         setActiveNode(graphNodes[0]);
+      }
+
+      // Phase 5: stagger node pop-in animation delays (70ms per node)
+      graphNodes.forEach(function (node, i) {
+        node.style.animationDelay = (i * 70) + 'ms';
+      });
+
+      // Phase 5: after SVG draw-on completes, switch paths to pulse mode
+      // Longest draw-on: delay 0.70s + duration 0.52s = 1.22s; 1.4s gives buffer
+      var linksEl = document.querySelector('.mindmap-graph__links');
+      if (linksEl) {
+        setTimeout(function () { linksEl.classList.add('draw-done'); }, 1400);
       }
 
       function enhanceSubgroupMenus() {
@@ -1657,6 +1620,43 @@
       }
 
       initRobotArm();
+    })();
+  </script>
+  <script>
+    (function () {
+      if (!window.IntersectionObserver) return;
+
+      var sections = Array.prototype.slice.call(
+        document.querySelectorAll('.section[data-block]')
+      );
+      if (!sections.length) return;
+
+      sections.forEach(function (section) {
+        var head = section.querySelector('.section-head');
+        if (head) {
+          head.classList.add('wl-card');
+          head.style.setProperty('--wl-delay', '0ms');
+        }
+        var cards = Array.prototype.slice.call(section.querySelectorAll('.card'));
+        cards.forEach(function (card, i) {
+          card.classList.add('wl-card');
+          card.style.setProperty('--wl-delay', (Math.min(i, 9) * 50 + 50) + 'ms');
+        });
+      });
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          Array.prototype.slice.call(
+            entry.target.querySelectorAll('.wl-card')
+          ).forEach(function (el) {
+            el.classList.add('wl-visible');
+          });
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.05 });
+
+      sections.forEach(function (section) { observer.observe(section); });
     })();
   </script>
   <script src="bundle.js" defer></script>

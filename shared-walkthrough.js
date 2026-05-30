@@ -48,14 +48,28 @@
     // Initialise first step
     show(0);
 
-    if (btnPrev) btnPrev.addEventListener('click', function () { show(current - 1); });
-    if (btnNext) btnNext.addEventListener('click', function () { show(current + 1); });
+    if (btnPrev) btnPrev.addEventListener('click', function () {
+      root.dataset.wtDir = 'prev';
+      show(current - 1);
+    });
+    if (btnNext) btnNext.addEventListener('click', function () {
+      root.dataset.wtDir = 'next';
+      show(current + 1);
+    });
 
     // Keyboard navigation (←/→) when focus is inside the component
     root.setAttribute('tabindex', '0');
     root.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  { e.preventDefault(); show(current + 1); }
-      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    { e.preventDefault(); show(current - 1); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        root.dataset.wtDir = 'next';
+        show(current + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        root.dataset.wtDir = 'prev';
+        show(current - 1);
+      }
     });
   }
 
