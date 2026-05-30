@@ -570,11 +570,52 @@
       }
     }
 
+    /* ── Force-graph hero ────────────────────────────────────────────── */
+    .graph-hero {
+      position: relative;
+      margin: 0 0 24px;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(133, 153, 184, 0.14);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+    }
+
+    #force-graph {
+      display: block;
+      width: 100%;
+      height: clamp(300px, 40vw, 500px);
+    }
+
+    .graph-hero__hint {
+      position: absolute;
+      bottom: 14px;
+      right: 18px;
+      margin: 0;
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: rgba(5, 11, 20, 0.62);
+      color: rgba(148, 165, 188, 0.65);
+      font-size: 0.7rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    @media (max-width: 600px) {
+      #force-graph { height: clamp(260px, 78vw, 340px); }
+      .graph-hero__hint { display: none; }
+    }
+
   </style>
 </head>
 <body class="ml-index-theme">
   <div class="wrap">
-        <section class="hero">
+    <section class="graph-hero" aria-label="Граф тем курса">
+      <canvas id="force-graph"></canvas>
+      <p class="graph-hero__hint">нажми на тему — перейдёшь к разделу</p>
+    </section>
+    <section class="hero">
       <div class="hero-kicker">Machine Learning Notes</div>
       <h1>Интерактивный ML-конспект</h1>
       <p class="hero-subtitle">87 тем от математики до LLM, generative models, MLOps, interview prep и практических проектов. Короткие конспекты, интерактивы, код и плотные теоретические разборы.</p>
@@ -1692,6 +1733,224 @@
       }, { threshold: 0.05 });
 
       sections.forEach(function (section) { observer.observe(section); });
+    })();
+  </script>
+  <script>
+    /* ── Force-directed knowledge graph ─────────────────────────────── */
+    (function () {
+      'use strict';
+      var canvas = document.getElementById('force-graph');
+      if (!canvas || !canvas.getContext) return;
+      var ctx = canvas.getContext('2d');
+      var W = 0, H = 0, dpr = 1;
+
+      var DEFS = [
+        { id: 'core',     label: 'ML Notes',    sub: '87 тем',  r: 38, color: '#c8deff', href: '#learning-tracks' },
+        { id: 'math',     label: 'Математика',                  r: 24, color: '#6ea5ff', href: '#block-1'         },
+        { id: 'classic',  label: 'Classic ML',                  r: 24, color: '#66c39b', href: '#block-2'         },
+        { id: 'neural',   label: 'Нейросети',                   r: 24, color: '#81a8e0', href: '#block-3'         },
+        { id: 'training', label: 'Обучение',                    r: 20, color: '#9aa7ff', href: '#block-4'         },
+        { id: 'arch',     label: 'Архитектуры',                 r: 24, color: '#5ec7c8', href: '#block-5'         },
+        { id: 'llm',      label: 'LLM',                         r: 24, color: '#87b4ff', href: '#block-6'         },
+        { id: 'gen',      label: 'Generative',                  r: 20, color: '#82d0b6', href: '#block-7'         },
+        { id: 'practice', label: 'Практика',                    r: 18, color: '#a4b4d6', href: '#block-8'         },
+        { id: 'mlops',    label: 'MLOps',                       r: 18, color: '#7eb8b8', href: '#block-9'         },
+        { id: 'jobprep',  label: 'Interview',                   r: 18, color: '#82d0b6', href: '#job-prep'        },
+        { id: 'projects', label: 'Projects',                    r: 22, color: '#8fd17f', href: '#block-10'        },
+      ];
+
+      var EDGES = [
+        [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9],[0,10],[0,11],
+        [1,2],[1,3],[2,3],[2,4],[3,4],[3,5],[5,6],[6,7],[6,9],[8,9],[9,11],[10,11],
+      ];
+
+      var SIM = DEFS.map(function (def, i) {
+        var angle = i === 0 ? 0 : ((i - 1) / (DEFS.length - 1)) * Math.PI * 2 - Math.PI / 2;
+        var rad   = i === 0 ? 0 : 0.28 + (Math.random() - 0.5) * 0.06;
+        return { def: def, x: 0.5 + Math.cos(angle) * rad, y: 0.5 + Math.sin(angle) * rad, vx: 0, vy: 0 };
+      });
+
+      var hovered = null, tick = 0;
+
+      function step() {
+        var REP = 4e-4, SPR = 0.005, REST = 0.25, DAMP = 0.86, DRIFT = 5e-5, GRAV = 0.002;
+        var fx = SIM.map(function () { return 0; });
+        var fy = SIM.map(function () { return 0; });
+
+        for (var i = 0; i < SIM.length; i++) {
+          for (var j = i + 1; j < SIM.length; j++) {
+            var dx = SIM[j].x - SIM[i].x, dy = SIM[j].y - SIM[i].y;
+            var d  = Math.sqrt(dx * dx + dy * dy) || 1e-4;
+            var f  = REP / (d * d);
+            fx[i] -= (dx / d) * f; fy[i] -= (dy / d) * f;
+            fx[j] += (dx / d) * f; fy[j] += (dy / d) * f;
+          }
+        }
+
+        EDGES.forEach(function (e) {
+          var a = SIM[e[0]], b = SIM[e[1]];
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var d  = Math.sqrt(dx * dx + dy * dy) || 1e-4;
+          var f  = SPR * (d - REST);
+          fx[e[0]] += (dx / d) * f; fy[e[0]] += (dy / d) * f;
+          fx[e[1]] -= (dx / d) * f; fy[e[1]] -= (dy / d) * f;
+        });
+
+        SIM.forEach(function (n, i) {
+          fx[i] += (0.5 - n.x) * GRAV;
+          fy[i] += (0.5 - n.y) * GRAV;
+          fx[i] += Math.sin(tick * 0.007 + i * 1.1) * DRIFT;
+          fy[i] += Math.cos(tick * 0.005 + i * 0.9) * DRIFT;
+          n.vx = (n.vx + fx[i]) * DAMP;
+          n.vy = (n.vy + fy[i]) * DAMP;
+          n.x += n.vx; n.y += n.vy;
+          var p = 0.06;
+          if (n.x < p)     { n.x = p;     n.vx *= -0.3; }
+          if (n.x > 1 - p) { n.x = 1 - p; n.vx *= -0.3; }
+          if (n.y < p)     { n.y = p;     n.vy *= -0.3; }
+          if (n.y > 1 - p) { n.y = 1 - p; n.vy *= -0.3; }
+        });
+        tick++;
+      }
+
+      function paint() {
+        ctx.clearRect(0, 0, W, H);
+
+        /* Background */
+        var bg = ctx.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.5, W * 0.65);
+        bg.addColorStop(0, 'rgba(14,26,46,0.97)');
+        bg.addColorStop(1, 'rgba(5,11,20,0.99)');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        /* Dot grid */
+        ctx.fillStyle = 'rgba(110,165,255,0.055)';
+        var gs = 46;
+        for (var gx = gs / 2; gx < W; gx += gs) {
+          for (var gy = gs / 2; gy < H; gy += gs) {
+            ctx.beginPath();
+            ctx.arc(gx, gy, 1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        /* Edges */
+        EDGES.forEach(function (e) {
+          var a = SIM[e[0]], b = SIM[e[1]];
+          var ax = a.x * W, ay = a.y * H, bx = b.x * W, by = b.y * H;
+          var act = hovered && (SIM[e[0]] === hovered || SIM[e[1]] === hovered);
+          var cpx = (ax + bx) / 2 - (by - ay) * 0.1;
+          var cpy = (ay + by) / 2 + (bx - ax) * 0.1;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.quadraticCurveTo(cpx, cpy, bx, by);
+          ctx.strokeStyle = act ? 'rgba(110,165,255,0.62)' : 'rgba(130,165,220,0.13)';
+          ctx.lineWidth   = act ? 1.6 : 0.8;
+          ctx.shadowBlur  = act ? 8 : 0;
+          ctx.shadowColor = 'rgba(110,165,255,0.5)';
+          ctx.stroke();
+        });
+        ctx.shadowBlur = 0;
+
+        /* Nodes */
+        SIM.forEach(function (n) {
+          var x = n.x * W, y = n.y * H;
+          var def = n.def, isHov = n === hovered;
+          var r = def.r * (isHov ? 1.15 : 1);
+
+          /* Fill */
+          var gr = ctx.createRadialGradient(x - r * 0.28, y - r * 0.3, 0, x, y, r);
+          gr.addColorStop(0, 'rgba(255,255,255,0.07)');
+          gr.addColorStop(1, 'rgba(5,12,24,0.88)');
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fillStyle = gr;
+          ctx.shadowBlur = 0;
+          ctx.fill();
+
+          /* Border glow */
+          ctx.shadowBlur  = isHov ? 26 : 11;
+          ctx.shadowColor = def.color;
+          ctx.strokeStyle = def.color;
+          ctx.lineWidth   = isHov ? 2.2 : 1.4;
+          ctx.globalAlpha = isHov ? 1 : 0.76;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur  = 0;
+
+          /* Centre dot (non-core) */
+          if (def.id !== 'core') {
+            ctx.beginPath();
+            ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle  = def.color;
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = def.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+
+          /* Label */
+          ctx.textAlign    = 'center';
+          ctx.fillStyle    = isHov ? '#eef5ff' : '#96afc8';
+          if (def.id === 'core') {
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 12px "Segoe UI",system-ui,sans-serif';
+            ctx.fillStyle = isHov ? '#f2f8ff' : '#cce0ff';
+            ctx.fillText(def.label, x, y - 7);
+            ctx.fillStyle = '#607a96';
+            ctx.font = '10px "Segoe UI",system-ui,sans-serif';
+            ctx.fillText(def.sub, x, y + 8);
+          } else {
+            ctx.textBaseline = 'top';
+            ctx.font = '11px "Segoe UI",system-ui,sans-serif';
+            ctx.fillText(def.label, x, y + r + 7);
+          }
+        });
+      }
+
+      function resize() {
+        dpr = window.devicePixelRatio || 1;
+        W = canvas.clientWidth;
+        H = canvas.clientHeight;
+        canvas.width  = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
+
+      canvas.addEventListener('mousemove', function (e) {
+        var rect = canvas.getBoundingClientRect();
+        var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        hovered = null;
+        var best = Infinity;
+        SIM.forEach(function (n) {
+          var dx = n.x * W - mx, dy = n.y * H - my;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          if (d < n.def.r + 16 && d < best) { best = d; hovered = n; }
+        });
+        canvas.style.cursor = hovered ? 'pointer' : 'default';
+      });
+
+      canvas.addEventListener('mouseleave', function () { hovered = null; canvas.style.cursor = 'default'; });
+
+      canvas.addEventListener('click', function () {
+        if (!hovered) return;
+        var el = document.querySelector(hovered.def.href);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      window.addEventListener('resize', function () { resize(); });
+
+      resize();
+      for (var s = 0; s < 250; s++) step();   /* pre-settle so it starts calm */
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        paint();
+        return;
+      }
+
+      function loop() { step(); paint(); requestAnimationFrame(loop); }
+      loop();
     })();
   </script>
   <script src="bundle.js" defer></script>
