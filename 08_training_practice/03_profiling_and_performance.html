@@ -178,6 +178,92 @@ with profile(
         <div class="ml-self-rating" data-topic-id="08_training_practice/03_profiling_and_performance.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
       </div>
     </section>
+
+    <div class="ml-walkthrough">
+      <div class="ml-walkthrough__header">
+        <div class="ml-walkthrough__title-row">
+          <span class="ml-walkthrough__label">Пошагово</span>
+          <span class="ml-walkthrough__title">Finding Your Training Bottleneck</span>
+        </div>
+        <div class="ml-walkthrough__controls">
+          <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+          <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+          <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+        </div>
+      </div>
+      <div class="ml-walkthrough__track">
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 01</span>
+          <h3 class="ml-walkthrough__step-heading">Baseline: time one batch end-to-end</h3>
+          <div class="ml-walkthrough__step-body"><p>Before profiling anything specific, measure the wall-clock time for a single complete training step: data loading + host-to-device transfer + forward + backward + optimizer. Skip the first two batches to avoid cold-start overhead (CUDA initialization, JIT compilation). Record median step time over ~20 steps. This number is your baseline — everything else you measure is a fraction of it.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 02</span>
+          <h3 class="ml-walkthrough__step-heading">Profile data loading — if GPU util &lt;80% during loading, you have a data bottleneck</h3>
+          <div class="ml-walkthrough__step-body"><p>Watch GPU utilization with <code>nvidia-smi dmon -s u</code> or the profiler timeline. If utilization drops near 0% between steps in a sawtooth pattern, the GPU is idle waiting for the next batch. Fix with: increasing <code>num_workers</code> (start with 4–8 per GPU), setting <code>pin_memory=True</code>, enabling <code>prefetch_factor=2</code>, and caching pre-processed tensors if transforms are deterministic and expensive.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 03</span>
+          <h3 class="ml-walkthrough__step-heading">Profile compute — use torch.profiler or nvidia-smi to see GPU util during forward/backward</h3>
+          <div class="ml-walkthrough__step-body"><p>Once data loading is ruled out, use <code>torch.profiler</code> with a short active window (3–5 steps after warmup) and export to TensorBoard. The CUDA timeline shows which ops dominate: attention, linear layers, normalization, or element-wise ops. High GPU util (>85%) during compute means you are compute-bound. Low util during the forward/backward itself points to Python overhead or operator serialization — consider <code>torch.compile()</code>.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 04</span>
+          <h3 class="ml-walkthrough__step-heading">Check memory bandwidth — use FLOPS utilization: actual FLOPS / theoretical peak</h3>
+          <div class="ml-walkthrough__step-body"><p>Model FLOPs Utilization (MFU) = (observed throughput × FLOPs per sample) / (GPU peak FLOPS). An MFU of 40–60% is typical for well-optimized transformer training. Very low MFU despite high GPU utilization indicates a memory-bandwidth bottleneck: the GPU is busy, but mostly waiting for data to move between HBM and compute cores. Memory-bound operations (e.g., layer norm, element-wise ops on large tensors) benefit from kernel fusion via FlashAttention or <code>torch.compile()</code>.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 05</span>
+          <h3 class="ml-walkthrough__step-heading">Fix the worst bottleneck first — then re-profile, do not optimize blindly</h3>
+          <div class="ml-walkthrough__step-body"><p>Amdahl's Law: if data loading is 60% of step time, optimizing the compute kernel by 50% only improves overall speed by ~20%. Always address the dominant bottleneck first, then re-run the full profiling cycle. Change exactly one thing between measurements so you can attribute the improvement. Common priority order: data loading → Python overhead (torch.compile) → memory bandwidth (FlashAttention, kernel fusion) → distributed communication (async all-reduce, gradient compression).</p></div>
+        </div>
+      </div>
+      <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+    </div>
+
+    <div class="ml-quiz">
+      <div class="ml-quiz__header">
+        <span class="ml-quiz__label">Проверь себя</span>
+        <h3 class="ml-quiz__title">Profiling and performance fundamentals</h3>
+      </div>
+      <ol class="ml-quiz__list">
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">What GPU utilization % indicates a data loading bottleneck?</summary>
+            <div class="ml-quiz__a"><p>If GPU utilization drops below roughly 80% in a repeating sawtooth pattern between training steps, the GPU is idle waiting for the CPU to prepare the next batch. True compute bottlenecks keep the GPU at 90–100% utilization continuously. Any prolonged dip below 80% should prompt investigation of DataLoader settings: num_workers, pin_memory, prefetch_factor, and the cost of on-the-fly data transforms.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">What is the difference between compute-bound and memory-bandwidth-bound operations?</summary>
+            <div class="ml-quiz__a"><p>Compute-bound operations spend most time executing arithmetic on data already in registers (e.g., large matrix multiplications in fully-connected layers). Adding more data to the same op does not increase time proportionally once registers are full. Memory-bandwidth-bound operations spend most time reading from or writing to HBM (e.g., softmax, layer norm, element-wise adds) — they are fast arithmetically but stall waiting for data. The distinction matters because kernel fusion (combining multiple memory-bound ops into one) is the right fix for bandwidth bottlenecks, while tensor core utilization improvements help compute-bound ones.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">Why does increasing batch size improve throughput up to a point?</summary>
+            <div class="ml-quiz__a"><p>Larger batches amortize per-batch fixed costs (kernel launch overhead, memory allocation, data transfer latency) over more samples, increasing samples/second. GEMM (matrix multiply) efficiency also improves with larger matrices, pushing closer to peak FLOPS. However, beyond a certain batch size VRAM becomes the bottleneck — activations no longer fit, requiring gradient checkpointing or smaller batches. Additionally, very large batches may require learning rate scaling adjustments to maintain convergence quality.</p></div>
+          </details>
+        </li>
+      </ol>
+    </div>
+
+    <div class="warn">
+      <strong>Что ломается без этого</strong>
+      <p>Profiling in eager mode gives misleading results for models that use <code>torch.compile()</code> during actual training. Compiled models fuse kernels and eliminate Python overhead, so an eager-mode profile will show bottlenecks that do not exist in production and miss bottlenecks introduced by the compilation strategy (e.g., graph breaks). Always profile with exactly the same compilation settings — same <code>torch.compile()</code> flags, same <code>mode</code>, same backend — that you use for your real training run. A profile from the wrong execution mode will send you optimizing the wrong thing.</p>
+    </div>
+
+    <div class="ml-self-rating" data-topic="profiling">
+      <span class="ml-self-rating__label">Оцени понимание темы</span>
+      <div class="ml-self-rating__buttons">
+        <button type="button" data-rating="1">1</button>
+        <button type="button" data-rating="2">2</button>
+        <button type="button" data-rating="3">3</button>
+        <button type="button" data-rating="4">4</button>
+        <button type="button" data-rating="5">5</button>
+      </div>
+      <span class="ml-self-rating__status"></span>
+    </div>
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="\text{throughput} = \frac{\text{samples or tokens}}{\text{time}}">throughput = samples or tokens / time</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">throughput</span><span class="fa-name">скорость обработки</span><span class="fa-desc">сколько samples или tokens система обрабатывает за единицу времени.</span></div><div class="formula-anatomy__row"><span class="fa-sym">samples or tokens</span><span class="fa-name">объём работы</span><span class="fa-desc">единица полезной нагрузки для training или inference.</span></div><div class="formula-anatomy__row"><span class="fa-sym">time</span><span class="fa-name">время</span><span class="fa-desc">реальное wall-clock время, включая data loading, kernels и синхронизации.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> profiling нужен, чтобы понять, где именно тратится время, а не просто увидеть медленный run.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если 4096 tokens обрабатываются за 0.5 секунды, throughput равен 8192 tokens/sec.</div></div></section>

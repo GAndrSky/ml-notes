@@ -190,6 +190,92 @@ optimizer.step()
         <div class="ml-self-rating" data-topic-id="08_training_practice/04_debugging_loss_spikes.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
       </div>
     </section>
+
+    <div class="ml-walkthrough">
+      <div class="ml-walkthrough__header">
+        <div class="ml-walkthrough__title-row">
+          <span class="ml-walkthrough__label">Пошагово</span>
+          <span class="ml-walkthrough__title">Loss Spike Checklist</span>
+        </div>
+        <div class="ml-walkthrough__controls">
+          <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+          <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+          <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+        </div>
+      </div>
+      <div class="ml-walkthrough__track">
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 01</span>
+          <h3 class="ml-walkthrough__step-heading">Check if the spike is in validation loss only — overfitting or data leakage</h3>
+          <div class="ml-walkthrough__step-body"><p>If training loss is smooth but validation loss spikes, the model is not numerically unstable — it is overfitting, or validation data is leaking from or contaminating training. Audit the preprocessing pipeline: check that no validation examples appear in the training set, that normalization statistics were computed on training data only, and that any data augmentation or tokenization is applied consistently. A val-only spike that appears suddenly mid-training often signals a data pipeline bug introduced by a recent change.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 02</span>
+          <h3 class="ml-walkthrough__step-heading">Check if the spike correlates with a specific batch — log batch index, check for corrupted samples</h3>
+          <div class="ml-walkthrough__step-body"><p>Log the global batch index and per-sample ids whenever loss exceeds a threshold (e.g., 3× the running mean). Re-load and inspect the offending batch: check for NaN/Inf values in inputs or targets with <code>torch.isfinite()</code>, look for samples with extreme scale (images accidentally stored as float64, text with thousands of repeated tokens, regression targets several orders of magnitude larger than normal). A single corrupted sample in a batch can spike loss proportionally to how extreme its value is.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 03</span>
+          <h3 class="ml-walkthrough__step-heading">Check gradient norms — if grad_norm &gt; 10× usual value, you need gradient clipping</h3>
+          <div class="ml-walkthrough__step-body"><p>Log <code>torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=float('inf'))</code> before applying any clipping to see the raw gradient norm. Compare it to the baseline. If it spikes to 10–100× the normal value, the parameter update will be huge and the loss spike is a consequence. Gradient clipping (typically max_norm=1.0 for transformers) caps the update magnitude, but it treats symptoms — still investigate why the norm exploded (bad batch, too-high LR, numerics).</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 04</span>
+          <h3 class="ml-walkthrough__step-heading">Check learning rate schedule — cosine restart or warmup issues cause spikes at boundaries</h3>
+          <div class="ml-walkthrough__step-body"><p>Plot learning rate alongside loss for the same step range. Cosine annealing with warm restarts (SGDR) intentionally resets LR to a high value at cycle boundaries, which almost always causes a visible loss spike before re-convergence. A misconfigured warmup that starts too high, or a scheduler that is stepped at the wrong frequency (every epoch instead of every batch), can produce spikes that look like data problems. Verify that the scheduler's step call is placed correctly relative to optimizer.step().</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 05</span>
+          <h3 class="ml-walkthrough__step-heading">Check mixed precision — FP16 overflow causes NaN, verify loss scaling, switch to BF16 on Ampere+</h3>
+          <div class="ml-walkthrough__step-body"><p>FP16 has a maximum representable value of ~65504. If any activation or gradient exceeds this, it becomes Inf, which then propagates to NaN via Inf - Inf in subsequent ops. PyTorch's GradScaler multiplies the loss by a large scale factor before backward to prevent underflow, but if the scale is too large it causes overflow instead. Check <code>scaler.get_scale()</code> — if it is unusually large or dropping rapidly, that is your sign. On Ampere and newer GPUs (A100, RTX 30xx+), BF16 has the same range as FP32 and eliminates overflow issues entirely.</p></div>
+        </div>
+      </div>
+      <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+    </div>
+
+    <div class="ml-quiz">
+      <div class="ml-quiz__header">
+        <span class="ml-quiz__label">Проверь себя</span>
+        <h3 class="ml-quiz__title">Debugging loss spikes systematically</h3>
+      </div>
+      <ol class="ml-quiz__list">
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">What is the first thing to check when loss suddenly goes NaN?</summary>
+            <div class="ml-quiz__a"><p>Check the inputs to the model for the batch where NaN first appeared. Use <code>torch.isfinite(x).all()</code> on the raw batch before it enters the model. NaN almost always enters through one of three paths: (1) a data sample with NaN/Inf values that was not cleaned, (2) FP16 overflow in the first few layers before any clipping can act, or (3) a log(0) or division by zero in the loss function (e.g., cross-entropy with a class probability of exactly zero). Finding where NaN first appears in the computational graph narrows the cause immediately.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">Why does gradient clipping help but not always prevent spikes?</summary>
+            <div class="ml-quiz__a"><p>Gradient clipping rescales the gradient vector to have at most max_norm magnitude before the optimizer step. This prevents a single catastrophically large update from throwing the model far out of a good region. However, it does not address the root cause: if a bad batch consistently produces enormous gradients, clipping merely slows the damage. It also does not help with NaN gradients — clipping NaN values produces NaN outputs. Clipping is best thought of as a safety guardrail, not a fix. Always also log the unclipped norm to know when the guardrail is being hit.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">How do you confirm a data batch is causing a spike?</summary>
+            <div class="ml-quiz__a"><p>Log the batch index and, if possible, sample ids whenever the loss or gradient norm exceeds a threshold. Then replay that exact batch: load the saved seed and sampler state (or store the raw batch tensor) and rerun only that step with <code>torch.no_grad()</code> first to see model outputs, then with full backward to see gradients. If the spike reproduces deterministically from that batch but not from adjacent batches, the batch is the cause. Also run <code>torch.isfinite(x).all()</code> and inspect statistical outliers: <code>x.abs().max()</code>, <code>y.min()</code>, <code>y.max()</code>.</p></div>
+          </details>
+        </li>
+      </ol>
+    </div>
+
+    <div class="warn">
+      <strong>Что ломается без этого</strong>
+      <p>Turning off gradient clipping when using large learning rates almost guarantees eventual loss explosion. Even with a well-tuned LR, any single batch with an outlier sample can produce a gradient norm that is orders of magnitude larger than usual. Without clipping, that single bad update pushes model weights far from the current optimum — sometimes irreversibly. The model may partially recover (a visible spike followed by slow recovery), or it may never recover (divergence). With clipping at max_norm=1.0, the same bad batch produces a bounded update, and training continues normally. The cost is zero when gradients are small; the benefit is a hard upper bound on the damage from any single batch.</p>
+    </div>
+
+    <div class="ml-self-rating" data-topic="debugging-loss">
+      <span class="ml-self-rating__label">Оцени понимание темы</span>
+      <div class="ml-self-rating__buttons">
+        <button type="button" data-rating="1">1</button>
+        <button type="button" data-rating="2">2</button>
+        <button type="button" data-rating="3">3</button>
+        <button type="button" data-rating="4">4</button>
+        <button type="button" data-rating="5">5</button>
+      </div>
+      <span class="ml-self-rating__status"></span>
+    </div>
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-4-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="\theta_{t+1} = \theta_t - \eta g_t">θ_{t+1} = θ_t - η g_t</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">θ_t</span><span class="fa-name">текущие параметры</span><span class="fa-desc">веса модели перед update.</span></div><div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">длина шага; слишком большой η часто и даёт spikes.</span></div><div class="formula-anatomy__row"><span class="fa-sym">g_t</span><span class="fa-name">градиент</span><span class="fa-desc">сигнал изменения параметров на текущем batch.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> loss spike часто означает, что один update оказался слишком агрессивным для текущего масштаба gradients.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> если grad norm внезапно вырос в 50 раз, тот же learning rate может выбросить модель из стабильной области loss landscape.</div></div></section>

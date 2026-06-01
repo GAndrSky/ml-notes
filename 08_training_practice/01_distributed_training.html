@@ -193,6 +193,87 @@ for epoch in range(num_epochs):
         <div class="ml-self-rating" data-topic-id="08_training_practice/01_distributed_training.html"><span class="ml-self-rating__label">I can explain this:</span><button type="button" data-rating="1">1</button><button type="button" data-rating="2">2</button><button type="button" data-rating="3">3</button><button type="button" data-rating="4">4</button><button type="button" data-rating="5">5</button><span class="ml-self-rating__label" data-rating-status></span></div>
       </div>
     </section>
+
+    <div class="ml-walkthrough">
+      <div class="ml-walkthrough__header">
+        <div class="ml-walkthrough__title-row">
+          <span class="ml-walkthrough__label">Пошагово</span>
+          <span class="ml-walkthrough__title">Choosing DDP vs FSDP</span>
+        </div>
+        <div class="ml-walkthrough__controls">
+          <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+          <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+          <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+        </div>
+      </div>
+      <div class="ml-walkthrough__track">
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 01</span>
+          <h3 class="ml-walkthrough__step-heading">Check if the model fits on a single GPU with full training state</h3>
+          <div class="ml-walkthrough__step-body"><p>Run a single forward + backward pass on one GPU and observe peak memory. "Fitting" means parameters + gradients + optimizer state + activations all stay under VRAM. If this works without OOM, DDP is your first choice — it is simpler, better understood, and easier to debug.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 02</span>
+          <h3 class="ml-walkthrough__step-heading">Estimate memory: ~16 bytes per parameter for AdamW</h3>
+          <div class="ml-walkthrough__step-body"><p>A rough formula: fp16 params (2 bytes) + fp16 grads (2 bytes) + fp32 optimizer state — master weights, first moment, second moment (12 bytes) = 16 bytes/param. A 7B model needs ~112 GB just for training state, far more than a single 80 GB A100. If the estimate exceeds your GPU VRAM, move to FSDP.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 03</span>
+          <h3 class="ml-walkthrough__step-heading">With FSDP, choose the right sharding strategy</h3>
+          <div class="ml-walkthrough__step-body"><p>FULL_SHARD (ZeRO-3 equivalent) shards params, grads, and optimizer state — maximum memory savings, highest communication cost. SHARD_GRAD_OP shards only grads and optimizer state — middle ground with lower communication overhead. NO_SHARD is equivalent to DDP and useful for ablating. Start with FULL_SHARD when memory is the binding constraint.</p></div>
+        </div>
+        <div class="ml-walkthrough__step">
+          <span class="ml-walkthrough__step-num">Шаг 04</span>
+          <h3 class="ml-walkthrough__step-heading">Always benchmark throughput — FSDP adds communication overhead</h3>
+          <div class="ml-walkthrough__step-body"><p>FSDP gathers sharded parameters before each layer's forward and backward, which creates additional all-gather collectives. On slow interconnects (e.g., PCIe vs NVLink), FSDP can be slower than DDP even when memory is not the issue. Measure tokens/second or samples/second with the actual config before committing to FSDP for a long run.</p></div>
+        </div>
+      </div>
+      <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+    </div>
+
+    <div class="ml-quiz">
+      <div class="ml-quiz__header">
+        <span class="ml-quiz__label">Проверь себя</span>
+        <h3 class="ml-quiz__title">DDP, FSDP, and distributed fundamentals</h3>
+      </div>
+      <ol class="ml-quiz__list">
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">What is all-reduce and why is it the DDP bottleneck?</summary>
+            <div class="ml-quiz__a"><p>All-reduce is a collective operation that sums gradient tensors across all workers so every worker ends up with the same averaged gradient. In DDP this happens after every backward pass. It becomes the bottleneck because it requires synchronous communication: all workers must participate, the bandwidth required scales with model size, and the latency blocks the next optimizer step. On a 7B model the gradient tensor alone is ~14 GB in fp16, which must be transmitted every step.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">What does FSDP shard that DDP does not?</summary>
+            <div class="ml-quiz__a"><p>DDP keeps a full copy of parameters, gradients, and optimizer state on every GPU — it only synchronizes gradients. FSDP additionally shards the parameters themselves and the optimizer state across all workers. Each GPU holds only 1/N of the parameters at rest; before computing a layer, the needed shard is gathered via all-gather, used, then discarded. This is what allows FSDP to train models that are too large for a single GPU.</p></div>
+          </details>
+        </li>
+        <li class="ml-quiz__item">
+          <details class="ml-quiz__entry">
+            <summary class="ml-quiz__q">Why does global batch size stay constant when scaling DDP workers?</summary>
+            <div class="ml-quiz__a"><p>In DDP, adding more workers does not automatically increase the global batch — it divides the same work across more GPUs. If you keep local_batch constant while doubling workers, the global batch doubles, which changes the optimization dynamics (larger batches typically need a higher learning rate to converge at the same speed). To keep the same optimization trajectory when scaling, either halve the local batch or adjust the learning rate using the linear scaling rule: new_lr = old_lr × (new_world_size / old_world_size).</p></div>
+          </details>
+        </li>
+      </ol>
+    </div>
+
+    <div class="warn">
+      <strong>Что ломается без этого</strong>
+      <p>Forgetting to sync batch normalization statistics across DDP workers causes each GPU to compute BN running mean and variance on its local mini-batch only. Because each worker sees a different slice of the data, statistics diverge across workers. After a checkpoint reload or model evaluation, the model uses inconsistent statistics, producing different outputs on different GPUs and making validation metrics unreliable. Use <code>torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)</code> before wrapping with DDP.</p>
+    </div>
+
+    <div class="ml-self-rating" data-topic="distributed-training">
+      <span class="ml-self-rating__label">Оцени понимание темы</span>
+      <div class="ml-self-rating__buttons">
+        <button type="button" data-rating="1">1</button>
+        <button type="button" data-rating="2">2</button>
+        <button type="button" data-rating="3">3</button>
+        <button type="button" data-rating="4">4</button>
+        <button type="button" data-rating="5">5</button>
+      </div>
+      <span class="ml-self-rating__status"></span>
+    </div>
   </div>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="practice-8-1-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-render-tex data-tex-source="B_{\text{global}} = N_{\text{devices}} \cdot B_{\text{local}} \cdot A">B_global = N_devices · B_local · A</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">B_global</span><span class="fa-name">global batch</span><span class="fa-desc">сколько примеров реально участвует в одном optimizer update.</span></div><div class="formula-anatomy__row"><span class="fa-sym">N_devices</span><span class="fa-name">число устройств</span><span class="fa-desc">GPU/worker-ов, которые считают forward/backward параллельно.</span></div><div class="formula-anatomy__row"><span class="fa-sym">B_local</span><span class="fa-name">local batch</span><span class="fa-desc">batch size на одном устройстве.</span></div><div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">grad accumulation</span><span class="fa-desc">сколько micro-batch шагов суммируется до optimizer.step().</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> effective batch в distributed training определяется не одним числом, а всей схемой распараллеливания.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> 8 GPU, local batch 4 и accumulation 2 дают global batch 64.</div></div></section>
