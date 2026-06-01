@@ -361,6 +361,93 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
         <button data-rating="5">5</button>
       </div>
     </section>
+
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Setting up LoRA fine-tuning</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">Choose target modules</h3>
+      <div class="ml-walkthrough__step-body"><p>Typically target q_proj and v_proj in attention, sometimes all linear layers. More modules means more capacity and more memory. Start narrow and expand if the model underfits the task.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Set rank r</h3>
+      <div class="ml-walkthrough__step-body"><p>Start with r=8 or r=16. Lower rank means fewer parameters and more regularization. Higher rank increases capacity but raises overfitting risk on small datasets. Trainable params = r * (d_in + d_out) per layer.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Set alpha</h3>
+      <div class="ml-walkthrough__step-body"><p>Alpha scales the LoRA update: effective_lr = alpha / r. Set alpha = 2*r for stable training (e.g. r=16, alpha=32). This keeps the effective scaling constant as you sweep rank values.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Freeze base model weights</h3>
+      <div class="ml-walkthrough__step-body"><p>Only LoRA matrices should train. Verify with: sum(p.requires_grad for p in model.parameters()). In PEFT this happens automatically via get_peft_model, but always confirm the trainable parameter count matches expectations.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 05</span>
+      <h3 class="ml-walkthrough__step-heading">Merge and save</h3>
+      <div class="ml-walkthrough__step-body"><p>After training, merge LoRA weights into base model for efficient inference: model = model.merge_and_unload(). This eliminates the adapter overhead at inference time. Keep the unmerged adapter if you want to switch tasks later.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">LoRA fine-tuning</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is the relationship between LoRA rank and the number of trainable parameters?</summary>
+        <div class="ml-quiz__a"><p>Trainable parameters per layer = r * (d_in + d_out). For a 4096x4096 projection with r=16: 16 * (4096 + 4096) = 131,072 parameters instead of 16.7M for full fine-tuning. Doubling the rank doubles trainable params. Rank determines the dimensionality of the update subspace.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why is LoRA preferred over full fine-tuning for most tasks?</summary>
+        <div class="ml-quiz__a"><p>LoRA stores optimizer state only for adapter matrices, reducing GPU memory by 10-100x. The base model weights are frozen, preventing catastrophic forgetting of pretraining knowledge. Multiple task adapters can share one base model. Training is faster because fewer parameters receive gradient updates. For most tasks the useful adaptation truly lies in a low-rank subspace.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What happens if you set rank too high?</summary>
+        <div class="ml-quiz__a"><p>High rank (r &gt; 64) without a proportionally larger dataset causes the adapter to overfit — training loss drops but held-out performance degrades. The adapter memorizes the fine-tuning examples rather than adapting general capabilities. Monitor validation loss and use early stopping. Also, high rank defeats the memory efficiency purpose of LoRA.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+    <div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>Not freezing the base model weights defeats the purpose of LoRA — you end up full fine-tuning with extra parameters and more memory use. Optimizer state grows to cover all model parameters, eliminating the memory advantage. The adapter matrices become redundant overhead, and catastrophic forgetting risk increases significantly.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="lora-finetuning">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
   </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">

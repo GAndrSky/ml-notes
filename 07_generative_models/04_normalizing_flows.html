@@ -155,6 +155,88 @@
         <li>What is the main architectural limitation of flows?</li>
       </ol>
     </section>
+
+  <div class="ml-walkthrough">
+    <div class="ml-walkthrough__header">
+      <div class="ml-walkthrough__title-row">
+        <span class="ml-walkthrough__label">Пошагово</span>
+        <span class="ml-walkthrough__title">Change of Variables — how a flow computes exact likelihood</span>
+      </div>
+      <div class="ml-walkthrough__controls">
+        <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+        <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+        <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+      </div>
+    </div>
+    <div class="ml-walkthrough__track">
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 01</span>
+        <h3 class="ml-walkthrough__step-heading">Start with a simple prior z ~ N(0, I)</h3>
+        <div class="ml-walkthrough__step-body"><p>Define a base distribution p_Z — typically a standard multivariate Gaussian. This distribution is trivial to evaluate and sample from. The goal is to transform it into a complex data distribution p_X while keeping the ability to compute exact log-probabilities. Every flow starts from this tractable base.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 02</span>
+        <h3 class="ml-walkthrough__step-heading">Apply an invertible transformation f: z → x</h3>
+        <div class="ml-walkthrough__step-body"><p>Pass z through a learned invertible function x = f(z). Because f is invertible, we can also compute z = f⁻¹(x) for any observed data point x. The transformation can be a single coupling layer or a chain of K layers: x = f_K ∘ f_{K−1} ∘ … ∘ f_1(z). Each layer must be both invertible and differentiable.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 03</span>
+        <h3 class="ml-walkthrough__step-heading">Compute log-likelihood via log |det J|</h3>
+        <div class="ml-walkthrough__step-body"><p>The change-of-variables formula gives: log p_X(x) = log p_Z(z) + log |det J_{f⁻¹}(x)|. The Jacobian determinant corrects for how much f stretches or compresses local volume. For a chain of K transforms: log p_X(x) = log p_Z(z) + Σ_k log |det J_k|. Coupling layers make each J_k triangular, so its determinant is just the product of diagonal entries — computable in O(d) time.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 04</span>
+        <h3 class="ml-walkthrough__step-heading">Exact likelihood enables direct training</h3>
+        <div class="ml-walkthrough__step-body"><p>Because we can compute log p_X(x) exactly for any training example, we maximize the log-likelihood directly using gradient descent — no ELBO, no adversarial game. This also means flows can be used for density estimation (computing p(x) for anomaly detection), lossless data compression, and as flexible approximate posteriors in variational inference.</p></div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+  </div>
+
+  <div class="ml-quiz">
+    <div class="ml-quiz__header">
+      <span class="ml-quiz__label">Проверь себя</span>
+      <h3 class="ml-quiz__title">Normalizing flows — invertibility and exact likelihood</h3>
+    </div>
+    <ol class="ml-quiz__list">
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">Why must the transformations in a normalizing flow be invertible?</summary>
+          <div class="ml-quiz__a"><p>Invertibility is required for two reasons. First, to compute log p_X(x) during training you need z = f⁻¹(x) — you must be able to map data back to the base space. Second, the change-of-variables formula is only valid for bijective (one-to-one) maps: if f loses information, two different x values could map to the same z, making the probability calculation undefined. Invertibility guarantees a one-to-one correspondence between x-space and z-space.</p></div>
+        </details>
+      </li>
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">What makes computing det(J) tractable in coupling layers?</summary>
+          <div class="ml-quiz__a"><p>In a general invertible network, computing det(J) costs O(d³) because d×d Jacobian matrix determinant requires full decomposition. Coupling layers split the input into two parts: one part passes through unchanged, and the other is scaled and shifted based on the first. The resulting Jacobian is triangular (lower or upper). The determinant of a triangular matrix is just the product of its diagonal entries, computable in O(d) — making flows practical at high dimensions.</p></div>
+        </details>
+      </li>
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">Why do flows give exact likelihood while VAEs only give a lower bound?</summary>
+          <div class="ml-quiz__a"><p>VAEs introduce an approximate posterior q_φ(z|x) because the true posterior p(z|x) is intractable. The gap between ELBO and the true log p(x) is the KL divergence between approximate and true posterior, which is always non-negative but unknown. Flows avoid this entirely: because f is a bijection, z = f⁻¹(x) is unique and deterministic, so log p_X(x) = log p_Z(f⁻¹(x)) + log |det J| is computed exactly with no approximation.</p></div>
+        </details>
+      </li>
+    </ol>
+  </div>
+
+  <div class="warn">
+    <strong>Что ломается без этого</strong>
+    <p>If a flow transformation is not square — meaning the output dimension differs from the input dimension — the Jacobian matrix is not square and its determinant is undefined. The entire change-of-variables formula breaks down: you cannot compute log p_X(x) because the volume correction term has no meaning for a non-square linear map. Unlike VAEs which can project to a lower-dimensional latent, flows must maintain constant dimensionality at every layer.</p>
+  </div>
+
+  <div class="ml-self-rating" data-topic="flows">
+    <span class="ml-self-rating__label">Оцени понимание темы</span>
+    <div class="ml-self-rating__buttons">
+      <button type="button" data-rating="1">1</button>
+      <button type="button" data-rating="2">2</button>
+      <button type="button" data-rating="3">3</button>
+      <button type="button" data-rating="4">4</button>
+      <button type="button" data-rating="5">5</button>
+    </div>
+    <span class="ml-self-rating__status"></span>
+  </div>
+
   </main>
   <script src="../bundle.js" defer></script>
   <div class="ml-quiz">

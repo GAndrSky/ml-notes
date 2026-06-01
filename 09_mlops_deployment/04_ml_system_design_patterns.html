@@ -94,6 +94,43 @@
       </div>
     </section>
 
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Designing a prediction service</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 01</span>
+      <h3 class="ml-walkthrough__step-heading">Define SLOs</h3>
+      <div class="ml-walkthrough__step-body"><p>Start by agreeing on Service Level Objectives: p99 latency target (e.g., 200ms), minimum throughput (e.g., 500 RPS), and availability percentage. SLOs drive every subsequent architectural decision — model size, serving hardware, batching strategy, and replica count.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 02</span>
+      <h3 class="ml-walkthrough__step-heading">Choose online vs batch inference</h3>
+      <div class="ml-walkthrough__step-body"><p>If the latency requirement is below a few hundred milliseconds and predictions must reflect real-time context, use online inference. If freshness can be measured in hours or days (e.g., daily recommendations, risk scores), batch inference is cheaper and simpler. Most systems use both: batch for precomputed defaults, online for personalized overrides.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 03</span>
+      <h3 class="ml-walkthrough__step-heading">Design the feature pipeline</h3>
+      <div class="ml-walkthrough__step-body"><p>Separate features into two groups: real-time features derived from the incoming request (user query, item clicked, current timestamp) and precomputed features retrieved from a feature store (user profile embeddings, item statistics). Using a feature store ensures training and serving compute features the same way, preventing train-serve skew.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 04</span>
+      <h3 class="ml-walkthrough__step-heading">Add monitoring</h3>
+      <div class="ml-walkthrough__step-body"><p>Instrument four layers: system health (latency, error rate, CPU/GPU), data drift (input feature distribution vs training baseline), prediction drift (output score distribution shift), and model performance vs business metrics (click rate, revenue, complaint rate) once delayed labels arrive. Alert on PSI &gt; 0.2 for drift and p99 latency &gt; SLO.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
     <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -124,7 +161,42 @@
       <div class="ml-quiz__a"><p>Мониторинг включает: (1) drift — изменение распределения входных признаков (data drift) и предсказаний (concept drift), (2) производительность (latency, error rate), (3) качество модели (если есть ground truth labels с задержкой). Triton, Evidently, Arize — инструменты для мониторинга.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">When is batch inference preferable to online inference?</summary>
+      <div class="ml-quiz__a"><p>Batch inference is better when: predictions do not need to reflect the very latest context (e.g., daily recommendation refreshes, weekly risk scores), when the volume of items to score is large and cost matters, or when the downstream consumer reads results from a database rather than waiting for a live API call. It is also simpler to operate — no SLO on latency, easier retries, and cheaper hardware.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">What is a feature store and why is it needed?</summary>
+      <div class="ml-quiz__a"><p>A feature store is a centralized repository that stores feature definitions, offline historical values, and low-latency online access to the same features. It is needed because without it, the training pipeline and the serving pipeline often compute features using different code, producing slightly different values — train-serve skew. The model was trained on one distribution and serves on another, causing silent quality loss.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">How do you detect model degradation in production?</summary>
+      <div class="ml-quiz__a"><p>Use multiple signals in parallel: (1) data drift — monitor input feature distributions against the training baseline using PSI or KS test, alert when shift exceeds threshold; (2) prediction drift — watch the distribution of output scores or labels for unusual shifts; (3) delayed labels — when ground truth arrives (clicks, conversions, fraud labels), compute actual model quality and compare to the pre-deployment baseline; (4) business metrics — monitor downstream KPIs like CTR, revenue, or complaint rate for unexplained drops.</p></div>
+    </details>
+  </li>
   </ol>
+</div>
+
+    <div class="warn">
+  <strong>What breaks without this</strong>
+  <p>Training features computed differently from serving features causes train-serve skew — the model sees a different input distribution at inference than it was trained on. It will silently underperform with no error raised, often degrading by 5–15% in real metric before anyone notices.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="system-design-patterns">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
 </div>
 
 <section class="ml-checkpoint-section">

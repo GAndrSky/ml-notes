@@ -111,6 +111,48 @@ def predict(request: PredictRequest):
       </div>
     </section>
 
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Deploying a model with FastAPI</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 01</span>
+      <h3 class="ml-walkthrough__step-heading">Load the model once at startup</h3>
+      <div class="ml-walkthrough__step-body"><p>Load weights, build the model, and move it to the correct device inside a startup event handler or at module level — not inside the request handler. Loading per request adds 5–10 seconds of cold-start latency on every call.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 02</span>
+      <h3 class="ml-walkthrough__step-heading">Define input/output schema with Pydantic</h3>
+      <div class="ml-walkthrough__step-body"><p>Use a Pydantic BaseModel to declare the exact types, required fields, and value constraints for the request and response. FastAPI will validate and document the schema automatically, and reject malformed requests before they reach the model.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 03</span>
+      <h3 class="ml-walkthrough__step-heading">Preprocess input exactly as in training</h3>
+      <div class="ml-walkthrough__step-body"><p>Apply the identical normalization, tokenization, or feature encoding that was used during training. Any mismatch — different mean/std, different tokenizer, different feature order — silently corrupts the model input and produces wrong outputs without raising an error.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 04</span>
+      <h3 class="ml-walkthrough__step-heading">Run inference with model.eval(), no_grad(), and autocast</h3>
+      <div class="ml-walkthrough__step-body"><p>Call model.eval() to disable dropout and batch norm training mode. Wrap inference in torch.no_grad() to skip gradient computation and reduce memory usage. Use torch.autocast for FP16/BF16 speedup on CUDA. These three steps together halve memory and roughly double speed compared to a naive forward pass.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 05</span>
+      <h3 class="ml-walkthrough__step-heading">Post-process and return a structured response with latency</h3>
+      <div class="ml-walkthrough__step-body"><p>Convert raw model output (logits, tensors) to a user-facing value (score, label, top-k items). Measure total request latency using time.perf_counter() and include it in the response or logs. Return a structured JSON object that includes the model version so logs can be matched to deployments.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
     <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -141,7 +183,42 @@ def predict(request: PredictRequest):
       <div class="ml-quiz__a"><p>SLO — количественные цели качества сервиса: p99 latency < 200ms, throughput > 100 RPS, availability > 99.9%. SLO определяют требования к инфраструктуре (CPU/GPU, replica count, caching). Нарушение SLO — триггер для алертинга и масштабирования.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Why must preprocessing at serving match training exactly?</summary>
+      <div class="ml-quiz__a"><p>The model learned weights calibrated to the exact distribution produced by training preprocessing. If serving applies different normalization values, a different tokenizer, or a different feature order, the model receives inputs it was never trained on. The output will be wrong and the error is silent — no exception is raised, just bad predictions.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">What is the difference between latency and throughput?</summary>
+      <div class="ml-quiz__a"><p>Latency is how long one request waits for a response — measured in milliseconds, typically as p50/p95/p99. Throughput is how many requests the system handles per unit of time — measured in requests per second. A system can have high throughput (many requests processed) with high latency (each request waits a long time), which is acceptable for batch jobs but not for real-time APIs.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">When does batching hurt latency but help throughput?</summary>
+      <div class="ml-quiz__a"><p>Batching collects multiple requests before running a single forward pass, which amortizes the GPU kernel launch overhead and increases hardware utilization — throughput rises. But each individual request now waits for the batch to fill before being processed, so p99 latency increases. Dynamic batching with a short timeout (e.g., 5ms) can balance the two, but always sets a ceiling on latency that does not exist in single-request serving.</p></div>
+    </details>
+  </li>
   </ol>
+</div>
+
+    <div class="warn">
+  <strong>What breaks without this</strong>
+  <p>Loading the model inside the request handler means a full cold-load on every request — typically 5–10 seconds for a PyTorch model — instead of a millisecond-scale forward pass. The service appears to work but is unusable at any real traffic volume.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="model-serving">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
 </div>
 
 <section class="ml-checkpoint-section">

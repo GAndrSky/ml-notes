@@ -125,6 +125,43 @@ for step in range(3):
       </div>
     </section>
 
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">What to log in every run</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 01</span>
+      <h3 class="ml-walkthrough__step-heading">Log config at run start</h3>
+      <div class="ml-walkthrough__step-body"><p>Before the first training step, log every hyperparameter: learning rate, batch size, optimizer name, model architecture string, data path, random seed, and train/val split strategy. This snapshot defines what this run is.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 02</span>
+      <h3 class="ml-walkthrough__step-heading">Log metrics every N steps</h3>
+      <div class="ml-walkthrough__step-body"><p>During training, record train loss, validation loss, and your primary target metric at a fixed interval (e.g., every 100 steps or every epoch). Logging only the final value hides instability and prevents diagnosing overfitting.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 03</span>
+      <h3 class="ml-walkthrough__step-heading">Log artifacts on improvement</h3>
+      <div class="ml-walkthrough__step-body"><p>Whenever validation metric improves, save the model checkpoint, tokenizer, and feature schema. Log them as versioned artifacts so you can always recover the exact model that produced a specific metric value.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 04</span>
+      <h3 class="ml-walkthrough__step-heading">Log environment</h3>
+      <div class="ml-walkthrough__step-body"><p>At the end of the run, record the git commit hash, a snapshot of requirements.txt, CUDA version, and hardware info (GPU model, memory). Without the environment snapshot, even identical code and config may not reproduce the same result.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
     <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -155,7 +192,42 @@ for step in range(3):
       <div class="ml-quiz__a"><p>Фиксируй случайный seed и данные (одинаковые splits). Меняй один параметр за раз или используй structured search (grid/random/Bayesian). В W&B/MLflow используй sweep/group для визуализации корреляций параметр-метрика. Логируй validation metric на каждой эпохе, не только финальный.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">What is the minimum information needed to reproduce a run?</summary>
+      <div class="ml-quiz__a"><p>You need: the exact code version (git commit hash), data version or data path with a content hash, full config (all hyperparameters and random seeds), environment snapshot (package versions, CUDA version), and the saved model artifact. Missing any one of these makes reproduction unreliable.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">What breaks reproducibility even with the same code and config?</summary>
+      <div class="ml-quiz__a"><p>Non-deterministic GPU operations (cuDNN autotuning, multi-threaded data loading without fixed workers), different package versions (even minor updates can change numerics), different data ordering if shuffling is not seeded, and different hardware (different GPU architectures may produce slightly different floating point results).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">When should you log a model artifact vs just metrics?</summary>
+      <div class="ml-quiz__a"><p>Log a model artifact whenever validation metric improves — you need the checkpoint to actually use or compare that model later. Logging only metrics tells you a run was good but gives you nothing to deploy or inspect. Also log artifacts at the end of training regardless of improvement, so you can always restart from a known state.</p></div>
+    </details>
+  </li>
   </ol>
+</div>
+
+    <div class="warn">
+  <strong>What breaks without this</strong>
+  <p>Skipping git commit logging means you cannot reproduce results after any code change — even one refactor or dependency update makes the run permanently unreproducible, because there is no way to recover which version of the code produced that metric.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="experiment-tracking">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
 </div>
 
 <section class="ml-checkpoint-section">
