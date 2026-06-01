@@ -254,6 +254,88 @@
     </div>
   </section>
 <!-- step1-learning:end -->
+
+<div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">GAN Training Loop — one full iteration</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">Sample a minibatch of real data</h3>
+      <div class="ml-walkthrough__step-body"><p>Draw a batch of real examples x ~ p_data. These serve as positive examples for the discriminator. Simultaneously sample a batch of noise vectors z ~ p(z), which will be passed to the generator to create fake examples. Both batches should be the same size.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Generator produces fake samples</h3>
+      <div class="ml-walkthrough__step-body"><p>Pass each noise vector z through G to produce G(z). At this point generator parameters are frozen — we are just running a forward pass to create fake inputs for the discriminator. The generator network does not update during the discriminator step.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Discriminator update — maximize its ability to distinguish</h3>
+      <div class="ml-walkthrough__step-body"><p>Compute D's loss: L_D = −E[log D(x)] − E[log(1 − D(G(z)))]. Backpropagate and update discriminator weights. A good discriminator should output D(x) ≈ 1 for real data and D(G(z)) ≈ 0 for fakes. Generator weights are held constant during this step.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Generator update — fool the discriminator</h3>
+      <div class="ml-walkthrough__step-body"><p>Sample fresh noise z ~ p(z), generate G(z), and compute L_G = −E[log D(G(z))]. Backpropagate through D (without updating D) to compute gradients with respect to generator parameters. Update G to make D(G(z)) closer to 1. Then repeat from Step 1 for the next iteration.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+<div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">GAN — training dynamics and failure modes</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is mode collapse and why does it happen in GAN training?</summary>
+        <div class="ml-quiz__a"><p>Mode collapse occurs when the generator learns to produce only a narrow subset of the possible outputs — for example, always generating one type of digit instead of all ten. It happens because the adversarial objective does not directly penalize low diversity: the generator only needs to fool the current discriminator, not cover all modes. Once it finds a few samples that consistently fool D, gradient incentives push it to repeat them.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why does GAN training oscillate instead of smoothly converging?</summary>
+        <div class="ml-quiz__a"><p>G and D change each other's loss landscape on every update. When D improves, it shifts the gradient signal G receives. When G improves, D's task changes. There is no single stable fixed point for simultaneous gradient descent on both objectives. The two players can cycle around Nash equilibrium rather than converging to it, causing the observed oscillation in loss curves.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What problem does the Wasserstein distance fix that JS divergence cannot?</summary>
+        <div class="ml-quiz__a"><p>When p_data and p_G have non-overlapping supports — common early in training — the JS divergence is a constant (log 2) and gives zero gradient to the generator. Wasserstein distance (Earth Mover's distance) remains meaningful even when supports do not overlap: it measures the minimum cost to transport mass between the two distributions and changes continuously as G improves. This gives the generator a useful gradient signal throughout training.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+<div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>If the discriminator becomes too strong relative to the generator — for example by training D for many more steps than G — D reaches near-perfect accuracy on every batch. The generator's loss becomes log(1 − D(G(z))) ≈ log(1 − 0) = 0, and the gradient of this loss with respect to G's parameters vanishes. G receives almost no update signal and training collapses: the generator stops improving regardless of how long you train.</p>
+</div>
+
+<div class="ml-self-rating" data-topic="gan">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
 </div>
   <script src="../bundle.js" defer></script>
   <section class="ml-study-practice" data-quality-pass="gen-7-2">

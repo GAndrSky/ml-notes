@@ -176,6 +176,93 @@
         <li>Why can too much CFG hurt generation quality?</li>
       </ol>
     </section>
+
+  <div class="ml-walkthrough">
+    <div class="ml-walkthrough__header">
+      <div class="ml-walkthrough__title-row">
+        <span class="ml-walkthrough__label">Пошагово</span>
+        <span class="ml-walkthrough__title">Stable Diffusion Inference Pipeline — from prompt to pixel</span>
+      </div>
+      <div class="ml-walkthrough__controls">
+        <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+        <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+        <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+      </div>
+    </div>
+    <div class="ml-walkthrough__track">
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 01</span>
+        <h3 class="ml-walkthrough__step-heading">Encode the prompt with the CLIP text encoder</h3>
+        <div class="ml-walkthrough__step-body"><p>Tokenize the input text and pass it through a frozen CLIP text transformer. The output is a sequence of token embeddings (e.g. 77 tokens × 768 dimensions for CLIP ViT-L/14). These embeddings are not a single vector — they retain per-token granularity so that each word can influence different spatial regions of the image through cross-attention.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 02</span>
+        <h3 class="ml-walkthrough__step-heading">Initialize latent z_T ~ N(0,I) in 4×64×64 space</h3>
+        <div class="ml-walkthrough__step-body"><p>Sample a random noise tensor of shape [4, 64, 64] — this is the starting point for generation of a 512×512 image. The factor of 8 spatial compression comes from the VAE encoder (512/64 = 8). The 4 channels correspond to the VAE's learned latent features. The denoising loop will iteratively refine this noise tensor over T steps.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 03</span>
+        <h3 class="ml-walkthrough__step-heading">U-Net predicts noise conditioned on text embedding</h3>
+        <div class="ml-walkthrough__step-body"><p>The U-Net receives the noisy latent z_t, the current timestep t (as a sinusoidal embedding), and the CLIP token embeddings. Residual blocks handle the latent features; cross-attention layers let latent patch features query the text token embeddings. The U-Net outputs a predicted noise tensor ε̂ of the same [4, 64, 64] shape. Classifier-free guidance then combines conditional and unconditional predictions: ε̂_guided = ε̂_uncond + s·(ε̂_cond − ε̂_uncond).</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 04</span>
+        <h3 class="ml-walkthrough__step-heading">DDIM step updates z, repeat T times</h3>
+        <div class="ml-walkthrough__step-body"><p>Apply the DDIM update rule to compute z_{t-1} from z_t and ε̂_guided. DDIM is deterministic: given the same initial z_T and same noise seed, you always get the same output. Repeat this U-Net forward pass and update for each timestep from T down to 1, typically 20–50 steps. Each step moves the latent from pure noise toward a structured representation matching the prompt.</p></div>
+      </div>
+      <div class="ml-walkthrough__step">
+        <span class="ml-walkthrough__step-num">Шаг 05</span>
+        <h3 class="ml-walkthrough__step-heading">VAE decoder maps z_0 to pixel space</h3>
+        <div class="ml-walkthrough__step-body"><p>After the final denoising step, the clean latent z_0 of shape [4, 64, 64] is passed through the VAE decoder. The decoder upsamples the latent 8× spatially and converts the 4 latent channels into RGB pixels, producing the final 512×512×3 image. The VAE decoder is the only part of the pipeline operating in pixel space — all diffusion happens in the compressed latent space.</p></div>
+      </div>
+    </div>
+    <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+  </div>
+
+  <div class="ml-quiz">
+    <div class="ml-quiz__header">
+      <span class="ml-quiz__label">Проверь себя</span>
+      <h3 class="ml-quiz__title">Stable Diffusion — latent space, CFG, and VAE</h3>
+    </div>
+    <ol class="ml-quiz__list">
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">Why does Stable Diffusion work in latent space rather than pixel space?</summary>
+          <div class="ml-quiz__a"><p>A 512×512×3 image has ~786k values. Diffusion in pixel space requires the U-Net to process and denoise all of them at every timestep, which is extremely expensive. The VAE compresses this to 64×64×4 ≈ 16k values — about 48× fewer. This makes both training and inference dramatically faster with comparable quality, because the VAE has already learned to preserve perceptually important structure in the latent representation.</p></div>
+        </details>
+      </li>
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">What is classifier-free guidance and how does it strengthen prompt adherence?</summary>
+          <div class="ml-quiz__a"><p>During training, the conditioning text c is randomly dropped (replaced with an empty token) with ~10–20% probability, so the model learns both conditional ε_θ(z_t, t, c) and unconditional ε_θ(z_t, t, ∅) noise prediction. At inference, CFG extrapolates: ε̂ = ε_uncond + s·(ε_cond − ε_uncond). The scale s (typically 7–12) amplifies the direction from unconditional toward conditional prediction, making the output more closely match the prompt at the cost of diversity.</p></div>
+        </details>
+      </li>
+      <li class="ml-quiz__item">
+        <details class="ml-quiz__entry">
+          <summary class="ml-quiz__q">What does the VAE encoder and decoder do in Stable Diffusion, and when is each used?</summary>
+          <div class="ml-quiz__a"><p>The VAE encoder (used during training and image-to-image workflows) compresses a 512×512×3 pixel image into a 64×64×4 latent. The VAE decoder (used at the end of every inference run) expands the final denoised latent z_0 back into a 512×512×3 pixel image. In standard text-to-image generation, only the decoder is used at inference time — the encoder is not needed because the process starts from random latent noise rather than from an input image.</p></div>
+        </details>
+      </li>
+    </ol>
+  </div>
+
+  <div class="warn">
+    <strong>Что ломается без этого</strong>
+    <p>Without classifier-free guidance (CFG scale = 1.0, meaning unconditional only), the U-Net denoises purely according to the general image distribution it learned, ignoring the text prompt almost entirely. The outputs are statistically plausible images but semantically incoherent with respect to the prompt — blurry, averaged-looking scenes with no specific subject or style. Conversely, setting CFG too high (e.g. scale = 20+) pushes the denoising direction so far toward the conditional prediction that small floating-point errors accumulate, producing oversaturated colors, burned-out highlights, and distorted anatomy.</p>
+  </div>
+
+  <div class="ml-self-rating" data-topic="stable-diffusion">
+    <span class="ml-self-rating__label">Оцени понимание темы</span>
+    <div class="ml-self-rating__buttons">
+      <button type="button" data-rating="1">1</button>
+      <button type="button" data-rating="2">2</button>
+      <button type="button" data-rating="3">3</button>
+      <button type="button" data-rating="4">4</button>
+      <button type="button" data-rating="5">5</button>
+    </div>
+    <span class="ml-self-rating__status"></span>
+  </div>
+
   </main>
   <script src="../bundle.js" defer></script>
   <div class="ml-quiz">
