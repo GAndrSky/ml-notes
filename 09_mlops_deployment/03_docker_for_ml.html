@@ -110,6 +110,48 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
       </div>
     </section>
 
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Writing a Dockerfile for a PyTorch project</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 01</span>
+      <h3 class="ml-walkthrough__step-heading">Choose the base image</h3>
+      <div class="ml-walkthrough__step-body"><p>Use the official pytorch/pytorch image with an explicit tag: pytorch/pytorch:X.X.X-cuda-Y.Y-cudnnZ-runtime. This pins both the PyTorch version and the CUDA runtime, ensuring the same binary is used everywhere. Avoid using latest — it will silently change on the next build.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 02</span>
+      <h3 class="ml-walkthrough__step-heading">Install system dependencies in a single layer</h3>
+      <div class="ml-walkthrough__step-body"><p>Combine all apt-get commands into one RUN instruction: RUN apt-get update &amp;&amp; apt-get install -y libgomp1 git &amp;&amp; rm -rf /var/lib/apt/lists/*. One layer keeps the image smaller and avoids intermediate cache layers that can become stale.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 03</span>
+      <h3 class="ml-walkthrough__step-heading">Copy requirements.txt and pip install before copying code</h3>
+      <div class="ml-walkthrough__step-body"><p>COPY requirements.txt . followed immediately by RUN pip install -r requirements.txt. Placing this before COPY . . means Docker can reuse the cached pip install layer on every code-only change, saving minutes per iteration.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 04</span>
+      <h3 class="ml-walkthrough__step-heading">Copy code last</h3>
+      <div class="ml-walkthrough__step-body"><p>After installing dependencies, run COPY . . to copy the source code. Because code changes more frequently than requirements, putting it last ensures only the code layer (and any layers after it) is invalidated. The expensive pip install layer stays cached.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Step 05</span>
+      <h3 class="ml-walkthrough__step-heading">Set ENTRYPOINT or CMD for your script</h3>
+      <div class="ml-walkthrough__step-body"><p>Use ENTRYPOINT ["python", "train.py"] for a container that always runs training, or CMD ["uvicorn", "app:app", "--host", "0.0.0.0"] for a serving container. ENTRYPOINT is the fixed executable; CMD provides default arguments that can be overridden at runtime with docker run.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
     <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -140,7 +182,42 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
       <div class="ml-quiz__a"><p>Для NVIDIA GPU: docker run --gpus all ... (требует nvidia-container-toolkit). В Docker Compose: deploy.resources.reservations.devices с capabilities: [gpu]. Проверка внутри контейнера: nvidia-smi. Без флага --gpus GPU не виден контейнеру.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Why copy requirements.txt before copying the rest of the code?</summary>
+      <div class="ml-quiz__a"><p>Docker builds images layer by layer and caches each layer. When you copy requirements.txt and run pip install before copying your source code, Docker can reuse the cached pip layer as long as requirements.txt has not changed. If you copy all code first, any change to any source file invalidates the pip install layer and forces a full reinstall — this turns a 2-second rebuild into a 3–5 minute one.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">What is the difference between ENTRYPOINT and CMD?</summary>
+      <div class="ml-quiz__a"><p>ENTRYPOINT defines the fixed executable that always runs when the container starts — it cannot be overridden by docker run arguments unless you use --entrypoint. CMD provides the default arguments to that executable and can be replaced entirely by appending arguments to docker run. A common pattern is ENTRYPOINT ["python"] and CMD ["train.py"] so users can run a different script with docker run myimage eval.py without changing the image.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Why should you not run ML containers as root in production?</summary>
+      <div class="ml-quiz__a"><p>Running as root inside a container means that if the process is compromised or escapes the container, it has root-level access to the host. Best practice is to add a non-root user in the Dockerfile with RUN useradd -m appuser and switch with USER appuser before the ENTRYPOINT. Most production container orchestrators (Kubernetes) enforce this via security contexts and will reject root containers by policy.</p></div>
+    </details>
+  </li>
   </ol>
+</div>
+
+    <div class="warn">
+  <strong>What breaks without this</strong>
+  <p>Copying all code before running pip install invalidates the pip cache layer on every code change — even editing a single comment triggers a full package reinstall. A build that takes 2 seconds with correct layer order takes 3–5 minutes every time.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="docker-ml">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
 </div>
 
 <section class="ml-checkpoint-section">
