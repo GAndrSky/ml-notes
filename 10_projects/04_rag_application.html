@@ -154,6 +154,93 @@ print(top, scores[top, 0])
         <li>How do citations change the product contract?</li>
       </ol>
     </section>
+
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">RAG query pipeline</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">Embed the query</h3>
+      <div class="ml-walkthrough__step-body"><p>User query arrives. Embed it with the same model used to embed documents during indexing. Using a different model produces incompatible vector spaces where cosine similarity is meaningless.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Vector search</h3>
+      <div class="ml-walkthrough__step-body"><p>Retrieve top-K chunks by cosine similarity from the vector index. Typical K=5-20. More chunks increase recall but also increase prompt length and LLM cost. Start with K=10 and tune based on retrieval recall metrics.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Reranking</h3>
+      <div class="ml-walkthrough__step-body"><p>Pass query + retrieved chunks to a cross-encoder, rerank by relevance score, and keep the top 3. Cross-encoders are slower but much more accurate than bi-encoders for relevance judgment because they process query and document together.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Context assembly</h3>
+      <div class="ml-walkthrough__step-body"><p>Prepend the retrieved chunks to the prompt with source attribution metadata (document name, page, section). Include source IDs so the generator can cite them. Keep total context within the LLM's context window minus the expected answer length.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 05</span>
+      <h3 class="ml-walkthrough__step-heading">Generation with citations</h3>
+      <div class="ml-walkthrough__step-body"><p>LLM generates an answer grounded in the provided context. Return both the answer and source citations. Evaluate groundedness: does the answer make claims supported by the retrieved chunks? Unsupported claims are hallucinations.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">RAG application</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why must you use the same embedding model for documents and queries?</summary>
+        <div class="ml-quiz__a"><p>Embedding models learn a specific vector space where similar texts are geometrically close. Different models learn different spaces — a vector from model A and a vector from model B do not share a coordinate system. Cosine similarity between them is meaningless and retrieval becomes random. Always index and query with the same model version.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is the difference between a bi-encoder and a cross-encoder in retrieval?</summary>
+        <div class="ml-quiz__a"><p>A bi-encoder embeds query and document independently and computes similarity via dot product — fast but less accurate. A cross-encoder takes query and document as a single concatenated input and produces a relevance score — much more accurate because it can model interactions, but cannot be pre-indexed and is 100-1000x slower. Use bi-encoder for recall at scale, cross-encoder for reranking top candidates.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">How do you evaluate whether a RAG system is hallucinating?</summary>
+        <div class="ml-quiz__a"><p>Check groundedness: does every claim in the answer appear in the retrieved context? Use LLM-as-judge to verify each sentence against the context, or use an NLI model to check entailment from context to answer. The RAGAS faithfulness metric automates this. Also check retrieval first: if the correct chunk was not retrieved, the answer will be wrong regardless of the LLM quality.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+    <div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>Using different embedding models for indexing and querying produces random retrieval — cosine similarity between different embedding spaces is meaningless. The system returns documents with high vector similarity that have no semantic relationship to the query. All downstream quality metrics degrade for reasons that are hard to diagnose unless you know to check embedding model consistency first.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="rag">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
   </main>
   <script src="../bundle.js" defer></script>
   <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><div class="intuition-content">Сравни fixed-size chunking и semantic chunking для технической документации.</div></details><details><summary>[Intermediate] Retrieval eval</summary><div class="intuition-content">Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</div></details><details><summary>[Hard] Hallucination debugging</summary><div class="intuition-content">Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</div></details></section>

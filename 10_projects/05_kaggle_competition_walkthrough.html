@@ -156,6 +156,93 @@ print(scores, np.mean(scores))
         <li>Can you explain every feature and model change in the final solution?</li>
       </ol>
     </section>
+
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Competition strategy</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">EDA first</h3>
+      <div class="ml-walkthrough__step-body"><p>Understand the data, look for leaks, and check train/test distribution shift before writing any model code. Target leakage found early saves days of wasted work. Distribution shift explains why a strong local model underperforms on the leaderboard.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Leakage-safe validation</h3>
+      <div class="ml-walkthrough__step-body"><p>Always use stratified KFold matching the competition metric. For time-series use time-ordered splits. For grouped data (same entity in multiple rows) use GroupKFold. Never look at test labels or use test statistics in feature engineering. Fix the validation scheme before touching features.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Baseline + feature engineering</h3>
+      <div class="ml-walkthrough__step-body"><p>Tabular: gradient boosting baseline first. NLP: pretrained transformer. CV: pretrained CNN or ViT. Get a number on the leaderboard before engineering features. Feature engineering on a bad baseline wastes time; do it after confirming the validation scheme is trusted.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Ensembling</h3>
+      <div class="ml-walkthrough__step-body"><p>Average predictions from diverse models. Correlation below 0.95 between model predictions gives useful ensemble gains. Diversity comes from different algorithms (GBM vs NN vs linear), different feature sets, and different random seeds. Ensembling identical models adds no benefit.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 05</span>
+      <h3 class="ml-walkthrough__step-heading">Late-stage: pseudo-labeling</h3>
+      <div class="ml-walkthrough__step-body"><p>Pseudo-labeling on high-confidence test predictions can give a final boost in the last days. Train on original training data plus confident test predictions treated as labeled. Only use test examples where the model is very confident (top 10-20% by confidence). Validate that CV score improves before submitting.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Kaggle competition strategy</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is target leakage and how do you detect it?</summary>
+        <div class="ml-quiz__a"><p>Target leakage occurs when features contain information about the target that would not be available at prediction time. Detection: (1) check if any feature has near-perfect correlation with the target, (2) check if removing suspicious features causes a dramatic score drop, (3) check feature timestamp — was it recorded before or after the target event? (4) compare feature distributions between train/test — a feature absent from test is suspicious.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why is stratified cross-validation important for imbalanced competitions?</summary>
+        <div class="ml-quiz__a"><p>Random splits may put almost all positive examples in one fold, making other folds useless for evaluating minority-class performance. Stratified KFold maintains the class ratio in each fold, giving stable and representative evaluation. For very imbalanced data (1% positive) a random split could produce a fold with 0 positives, making fold evaluation impossible.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">When does ensembling improve the leaderboard score?</summary>
+        <div class="ml-quiz__a"><p>Ensembling helps when models make different errors — low prediction correlation means their mistakes do not overlap. Averaging diverse models reduces variance. It does not help when all models are similar (same algorithm, same features, different seeds only). Best gains come from ensembling fundamentally different model types: GBM plus NN plus linear model each bring different inductive biases.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+    <div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>Validating on a random split instead of a time-ordered split for time-series data causes severe overfitting to future data — CV scores will be much better than the public leaderboard. The model learns future patterns that are not available at prediction time. This is the most common reason strong local CV scores fail to translate to leaderboard performance in time-series competitions.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="kaggle">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
   </main>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-5-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>competition score = feature quality + validation quality + ensemble quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">feature quality</span><span class="fa-name">качество признаков</span><span class="fa-desc">насколько хорошо engineered features раскрывают signal в данных.</span></div><div class="formula-anatomy__row"><span class="fa-sym">validation quality</span><span class="fa-name">качество валидации</span><span class="fa-desc">насколько локальная CV честно предсказывает leaderboard/generalization.</span></div><div class="formula-anatomy__row"><span class="fa-sym">ensemble quality</span><span class="fa-name">качество ансамбля</span><span class="fa-desc">насколько модели дают полезную diversity, а не дублируют ошибки друг друга.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> в Kaggle главный актив — не одна модель, а хороший validation loop и disciplined experimentation.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> leaderboard часто улучшается не от новой архитектуры, а от честного CV и нескольких слабо коррелированных моделей.</div></div></section>

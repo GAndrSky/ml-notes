@@ -304,6 +304,93 @@ for step in range(1000):
         <button data-rating="5">5</button>
       </div>
     </section>
+
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Implementing backprop manually</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">Forward pass — store everything</h3>
+      <div class="ml-walkthrough__step-body"><p>Implement forward pass storing all intermediate values — Z1, A1, logits, probs. You need them for backward. If you discard them you will have to run forward again for every layer, which breaks the chain rule.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Compute the loss</h3>
+      <div class="ml-walkthrough__step-body"><p>Implement loss: MSE = mean((y_pred - y_true)^2). Compute dL/dy_pred = 2*(y_pred-y_true)/N. For cross-entropy, the combined softmax+CE gradient simplifies to (probs - one_hot(y)) / N.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Backward through output layer</h3>
+      <div class="ml-walkthrough__step-body"><p>dL/dW2 = A1.T @ dL/dz2, dL/db2 = sum(dL/dz2, axis=0). The transpose comes from shape algebra: (H,B) @ (B,C) = (H,C) matching W2's shape. Sum over batch for bias.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Backward through activation</h3>
+      <div class="ml-walkthrough__step-body"><p>dL/da1 = dL/dz2 @ W2.T, then multiply by relu_derivative(z1). ReLU derivative is 1 where z1 &gt; 0, else 0. Use the cached Z1 (pre-activation), not A1 (post-activation).</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 05</span>
+      <h3 class="ml-walkthrough__step-heading">Backward through hidden layer + gradient check</h3>
+      <div class="ml-walkthrough__step-body"><p>dL/dW1 = X.T @ dL/dz1, dL/db1 = sum(dL/dz1, axis=0). Gradient check: compare analytical vs numerical gradient using (L(w+eps) - L(w-eps)) / (2*eps). Relative error below 1e-5 means backprop is correct.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Backprop from scratch</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why do you need to store intermediate activations during forward pass?</summary>
+        <div class="ml-quiz__a"><p>Backprop computes gradients by applying the chain rule in reverse. Each layer's gradient depends on the values computed by that layer during forward pass. For example, dL/dW2 = A1.T @ dL/dz2 — you need A1 (the hidden activations). Discarding them forces a redundant forward pass per layer and prevents correct gradient computation.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is gradient checking and when should you use it?</summary>
+        <div class="ml-quiz__a"><p>Gradient checking compares the analytic gradient from backprop against a numerical estimate: (L(w+eps) - L(w-eps)) / (2*eps). If relative error is below 1e-5 the implementation is correct. Use it on a tiny network whenever you implement a new layer or loss function. It is too slow for large models, so disable it before real training.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What happens to gradients if you forget to initialize weights properly?</summary>
+        <div class="ml-quiz__a"><p>Zero initialization causes symmetry: all neurons in a layer receive identical gradients and learn the same features, making the network equivalent to a single neuron. Too-large initialization leads to exploding activations and vanishing or exploding gradients. Use He init (scale = sqrt(2/fan_in)) for ReLU or Xavier for tanh and sigmoid.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+    <div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>Implementing backprop without storing forward activations means you cannot compute gradients — you'll have to run forward again for every layer which breaks the chain rule and produces incorrect parameter updates. The model will appear to train but updates will be wrong, leading to slow convergence or divergence that is nearly impossible to debug without gradient checking.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="neural-net-scratch">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
   </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">

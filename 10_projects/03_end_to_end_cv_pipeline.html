@@ -143,6 +143,93 @@ async def predict_endpoint(file: UploadFile):
         <li>Can the model be served with acceptable latency?</li>
       </ol>
     </section>
+
+    <div class="ml-walkthrough">
+  <div class="ml-walkthrough__header">
+    <div class="ml-walkthrough__title-row">
+      <span class="ml-walkthrough__label">Пошагово</span>
+      <span class="ml-walkthrough__title">Building a CV pipeline</span>
+    </div>
+    <div class="ml-walkthrough__controls">
+      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
+      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
+      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
+    </div>
+  </div>
+  <div class="ml-walkthrough__track">
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 01</span>
+      <h3 class="ml-walkthrough__step-heading">Data audit</h3>
+      <div class="ml-walkthrough__step-body"><p>Check class balance, image quality, and label noise before training anything. Fix class imbalance with weighted sampling or oversampling. Identify and remove mislabeled examples. A bad dataset produces a bad model regardless of architecture.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 02</span>
+      <h3 class="ml-walkthrough__step-heading">Baseline</h3>
+      <div class="ml-walkthrough__step-body"><p>Train a simple ResNet-18 for 5 epochs to get a number to beat. This establishes your floor and validates the data loading pipeline. Do not add augmentation or custom architecture until the baseline runs cleanly.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 03</span>
+      <h3 class="ml-walkthrough__step-heading">Error analysis</h3>
+      <div class="ml-walkthrough__step-body"><p>Look at worst predictions. Identify patterns: blurry images, edge cases, mislabels. Sort false positives by confidence. Error analysis tells you what to fix next — augmentation, more data for specific classes, or architecture change.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 04</span>
+      <h3 class="ml-walkthrough__step-heading">Iterate</h3>
+      <div class="ml-walkthrough__step-body"><p>Add augmentation, tune architecture, and adjust LR schedule based on error analysis findings. Change one thing at a time. Track per-class metrics, not just overall accuracy — improvements on hard classes may not show up in aggregate scores.</p></div>
+    </div>
+    <div class="ml-walkthrough__step">
+      <span class="ml-walkthrough__step-num">Шаг 05</span>
+      <h3 class="ml-walkthrough__step-heading">Export</h3>
+      <div class="ml-walkthrough__step-body"><p>Export to ONNX with dynamic batch axis: torch.onnx.export(..., dynamic_axes={'input': {0: 'batch'}}). Verify accuracy matches PyTorch within 0.5%. Test with batch size 1 at serving latency target before declaring done.</p></div>
+    </div>
+  </div>
+  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
+</div>
+
+    <div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">End-to-end CV pipeline</h3>
+  </div>
+  <ol class="ml-quiz__list">
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why should you do error analysis before choosing a better architecture?</summary>
+        <div class="ml-quiz__a"><p>A better architecture fixes model capacity, but most CV failures come from data issues: class imbalance, mislabels, distribution shift, or preprocessing bugs. Error analysis reveals whether you need more data, better augmentation, or a different architecture. Swapping to a larger model on bad data wastes compute without improving production metrics.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">What is the most common cause of train-test accuracy gap in CV?</summary>
+        <div class="ml-quiz__a"><p>Distribution shift between training and test data is the most common cause. This includes different lighting conditions, camera angles, resolutions, or image preprocessing. Class imbalance in training but not test data is another frequent cause. Models that learn shortcuts (background texture instead of object shape) also show large train-test gaps.</p></div>
+      </details>
+    </li>
+    <li class="ml-quiz__item">
+      <details class="ml-quiz__entry">
+        <summary class="ml-quiz__q">Why export to ONNX instead of serving the PyTorch model directly?</summary>
+        <div class="ml-quiz__a"><p>ONNX enables deployment without a Python/PyTorch runtime, reducing container size and startup time. ONNX Runtime typically achieves 2-4x latency improvement over PyTorch inference through operator fusion and hardware-specific optimizations. It also enables deployment on edge devices and CPUs that do not support PyTorch natively.</p></div>
+      </details>
+    </li>
+  </ol>
+</div>
+
+    <div class="warn">
+  <strong>Что ломается без этого</strong>
+  <p>Skipping the data audit and training on imbalanced data produces a model that gets high accuracy by ignoring minority classes — misleading metrics hide the failure. A model predicting the majority class 95% of the time achieves 95% accuracy on a 95/5 split while being completely useless. Always check per-class metrics before reporting results.</p>
+</div>
+
+    <div class="ml-self-rating" data-topic="cv-pipeline">
+  <span class="ml-self-rating__label">Оцени понимание темы</span>
+  <div class="ml-self-rating__buttons">
+    <button type="button" data-rating="1">1</button>
+    <button type="button" data-rating="2">2</button>
+    <button type="button" data-rating="3">3</button>
+    <button type="button" data-rating="4">4</button>
+    <button type="button" data-rating="5">5</button>
+  </div>
+  <span class="ml-self-rating__status"></span>
+</div>
+
   </main>
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>pipeline quality = data quality + model quality + serving quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">data quality</span><span class="fa-name">данные и разметка</span><span class="fa-desc">насколько dataset чистый, согласованный и релевантный задаче.</span></div><div class="formula-anatomy__row"><span class="fa-sym">model quality</span><span class="fa-name">качество модели</span><span class="fa-desc">mAP, Dice, F1 или другая выбранная метрика.</span></div><div class="formula-anatomy__row"><span class="fa-sym">serving quality</span><span class="fa-name">качество доставки</span><span class="fa-desc">latency, robustness и совпадение preprocessing на inference с train.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> end-to-end CV pipeline ломается чаще на данных и serving, чем на самой архитектуре.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> даже при хорошем detector serving-time resize mismatch может резко ухудшить mAP в проде.</div></div></section>
