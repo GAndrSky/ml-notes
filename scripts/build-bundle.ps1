@@ -9,6 +9,7 @@ $sourceFiles = @(
   "shared-nav.js",
   "shared-prevnext.js",
   "shared-walkthrough.js",
+  "shared-lesson-ui.js",
   "shared-search.js",
   "shared-index.js"
 )
