@@ -1,190 +1,219 @@
-﻿// BEGIN shared-nav.js
+﻿// BEGIN course-manifest.js
+/**
+ * course-manifest.js - single source of truth for the course structure.
+ *
+ * Read by shared-nav.js (sidebar, index cards, progress) and
+ * shared-prevnext.js (prev/next pager). Order here = course order.
+ *
+ * section: id, label (sidebar badge), title (sidebar heading),
+ *          pagerTitle (pager progress caption), accent (CSS colour)
+ * page:    path (from site root), label (sidebar/index, numbered),
+ *          title (short title on prev/next buttons)
+ *
+ * After editing, run scripts/build-bundle.ps1 and scripts/smoke-check-course.ps1.
+ */
+window.__mlNotesCourse = {
+  sections: [
+    {
+      id: "math",
+      label: "Блок 1",
+      title: "Математика",
+      pagerTitle: "01 Математика",
+      accent: "#6c8ebf",
+      pages: [
+        { path: "01_math/01_linear_algebra.html", label: "1.1 Линейная алгебра", title: "Линейная алгебра" },
+        { path: "01_math/02_calculus.html", label: "1.2 Матанализ", title: "Математический анализ" },
+        { path: "01_math/03_probability_theory.html", label: "1.3 Теория вероятностей", title: "Теория вероятностей" },
+        { path: "01_math/04_information_theory.html", label: "1.4 Теория информации", title: "Теория информации" },
+        { path: "01_math/05_optimization_theory.html", label: "1.5 Optimization Theory", title: "Теория оптимизации" }
+      ]
+    },
+    {
+      id: "classic-ml",
+      label: "Блок 2",
+      title: "Классическое ML",
+      pagerTitle: "02 Классический ML",
+      accent: "#7eb87e",
+      pages: [
+        { path: "02_classic_ml/01_intro_to_classical_ml.html", label: "2.1 Классическое ML", title: "Введение в классический ML" },
+        { path: "02_classic_ml/02_data_preprocessing.html", label: "2.2 Предобработка", title: "Препроцессинг данных" },
+        { path: "02_classic_ml/03_linear_regression.html", label: "2.3 Линейная регрессия", title: "Линейная регрессия" },
+        { path: "02_classic_ml/04_linear_model_regularization.html", label: "2.4 Регуляризация", title: "Регуляризация линейных моделей" },
+        { path: "02_classic_ml/05_logistic_regression.html", label: "2.5 Логистическая регрессия", title: "Логистическая регрессия" },
+        { path: "02_classic_ml/06_regression_metrics.html", label: "2.6 Метрики регрессии", title: "Метрики регрессии" },
+        { path: "02_classic_ml/07_classification_metrics.html", label: "2.7 Метрики классификации", title: "Метрики классификации" },
+        { path: "02_classic_ml/08_distance_based_models.html", label: "2.8 k-NN / Distance", title: "Модели на расстоянии (KNN)" },
+        { path: "02_classic_ml/09_naive_bayes.html", label: "2.9 Naive Bayes", title: "Наивный Байес" },
+        { path: "02_classic_ml/10_decision_trees.html", label: "2.10 Decision Trees", title: "Деревья решений" },
+        { path: "02_classic_ml/11_bagging_random_forest.html", label: "2.11 Random Forest", title: "Бэггинг и Random Forest" },
+        { path: "02_classic_ml/12_boosting.html", label: "2.12 Boosting", title: "Бустинг" },
+        { path: "02_classic_ml/12a_gradient_boosting_theory.html", label: "2.12a GB Theory", title: "Gradient Boosting: теория" },
+        { path: "02_classic_ml/12b_gradient_boosting_in_practice.html", label: "2.12b GBDT Practice", title: "Gradient Boosting: практика" },
+        { path: "02_classic_ml/13_support_vector_machines.html", label: "2.13 SVM", title: "SVM" },
+        { path: "02_classic_ml/13a_kernel_methods_deeper.html", label: "2.13a Kernels", title: "Kernel Methods" },
+        { path: "02_classic_ml/14_clustering.html", label: "2.14 Кластеризация", title: "Кластеризация" },
+        { path: "02_classic_ml/14a_gaussian_mixtures_em.html", label: "2.14a GMM / EM", title: "Гауссовы смеси (EM)" },
+        { path: "02_classic_ml/15_dimensionality_reduction.html", label: "2.15 Снижение размерности", title: "Снижение размерности" },
+        { path: "02_classic_ml/15a_kernel_pca_ica_autoencoders.html", label: "2.15a KPCA / ICA", title: "Kernel PCA, ICA, Автоэнкодеры" },
+        { path: "02_classic_ml/16_ensembles.html", label: "2.16 Ансамбли", title: "Ансамблевые методы" },
+        { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 Валидация / HPO", title: "Валидация и гиперпараметры" },
+        { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 Несбалансированные классы", title: "Дисбаланс классов" },
+        { path: "02_classic_ml/19_model_interpretation.html", label: "2.19 Интерпретация", title: "Интерпретация моделей" },
+        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 Практический pipeline", title: "Практический pipeline" },
+        { path: "02_classic_ml/21_anomaly_detection.html", label: "2.21 Anomaly Detection", title: "Обнаружение аномалий" },
+        { path: "02_classic_ml/22_time_series_fundamentals.html", label: "2.22 Time Series", title: "Основы временных рядов" }
+      ]
+    },
+    {
+      id: "neural-basics",
+      label: "Блок 3",
+      title: "База нейросетей",
+      pagerTitle: "03 Основы нейросетей",
+      accent: "#c8956c",
+      pages: [
+        { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 Нейрон", title: "Перцептрон и нейрон" },
+        { path: "03_neural_basics/02_activation_functions.html", label: "3.2 Активации", title: "Функции активации" },
+        { path: "03_neural_basics/03_forward_pass.html", label: "3.3 Forward pass", title: "Прямой проход" },
+        { path: "03_neural_basics/04_loss_functions.html", label: "3.4 Loss", title: "Функции потерь" }
+      ]
+    },
+    {
+      id: "training",
+      label: "Блок 4",
+      title: "Обучение",
+      pagerTitle: "04 Обучение",
+      accent: "#b87eb8",
+      pages: [
+        { path: "04_training/01_backpropagation.html", label: "4.1 Backprop", title: "Backpropagation" },
+        { path: "04_training/02_optimizers.html", label: "4.2 Оптимизаторы", title: "Оптимизаторы" },
+        { path: "04_training/03_adam_adamw_lion.html", label: "4.3 Adam / Lion", title: "Adam, AdamW, Lion" },
+        { path: "04_training/04_regularization.html", label: "4.4 Регуляризация", title: "Регуляризация" },
+        { path: "04_training/05_learning_rate_scheduling.html", label: "4.5 LR Scheduling", title: "Learning Rate Scheduling" },
+        { path: "04_training/06_gradient_clipping_and_stability.html", label: "4.6 Clipping / Stability", title: "Gradient Clipping" },
+        { path: "04_training/07_mixed_precision_training.html", label: "4.7 Mixed Precision", title: "Mixed Precision" },
+        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 Инициализация", title: "Инициализация весов" },
+        { path: "04_training/09_numerical_stability.html", label: "4.9 Numerical Stability", title: "Численная стабильность" }
+      ]
+    },
+    {
+      id: "architectures",
+      label: "Блок 5",
+      title: "Архитектуры",
+      pagerTitle: "05 Архитектуры",
+      accent: "#7eb8b8",
+      pages: [
+        { path: "05_architectures/01_cnn_convolutional_networks.html", label: "5.1 CNN", title: "CNN" },
+        { path: "05_architectures/02_rnn_lstm.html", label: "5.2 RNN / LSTM", title: "RNN и LSTM" },
+        { path: "05_architectures/03_transformer_attention.html", label: "5.3 Attention", title: "Attention" },
+        { path: "05_architectures/04_transformer_architecture.html", label: "5.4 Архитектура", title: "Архитектура трансформера" },
+        { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm", title: "ResNet и нормализация" },
+        { path: "05_architectures/06_positional_encodings.html", label: "5.6 Positional Encodings", title: "Позиционные кодировки" },
+        { path: "05_architectures/07_efficient_attention.html", label: "5.7 Efficient Attention", title: "Efficient Attention" },
+        { path: "05_architectures/08_vision_transformer.html", label: "5.8 ViT", title: "Vision Transformer (ViT)" },
+        { path: "05_architectures/09_object_detection.html", label: "5.9 Object Detection", title: "Object Detection" },
+        { path: "05_architectures/10_segmentation.html", label: "5.10 Segmentation", title: "Segmentation" },
+        { path: "05_architectures/11_contrastive_learning_clip.html", label: "5.11 Contrastive / CLIP", title: "Contrastive Learning & CLIP" }
+      ]
+    },
+    {
+      id: "llm",
+      label: "Блок 6",
+      title: "LLM",
+      pagerTitle: "06 LLM",
+      accent: "#d497b8",
+      pages: [
+        { path: "06_llm/01_tokenization_bpe.html", label: "6.1 Tokenization / BPE", title: "Токенизация (BPE)" },
+        { path: "06_llm/02_pretraining_objectives.html", label: "6.2 Pre-training", title: "Задачи предобучения" },
+        { path: "06_llm/03_instruction_tuning.html", label: "6.3 Instruction tuning", title: "Instruction Tuning" },
+        { path: "06_llm/04_rlhf.html", label: "6.4 RLHF", title: "RLHF" },
+        { path: "06_llm/05_lora_qlora.html", label: "6.5 LoRA / QLoRA", title: "LoRA & QLoRA" },
+        { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws", title: "Scaling Laws" },
+        { path: "06_llm/07_kv_cache_inference_optimization.html", label: "6.7 KV-Cache / Inference", title: "KV-Cache & Inference" },
+        { path: "06_llm/08_dpo_alignment_alternatives.html", label: "6.8 DPO / Alignment", title: "DPO и выравнивание" },
+        { path: "06_llm/09_retrieval_augmented_generation.html", label: "6.9 RAG", title: "RAG" }
+      ]
+    },
+    {
+      id: "generative",
+      label: "Блок 7",
+      title: "Generative Models",
+      pagerTitle: "07 Генеративные модели",
+      accent: "#d58f79",
+      pages: [
+        { path: "07_generative_models/01_variational_autoencoders.html", label: "7.1 VAE", title: "VAE" },
+        { path: "07_generative_models/02_generative_adversarial_networks.html", label: "7.2 GAN", title: "GAN" },
+        { path: "07_generative_models/03_diffusion_models.html", label: "7.3 Diffusion", title: "Диффузионные модели" },
+        { path: "07_generative_models/04_normalizing_flows.html", label: "7.4 Normalizing Flows", title: "Normalizing Flows" },
+        { path: "07_generative_models/05_stable_diffusion_deep_dive.html", label: "7.5 Stable Diffusion", title: "Stable Diffusion" }
+      ]
+    },
+    {
+      id: "training-practice",
+      label: "Блок 8",
+      title: "Практика обучения",
+      pagerTitle: "08 Практика обучения",
+      accent: "#97a9d6",
+      pages: [
+        { path: "08_training_practice/01_distributed_training.html", label: "8.1 DDP / FSDP", title: "Distributed Training" },
+        { path: "08_training_practice/02_gradient_checkpointing.html", label: "8.2 Checkpointing", title: "Gradient Checkpointing" },
+        { path: "08_training_practice/03_profiling_and_performance.html", label: "8.3 Profiling", title: "Профилирование" },
+        { path: "08_training_practice/04_debugging_loss_spikes.html", label: "8.4 Loss spikes", title: "Отладка Loss Spikes" }
+      ]
+    },
+    {
+      id: "mlops",
+      label: "Блок 9",
+      title: "MLOps / Deployment",
+      pagerTitle: "09 MLOps",
+      accent: "#6ea5ff",
+      pages: [
+        { path: "09_mlops_deployment/01_experiment_tracking.html", label: "9.1 Experiment Tracking", title: "Трекинг экспериментов" },
+        { path: "09_mlops_deployment/02_model_serving.html", label: "9.2 Model Serving", title: "Model Serving" },
+        { path: "09_mlops_deployment/03_docker_for_ml.html", label: "9.3 Docker for ML", title: "Docker для ML" },
+        { path: "09_mlops_deployment/04_ml_system_design_patterns.html", label: "9.4 ML System Design", title: "Паттерны ML-систем" },
+        { path: "09_mlops_deployment/05_interview_prep_system_design.html", label: "9.5 System Design Interview", title: "System Design: интервью" }
+      ]
+    },
+    {
+      id: "job-prep",
+      label: "Job Prep",
+      title: "Подготовка к собеседованиям",
+      pagerTitle: "Подготовка к работе",
+      accent: "#82d0b6",
+      pages: [
+        { path: "job_prep/01_interview_question_bank.html", label: "Interview Question Bank", title: "Банк вопросов" },
+        { path: "job_prep/02_ml_system_design.html", label: "ML System Design Framework", title: "ML System Design" },
+        { path: "job_prep/03_resume_portfolio_checklist.html", label: "Resume / Portfolio Checklist", title: "Резюме и портфолио" }
+      ]
+    },
+    {
+      id: "projects",
+      label: "Блок 10",
+      title: "Projects",
+      pagerTitle: "10 Проекты",
+      accent: "#8fd17f",
+      pages: [
+        { path: "10_projects/01_neural_net_from_scratch.html", label: "10.1 NN from Scratch", title: "Нейросеть с нуля" },
+        { path: "10_projects/02_finetune_llm_lora.html", label: "10.2 LoRA Fine-tuning", title: "Fine-tune LLM (LoRA)" },
+        { path: "10_projects/03_end_to_end_cv_pipeline.html", label: "10.3 CV Pipeline", title: "CV Pipeline" },
+        { path: "10_projects/04_rag_application.html", label: "10.4 RAG Application", title: "RAG-приложение" },
+        { path: "10_projects/05_kaggle_competition_walkthrough.html", label: "10.5 Kaggle Walkthrough", title: "Kaggle Walkthrough" }
+      ]
+    }
+  ]
+};
+
+// END course-manifest.js
+
+// BEGIN shared-nav.js
 (function () {
   if (window.__mlNotesNavInitialized) {
     return;
   }
   window.__mlNotesNavInitialized = true;
 
-  var sections = [
-    {
-      id: "math",
-      label: "\u0411\u043b\u043e\u043a 1",
-      title: "\u041c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u043a\u0430",
-      pages: [
-        { path: "01_math/01_linear_algebra.html", label: "1.1 \u041b\u0438\u043d\u0435\u0439\u043d\u0430\u044f \u0430\u043b\u0433\u0435\u0431\u0440\u0430" },
-        { path: "01_math/02_calculus.html", label: "1.2 \u041c\u0430\u0442\u0430\u043d\u0430\u043b\u0438\u0437" },
-        { path: "01_math/03_probability_theory.html", label: "1.3 \u0422\u0435\u043e\u0440\u0438\u044f \u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u0435\u0439" },
-        { path: "01_math/04_information_theory.html", label: "1.4 \u0422\u0435\u043e\u0440\u0438\u044f \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438" },
-        { path: "01_math/05_optimization_theory.html", label: "1.5 Optimization Theory" }
-      ]
-    },
-    {
-      id: "classic-ml",
-      label: "\u0411\u043b\u043e\u043a 2",
-      title: "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u043e\u0435 ML",
-      pages: [
-        { path: "02_classic_ml/01_intro_to_classical_ml.html", label: "2.1 \u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u043e\u0435 ML" },
-        { path: "02_classic_ml/02_data_preprocessing.html", label: "2.2 \u041f\u0440\u0435\u0434\u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430" },
-        { path: "02_classic_ml/03_linear_regression.html", label: "2.3 \u041b\u0438\u043d\u0435\u0439\u043d\u0430\u044f \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u044f" },
-        { path: "02_classic_ml/04_linear_model_regularization.html", label: "2.4 \u0420\u0435\u0433\u0443\u043b\u044f\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
-        { path: "02_classic_ml/05_logistic_regression.html", label: "2.5 \u041b\u043e\u0433\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u044f" },
-        { path: "02_classic_ml/06_regression_metrics.html", label: "2.6 \u041c\u0435\u0442\u0440\u0438\u043a\u0438 \u0440\u0435\u0433\u0440\u0435\u0441\u0441\u0438\u0438" },
-        { path: "02_classic_ml/07_classification_metrics.html", label: "2.7 \u041c\u0435\u0442\u0440\u0438\u043a\u0438 \u043a\u043b\u0430\u0441\u0441\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u0438" },
-        { path: "02_classic_ml/08_distance_based_models.html", label: "2.8 k-NN / Distance" },
-        { path: "02_classic_ml/09_naive_bayes.html", label: "2.9 Naive Bayes" },
-        { path: "02_classic_ml/10_decision_trees.html", label: "2.10 Decision Trees" },
-        { path: "02_classic_ml/11_bagging_random_forest.html", label: "2.11 Random Forest" },
-        { path: "02_classic_ml/12_boosting.html", label: "2.12 Boosting" },
-        { path: "02_classic_ml/12a_gradient_boosting_theory.html", label: "2.12a GB Theory" },
-        { path: "02_classic_ml/12b_gradient_boosting_in_practice.html", label: "2.12b GBDT Practice" },
-        { path: "02_classic_ml/13_support_vector_machines.html", label: "2.13 SVM" },
-        { path: "02_classic_ml/13a_kernel_methods_deeper.html", label: "2.13a Kernels" },
-        { path: "02_classic_ml/14_clustering.html", label: "2.14 \u041a\u043b\u0430\u0441\u0442\u0435\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
-        { path: "02_classic_ml/14a_gaussian_mixtures_em.html", label: "2.14a GMM / EM" },
-        { path: "02_classic_ml/15_dimensionality_reduction.html", label: "2.15 \u0421\u043d\u0438\u0436\u0435\u043d\u0438\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u043d\u043e\u0441\u0442\u0438" },
-        { path: "02_classic_ml/15a_kernel_pca_ica_autoencoders.html", label: "2.15a KPCA / ICA" },
-        { path: "02_classic_ml/16_ensembles.html", label: "2.16 \u0410\u043d\u0441\u0430\u043c\u0431\u043b\u0438" },
-        { path: "02_classic_ml/17_validation_and_hyperparameter_tuning.html", label: "2.17 \u0412\u0430\u043b\u0438\u0434\u0430\u0446\u0438\u044f / HPO" },
-        { path: "02_classic_ml/18_imbalanced_classes.html", label: "2.18 \u041d\u0435\u0441\u0431\u0430\u043b\u0430\u043d\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043a\u043b\u0430\u0441\u0441\u044b" },
-        { path: "02_classic_ml/19_model_interpretation.html", label: "2.19 \u0418\u043d\u0442\u0435\u0440\u043f\u0440\u0435\u0442\u0430\u0446\u0438\u044f" },
-        { path: "02_classic_ml/20_practical_pipeline.html", label: "2.20 \u041f\u0440\u0430\u043a\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 pipeline" },
-        { path: "02_classic_ml/21_anomaly_detection.html", label: "2.21 Anomaly Detection" },
-        { path: "02_classic_ml/22_time_series_fundamentals.html", label: "2.22 Time Series" }
-      ]
-    },
-    {
-      id: "neural-basics",
-      label: "\u0411\u043b\u043e\u043a 3",
-      title: "\u0411\u0430\u0437\u0430 \u043d\u0435\u0439\u0440\u043e\u0441\u0435\u0442\u0435\u0439",
-      pages: [
-        { path: "03_neural_basics/01_perceptron_and_neuron.html", label: "3.1 \u041d\u0435\u0439\u0440\u043e\u043d" },
-        { path: "03_neural_basics/02_activation_functions.html", label: "3.2 \u0410\u043a\u0442\u0438\u0432\u0430\u0446\u0438\u0438" },
-        { path: "03_neural_basics/03_forward_pass.html", label: "3.3 Forward pass" },
-        { path: "03_neural_basics/04_loss_functions.html", label: "3.4 Loss" }
-      ]
-    },
-    {
-      id: "training",
-      label: "\u0411\u043b\u043e\u043a 4",
-      title: "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435",
-      pages: [
-        { path: "04_training/01_backpropagation.html", label: "4.1 Backprop" },
-        { path: "04_training/02_optimizers.html", label: "4.2 \u041e\u043f\u0442\u0438\u043c\u0438\u0437\u0430\u0442\u043e\u0440\u044b" },
-        { path: "04_training/03_adam_adamw_lion.html", label: "4.3 Adam / Lion" },
-        { path: "04_training/04_regularization.html", label: "4.4 \u0420\u0435\u0433\u0443\u043b\u044f\u0440\u0438\u0437\u0430\u0446\u0438\u044f" },
-        { path: "04_training/05_learning_rate_scheduling.html", label: "4.5 LR Scheduling" },
-        { path: "04_training/06_gradient_clipping_and_stability.html", label: "4.6 Clipping / Stability" },
-        { path: "04_training/07_mixed_precision_training.html", label: "4.7 Mixed Precision" },
-        { path: "04_training/08_weight_initialization_deeper.html", label: "4.8 \u0418\u043d\u0438\u0446\u0438\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f" },
-        { path: "04_training/09_numerical_stability.html", label: "4.9 Numerical Stability" }
-      ]
-    },
-    {
-      id: "architectures",
-      label: "\u0411\u043b\u043e\u043a 5",
-      title: "\u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u044b",
-      pages: [
-        { path: "05_architectures/01_cnn_convolutional_networks.html", label: "5.1 CNN" },
-        { path: "05_architectures/02_rnn_lstm.html", label: "5.2 RNN / LSTM" },
-        { path: "05_architectures/03_transformer_attention.html", label: "5.3 Attention" },
-        { path: "05_architectures/04_transformer_architecture.html", label: "5.4 \u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u0430" },
-        { path: "05_architectures/05_resnet_normalization.html", label: "5.5 ResNet / Norm" },
-        { path: "05_architectures/06_positional_encodings.html", label: "5.6 Positional Encodings" },
-        { path: "05_architectures/07_efficient_attention.html", label: "5.7 Efficient Attention" },
-        { path: "05_architectures/08_vision_transformer.html", label: "5.8 ViT" },
-        { path: "05_architectures/09_object_detection.html", label: "5.9 Object Detection" },
-        { path: "05_architectures/10_segmentation.html", label: "5.10 Segmentation" },
-        { path: "05_architectures/11_contrastive_learning_clip.html", label: "5.11 Contrastive / CLIP" }
-      ]
-    },
-    {
-      id: "llm",
-      label: "\u0411\u043b\u043e\u043a 6",
-      title: "LLM",
-      pages: [
-        { path: "06_llm/01_tokenization_bpe.html", label: "6.1 Tokenization / BPE" },
-        { path: "06_llm/02_pretraining_objectives.html", label: "6.2 Pre-training" },
-        { path: "06_llm/03_instruction_tuning.html", label: "6.3 Instruction tuning" },
-        { path: "06_llm/04_rlhf.html", label: "6.4 RLHF" },
-        { path: "06_llm/05_lora_qlora.html", label: "6.5 LoRA / QLoRA" },
-        { path: "06_llm/06_scaling_laws.html", label: "6.6 Scaling laws" },
-        { path: "06_llm/07_kv_cache_inference_optimization.html", label: "6.7 KV-Cache / Inference" },
-        { path: "06_llm/08_dpo_alignment_alternatives.html", label: "6.8 DPO / Alignment" },
-        { path: "06_llm/09_retrieval_augmented_generation.html", label: "6.9 RAG" }
-      ]
-    },
-    {
-      id: "generative",
-      label: "\u0411\u043b\u043e\u043a 7",
-      title: "Generative Models",
-      pages: [
-        { path: "07_generative_models/01_variational_autoencoders.html", label: "7.1 VAE" },
-        { path: "07_generative_models/02_generative_adversarial_networks.html", label: "7.2 GAN" },
-        { path: "07_generative_models/03_diffusion_models.html", label: "7.3 Diffusion" },
-        { path: "07_generative_models/04_normalizing_flows.html", label: "7.4 Normalizing Flows" },
-        { path: "07_generative_models/05_stable_diffusion_deep_dive.html", label: "7.5 Stable Diffusion" }
-      ]
-    },
-    {
-      id: "training-practice",
-      label: "\u0411\u043b\u043e\u043a 8",
-      title: "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0430 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f",
-      pages: [
-        { path: "08_training_practice/01_distributed_training.html", label: "8.1 DDP / FSDP" },
-        { path: "08_training_practice/02_gradient_checkpointing.html", label: "8.2 Checkpointing" },
-        { path: "08_training_practice/03_profiling_and_performance.html", label: "8.3 Profiling" },
-        { path: "08_training_practice/04_debugging_loss_spikes.html", label: "8.4 Loss spikes" }
-      ]
-    },
-    {
-      id: "mlops",
-      label: "\u0411\u043b\u043e\u043a 9",
-      title: "MLOps / Deployment",
-      pages: [
-        { path: "09_mlops_deployment/01_experiment_tracking.html", label: "9.1 Experiment Tracking" },
-        { path: "09_mlops_deployment/02_model_serving.html", label: "9.2 Model Serving" },
-        { path: "09_mlops_deployment/03_docker_for_ml.html", label: "9.3 Docker for ML" },
-        { path: "09_mlops_deployment/04_ml_system_design_patterns.html", label: "9.4 ML System Design" },
-        { path: "09_mlops_deployment/05_interview_prep_system_design.html", label: "9.5 System Design Interview" }
-      ]
-    },
-    {
-      id: "job-prep",
-      label: "Job Prep",
-      title: "\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u043a \u0441\u043e\u0431\u0435\u0441\u0435\u0434\u043e\u0432\u0430\u043d\u0438\u044f\u043c",
-      pages: [
-        { path: "job_prep/01_interview_question_bank.html", label: "Interview Question Bank" },
-        { path: "job_prep/02_ml_system_design.html", label: "ML System Design Framework" },
-        { path: "job_prep/03_resume_portfolio_checklist.html", label: "Resume / Portfolio Checklist" }
-      ]
-    },
-    {
-      id: "projects",
-      label: "\u0411\u043b\u043e\u043a 10",
-      title: "Projects",
-      pages: [
-        { path: "10_projects/01_neural_net_from_scratch.html", label: "10.1 NN from Scratch" },
-        { path: "10_projects/02_finetune_llm_lora.html", label: "10.2 LoRA Fine-tuning" },
-        { path: "10_projects/03_end_to_end_cv_pipeline.html", label: "10.3 CV Pipeline" },
-        { path: "10_projects/04_rag_application.html", label: "10.4 RAG Application" },
-        { path: "10_projects/05_kaggle_competition_walkthrough.html", label: "10.5 Kaggle Walkthrough" }
-      ]
-    }
-  ];
-
-  var sectionAccentMap = {
-    math: "#6c8ebf",
-    "classic-ml": "#7eb87e",
-    "neural-basics": "#c8956c",
-    training: "#b87eb8",
-    architectures: "#7eb8b8",
-    llm: "#d497b8",
-    generative: "#d58f79",
-    "training-practice": "#97a9d6",
-    mlops: "#6ea5ff",
-    "job-prep": "#82d0b6",
-    projects: "#8fd17f"
-  };
+  // Course structure lives in course-manifest.js (loaded first in bundle.js).
+  var sections = (window.__mlNotesCourse && window.__mlNotesCourse.sections) || [];
 
   var visitedStorageKey = "ml_notes_visited";
   var collapsedStorageKey = "ml_notes_sidebar_collapsed";
@@ -224,7 +253,7 @@
         id: section.id,
         label: section.label,
         title: section.title,
-        accent: sectionAccentMap[section.id] || "#7eb8b8",
+        accent: section.accent || "#7eb8b8",
         pages: section.pages.slice()
       };
     }),
@@ -395,7 +424,7 @@
 
   var currentPage = pages[currentIndex];
   var currentSection = sections[currentPage.sectionIndex];
-  var currentAccent = sectionAccentMap[currentSection.id] || "#7eb8b8";
+  var currentAccent = currentSection.accent || "#7eb8b8";
   var desktopQuery = window.matchMedia("(min-width: 960px)");
   var mobileOpen = false;
   var desktopCollapsed = readCollapsedState();
@@ -1143,6 +1172,196 @@
 })();
 
 // END shared-nav.js
+
+// BEGIN shared-prevnext.js
+/**
+ * shared-prevnext.js
+ * Injects prev/next navigation + section progress bar into every page.
+ * Auto-initialises when DOM is ready.
+ *
+ * Page order and titles come from course-manifest.js.
+ */
+(function () {
+  'use strict';
+
+  if (window.__mlNotesPrevNextInitialized) return;
+  window.__mlNotesPrevNextInitialized = true;
+
+  // Flatten course-manifest.js into [pagerTitle, path, title] entries.
+  var PAGES = [];
+  ((window.__mlNotesCourse && window.__mlNotesCourse.sections) || []).forEach(function (section) {
+    section.pages.forEach(function (page) {
+      PAGES.push([section.pagerTitle, page.path, page.title]);
+    });
+  });
+
+  /** Relative URL from one page to another (both in section/page.html format). */
+  function relUrl(fromPath, toPath) {
+    var fromDir = fromPath.split('/')[0];
+    var toDir   = toPath.split('/')[0];
+    var toFile  = toPath.split('/')[1];
+    return (fromDir === toDir) ? toFile : ('../' + toDir + '/' + toFile);
+  }
+
+  /** Detect which page we're on by matching pathname to PAGES entries. */
+  function detectCurrent() {
+    var pn = window.location.pathname.replace(/\\/g, '/');
+    for (var i = 0; i < PAGES.length; i++) {
+      var rel  = PAGES[i][1];
+      var dir  = rel.split('/')[0];
+      var file = rel.split('/')[1];
+      if (pn.indexOf('/' + dir + '/' + file) !== -1) return i;
+    }
+    return -1;
+  }
+
+  function init() {
+    var cur = detectCurrent();
+    if (cur === -1) return;
+
+    var section = PAGES[cur][0];
+    var fromPath = PAGES[cur][1];
+
+    // Section bounds
+    var sStart = cur, sEnd = cur;
+    while (sStart > 0 && PAGES[sStart - 1][0] === section) sStart--;
+    while (sEnd < PAGES.length - 1 && PAGES[sEnd + 1][0] === section) sEnd++;
+    var posInSection  = cur - sStart + 1;
+    var sectionTotal  = sEnd - sStart + 1;
+    var pct = Math.round(posInSection / sectionTotal * 100);
+
+    var prevEntry = cur > 0 ? PAGES[cur - 1] : null;
+    var nextEntry = cur < PAGES.length - 1 ? PAGES[cur + 1] : null;
+
+    function makeBtn(entry, isPrev) {
+      var cls = 'ml-prevnext__btn ml-prevnext__btn--' + (isPrev ? 'prev' : 'next');
+      var lbl = isPrev ? '← Назад' : 'Вперёд →'; // ← Назад / Вперёд →
+      var titleEl = '<span class="ml-prevnext__title">' + (entry ? entry[2] : '') + '</span>';
+      var labelEl = '<span class="ml-prevnext__label">' + lbl + '</span>';
+      var inner   = isPrev ? (labelEl + titleEl) : (titleEl + labelEl);
+
+      if (!entry) {
+        return '<span class="' + cls + ' ml-prevnext__btn--ghost">' + inner + '</span>';
+      }
+      var href = relUrl(fromPath, entry[1]);
+      return '<a href="' + href + '" class="' + cls + '">' + inner + '</a>';
+    }
+
+    var html = '<nav class="ml-prevnext" aria-label="Навигация по курсу">'
+      + makeBtn(prevEntry, true)
+      + '<div class="ml-prevnext__progress">'
+      +   '<span class="ml-prevnext__pos">' + posInSection + ' / ' + sectionTotal + '</span>'
+      +   '<div class="ml-prevnext__bar"><div class="ml-prevnext__fill" style="width:' + pct + '%"></div></div>'
+      +   '<span class="ml-prevnext__section">' + section + '</span>'
+      + '</div>'
+      + makeBtn(nextEntry, false)
+      + '</nav>';
+
+    var nav = document.createElement('div');
+    nav.innerHTML = html;
+    document.body.appendChild(nav.firstChild);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+// END shared-prevnext.js
+
+// BEGIN shared-walkthrough.js
+/**
+ * shared-walkthrough.js
+ * Powers .ml-walkthrough step-by-step algorithm components.
+ * No dependencies. Auto-initialises on DOMContentLoaded.
+ *
+ * Markup contract:
+ *   .ml-walkthrough              — root container
+ *     .ml-walkthrough__step      — one step (hidden by default)
+ *     .wt-active                 — active step class (added by JS)
+ *     [data-wt-prev]             — Prev button
+ *     [data-wt-next]             — Next button
+ *     [data-wt-cur]              — current step number text node
+ *     [data-wt-tot]              — total steps text node
+ *     .ml-walkthrough__progress-bar — CSS progress bar
+ */
+(function () {
+  'use strict';
+
+  if (window.__mlNotesWalkthroughInitialized) return;
+  window.__mlNotesWalkthroughInitialized = true;
+
+  function initOne(root) {
+    var steps    = root.querySelectorAll('.ml-walkthrough__step');
+    var btnPrev  = root.querySelector('[data-wt-prev]');
+    var btnNext  = root.querySelector('[data-wt-next]');
+    var spanCur  = root.querySelector('[data-wt-cur]');
+    var spanTot  = root.querySelector('[data-wt-tot]');
+    var bar      = root.querySelector('.ml-walkthrough__progress-bar');
+    var total    = steps.length;
+    var current  = 0;
+
+    if (!total) return;
+    if (spanTot) spanTot.textContent = total;
+
+    function show(idx) {
+      // Bounds
+      idx = Math.max(0, Math.min(idx, total - 1));
+      // Swap active class
+      steps[current].classList.remove('wt-active');
+      current = idx;
+      steps[current].classList.add('wt-active');
+      // Update counter
+      if (spanCur) spanCur.textContent = current + 1;
+      // Update progress bar
+      if (bar) bar.style.width = ((current + 1) / total * 100) + '%';
+      // Update button states
+      if (btnPrev) btnPrev.disabled = current === 0;
+      if (btnNext) btnNext.disabled = current === total - 1;
+    }
+
+    // Initialise first step
+    show(0);
+
+    if (btnPrev) btnPrev.addEventListener('click', function () {
+      root.dataset.wtDir = 'prev';
+      show(current - 1);
+    });
+    if (btnNext) btnNext.addEventListener('click', function () {
+      root.dataset.wtDir = 'next';
+      show(current + 1);
+    });
+
+    // Keyboard navigation (←/→) when focus is inside the component
+    root.setAttribute('tabindex', '0');
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        root.dataset.wtDir = 'next';
+        show(current + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        root.dataset.wtDir = 'prev';
+        show(current - 1);
+      }
+    });
+  }
+
+  function initAll() {
+    document.querySelectorAll('.ml-walkthrough').forEach(initOne);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+})();
+
+// END shared-walkthrough.js
 
 // BEGIN shared-search.js
 (function () {
