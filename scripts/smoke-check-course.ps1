@@ -7,7 +7,7 @@ Set-Location $repoRoot
 $excludedPages = @("index.html", "course-roadmap.html")
 $lessonPages = Get-ChildItem -Path $repoRoot -Recurse -Filter *.html |
   ForEach-Object { $_.FullName.Substring($repoRoot.Length + 1).Replace('\', '/') } |
-  Where-Object { $_ -notin $excludedPages } |
+  Where-Object { $_ -notin $excludedPages -and $_ -notmatch '^(\.|vendor/)' } |
   Sort-Object
 
 $issues = New-Object System.Collections.Generic.List[string]
