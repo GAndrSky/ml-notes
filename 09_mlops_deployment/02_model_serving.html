@@ -142,7 +142,7 @@ def predict(request: PredictRequest):
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 04</span>
       <h3 class="ml-walkthrough__step-heading">Run inference with model.eval(), no_grad(), and autocast</h3>
-      <div class="ml-walkthrough__step-body"><p>Call model.eval() to disable dropout and batch norm training mode. Wrap inference in torch.no_grad() to skip gradient computation and reduce memory usage. Use torch.autocast for FP16/BF16 speedup on CUDA. These three steps together halve memory and roughly double speed compared to a naive forward pass.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Call model.eval() to disable dropout and batch norm training mode. Wrap inference in torch.no_grad() to skip gradient computation and reduce memory usage. Use torch.autocast for FP16/BF16 speedup on CUDA. Together they remove gradient bookkeeping and switch to the inference behaviour of the layers; on GPUs with Tensor Cores autocast often gives a large additional speed-up, but the exact gain depends on the model and hardware — measure it.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 05</span>
@@ -174,7 +174,7 @@ def predict(request: PredictRequest):
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое ONNX и зачем он нужен для deployment?</summary>
-      <div class="ml-quiz__a"><p>ONNX (Open Neural Network Exchange) — открытый формат сериализации моделей, не зависящий от фреймворка. PyTorch/TF экспортируют в ONNX, который затем оптимизируется под target hardware (ONNX Runtime, TensorRT). Это даёт переносимость и обычно 2-5× ускорение inference.</p></div>
+      <div class="ml-quiz__a"><p>ONNX (Open Neural Network Exchange) — открытый формат сериализации моделей, не зависящий от фреймворка. PyTorch/TF экспортируют в ONNX, который затем оптимизируется под target hardware (ONNX Runtime, TensorRT). Это даёт переносимость и часто заметное ускорение inference (за счёт fusion и оптимизированных ядер), но выигрыш зависит от модели и runtime — и численное совпадение с исходной моделью нужно проверять.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
