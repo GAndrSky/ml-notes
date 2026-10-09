@@ -321,7 +321,7 @@ for step in range(1000):
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 01</span>
       <h3 class="ml-walkthrough__step-heading">Forward pass — store everything</h3>
-      <div class="ml-walkthrough__step-body"><p>Implement forward pass storing all intermediate values — Z1, A1, logits, probs. You need them for backward. If you discard them you will have to run forward again for every layer, which breaks the chain rule.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Implement forward pass storing all intermediate values — Z1, A1, logits, probs. You need them for backward. If you discard them you will have to recompute the forward pass to get them back — mathematically fine (that is exactly what gradient checkpointing does), but it costs extra compute.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 02</span>
@@ -356,7 +356,7 @@ for step in range(1000):
     <li class="ml-quiz__item">
       <details class="ml-quiz__entry">
         <summary class="ml-quiz__q">Why do you need to store intermediate activations during forward pass?</summary>
-        <div class="ml-quiz__a"><p>Backprop computes gradients by applying the chain rule in reverse. Each layer's gradient depends on the values computed by that layer during forward pass. For example, dL/dW2 = A1.T @ dL/dz2 — you need A1 (the hidden activations). Discarding them forces a redundant forward pass per layer and prevents correct gradient computation.</p></div>
+        <div class="ml-quiz__a"><p>Backprop computes gradients by applying the chain rule in reverse. Each layer's gradient depends on the values computed by that layer during forward pass. For example, dL/dW2 = A1.T @ dL/dz2 — you need A1 (the hidden activations). Discarding them forces you to recompute the forward pass during backward: the gradients stay correct, but you pay extra compute (this trade-off is gradient checkpointing).</p></div>
       </details>
     </li>
     <li class="ml-quiz__item">
@@ -376,7 +376,7 @@ for step in range(1000):
 
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Implementing backprop without storing forward activations means you cannot compute gradients — you'll have to run forward again for every layer which breaks the chain rule and produces incorrect parameter updates. The model will appear to train but updates will be wrong, leading to slow convergence or divergence that is nearly impossible to debug without gradient checking.</p>
+  <p>Backward использует значения из forward pass: Z1 для маски ReLU, A1 для dW2, X для dW1. Если их не сохранить, придётся пересчитывать forward (это корректно, но дороже). Настоящая опасность — использовать <em>не те</em> значения: A1 вместо Z1 в маске, кеш от другого batch или от весов до обновления. Тогда градиенты получаются чуть неверными, модель вроде бы учится, но медленно или нестабильно — и без gradient check такую ошибку почти невозможно найти.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="neural-net-scratch">

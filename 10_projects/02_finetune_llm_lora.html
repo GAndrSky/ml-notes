@@ -197,7 +197,12 @@ tokenizer.save_pretrained("outputs/lora-adapter")
 
 # Gotchas:
 # 1. If bf16 is unsupported, set bf16=False and use fp16 only with care.
-# 2. Tiny datasets can quickly overfit style without improving task ability.</code></pre>
+# 2. Tiny datasets can quickly overfit style without improving task ability.
+# 3. With pad_token = eos_token, DataCollatorForLanguageModeling sets labels of ALL eos tokens
+#    to -100, so the model never learns to stop. Append EOS to each example and use a separate
+#    pad token, or build labels yourself.
+# 4. This collator computes loss on the instruction too; to train only on the response,
+#    mask prompt tokens with -100 (e.g., TRL completion-only collator / SFTTrainer).</code></pre>
     </section>
 
     <section class="ml-theory-section">
@@ -388,7 +393,7 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 03</span>
       <h3 class="ml-walkthrough__step-heading">Set alpha</h3>
-      <div class="ml-walkthrough__step-body"><p>Alpha scales the LoRA update: effective_lr = alpha / r. Set alpha = 2*r for stable training (e.g. r=16, alpha=32). This keeps the effective scaling constant as you sweep rank values.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Alpha scales the LoRA update: the adapter adds (alpha / r) · B A to the frozen weight. Set alpha = 2*r for stable training (e.g. r=16, alpha=32). This keeps the effective scaling constant as you sweep rank values.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 04</span>
@@ -419,7 +424,7 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
     <li class="ml-quiz__item">
       <details class="ml-quiz__entry">
         <summary class="ml-quiz__q">Why is LoRA preferred over full fine-tuning for most tasks?</summary>
-        <div class="ml-quiz__a"><p>LoRA stores optimizer state only for adapter matrices, reducing GPU memory by 10-100x. The base model weights are frozen, preventing catastrophic forgetting of pretraining knowledge. Multiple task adapters can share one base model. Training is faster because fewer parameters receive gradient updates. For most tasks the useful adaptation truly lies in a low-rank subspace.</p></div>
+        <div class="ml-quiz__a"><p>LoRA stores optimizer state only for adapter matrices, reducing GPU memory by 10-100x. The base model weights are frozen, which reduces (but does not eliminate) catastrophic forgetting — the adapter can still change behaviour a lot. Multiple task adapters can share one base model. Training is faster because fewer parameters receive gradient updates. For most tasks the useful adaptation truly lies in a low-rank subspace.</p></div>
       </details>
     </li>
     <li class="ml-quiz__item">
