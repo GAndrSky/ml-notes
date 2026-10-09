@@ -258,7 +258,7 @@ for epoch in range(num_epochs):
 
     <div class="warn">
       <strong>Что ломается без этого</strong>
-      <p>Forgetting to sync batch normalization statistics across DDP workers causes each GPU to compute BN running mean and variance on its local mini-batch only. Because each worker sees a different slice of the data, statistics diverge across workers. After a checkpoint reload or model evaluation, the model uses inconsistent statistics, producing different outputs on different GPUs and making validation metrics unreliable. Use <code>torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)</code> before wrapping with DDP.</p>
+      <p>Обычный BatchNorm в DDP нормализует по локальному mini-batch каждой GPU. При маленьком batch на GPU статистики шумные, и обучение ведёт себя хуже, чем на одной GPU с тем же глобальным batch. Running mean/variance по умолчанию (broadcast_buffers=True) рассылаются с rank 0, то есть отражают только его данные. Если локальные batch маленькие, используй <code>torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)</code> до оборачивания в DDP — статистики будут считаться по глобальному batch (ценой дополнительной синхронизации).</p>
     </div>
 
     <div class="ml-self-rating" data-topic="distributed-training">

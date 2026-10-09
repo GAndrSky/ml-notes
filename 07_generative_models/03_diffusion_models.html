@@ -53,13 +53,13 @@
   <main class="page">
     <section class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag tag-block">Блок 7. Генеративные модели</span>
         <span class="tag done">7.1 VAE</span>
         <span class="tag done">7.2 GAN</span>
         <span class="tag active">7.3 Diffusion</span>
       </div>
       <h1>7.3 Diffusion Models</h1>
-      <p class="muted">Diffusion learns generation as iterative denoising: corrupt real data with controlled noise, then train a model to reverse that corruption step by step.</p>
+      <p class="muted">Диффузия учит генерацию как итеративный денойзинг: портим реальные данные контролируемым шумом и учим модель обращать эту порчу шаг за шагом.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -95,12 +95,12 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>A diffusion model does not map random noise to an image in one jump. It learns many small denoising steps, where each step removes a predictable amount of noise from the current sample.</p>
+      <p>Диффузионная модель не превращает шум в изображение одним прыжком. Она учит множество маленьких шагов денойзинга, каждый из которых убирает предсказуемую порцию шума из текущего сэмпла.</p>
     </section>
 
     <section class="card">
-      <h2>Forward process: destroy data in a controlled way</h2>
-      <p>The forward process is fixed, not learned. At each timestep it adds a small amount of Gaussian noise. After many steps, the sample becomes almost pure noise.</p>
+      <h2>Forward process: разрушаем данные контролируемо</h2>
+      <p>Forward process фиксирован, а не обучается. На каждом шаге он добавляет немного гауссова шума, и после многих шагов сэмпл становится почти чистым шумом.</p>
       <div class="formula" data-render-tex data-tex-source="q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\sqrt{1-\beta_t}\,x_{t-1},\beta_t I\right)">
         q(x_t | x_{t-1}) = N(x_t; sqrt(1-beta_t) x_{t-1}, beta_t I)
       </div>
@@ -119,13 +119,13 @@
       </div>
       <details class="intuition-block">
         <summary>Что это значит на практике</summary>
-        <div class="intuition-content">The schedule is a curriculum. Early timesteps teach the model to recover fine details from light corruption. Late timesteps teach it to create global structure from heavy noise.</div>
+        <div class="intuition-content">Schedule — это учебный план. Ранние шаги учат модель восстанавливать мелкие детали после лёгкой порчи, поздние — создавать глобальную структуру из сильного шума.</div>
       </details>
     </section>
 
     <section class="card">
-      <h2>Closed form: sample any noise level directly</h2>
-      <p>DDPM has a useful closed form: instead of applying every small noising step, we can sample x_t directly from x_0 and one Gaussian noise draw.</p>
+      <h2>Замкнутая форма: любой уровень шума напрямую</h2>
+      <p>У DDPM есть удобная замкнутая форма: вместо применения всех маленьких шагов можно сэмплировать x_t прямо из x_0 и одного гауссова шума.</p>
       <div class="formula" data-render-tex data-tex-source="x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\varepsilon,\quad \varepsilon \sim \mathcal{N}(0,I)">
         x_t = sqrt(alpha_bar_t) x_0 + sqrt(1-alpha_bar_t) epsilon
       </div>
@@ -145,8 +145,8 @@
     </section>
 
     <section class="card">
-      <h2>Reverse process: learn to remove noise</h2>
-      <p>The reverse process is learned. A neural network receives a noisy sample and timestep, then predicts how to move one step toward cleaner data.</p>
+      <h2>Reverse process: учимся убирать шум</h2>
+      <p>Обратный процесс обучается. Нейросеть получает зашумлённый сэмпл и номер шага и предсказывает, как сделать один шаг к более чистым данным.</p>
       <div class="formula" data-render-tex data-tex-source="\mathcal{L}_{simple}=\mathbb{E}_{x_0,\varepsilon,t}\left[\|\varepsilon-\varepsilon_\theta(x_t,t)\|_2^2\right]">
         L_simple = E || epsilon - epsilon_theta(x_t, t) ||^2
       </div>
@@ -166,12 +166,12 @@
     </section>
 
     <section class="card">
-      <h2>Interactive: signal versus noise</h2>
+      <h2>Интерактив: сигнал против шума</h2>
       <div class="diffusion-stage">
         <div>
           <label class="control">Noise step t <input id="diffStep" type="range" min="0" max="100" value="30" /></label>
           <div id="diffReadout" class="success"></div>
-          <p class="muted">Move the slider: left means mostly clean data; right means mostly noise. Sampling starts from the right side and repeatedly denoises back to the left.</p>
+          <p class="muted">Двигай слайдер: слева — почти чистые данные, справа — почти шум. Sampling стартует справа и многократно денойзит обратно влево.</p>
         </div>
         <div>
           <div class="score-line" id="diffScore"></div>
@@ -183,9 +183,9 @@
     <section class="card">
       <h2>Частые ошибки</h2>
       <ul>
-        <li>Thinking diffusion directly predicts pixels from pure noise in one step. It predicts local denoising directions.</li>
-        <li>Ignoring the timestep embedding. The same noisy image means different things depending on noise level.</li>
-        <li>Confusing DDPM training with sampling. Training can use random timesteps; sampling must run a reverse chain.</li>
+        <li>Думать, что диффузия предсказывает пиксели из чистого шума за один шаг. Она предсказывает локальные направления денойзинга.</li>
+        <li>Игнорировать embedding шага t. Одно и то же зашумлённое изображение значит разное при разном уровне шума.</li>
+        <li>Путать обучение DDPM с sampling. Обучение использует случайные шаги t, а sampling обязан пройти обратную цепочку.</li>
       </ul>
     </section>
 

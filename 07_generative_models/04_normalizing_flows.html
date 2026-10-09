@@ -16,14 +16,14 @@
   <main class="page">
     <section class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag tag-block">Блок 7. Генеративные модели</span>
         <span class="tag done">7.1 VAE</span>
         <span class="tag done">7.2 GAN</span>
         <span class="tag done">7.3 Diffusion</span>
         <span class="tag active">7.4 Flows</span>
       </div>
       <h1>7.4 Normalizing Flows</h1>
-      <p class="muted">A normalizing flow turns a simple distribution into a complex one through a chain of invertible transformations with exact likelihood.</p>
+      <p class="muted">Normalizing flow превращает простое распределение в сложное цепочкой обратимых преобразований с точным правдоподобием.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -58,14 +58,14 @@
     </section>
 
     <section class="card">
-      <h2>Why flows exist</h2>
-      <p>VAEs give tractable training but only approximate likelihood. GANs generate sharp samples but do not give likelihood. Diffusion gives high quality but sampling is iterative. Flows occupy a different point: exact likelihood and exact sampling through an invertible map.</p>
-      <p>The price is architectural: every transformation must be invertible and must have a cheap Jacobian determinant.</p>
+      <h2>Зачем нужны flows</h2>
+      <p>VAE дают удобное обучение, но лишь приближённое правдоподобие. GAN генерируют чёткие сэмплы, но правдоподобия не дают. Диффузия даёт высокое качество, но sampling итеративный. Flows занимают другую точку: точное правдоподобие и точный sampling через обратимое отображение.</p>
+      <p>Цена — архитектурная: каждое преобразование должно быть обратимым и иметь дешёвый определитель якобиана.</p>
     </section>
 
     <section class="card">
-      <h2>Change of variables</h2>
-      <p>Start with a simple latent variable z, usually standard Gaussian. Apply an invertible function x = f(z). The density of x is obtained by correcting the density of z by the local volume change.</p>
+      <h2>Замена переменных</h2>
+      <p>Начинаем с простой латентной переменной z, обычно стандартного гауссиана, и применяем обратимую функцию x = f(z). Плотность x получается из плотности z поправкой на локальное изменение объёма.</p>
       <div class="formula" data-render-tex data-tex-source="p_X(x)=p_Z(f^{-1}(x))\left|\det\frac{\partial f^{-1}(x)}{\partial x}\right|">
         p_X(x) = p_Z(f^{-1}(x)) | det d f^{-1}(x) / d x |
       </div>
@@ -85,8 +85,8 @@
     </section>
 
     <section class="card">
-      <h2>Log-likelihood form</h2>
-      <p>In practice we optimize log-likelihood. Products become sums, and a chain of K invertible transforms adds K log-determinant corrections.</p>
+      <h2>Форма log-правдоподобия</h2>
+      <p>На практике оптимизируют log-правдоподобие: произведения становятся суммами, и цепочка из K обратимых преобразований добавляет K поправок log-определителей.</p>
       <div class="formula" data-render-tex data-tex-source="\log p_X(x)=\log p_Z(z)+\sum_{k=1}^{K}\log\left|\det J_k\right|">
         log p_X(x) = log p_Z(z) + sum_k log |det J_k|
       </div>
@@ -106,8 +106,8 @@
     </section>
 
     <section class="card">
-      <h2>RealNVP coupling layer</h2>
-      <p>A fully general invertible neural network has an expensive determinant. RealNVP solves this by splitting the vector: one part stays fixed, while the other part is scaled and shifted based on the fixed part.</p>
+      <h2>Coupling layer в RealNVP</h2>
+      <p>У полностью общей обратимой нейросети определитель дорогой. RealNVP решает это разбиением вектора: одна часть остаётся неизменной, а другая масштабируется и сдвигается в зависимости от неё.</p>
       <div class="formula" data-render-tex data-tex-source="y_a=x_a,\quad y_b=x_b\odot\exp(s(x_a))+t(x_a)">
         y_a = x_a,   y_b = x_b * exp(s(x_a)) + t(x_a)
       </div>
@@ -124,19 +124,19 @@
         <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> holding one side of a sheet fixed while stretching and moving the other side.</div>
         <div class="formula-anatomy__example"><strong>Числовой пример:</strong> if x_b=2, s=log(1.5), t=-1, then y_b=2*1.5-1=2.</div>
       </div>
-      <h3>Autoregressive flows: MAF и IAF</h3>
+      <h3>Авторегрессионные flows: MAF и IAF</h3>
       <p>Вместо деления на две половины каждая координата преобразуется с учётом всех предыдущих: x_i = z_i · exp(s_i(x_&lt;i)) + t_i(x_&lt;i). Якобиан снова треугольный, поэтому log-det — просто сумма s_i. <strong>MAF</strong> считает плотность p(x) за один параллельный проход (все x известны), но сэмплирует последовательно, по одной координате. <strong>IAF</strong> устроен зеркально: сэмплирование параллельное и быстрое, а оценка плотности чужих x — последовательная. Поэтому MAF удобен для density estimation, а IAF — как гибкий posterior в VAE. Neural autoregressive flows (NAF) заменяют аффинное преобразование монотонной нейросетью — выразительнее, но дороже.</p>
     </section>
 
     <section class="card">
-      <h2>Flows vs VAE vs GAN vs Diffusion</h2>
+      <h2>Flows vs VAE vs GAN vs диффузия</h2>
       <table>
         <thead><tr><th>Модель</th><th>Likelihood</th><th>Sampling</th><th>Главное ограничение</th></tr></thead>
         <tbody>
-          <tr><td>Flow</td><td>Exact</td><td>Fast</td><td>Invertible architecture</td></tr>
-          <tr><td>VAE</td><td>Lower bound</td><td>Fast</td><td>Blurry samples possible</td></tr>
-          <tr><td>GAN</td><td>No explicit likelihood</td><td>Fast</td><td>Training instability, mode collapse</td></tr>
-          <tr><td>Diffusion</td><td>Variational/objective-based</td><td>Usually slower</td><td>Many denoising steps</td></tr>
+          <tr><td>Flow</td><td>Exact</td><td>Fast</td><td>Обратимая архитектура</td></tr>
+          <tr><td>VAE</td><td>Нижняя оценка</td><td>Fast</td><td>Возможны размытые сэмплы</td></tr>
+          <tr><td>GAN</td><td>Нет явного правдоподобия</td><td>Fast</td><td>Нестабильное обучение, mode collapse</td></tr>
+          <tr><td>Diffusion</td><td>Вариационная нижняя оценка</td><td>Обычно медленнее</td><td>Много шагов денойзинга</td></tr>
         </tbody>
       </table>
     </section>
@@ -187,7 +187,7 @@
 
   <div class="warn">
     <strong>Что ломается без этого</strong>
-    <p>If a flow transformation is not square — meaning the output dimension differs from the input dimension — the Jacobian matrix is not square and its determinant is undefined. The entire change-of-variables formula breaks down: you cannot compute log p_X(x) because the volume correction term has no meaning for a non-square linear map. Unlike VAEs which can project to a lower-dimensional latent, flows must maintain constant dimensionality at every layer.</p>
+    <p>Если преобразование flow не «квадратное» — размерность выхода отличается от входа, — якобиан не квадратный и его определитель не определён. Формула замены переменных разваливается: log p_X(x) не посчитать, потому что поправка на объём не имеет смысла для неквадратного отображения. В отличие от VAE, которые могут проецировать в латентное пространство меньшей размерности, flows обязаны сохранять размерность на каждом слое.</p>
   </div>
 
   <div class="ml-self-rating" data-topic="flows">

@@ -48,13 +48,13 @@
   <main class="page">
     <section class="hero">
       <div class="top-tags">
-        <span class="tag tag-block">Block 7. Generative Models</span>
+        <span class="tag tag-block">Блок 7. Генеративные модели</span>
         <span class="tag done">7.3 Diffusion</span>
         <span class="tag done">7.4 Flows</span>
         <span class="tag active">7.5 Stable Diffusion</span>
       </div>
       <h1>7.5 Stable Diffusion Deep Dive</h1>
-      <p class="muted">Stable Diffusion is latent diffusion: it denoises compressed image latents instead of raw pixels, while text embeddings guide the generation.</p>
+      <p class="muted">Stable Diffusion — это latent diffusion: денойзинг идёт не по пикселям, а по сжатым латентам изображения, а текстовые эмбеддинги управляют генерацией.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -89,20 +89,20 @@
     </section>
 
     <section class="card">
-      <h2>The full pipeline</h2>
+      <h2>Полный пайплайн</h2>
       <div class="pipeline">
-        <div class="pipe-step"><strong>1. Text prompt</strong><span>Tokenized and encoded by a CLIP text encoder.</span></div>
-        <div class="pipe-step"><strong>2. Random latent</strong><span>Start from Gaussian noise in compressed latent space.</span></div>
-        <div class="pipe-step"><strong>3. UNet denoiser</strong><span>Predicts noise conditioned on text and timestep.</span></div>
-        <div class="pipe-step"><strong>4. Scheduler</strong><span>Updates the latent through reverse diffusion steps.</span></div>
-        <div class="pipe-step"><strong>5. VAE decoder</strong><span>Decodes final latent into pixels.</span></div>
+        <div class="pipe-step"><strong>1. Текстовый промпт</strong><span>Токенизируется и кодируется CLIP text encoder-ом.</span></div>
+        <div class="pipe-step"><strong>2. Случайный latent</strong><span>Старт из гауссова шума в сжатом латентном пространстве.</span></div>
+        <div class="pipe-step"><strong>3. UNet-денойзер</strong><span>Предсказывает шум с учётом текста и шага.</span></div>
+        <div class="pipe-step"><strong>4. Scheduler</strong><span>Обновляет latent шагами обратной диффузии.</span></div>
+        <div class="pipe-step"><strong>5. VAE decoder</strong><span>Декодирует финальный latent в пиксели.</span></div>
       </div>
-      <p>The key engineering idea is not only diffusion. It is where diffusion happens: in a smaller latent space, which makes training and sampling much cheaper than pixel-space diffusion.</p>
+      <p>Ключевая инженерная идея — не только сама диффузия, а то, <em>где</em> она происходит: в меньшем латентном пространстве, что делает обучение и sampling намного дешевле диффузии в пикселях.</p>
     </section>
 
     <section class="card">
-      <h2>Latent diffusion objective</h2>
-      <p>Instead of noising an image x directly, Stable Diffusion first encodes it into a latent z with a VAE encoder. Diffusion then learns denoising in that latent space.</p>
+      <h2>Objective latent diffusion</h2>
+      <p>Вместо зашумления изображения x напрямую Stable Diffusion сначала кодирует его в latent z VAE-encoder-ом, и уже в этом пространстве диффузия учится денойзингу.</p>
       <div class="formula" data-render-tex data-tex-source="\mathcal{L}=\mathbb{E}_{z,\varepsilon,t,c}\left[\|\varepsilon-\varepsilon_\theta(z_t,t,c)\|_2^2\right]">
         L = E || epsilon - epsilon_theta(z_t, t, c) ||^2
       </div>
@@ -122,22 +122,22 @@
     </section>
 
     <section class="card">
-      <h2>Why latent space matters</h2>
-      <p>Pixel-space diffusion is expensive because every denoising step touches every pixel. Latent diffusion uses a learned compression where perceptually important structure is preserved but the spatial size is much smaller.</p>
+      <h2>Почему важно латентное пространство</h2>
+      <p>Диффузия в пикселях дорога: каждый шаг денойзинга трогает каждый пиксель. Latent diffusion использует выученное сжатие, которое сохраняет перцептивно важную структуру, но имеет намного меньший пространственный размер.</p>
       <ul>
-        <li><strong>VAE encoder:</strong> image to latent. Used during training and image-to-image workflows.</li>
-        <li><strong>UNet:</strong> denoises latent variables, not RGB pixels.</li>
-        <li><strong>VAE decoder:</strong> latent to final image. Used after sampling.</li>
+        <li><strong>VAE encoder:</strong> изображение → latent. Используется при обучении и в image-to-image.</li>
+        <li><strong>UNet:</strong> денойзит латентные переменные, а не RGB-пиксели.</li>
+        <li><strong>VAE decoder:</strong> latent → итоговое изображение. Используется после sampling.</li>
       </ul>
       <details class="intuition-block">
         <summary>Что это значит на практике</summary>
-        <div class="intuition-content">Most generation quality comes from the denoising UNet and conditioning. The VAE controls the visual bottleneck: if the VAE cannot encode fine details, the diffusion model cannot reliably recover them at the end.</div>
+        <div class="intuition-content">Основное качество генерации даёт денойзинг-UNet и conditioning. VAE задаёт визуальное «бутылочное горлышко»: если VAE не умеет кодировать мелкие детали, диффузия не сможет надёжно восстановить их в конце.</div>
       </details>
     </section>
 
     <section class="card">
-      <h2>Text conditioning through cross-attention</h2>
-      <p>The text prompt is not just appended as a label. UNet blocks use cross-attention: image latent features ask questions, text token embeddings provide keys and values.</p>
+      <h2>Текстовое conditioning через cross-attention</h2>
+      <p>Промпт не просто приклеивается как метка. Блоки UNet используют cross-attention: латентные признаки изображения задают вопросы (queries), эмбеддинги токенов текста дают keys и values.</p>
       <div class="formula" data-render-tex data-tex-source="\mathrm{CrossAttn}(Q_{img},K_{text},V_{text})=\mathrm{softmax}\left(\frac{Q_{img}K_{text}^{\top}}{\sqrt{d}}\right)V_{text}">
         CrossAttn(Q_img, K_text, V_text) = softmax(Q_img K_text^T / sqrt(d)) V_text
       </div>
@@ -158,7 +158,7 @@
 
     <section class="card">
       <h2>Classifier-free guidance</h2>
-      <p>CFG makes the sample follow the prompt more strongly by comparing conditional and unconditional noise predictions.</p>
+      <p>CFG заставляет сэмпл сильнее следовать промпту, сравнивая conditional и unconditional предсказания шума.</p>
       <div class="formula" data-render-tex data-tex-source="\hat{\varepsilon}=\varepsilon_\theta(z_t,t,\varnothing)+s\left(\varepsilon_\theta(z_t,t,c)-\varepsilon_\theta(z_t,t,\varnothing)\right)">
         eps_hat = eps_uncond + s * (eps_cond - eps_uncond)
       </div>
@@ -180,9 +180,9 @@
     <section class="card">
       <h2>Частые ошибки</h2>
       <ul>
-        <li>Thinking CLIP generates the image. CLIP text embeddings condition the denoising UNet; the UNet does generation.</li>
-        <li>Ignoring the VAE bottleneck. Some artifacts come from latent compression/decoding, not from diffusion itself.</li>
-        <li>Setting CFG too high. Higher prompt adherence can reduce realism, diversity and composition quality.</li>
+        <li>Думать, что изображение генерирует CLIP. CLIP-эмбеддинги текста лишь управляют денойзинг-UNet, генерирует UNet.</li>
+        <li>Игнорировать bottleneck VAE. Часть артефактов идёт от сжатия/декодирования latent-ов, а не от самой диффузии.</li>
+        <li>Ставить слишком большой CFG. Сильное следование промпту может снижать реалистичность, разнообразие и качество композиции.</li>
       </ul>
     </section>
 
