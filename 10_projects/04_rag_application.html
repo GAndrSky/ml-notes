@@ -22,7 +22,7 @@
         <span class="tag">LLM App</span>
       </div>
       <h1>10.4 Project: RAG Application</h1>
-      <p class="muted">Build a document question-answering system with retrieval, citations, evaluation, and failure analysis.</p>
+      <p class="muted">Собираем систему вопросов и ответов по документам: retrieval, цитаты, оценка и разбор ошибок.</p>
     </section>
 
     
@@ -50,36 +50,36 @@
 </div>
 <section class="card">
       <h2>TL;DR</h2>
-      <p>A RAG app is not "LLM plus vector database". It is an information retrieval system plus a generation layer. Most quality problems come from chunking, retrieval recall, reranking, context assembly, and evaluation.</p>
+      <p>RAG-приложение — это не «LLM плюс векторная база». Это система информационного поиска с генеративным слоем сверху. Большинство проблем качества — в chunking, recall поиска, reranking, сборке контекста и оценке.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../06_llm/09_retrieval_augmented_generation.html">6.9 RAG</a>, <a href="../05_architectures/11_contrastive_learning_clip.html">5.11 Contrastive</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>10-20 hours</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High</span></div>
-      <div class="meta-card"><strong>Portfolio value</strong><span>High</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="../06_llm/09_retrieval_augmented_generation.html">6.9 RAG</a>, <a href="../05_architectures/11_contrastive_learning_clip.html">5.11 Contrastive</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>10–20 часов</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая</span></div>
+      <div class="meta-card"><strong>Ценность для портфолио</strong><span>Высокая</span></div>
     </section>
 
     <section class="card">
       <h2>Deliverables</h2>
       <ul>
-        <li>Document ingestion pipeline with metadata.</li>
-        <li>Chunking strategy and rationale.</li>
-        <li>Embedding index with reproducible rebuild script.</li>
-        <li>Retrieval + optional reranking.</li>
-        <li>Answer generation with citations.</li>
-        <li>Evaluation set with retrieval and answer-quality metrics.</li>
+        <li>Пайплайн загрузки документов с метаданными.</li>
+        <li>Стратегия chunking и её обоснование.</li>
+        <li>Индекс эмбеддингов со скриптом воспроизводимой пересборки.</li>
+        <li>Retrieval + опциональный reranking.</li>
+        <li>Генерация ответа с цитатами.</li>
+        <li>Evaluation-набор с метриками retrieval и качества ответа.</li>
       </ul>
     </section>
 
     <section class="card">
       <h2>Pipeline</h2>
       <div class="formula" data-no-tex>documents -> chunks -> embeddings -> vector index -> top-k retrieval -> context -> LLM answer + citations</div>
-      <p><strong>What to notice:</strong> if the answer is wrong, first check whether the correct chunk was retrieved. Generation cannot fix missing evidence.</p>
+      <p><strong>На что обратить внимание:</strong> если ответ неверный, сначала проверь, нашёлся ли нужный chunk. Генерация не исправит отсутствующие доказательства.</p>
     </section>
 
     <section class="card">
-      <h2>Retrieval objective</h2>
+      <h2>Цель retrieval</h2>
       <div class="formula" data-no-tex>score(q, d_i) = cosine(embed(q), embed(d_i))</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -96,7 +96,7 @@
     </section>
 
     <section class="card">
-      <h2>Runnable toy retrieval</h2>
+      <h2>Игрушечный retrieval, который можно запустить</h2>
       <pre><code class="language-python"># What it does: toy vector retrieval with cosine similarity
 # Input shapes: query=(d,), docs=(N,d)
 # Output shape: top indices=(k,)
@@ -114,52 +114,33 @@ print(top, scores[top, 0])
     </section>
 
     <section class="card">
-      <h2>Evaluation</h2>
+      <h2>Оценка</h2>
       <table>
-        <thead><tr><th>Layer</th><th>Metric</th><th>Question answered</th></tr></thead>
+        <thead><tr><th>Уровень</th><th>Метрика</th><th>Какой вопрос закрывает</th></tr></thead>
         <tbody>
-          <tr><td>Retrieval</td><td>Recall@k</td><td>Did we retrieve evidence?</td></tr>
-          <tr><td>Ranking</td><td>MRR / nDCG</td><td>Is evidence near the top?</td></tr>
-          <tr><td>Generation</td><td>Groundedness</td><td>Is the answer supported by context?</td></tr>
-          <tr><td>Product</td><td>Human rating</td><td>Is the answer useful?</td></tr>
+          <tr><td>Retrieval</td><td>Recall@k</td><td>Нашли ли мы доказательства?</td></tr>
+          <tr><td>Ranking</td><td>MRR / nDCG</td><td>Стоят ли они в начале выдачи?</td></tr>
+          <tr><td>Generation</td><td>Groundedness</td><td>Подтверждается ли ответ контекстом?</td></tr>
+          <tr><td>Product</td><td>Оценка человеком</td><td>Полезен ли ответ?</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>Common mistakes</h2>
+      <h2>Частые ошибки</h2>
       <ul>
-        <li>Chunking by fixed length without preserving section boundaries.</li>
-        <li>Using only answer quality while ignoring retrieval recall.</li>
-        <li>Stuffing too much context and reducing answer focus.</li>
-        <li>Not storing metadata, making citations impossible.</li>
+        <li>Резать на chunks фиксированной длины, не учитывая границы разделов.</li>
+        <li>Смотреть только на качество ответа, игнорируя recall поиска.</li>
+        <li>Набивать слишком много контекста, размывая фокус ответа.</li>
+        <li>Не хранить метаданные — тогда цитаты невозможны.</li>
       </ul>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Foundational</summary><div class="intuition-content">Create 10 evaluation questions and mark which document chunk should answer each one.</div></details>
-      <details class="intuition-block"><summary>Intermediate</summary><div class="intuition-content">Implement Recall@k for a small set of query-to-relevant-doc labels.</div></details>
-      <details class="intuition-block"><summary>Hard</summary><div class="intuition-content">Compare fixed-size chunking with heading-aware chunking on the same documents.</div></details>
-      <details class="intuition-block"><summary>Coding</summary><div class="intuition-content">Build a minimal FastAPI endpoint that returns answer plus source chunk IDs.</div></details>
-      <details class="intuition-block"><summary>Interview</summary><div class="intuition-content">Explain how you debug hallucinations in a RAG system.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What is the difference between retrieval failure and generation failure?</li>
-        <li>Why does chunking strategy affect answer quality?</li>
-        <li>What does Recall@k measure?</li>
-        <li>How do citations change the product contract?</li>
-      </ol>
     </section>
 
     <div class="ml-walkthrough">
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">RAG query pipeline</span>
+      <span class="ml-walkthrough__title">Пайплайн RAG-запроса</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -170,63 +151,36 @@ print(top, scores[top, 0])
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 01</span>
-      <h3 class="ml-walkthrough__step-heading">Embed the query</h3>
-      <div class="ml-walkthrough__step-body"><p>User query arrives. Embed it with the same model used to embed documents during indexing. Using a different model produces incompatible vector spaces where cosine similarity is meaningless.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Эмбеддинг запроса</h3>
+      <div class="ml-walkthrough__step-body"><p>Пришёл запрос пользователя. Эмбеддим его той же моделью, что и документы при индексации: другая модель даёт несовместимое векторное пространство, где cosine similarity бессмысленна.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 02</span>
-      <h3 class="ml-walkthrough__step-heading">Vector search</h3>
-      <div class="ml-walkthrough__step-body"><p>Retrieve top-K chunks by cosine similarity from the vector index. Typical K=5-20. More chunks increase recall but also increase prompt length and LLM cost. Start with K=10 and tune based on retrieval recall metrics.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Векторный поиск</h3>
+      <div class="ml-walkthrough__step-body"><p>Достаём из индекса top-K chunks по cosine similarity, обычно K = 5–20. Больше chunks — выше recall, но длиннее промпт и дороже LLM. Начни с K = 10 и подстрой по метрикам recall.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 03</span>
       <h3 class="ml-walkthrough__step-heading">Reranking</h3>
-      <div class="ml-walkthrough__step-body"><p>Pass query + retrieved chunks to a cross-encoder, rerank by relevance score, and keep the top 3. Cross-encoders are slower but much more accurate than bi-encoders for relevance judgment because they process query and document together.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Передаём запрос и найденные chunks в cross-encoder, переранжируем по оценке релевантности и оставляем top-3. Cross-encoder медленнее, но заметно точнее bi-encoder в оценке релевантности, потому что обрабатывает запрос и документ вместе.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 04</span>
-      <h3 class="ml-walkthrough__step-heading">Context assembly</h3>
-      <div class="ml-walkthrough__step-body"><p>Prepend the retrieved chunks to the prompt with source attribution metadata (document name, page, section). Include source IDs so the generator can cite them. Keep total context within the LLM's context window minus the expected answer length.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Сборка контекста</h3>
+      <div class="ml-walkthrough__step-body"><p>Добавляем найденные chunks в промпт с метаданными источника (документ, страница, раздел) и их ID, чтобы генератор мог на них ссылаться. Общий контекст должен помещаться в окно LLM с запасом на ожидаемую длину ответа.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 05</span>
-      <h3 class="ml-walkthrough__step-heading">Generation with citations</h3>
-      <div class="ml-walkthrough__step-body"><p>LLM generates an answer grounded in the provided context. Return both the answer and source citations. Evaluate groundedness: does the answer make claims supported by the retrieved chunks? Unsupported claims are hallucinations.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Генерация с цитатами</h3>
+      <div class="ml-walkthrough__step-body"><p>LLM генерирует ответ, опираясь на переданный контекст, и возвращает ответ вместе с цитатами. Оценивай groundedness: подтверждаются ли утверждения ответа найденными chunks? Неподтверждённые утверждения — галлюцинации.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
 </div>
 
-    <div class="ml-quiz">
-  <div class="ml-quiz__header">
-    <span class="ml-quiz__label">Проверь себя</span>
-    <h3 class="ml-quiz__title">RAG application</h3>
-  </div>
-  <ol class="ml-quiz__list">
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why must you use the same embedding model for documents and queries?</summary>
-        <div class="ml-quiz__a"><p>Embedding models learn a specific vector space where similar texts are geometrically close. Different models learn different spaces — a vector from model A and a vector from model B do not share a coordinate system. Cosine similarity between them is meaningless and retrieval becomes random. Always index and query with the same model version.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What is the difference between a bi-encoder and a cross-encoder in retrieval?</summary>
-        <div class="ml-quiz__a"><p>A bi-encoder embeds query and document independently and computes similarity via dot product — fast but less accurate. A cross-encoder takes query and document as a single concatenated input and produces a relevance score — much more accurate because it can model interactions, but cannot be pre-indexed and is 100-1000x slower. Use bi-encoder for recall at scale, cross-encoder for reranking top candidates.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">How do you evaluate whether a RAG system is hallucinating?</summary>
-        <div class="ml-quiz__a"><p>Check groundedness: does every claim in the answer appear in the retrieved context? Use LLM-as-judge to verify each sentence against the context, or use an NLI model to check entailment from context to answer. The RAGAS faithfulness metric automates this. Also check retrieval first: if the correct chunk was not retrieved, the answer will be wrong regardless of the LLM quality.</p></div>
-      </details>
-    </li>
-  </ol>
-</div>
-
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Using different embedding models for indexing and querying produces random retrieval — cosine similarity between different embedding spaces is meaningless. The system returns documents with high vector similarity that have no semantic relationship to the query. All downstream quality metrics degrade for reasons that are hard to diagnose unless you know to check embedding model consistency first.</p>
+  <p>Разные модели эмбеддингов для индексации и запросов делают поиск случайным: cosine similarity между разными пространствами бессмысленна. Система возвращает документы с высоким «сходством» векторов, никак не связанные с запросом по смыслу. Все последующие метрики качества падают по причинам, которые трудно найти, если не проверить согласованность модели эмбеддингов первым делом.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="rag">
@@ -243,7 +197,10 @@ print(top, scores[top, 0])
 
   
   <script src="../bundle.js" defer></script>
-  <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><div class="intuition-content">Сравни fixed-size chunking и semantic chunking для технической документации.</div></details><details><summary>[Intermediate] Retrieval eval</summary><div class="intuition-content">Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</div></details><details><summary>[Hard] Hallucination debugging</summary><div class="intuition-content">Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</div></details></section>
+  <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><div class="intuition-content">Сравни fixed-size chunking и semantic chunking для технической документации.</div></details><details><summary>[Intermediate] Retrieval eval</summary><div class="intuition-content">Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</div></details><details><summary>[Hard] Hallucination debugging</summary><div class="intuition-content">Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</div></details>    <details><summary>[Foundational] Eval-набор</summary><p>Составь 10 вопросов для оценки и для каждого отметь, какой chunk документа должен на него отвечать.</p></details>
+      <details><summary>[Intermediate] Recall@k</summary><p>Реализуй Recall@k для небольшого набора разметки «запрос → релевантные документы».</p></details>
+      <details><summary>[Coding] Endpoint с источниками</summary><p>Сделай минимальный FastAPI-endpoint, который возвращает ответ и ID chunks-источников.</p></details>
+  </section>
   <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -265,7 +222,7 @@ print(top, scores[top, 0])
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как оценить качество RAG системы?</summary>
-      <div class="ml-quiz__a"><p>Метрики: (1) Retrieval: precision@k, recall@k, nDCG (насколько релевантны найденные chunks). (2) Generation: faithfulness (нет ли hallucinations вне retrieved context), answer relevance, context relevance. Ragas — библиотека для автоматической оценки RAG по этим метрикам.</p></div>
+      <div class="ml-quiz__a"><p>Метрики: (1) Retrieval: precision@k, recall@k, nDCG (насколько релевантны найденные chunks). (2) Generation: faithfulness (нет ли hallucinations вне retrieved context), answer relevance, context relevance. Ragas — библиотека для автоматической оценки RAG по этим метрикам. Faithfulness можно проверять и LLM-as-judge или NLI-моделью (следует ли утверждение из контекста). Но сначала всегда смотри retrieval: если нужный chunk не найден, ответ будет неверным при любой LLM.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -274,10 +231,22 @@ print(top, scores[top, 0])
       <div class="ml-quiz__a"><p>HyDE: вместо поиска по исходному запросу генерируем LLM гипотетический ответ, затем ищем документы по embedding этого ответа. Гипотетический ответ семантически ближе к реальным документам, чем короткий вопрос. Улучшает recall, особенно для абстрактных или сложных запросов.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему документы и запросы нужно эмбеддить одной и той же моделью?</summary>
+      <div class="ml-quiz__a"><p>Модель эмбеддингов учит своё векторное пространство, где похожие тексты геометрически близки. У разных моделей разные пространства: векторы из модели A и модели B не имеют общей системы координат, cosine similarity между ними бессмысленна, и поиск становится случайным. Индексируй и запрашивай одной и той же версией модели (при смене модели — переиндексация).</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем bi-encoder отличается от cross-encoder в retrieval?</summary>
+      <div class="ml-quiz__a"><p>Bi-encoder эмбеддит запрос и документ независимо и сравнивает векторы скалярным произведением — быстро, документы можно проиндексировать заранее, но точность ниже. Cross-encoder получает запрос и документ одним входом и выдаёт оценку релевантности — гораздо точнее, потому что моделирует их взаимодействие, но для каждой пары нужен отдельный forward, и заранее ничего не проиндексируешь. Поэтому bi-encoder — для recall по всей базе, cross-encoder — для reranking top-кандидатов.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="proj-10-4"><h2>Checkpoint: 10.4 RAG Application</h2><ul><li>Почему retrieval quality ограничивает весь RAG?</li><li>Как chunk size влияет на recall и precision retrieval?</li><li>Зачем нужны citations?</li><li>Как измерять качество отдельно для retrieval и generation?</li><li>Rubber duck: объясни RAG как связку поиска доказательств и генерации ответа по ним.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-4"><h2>Checkpoint: 10.4 RAG Application</h2><ul><li>Почему retrieval quality ограничивает весь RAG?</li><li>Как chunk size влияет на recall и precision retrieval?</li><li>Зачем нужны citations?</li><li>Как измерять качество отдельно для retrieval и generation?</li><li>Что измеряет Recall@k и чего он не измеряет?</li><li>Rubber duck: объясни RAG как связку поиска доказательств и генерации ответа по ним.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

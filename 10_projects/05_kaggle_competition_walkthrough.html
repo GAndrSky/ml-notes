@@ -22,7 +22,7 @@
         <span class="tag">Tabular ML</span>
       </div>
       <h1>10.5 Project: Kaggle Competition Walkthrough</h1>
-      <p class="muted">A practical competition workflow: establish a baseline, build reliable validation, engineer features, compare models, ensemble carefully, and submit without fooling yourself.</p>
+      <p class="muted">Практический workflow соревнования: baseline, надёжная валидация, feature engineering, сравнение моделей, аккуратный ансамбль и сабмит без самообмана.</p>
     </section>
 
     
@@ -50,51 +50,51 @@
 </div>
 <section class="card">
       <h2>TL;DR</h2>
-      <p>Kaggle success is less about trying many models randomly and more about validation discipline. If your local validation does not predict leaderboard movement, every improvement is suspect.</p>
+      <p>Успех на Kaggle — это меньше про перебор случайных моделей и больше про дисциплину валидации. Если локальная валидация не предсказывает движение leaderboard, любое «улучшение» под подозрением.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../02_classic_ml/20_practical_pipeline.html">2.20 Pipeline</a>, <a href="../02_classic_ml/17_validation_and_hyperparameter_tuning.html">2.17 Validation</a>, <a href="../02_classic_ml/12_boosting.html">2.12 Boosting</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>10-18 hours</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High for tabular ML</span></div>
-      <div class="meta-card"><strong>Portfolio value</strong><span>Medium-High</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="../02_classic_ml/20_practical_pipeline.html">2.20 Pipeline</a>, <a href="../02_classic_ml/17_validation_and_hyperparameter_tuning.html">2.17 Validation</a>, <a href="../02_classic_ml/12_boosting.html">2.12 Boosting</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>10–18 часов</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая для табличного ML</span></div>
+      <div class="meta-card"><strong>Ценность для портфолио</strong><span>Средняя–высокая</span></div>
     </section>
 
     <section class="card">
       <h2>Workflow</h2>
       <ol>
-        <li>Read metric and submission format first.</li>
-        <li>Build a dumb baseline.</li>
-        <li>Create leakage-safe validation.</li>
-        <li>Run EDA focused on target, missingness, groups, time, and leakage.</li>
-        <li>Train simple robust models before complex ensembles.</li>
-        <li>Track experiments and compare local score to public leaderboard.</li>
-        <li>Ensemble only models with diverse errors.</li>
+        <li>Сначала прочитай метрику и формат сабмита.</li>
+        <li>Сделай «тупой» baseline.</li>
+        <li>Построй валидацию без утечек.</li>
+        <li>Проведи EDA с фокусом на target, пропуски, группы, время и утечки.</li>
+        <li>Учи простые устойчивые модели раньше сложных ансамблей.</li>
+        <li>Логируй эксперименты и сравнивай локальный score с public leaderboard.</li>
+        <li>Ансамблируй только модели с разными ошибками.</li>
       </ol>
     </section>
 
     <section class="card">
-      <h2>Validation is the project</h2>
+      <h2>Валидация — это и есть проект</h2>
       <div class="formula" data-no-tex>trust = correlation(local_cv_score, leaderboard_score)</div>
-      <p>If local CV improves but leaderboard gets worse repeatedly, the validation split is probably wrong. For time-series data, use time splits. For user/item data, use group splits. For duplicated entities, split by entity, not row.</p>
+      <p>Если локальная CV раз за разом растёт, а leaderboard падает, скорее всего, сплит неверный. Для временных рядов используй разбиение по времени, для данных пользователей/товаров — по группам, для дублирующихся сущностей — по сущности, а не по строкам.</p>
     </section>
 
     <section class="card">
-      <h2>Baseline stack</h2>
+      <h2>Лестница baseline-ов</h2>
       <table>
-        <thead><tr><th>Stage</th><th>Model</th><th>Purpose</th></tr></thead>
+        <thead><tr><th>Этап</th><th>Модель</th><th>Зачем</th></tr></thead>
         <tbody>
-          <tr><td>Sanity</td><td>mean / majority / simple rules</td><td>Catch broken metric or target leakage</td></tr>
-          <tr><td>Linear</td><td>Ridge / Logistic Regression</td><td>Understand linear signal</td></tr>
-          <tr><td>Tree</td><td>Random Forest / ExtraTrees</td><td>Nonlinear baseline</td></tr>
-          <tr><td>Boosting</td><td>LightGBM / XGBoost / CatBoost</td><td>Strong tabular model</td></tr>
-          <tr><td>Ensemble</td><td>weighted average / stacking</td><td>Reduce variance if errors differ</td></tr>
+          <tr><td>Sanity</td><td>среднее / мажоритарный класс / простые правила</td><td>Поймать сломанную метрику или утечку target</td></tr>
+          <tr><td>Linear</td><td>Ridge / Logistic Regression</td><td>Понять линейный сигнал</td></tr>
+          <tr><td>Tree</td><td>Random Forest / ExtraTrees</td><td>Нелинейный baseline</td></tr>
+          <tr><td>Boosting</td><td>LightGBM / XGBoost / CatBoost</td><td>Сильная табличная модель</td></tr>
+          <tr><td>Ensemble</td><td>взвешенное среднее / stacking</td><td>Снизить дисперсию, если ошибки различаются</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>Runnable validation skeleton</h2>
+      <h2>Скелет валидации, который можно запустить</h2>
       <pre><code class="language-python"># What it does: leakage-safe grouped cross-validation skeleton
 # Input shapes: X=(N,d), y=(N,), groups=(N,)
 # Output shape: fold scores=(K,)
@@ -118,50 +118,31 @@ print(scores, np.mean(scores))
     </section>
 
     <section class="card">
-      <h2>Feature engineering checklist</h2>
+      <h2>Чеклист feature engineering</h2>
       <ul>
-        <li>Missing-value indicators for informative missingness.</li>
-        <li>Target-safe aggregations computed inside folds.</li>
-        <li>Time features and lag features for temporal data.</li>
-        <li>Count/frequency encodings for categorical variables.</li>
-        <li>Text/image embeddings if competition data is multimodal.</li>
+        <li>Индикаторы пропусков, если пропуск сам несёт информацию.</li>
+        <li>Агрегаты по target — только внутри фолдов.</li>
+        <li>Временные и lag-признаки для временных данных.</li>
+        <li>Count/frequency encoding для категориальных признаков.</li>
+        <li>Эмбеддинги текста/изображений, если данные мультимодальные.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>Common mistakes</h2>
+      <h2>Частые ошибки</h2>
       <ul>
-        <li>Using the public leaderboard as validation.</li>
-        <li>Leaking target through global target encoding or preprocessing.</li>
-        <li>Changing many things at once and not knowing what helped.</li>
-        <li>Overfitting to the public leaderboard with too many submissions.</li>
+        <li>Использовать public leaderboard как валидацию.</li>
+        <li>Утечка target через глобальный target encoding или предобработку на всех данных.</li>
+        <li>Менять много вещей сразу и не знать, что помогло.</li>
+        <li>Переобучаться под public leaderboard слишком частыми сабмитами.</li>
       </ul>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Foundational</summary><div class="intuition-content">Pick a Kaggle dataset and write the metric, target, submission format, and likely leakage risks.</div></details>
-      <details class="intuition-block"><summary>Intermediate</summary><div class="intuition-content">Implement KFold, StratifiedKFold, and GroupKFold on a toy dataset and explain when each fails.</div></details>
-      <details class="intuition-block"><summary>Hard</summary><div class="intuition-content">Build fold-safe target encoding and compare it to leaky target encoding.</div></details>
-      <details class="intuition-block"><summary>Coding</summary><div class="intuition-content">Write an experiment table with model name, features, CV score, LB score, and notes.</div></details>
-      <details class="intuition-block"><summary>Interview</summary><div class="intuition-content">Explain why a model can improve public LB but get worse on private LB.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What validation split matches the data-generating process?</li>
-        <li>Which features are at risk of leakage?</li>
-        <li>Does CV correlate with leaderboard?</li>
-        <li>Can you explain every feature and model change in the final solution?</li>
-      </ol>
     </section>
 
     <div class="ml-walkthrough">
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">Competition strategy</span>
+      <span class="ml-walkthrough__title">Стратегия соревнования</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -172,63 +153,36 @@ print(scores, np.mean(scores))
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 01</span>
-      <h3 class="ml-walkthrough__step-heading">EDA first</h3>
-      <div class="ml-walkthrough__step-body"><p>Understand the data, look for leaks, and check train/test distribution shift before writing any model code. Target leakage found early saves days of wasted work. Distribution shift explains why a strong local model underperforms on the leaderboard.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Сначала EDA</h3>
+      <div class="ml-walkthrough__step-body"><p>Пойми данные, поищи утечки и проверь сдвиг распределения между train и test до того, как писать код модели. Утечка, найденная рано, экономит дни работы; сдвиг распределения объясняет, почему сильная локальная модель проседает на leaderboard.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 02</span>
-      <h3 class="ml-walkthrough__step-heading">Leakage-safe validation</h3>
-      <div class="ml-walkthrough__step-body"><p>For classification, use StratifiedKFold so every fold keeps the class ratio (for regression, plain or binned-target KFold). For time-series use time-ordered splits. For grouped data (same entity in multiple rows) use GroupKFold. Never look at test labels or use test statistics in feature engineering. Fix the validation scheme before touching features.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Валидация без утечек</h3>
+      <div class="ml-walkthrough__step-body"><p>Для классификации используй StratifiedKFold, чтобы в каждом фолде сохранялась доля классов (для регрессии — обычный KFold или KFold по бинам target). Для временных рядов — разбиение по времени, для сгруппированных данных (одна сущность в нескольких строках) — GroupKFold. Никогда не используй метки или статистики test в feature engineering. Зафиксируй схему валидации до работы с признаками.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 03</span>
       <h3 class="ml-walkthrough__step-heading">Baseline + feature engineering</h3>
-      <div class="ml-walkthrough__step-body"><p>Tabular: gradient boosting baseline first. NLP: pretrained transformer. CV: pretrained CNN or ViT. Get a number on the leaderboard before engineering features. Feature engineering on a bad baseline wastes time; do it after confirming the validation scheme is trusted.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Табличные данные: сначала baseline на gradient boosting. NLP: предобученный трансформер. CV: предобученная CNN или ViT. Получи число на leaderboard до feature engineering: признаки поверх плохого baseline — потеря времени; занимайся ими, когда схема валидации заслуживает доверия.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 04</span>
-      <h3 class="ml-walkthrough__step-heading">Ensembling</h3>
-      <div class="ml-walkthrough__step-body"><p>Average predictions from diverse models. Correlation below 0.95 between model predictions gives useful ensemble gains. Diversity comes from different algorithms (GBM vs NN vs linear), different feature sets, and different random seeds. Ensembling identical models adds no benefit.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Ансамблирование</h3>
+      <div class="ml-walkthrough__step-body"><p>Усредняй предсказания разных моделей. Чем ниже корреляция их ошибок, тем больше выигрыш от ансамбля. Разнообразие дают разные алгоритмы (GBM vs NN vs линейные), разные наборы признаков и, слабее, разные seed-ы. Ансамбль почти одинаковых моделей почти ничего не даёт.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 05</span>
-      <h3 class="ml-walkthrough__step-heading">Late-stage: pseudo-labeling</h3>
-      <div class="ml-walkthrough__step-body"><p>Pseudo-labeling on high-confidence test predictions can give a final boost in the last days. Train on original training data plus confident test predictions treated as labeled. Only use test examples where the model is very confident (top 10-20% by confidence). Validate that CV score improves before submitting.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Финальная стадия: pseudo-labeling</h3>
+      <div class="ml-walkthrough__step-body"><p>Pseudo-labeling на уверенных предсказаниях test может дать прирост в последние дни: учим модель на train плюс уверенные предсказания test как на размеченных данных (берём только самые уверенные, например top 10–20%). Проверь, что правила соревнования это разрешают, и следи, чтобы псевдометки не попадали в валидационные фолды — иначе CV станет оптимистичной.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
 </div>
 
-    <div class="ml-quiz">
-  <div class="ml-quiz__header">
-    <span class="ml-quiz__label">Проверь себя</span>
-    <h3 class="ml-quiz__title">Kaggle competition strategy</h3>
-  </div>
-  <ol class="ml-quiz__list">
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What is target leakage and how do you detect it?</summary>
-        <div class="ml-quiz__a"><p>Target leakage occurs when features contain information about the target that would not be available at prediction time. Detection: (1) check if any feature has near-perfect correlation with the target, (2) check if removing suspicious features causes a dramatic score drop, (3) check feature timestamp — was it recorded before or after the target event? (4) compare feature distributions between train/test — a feature absent from test is suspicious.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why is stratified cross-validation important for imbalanced competitions?</summary>
-        <div class="ml-quiz__a"><p>Random splits may put almost all positive examples in one fold, making other folds useless for evaluating minority-class performance. Stratified KFold maintains the class ratio in each fold, giving stable and representative evaluation. For very imbalanced data (1% positive) a random split could produce a fold with 0 positives, making fold evaluation impossible.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">When does ensembling improve the leaderboard score?</summary>
-        <div class="ml-quiz__a"><p>Ensembling helps when models make different errors — low prediction correlation means their mistakes do not overlap. Averaging diverse models reduces variance. It does not help when all models are similar (same algorithm, same features, different seeds only). Best gains come from ensembling fundamentally different model types: GBM plus NN plus linear model each bring different inductive biases.</p></div>
-      </details>
-    </li>
-  </ol>
-</div>
-
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Validating on a random split instead of a time-ordered split for time-series data causes severe overfitting to future data — CV scores will be much better than the public leaderboard. The model learns future patterns that are not available at prediction time. This is the most common reason strong local CV scores fail to translate to leaderboard performance in time-series competitions.</p>
+  <p>Валидация на случайном сплите вместо разбиения по времени для временных рядов приводит к утечке будущего: модель видит в train паттерны, которых при реальном прогнозе ещё нет, и CV получается заметно лучше leaderboard. Это самая частая причина, почему сильная локальная CV не переносится на leaderboard в соревнованиях по временным рядам.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="kaggle">
@@ -246,7 +200,12 @@ print(scores, np.mean(scores))
   
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-5-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>competition score = feature quality + validation quality + ensemble quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">feature quality</span><span class="fa-name">качество признаков</span><span class="fa-desc">насколько хорошо engineered features раскрывают signal в данных.</span></div><div class="formula-anatomy__row"><span class="fa-sym">validation quality</span><span class="fa-name">качество валидации</span><span class="fa-desc">насколько локальная CV честно предсказывает leaderboard/generalization.</span></div><div class="formula-anatomy__row"><span class="fa-sym">ensemble quality</span><span class="fa-name">качество ансамбля</span><span class="fa-desc">насколько модели дают полезную diversity, а не дублируют ошибки друг друга.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> в Kaggle главный актив — не одна модель, а хороший validation loop и disciplined experimentation.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> leaderboard часто улучшается не от новой архитектуры, а от честного CV и нескольких слабо коррелированных моделей.</div></div></section>
-  <section class="ml-study-practice" data-quality-pass="proj-10-5"><h2>Упражнения: Kaggle Walkthrough</h2><details><summary>[Foundational] Leakage audit</summary><div class="intuition-content">Назови три типичных источника leakage в табличной competition.</div></details><details><summary>[Intermediate] CV design</summary><div class="intuition-content">Подбери split strategy для временной, grouped и обычной табличной competition.</div></details><details><summary>[Hard] Ensemble plan</summary><div class="intuition-content">Опиши, как оценить, стоит ли добавлять ещё одну модель в ensemble.</div></details></section>
+  <section class="ml-study-practice" data-quality-pass="proj-10-5"><h2>Упражнения: Kaggle Walkthrough</h2><details><summary>[Foundational] Leakage audit</summary><div class="intuition-content">Назови три типичных источника leakage в табличной competition.</div></details><details><summary>[Intermediate] CV design</summary><div class="intuition-content">Подбери split strategy для временной, grouped и обычной табличной competition.</div></details><details><summary>[Hard] Ensemble plan</summary><div class="intuition-content">Опиши, как оценить, стоит ли добавлять ещё одну модель в ensemble.</div></details>    <details><summary>[Foundational] Разбор соревнования</summary><p>Выбери датасет Kaggle и выпиши метрику, target, формат сабмита и вероятные риски утечки.</p></details>
+      <details><summary>[Intermediate] Три вида KFold</summary><p>Реализуй KFold, StratifiedKFold и GroupKFold на игрушечном датасете и объясни, когда каждый из них ломается.</p></details>
+      <details><summary>[Intermediate] Target encoding</summary><p>Сделай target encoding внутри фолдов и сравни его с «протекающим» глобальным вариантом.</p></details>
+      <details><summary>[Practice] Таблица экспериментов</summary><p>Заведи таблицу экспериментов: модель, признаки, CV score, LB score, заметки.</p></details>
+      <details><summary>[Interview] Public vs private</summary><p>Объясни, почему модель может улучшить public LB, но ухудшиться на private LB.</p></details>
+  </section>
   <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -277,10 +236,22 @@ print(scores, np.mean(scores))
       <div class="ml-quiz__a"><p>Стратегии: (1) усреднение (soft voting) разных типов моделей (GBM + NN + linear), (2) rank averaging — усреднение рангов предсказаний, (3) stacking — meta-learner на OOF предсказаниях. Ключевое: diverse models с низкой корреляцией ошибок дают лучший ансамбль, чем 10 похожих моделей.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое target leakage и как её обнаружить?</summary>
+      <div class="ml-quiz__a"><p>Утечка — когда признаки содержат информацию о target, недоступную в момент предсказания. Как искать: (1) признак с почти идеальной связью с target; (2) резкое падение score после удаления подозрительного признака; (3) время записи признака — до или после события target? (4) сравнение распределений признаков в train и test — признак, которого нет или который ведёт себя иначе в test, подозрителен.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем стратифицированная кросс-валидация в соревнованиях с дисбалансом?</summary>
+      <div class="ml-quiz__a"><p>При случайном разбиении доля позитивов в фолдах может сильно колебаться, и оценка на миноритарном классе становится шумной. StratifiedKFold сохраняет долю классов в каждом фолде и даёт более стабильную оценку. На маленьких датасетах с очень редким классом случайный сплит может вообще дать фолд почти без позитивов.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="proj-10-5"><h2>Checkpoint: 10.5 Kaggle Walkthrough</h2><ul><li>Почему локальный CV важнее публичного leaderboard?</li><li>Как проверить, не строишь ли ты leaderboard-overfitting?</li><li>Какие признаки стоит логировать между экспериментами?</li><li>Когда ensemble реально помогает?</li><li>Rubber duck: объясни competition pipeline как дисциплину валидации, а не охоту за одной удачной моделью.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-5"><h2>Checkpoint: 10.5 Kaggle Walkthrough</h2><ul><li>Почему локальный CV важнее публичного leaderboard?</li><li>Как проверить, не строишь ли ты leaderboard-overfitting?</li><li>Какие признаки стоит логировать между экспериментами?</li><li>Когда ensemble реально помогает?</li><li>Какой сплит соответствует процессу порождения данных?</li><li>Какие признаки под риском утечки?</li><li>Можешь объяснить каждое изменение признаков и моделей в финальном решении?</li><li>Rubber duck: объясни competition pipeline как дисциплину валидации, а не охоту за одной удачной моделью.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

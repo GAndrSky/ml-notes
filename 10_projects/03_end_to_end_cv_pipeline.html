@@ -22,7 +22,7 @@
         <span class="tag">Deployment</span>
       </div>
       <h1>10.3 Project: End-to-End CV Pipeline</h1>
-      <p class="muted">Build a portfolio-grade computer vision project: dataset, training, evaluation, error analysis, export, and FastAPI inference endpoint.</p>
+      <p class="muted">Проект уровня портфолио по computer vision: датасет, обучение, оценка, error analysis, экспорт и inference-endpoint на FastAPI.</p>
     </section>
 
     
@@ -50,48 +50,48 @@
 </div>
 <section class="card">
       <h2>TL;DR</h2>
-      <p>The goal is not just a good model. The goal is a reproducible CV system with clear data assumptions, metrics, failure cases, and a deployable inference contract.</p>
+      <p>Цель — не просто хорошая модель, а воспроизводимая CV-система с явными допущениями о данных, метриками, разобранными случаями провала и понятным контрактом inference.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../05_architectures/09_object_detection.html">5.9 Detection</a>, <a href="../05_architectures/10_segmentation.html">5.10 Segmentation</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>12-24 hours</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High</span></div>
-      <div class="meta-card"><strong>Portfolio value</strong><span>High if documented well</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="../05_architectures/09_object_detection.html">5.9 Detection</a>, <a href="../05_architectures/10_segmentation.html">5.10 Segmentation</a>, <a href="../09_mlops_deployment/02_model_serving.html">9.2 Serving</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>12–24 часа</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая</span></div>
+      <div class="meta-card"><strong>Ценность для портфолио</strong><span>Высокая, если хорошо задокументировать</span></div>
     </section>
 
     <section class="card">
       <h2>Deliverables</h2>
       <ul>
-        <li>Dataset card: source, labels, splits, class imbalance, known bias.</li>
-        <li>Training script with config file and deterministic split.</li>
-        <li>Metrics report: mAP/IoU/F1, latency, confusion/error cases.</li>
-        <li>Model export artifact and inference script.</li>
-        <li>FastAPI endpoint with request/response examples.</li>
-        <li>README with setup, results table, and demo images.</li>
+        <li>Dataset card: источник, разметка, сплиты, дисбаланс классов, известные смещения.</li>
+        <li>Скрипт обучения с config-файлом и детерминированным сплитом.</li>
+        <li>Отчёт по метрикам: mAP/IoU/F1, latency, confusion matrix и разбор ошибок.</li>
+        <li>Экспортированная модель и inference-скрипт.</li>
+        <li>FastAPI-endpoint с примерами запроса и ответа.</li>
+        <li>README с установкой, таблицей результатов и демо-картинками.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>System pipeline</h2>
+      <h2>Пайплайн системы</h2>
       <div class="formula" data-no-tex>raw images -> validation -> annotation format -> training -> evaluation -> export -> API -> monitoring</div>
-      <p><strong>What to notice:</strong> most real CV bugs happen before and after training: wrong labels, wrong coordinate format, broken preprocessing, inconsistent resize, or serving-time mismatch.</p>
+      <p><strong>На что обратить внимание:</strong> большинство реальных CV-багов возникает до и после обучения: неверные метки, не тот формат координат, сломанная предобработка, разный resize, расхождение со serving.</p>
     </section>
 
     <section class="card">
-      <h2>Model choice</h2>
+      <h2>Выбор модели</h2>
       <table>
-        <thead><tr><th>Task</th><th>Good baseline</th><th>Metric</th><th>Risk</th></tr></thead>
+        <thead><tr><th>Задача</th><th>Хороший baseline</th><th>Метрика</th><th>Риск</th></tr></thead>
         <tbody>
-          <tr><td>Detection</td><td>YOLO-style model</td><td>mAP, latency</td><td>small objects, NMS threshold</td></tr>
-          <tr><td>Segmentation</td><td>U-Net / DeepLab-like model</td><td>Dice, mIoU</td><td>class imbalance, boundaries</td></tr>
-          <tr><td>Classification</td><td>ResNet / ViT fine-tune</td><td>F1, calibration</td><td>shortcut learning</td></tr>
+          <tr><td>Detection</td><td>Модель в стиле YOLO</td><td>mAP, latency</td><td>мелкие объекты, порог NMS</td></tr>
+          <tr><td>Segmentation</td><td>U-Net / DeepLab-подобная модель</td><td>Dice, mIoU</td><td>дисбаланс классов, границы</td></tr>
+          <tr><td>Classification</td><td>Fine-tune ResNet / ViT</td><td>F1, калибровка</td><td>shortcut learning</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>Runnable serving skeleton</h2>
+      <h2>Минимальный serving-скелет</h2>
       <pre><code class="language-python"># What it does: minimal FastAPI inference contract for a CV model
 # Input shape: uploaded image bytes
 # Output shape: JSON with predictions
@@ -118,37 +118,18 @@ async def predict_endpoint(file: UploadFile):
     <section class="card">
       <h2>Error analysis</h2>
       <ul>
-        <li>Sort false positives by confidence: what patterns fool the model?</li>
-        <li>Sort false negatives by object size and lighting.</li>
-        <li>Check performance per class, not only global score.</li>
-        <li>Measure latency with realistic image sizes and batch size 1.</li>
+        <li>Отсортируй false positives по confidence: какие паттерны обманывают модель?</li>
+        <li>Отсортируй false negatives по размеру объекта и освещению.</li>
+        <li>Смотри качество по каждому классу, а не только общий score.</li>
+        <li>Измеряй latency на реалистичных размерах изображений и batch size 1.</li>
       </ul>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Foundational</summary><div class="intuition-content">Create a dataset card for a public CV dataset and list three possible biases.</div></details>
-      <details class="intuition-block"><summary>Intermediate</summary><div class="intuition-content">Write a preprocessing function and unit-test that output tensor shape is correct.</div></details>
-      <details class="intuition-block"><summary>Hard</summary><div class="intuition-content">Design an experiment to compare two confidence thresholds for production.</div></details>
-      <details class="intuition-block"><summary>Coding</summary><div class="intuition-content">Extend the FastAPI skeleton to return annotated image metadata.</div></details>
-      <details class="intuition-block"><summary>Interview</summary><div class="intuition-content">Explain how you would monitor drift in a deployed CV model.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What is your train/validation/test split policy?</li>
-        <li>Which metric matches the business problem?</li>
-        <li>What are the top three failure modes?</li>
-        <li>Can the model be served with acceptable latency?</li>
-      </ol>
     </section>
 
     <div class="ml-walkthrough">
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">Building a CV pipeline</span>
+      <span class="ml-walkthrough__title">Строим CV-пайплайн</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -159,63 +140,36 @@ async def predict_endpoint(file: UploadFile):
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 01</span>
-      <h3 class="ml-walkthrough__step-heading">Data audit</h3>
-      <div class="ml-walkthrough__step-body"><p>Check class balance, image quality, and label noise before training anything. Fix class imbalance with weighted sampling or oversampling. Identify and remove mislabeled examples. A bad dataset produces a bad model regardless of architecture.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Аудит данных</h3>
+      <div class="ml-walkthrough__step-body"><p>До любого обучения проверь баланс классов, качество изображений и шум в разметке. Дисбаланс компенсируй взвешенным сэмплингом или oversampling, ошибочно размеченные примеры найди и убери. Плохой датасет даёт плохую модель при любой архитектуре.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 02</span>
       <h3 class="ml-walkthrough__step-heading">Baseline</h3>
-      <div class="ml-walkthrough__step-body"><p>Train a simple ResNet-18 for 5 epochs to get a number to beat. This establishes your floor and validates the data loading pipeline. Do not add augmentation or custom architecture until the baseline runs cleanly.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Обучи простой ResNet-18 на 5 эпох, чтобы получить число, которое нужно побить. Это нижняя планка и заодно проверка загрузки данных. Не добавляй аугментации и свою архитектуру, пока baseline не работает чисто.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 03</span>
       <h3 class="ml-walkthrough__step-heading">Error analysis</h3>
-      <div class="ml-walkthrough__step-body"><p>Look at worst predictions. Identify patterns: blurry images, edge cases, mislabels. Sort false positives by confidence. Error analysis tells you what to fix next — augmentation, more data for specific classes, or architecture change.</p></div>
+      <div class="ml-walkthrough__step-body"><p>Посмотри на худшие предсказания и найди паттерны: размытые изображения, пограничные случаи, ошибки разметки. Отсортируй false positives по confidence. Error analysis подсказывает, что чинить дальше: аугментации, больше данных для конкретных классов или архитектуру.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 04</span>
-      <h3 class="ml-walkthrough__step-heading">Iterate</h3>
-      <div class="ml-walkthrough__step-body"><p>Add augmentation, tune architecture, and adjust LR schedule based on error analysis findings. Change one thing at a time. Track per-class metrics, not just overall accuracy — improvements on hard classes may not show up in aggregate scores.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Итерации</h3>
+      <div class="ml-walkthrough__step-body"><p>По результатам error analysis добавляй аугментации, меняй архитектуру и LR schedule — по одному изменению за раз. Отслеживай метрики по классам, а не только общую accuracy: улучшения на трудных классах могут быть не видны в агрегате.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 05</span>
-      <h3 class="ml-walkthrough__step-heading">Export</h3>
-      <div class="ml-walkthrough__step-body"><p>Export to ONNX with dynamic batch axis: torch.onnx.export(..., dynamic_axes={'input': {0: 'batch'}}). Verify accuracy matches PyTorch within 0.5%. Test with batch size 1 at serving latency target before declaring done.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Экспорт</h3>
+      <div class="ml-walkthrough__step-body"><p>Экспортируй в ONNX с динамической осью batch: torch.onnx.export(..., dynamic_axes={'input': {0: 'batch'}}). Сверь выходы с PyTorch (максимальная разница порядка 1e-4…1e-3) и метрику на validation. Перед тем как считать работу законченной, проверь latency при batch size 1 против целевого значения.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
 </div>
 
-    <div class="ml-quiz">
-  <div class="ml-quiz__header">
-    <span class="ml-quiz__label">Проверь себя</span>
-    <h3 class="ml-quiz__title">End-to-end CV pipeline</h3>
-  </div>
-  <ol class="ml-quiz__list">
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why should you do error analysis before choosing a better architecture?</summary>
-        <div class="ml-quiz__a"><p>A better architecture fixes model capacity, but most CV failures come from data issues: class imbalance, mislabels, distribution shift, or preprocessing bugs. Error analysis reveals whether you need more data, better augmentation, or a different architecture. Swapping to a larger model on bad data wastes compute without improving production metrics.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What is the most common cause of train-test accuracy gap in CV?</summary>
-        <div class="ml-quiz__a"><p>Distribution shift between training and test data is the most common cause. This includes different lighting conditions, camera angles, resolutions, or image preprocessing. Class imbalance in training but not test data is another frequent cause. Models that learn shortcuts (background texture instead of object shape) also show large train-test gaps.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why export to ONNX instead of serving the PyTorch model directly?</summary>
-        <div class="ml-quiz__a"><p>ONNX enables deployment without a Python/PyTorch runtime, reducing container size and startup time. ONNX Runtime often reduces latency noticeably through operator fusion and hardware-specific kernels, especially on CPU, but the gain depends on the model and hardware — benchmark it and check numerical parity. It also enables deployment on edge devices and CPUs that do not support PyTorch natively.</p></div>
-      </details>
-    </li>
-  </ol>
-</div>
-
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Skipping the data audit and training on imbalanced data produces a model that gets high accuracy by ignoring minority classes — misleading metrics hide the failure. A model predicting the majority class 95% of the time achieves 95% accuracy on a 95/5 split while being completely useless. Always check per-class metrics before reporting results.</p>
+  <p>Если пропустить аудит данных и учиться на несбалансированных данных, модель получит высокую accuracy, игнорируя миноритарные классы, — метрика скрывает провал. Модель, всегда предсказывающая мажоритарный класс, на сплите 95/5 даёт 95% accuracy и при этом бесполезна. Всегда смотри метрики по классам, прежде чем отчитываться о результатах.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="cv-pipeline">
@@ -233,7 +187,12 @@ async def predict_endpoint(file: UploadFile):
   
   <script src="../bundle.js" defer></script>
   <section class="card" data-quality-pass="proj-10-3-anatomy"><h2>Разбор ключевой формулы</h2><div class="formula" data-no-tex>pipeline quality = data quality + model quality + serving quality</div><div class="formula-anatomy"><div class="formula-anatomy__header">Что означают символы</div><div class="formula-anatomy__grid"><div class="formula-anatomy__row"><span class="fa-sym">data quality</span><span class="fa-name">данные и разметка</span><span class="fa-desc">насколько dataset чистый, согласованный и релевантный задаче.</span></div><div class="formula-anatomy__row"><span class="fa-sym">model quality</span><span class="fa-name">качество модели</span><span class="fa-desc">mAP, Dice, F1 или другая выбранная метрика.</span></div><div class="formula-anatomy__row"><span class="fa-sym">serving quality</span><span class="fa-name">качество доставки</span><span class="fa-desc">latency, robustness и совпадение preprocessing на inference с train.</span></div></div><hr class="formula-anatomy__divider"><div class="formula-anatomy__intuition"><strong>Интуиция:</strong> end-to-end CV pipeline ломается чаще на данных и serving, чем на самой архитектуре.</div><div class="formula-anatomy__analogy"><strong>Числовой пример:</strong> даже при хорошем detector serving-time resize mismatch может резко ухудшить mAP в проде.</div></div></section>
-  <section class="ml-study-practice" data-quality-pass="proj-10-3"><h2>Упражнения: End-to-End CV Pipeline</h2><details><summary>[Foundational] Dataset audit</summary><div class="intuition-content">Составь checklist для проверки annotation quality, class balance и coordinate format.</div></details><details><summary>[Intermediate] Serving consistency</summary><div class="intuition-content">Опиши, как проверить, что train-time и serving-time preprocessing идентичны.</div></details><details><summary>[Hard] Production rollback</summary><div class="intuition-content">Сформулируй plan rollback, если online false positives резко выросли после деплоя.</div></details></section>
+  <section class="ml-study-practice" data-quality-pass="proj-10-3"><h2>Упражнения: End-to-End CV Pipeline</h2><details><summary>[Foundational] Dataset audit</summary><div class="intuition-content">Составь checklist для проверки annotation quality, class balance и coordinate format.</div></details><details><summary>[Intermediate] Serving consistency</summary><div class="intuition-content">Опиши, как проверить, что train-time и serving-time preprocessing идентичны.</div></details><details><summary>[Hard] Production rollback</summary><div class="intuition-content">Сформулируй plan rollback, если online false positives резко выросли после деплоя.</div></details>    <details><summary>[Foundational] Dataset card</summary><p>Составь dataset card для публичного CV-датасета и назови три возможных смещения.</p></details>
+      <details><summary>[Intermediate] Тест предобработки</summary><p>Напиши функцию предобработки и unit-тест, проверяющий shape и dtype выходного тензора.</p></details>
+      <details><summary>[Hard] Порог confidence</summary><p>Спроектируй эксперимент для сравнения двух порогов confidence в продакшене.</p></details>
+      <details><summary>[Coding] Метаданные в API</summary><p>Расширь FastAPI-скелет, чтобы он возвращал метаданные разметки (боксы, классы, confidence).</p></details>
+      <details><summary>[Interview] Мониторинг drift</summary><p>Объясни, как бы ты мониторил drift задеплоенной CV-модели.</p></details>
+  </section>
   <div class="ml-quiz">
   <div class="ml-quiz__header">
     <span class="ml-quiz__label">Проверь себя</span>
@@ -264,10 +223,28 @@ async def predict_endpoint(file: UploadFile):
       <div class="ml-quiz__a"><p>Грубый ориентир: при fine-tuning pretrained-модели часто хватает от сотен примеров на класс (для простых классов — и десятков), для обучения с нуля нужны тысячи–десятки тысяч. Надёжнее проверить learning curve: как меняется val-качество при 25/50/100% данных. Признаки нехватки: большой gap train/val, высокая variance результатов. Стратегии при нехватке: transfer learning, data augmentation, self-supervised pretraining (DINO, MAE).</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему error analysis нужно делать до выбора более сильной архитектуры?</summary>
+      <div class="ml-quiz__a"><p>Архитектура меняет ёмкость модели, но большинство провалов в CV — из-за данных: дисбаланс классов, ошибки разметки, distribution shift, баги предобработки. Error analysis показывает, что нужно: больше данных, другие аугментации или другая архитектура. Модель покрупнее на плохих данных тратит compute без улучшения продакшен-метрик.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что чаще всего вызывает разрыв между train и test accuracy в CV?</summary>
+      <div class="ml-quiz__a"><p>Distribution shift между train и test: другое освещение, ракурсы, разрешение, предобработка. Частая причина — и разный баланс классов. Модели, выучившие shortcut (текстура фона вместо формы объекта), тоже дают большой разрыв. (Чистое переобучение на маленьком датасете — ещё одна причина; её отличают по learning curves.)</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Зачем экспортировать в ONNX, а не сервить PyTorch-модель напрямую?</summary>
+      <div class="ml-quiz__a"><p>ONNX позволяет деплоить без Python/PyTorch runtime — меньше контейнер и быстрее старт. ONNX Runtime часто заметно снижает latency за счёт fusion операторов и kernel-ов под конкретное железо, особенно на CPU, но выигрыш зависит от модели и железа — меряй и проверяй численное совпадение. Кроме того, ONNX открывает деплой на edge-устройства и рантаймы без PyTorch.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="proj-10-3"><h2>Checkpoint: 10.3 CV Pipeline</h2><ul><li>Где в CV pipeline чаще всего появляется train-serving skew?</li><li>Какая метрика соответствует задаче detection/segmentation?</li><li>Как ты валидируешь качество разметки?</li><li>Какие артефакты нужны для воспроизводимого деплоя?</li><li>Rubber duck: объясни весь CV pipeline от raw image до API ответа.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="proj-10-3"><h2>Checkpoint: 10.3 CV Pipeline</h2><ul><li>Где в CV pipeline чаще всего появляется train-serving skew?</li><li>Какая метрика соответствует задаче detection/segmentation?</li><li>Как ты валидируешь качество разметки?</li><li>Какие артефакты нужны для воспроизводимого деплоя?</li><li>Какая у тебя политика разбиения train/validation/test?</li><li>Какие три главных failure mode у твоей модели?</li><li>Укладывается ли модель в нужную latency при serving?</li><li>Rubber duck: объясни весь CV pipeline от raw image до API ответа.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

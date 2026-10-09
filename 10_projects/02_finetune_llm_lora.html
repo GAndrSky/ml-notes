@@ -23,41 +23,41 @@
         <span class="tag">PEFT</span>
       </div>
       <h1>10.2 Project: Fine-tune an LLM with LoRA</h1>
-      <p class="muted">Build a complete parameter-efficient fine-tuning pipeline: prepare an instruction dataset, train LoRA adapters, evaluate behavior, export artifacts, and document failure modes.</p>
+      <p class="muted">Собираем полный пайплайн parameter-efficient fine-tuning: готовим instruction-датасет, обучаем LoRA-адаптеры, оцениваем поведение, экспортируем артефакты и документируем failure modes.</p>
     </div>
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>LoRA freezes the base model and trains small low-rank update matrices. This project teaches the practical workflow: data quality, prompt format, adapter placement, hyperparameters, evaluation, and safe export.</p>
+      <p>LoRA замораживает базовую модель и обучает маленькие low-rank матрицы обновления. Проект учит практическому workflow: качество данных, формат промпта, где ставить адаптеры, гиперпараметры, оценка и безопасный экспорт.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Project scope</h2>
+      <h2>Объём проекта</h2>
       <div class="grid-2">
         <div class="success">
           <strong>Deliverables</strong>
           <ul>
-            <li>A small instruction dataset in a documented format.</li>
-            <li>A training script using Transformers, Datasets, and PEFT.</li>
-            <li>A saved LoRA adapter with config and tokenizer.</li>
-            <li>An evaluation notebook with before/after examples.</li>
-            <li>A README explaining limits, cost, and failure cases.</li>
+            <li>Небольшой instruction-датасет в задокументированном формате.</li>
+            <li>Скрипт обучения на Transformers, Datasets и PEFT.</li>
+            <li>Сохранённый LoRA-адаптер с config и tokenizer.</li>
+            <li>Notebook с оценкой и примерами до/после.</li>
+            <li>README с ограничениями, стоимостью и случаями провала.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Scope control</strong>
+          <strong>Контроль объёма</strong>
           <ul>
-            <li>Start with a small model and a tiny dataset.</li>
-            <li>Do not claim the model learned facts from 50 examples.</li>
-            <li>Measure style and task-following changes separately from knowledge.</li>
-            <li>Keep a held-out validation set of prompts.</li>
+            <li>Начни с маленькой модели и крошечного датасета.</li>
+            <li>Не утверждай, что модель выучила факты по 50 примерам.</li>
+            <li>Измеряй изменения стиля и следования задаче отдельно от знаний.</li>
+            <li>Держи отложенный validation-набор промптов.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Core idea</h2>
+      <h2>Основная идея</h2>
       <div class="formula" data-no-tex>W' = W + DeltaW, where DeltaW = B A and rank(DeltaW) << rank(W)</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -87,8 +87,8 @@
     </section>
 
     <section class="ml-theory-section">
-      <h2>Milestone 1 - dataset format</h2>
-      <p>For instruction tuning, data format often matters more than rank or learning rate. Keep examples consistent and aligned with how you will prompt the model at inference.</p>
+      <h2>Этап 1 — формат датасета</h2>
+      <p>В instruction tuning формат данных часто важнее rank или learning rate. Примеры должны быть единообразными и совпадать с тем, как ты будешь промптить модель на inference.</p>
       <pre><code class="language-python"># What it does: creates a tiny instruction dataset in chat format.
 # Input shapes: list[dict] with instruction/input/output strings
 # Output shapes: Hugging Face Dataset with one text column
@@ -125,7 +125,7 @@ print(dataset[0]["text"])
     </section>
 
     <section class="ml-theory-section">
-      <h2>Milestone 2 - configure LoRA</h2>
+      <h2>Этап 2 — настройка LoRA</h2>
       <pre><code class="language-python"># What it does: wraps a causal LM with LoRA adapters.
 # Input shapes: tokenized batch input_ids=(B,L), labels=(B,L)
 # Output shapes: model returns loss=scalar and logits=(B,L,V)
@@ -155,7 +155,7 @@ model.print_trainable_parameters()
     </section>
 
     <section class="ml-theory-section">
-      <h2>Milestone 3 - train</h2>
+      <h2>Этап 3 — обучение</h2>
       <pre><code class="language-python"># What it does: trains LoRA adapters with Hugging Face Trainer.
 # Input shapes: dataset["text"] tokenized to input_ids=(B,L)
 # Output shapes: saved adapter files in output_dir
@@ -206,25 +206,25 @@ tokenizer.save_pretrained("outputs/lora-adapter")
     </section>
 
     <section class="ml-theory-section">
-      <h2>Milestone 4 - evaluate before and after</h2>
-      <p>Do not evaluate only by looking at one pretty answer. Build a small fixed set of prompts and compare base model vs adapted model using the same decoding settings.</p>
+      <h2>Этап 4 — оценка до и после</h2>
+      <p>Не оценивай по одному красивому ответу. Собери небольшой фиксированный набор промптов и сравни базовую и адаптированную модель с одинаковыми настройками декодирования.</p>
       <div class="grid-2">
         <div class="card">
-          <h3>Qualitative eval</h3>
+          <h3>Качественная оценка</h3>
           <ul>
-            <li>Does the model follow the target format?</li>
-            <li>Does it avoid hallucinating unsupported details?</li>
-            <li>Does it preserve useful base-model ability?</li>
-            <li>Does it become too repetitive or too short?</li>
+            <li>Следует ли модель целевому формату?</li>
+            <li>Не галлюцинирует ли неподтверждённые детали?</li>
+            <li>Сохранила ли полезные способности базовой модели?</li>
+            <li>Не стала ли слишком повторяющейся или слишком краткой?</li>
           </ul>
         </div>
         <div class="card">
-          <h3>Quantitative eval</h3>
+          <h3>Количественная оценка</h3>
           <ul>
-            <li>Held-out loss on validation prompts.</li>
-            <li>Exact format compliance for structured outputs.</li>
-            <li>Human preference labels for before/after answers.</li>
-            <li>Latency and memory if adapter is used in serving.</li>
+            <li>Held-out loss на validation-промптах.</li>
+            <li>Точное соответствие формату для структурированных выходов.</li>
+            <li>Человеческие предпочтения между ответами до/после.</li>
+            <li>Latency и память, если адаптер используется в serving.</li>
           </ul>
         </div>
       </div>
@@ -253,26 +253,26 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
     </section>
 
     <section class="ml-theory-section">
-      <h2>Milestone 5 - export and document</h2>
-      <p>For a portfolio project, the README matters. It should make the experiment reproducible and honest.</p>
+      <h2>Этап 5 — экспорт и документация</h2>
+      <p>Для портфолио README важен не меньше кода: он должен делать эксперимент воспроизводимым и честным.</p>
       <div class="grid-2">
         <div class="insight-card">
-          <h3>README checklist</h3>
+          <h3>Чеклист README</h3>
           <ul>
-            <li>Base model and license.</li>
-            <li>Dataset source, size, filtering, and examples.</li>
-            <li>Hardware, training time, and peak memory.</li>
-            <li>Hyperparameters and adapter target modules.</li>
-            <li>Before/after examples and failure cases.</li>
+            <li>Базовая модель и её лицензия.</li>
+            <li>Источник датасета, размер, фильтрация и примеры.</li>
+            <li>Железо, время обучения и peak memory.</li>
+            <li>Гиперпараметры и target modules адаптера.</li>
+            <li>Примеры до/после и случаи провала.</li>
           </ul>
         </div>
         <div class="insight-card">
-          <h3>Export options</h3>
+          <h3>Варианты экспорта</h3>
           <ul>
-            <li>Save adapter only for PEFT loading.</li>
-            <li>Merge adapter into base weights for simpler inference.</li>
-            <li>Quantize for deployment only after checking quality.</li>
-            <li>Keep tokenizer and prompt template versioned.</li>
+            <li>Сохранить только адаптер для загрузки через PEFT.</li>
+            <li>Слить адаптер с базовыми весами для более простого inference.</li>
+            <li>Квантовать для деплоя — только после проверки качества.</li>
+            <li>Версионировать tokenizer и шаблон промпта.</li>
           </ul>
         </div>
       </div>
@@ -280,37 +280,37 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
 
     <section class="ml-exercises-section">
       <h2>Exercises</h2>
-      <p class="warn"><strong>Do not skip exercises.</strong> LoRA projects fail most often because of poor data, weak evaluation, or unrealistic claims.</p>
+      <p class="warn"><strong>Не пропускай упражнения.</strong> LoRA-проекты чаще всего проваливаются из-за плохих данных, слабой оценки или нереалистичных заявлений.</p>
       <div class="ml-exercise-list">
         <article class="exercise-card">
-          <div class="exercise-label">Foundational - data</div>
-          <h3>Create 50 high-quality examples</h3>
-          <p>Build a tiny instruction dataset for one narrow behavior, such as converting ML notes into interview answers.</p>
-          <details><summary>Show solution</summary><p>Use one prompt format, consistent output style, and a validation split. Keep examples narrow enough that you can judge success manually.</p></details>
+          <div class="exercise-label">Foundational · данные</div>
+          <h3>Собери 50 качественных примеров</h3>
+          <p>Сделай крошечный instruction-датасет для одного узкого поведения — например, превращать конспекты по ML в ответы для интервью.</p>
+          <details><summary>Show solution</summary><p>Один формат промпта, единый стиль ответов и validation split. Держи задачу настолько узкой, чтобы успех можно было оценить вручную.</p></details>
         </article>
         <article class="exercise-card">
-          <div class="exercise-label">Intermediate - training</div>
-          <h3>Run LoRA with two ranks</h3>
-          <p>Train with r=8 and r=32. Compare train loss, validation behavior, and output style.</p>
-          <details><summary>Show solution</summary><p>Higher rank can fit more task-specific behavior but can overfit small data. Use the held-out prompts to decide, not train loss alone.</p></details>
+          <div class="exercise-label">Intermediate · обучение</div>
+          <h3>Запусти LoRA с двумя rank</h3>
+          <p>Обучи с r=8 и r=32. Сравни train loss, поведение на validation и стиль ответов.</p>
+          <details><summary>Show solution</summary><p>Больший rank может выучить больше специфики задачи, но переобучиться на малых данных. Решай по отложенным промптам, а не только по train loss.</p></details>
         </article>
         <article class="exercise-card">
-          <div class="exercise-label">Intermediate - evaluation</div>
-          <h3>Build a before/after eval table</h3>
-          <p>For 10 held-out prompts, compare base and adapted answers side by side with notes.</p>
-          <details><summary>Show solution</summary><p>Track format compliance, correctness, concision, hallucination, and whether the answer follows the intended style.</p></details>
+          <div class="exercise-label">Intermediate · оценка</div>
+          <h3>Таблица оценки до/после</h3>
+          <p>Для 10 отложенных промптов сравни ответы базовой и адаптированной модели бок о бок, с заметками.</p>
+          <details><summary>Show solution</summary><p>Отслеживай соответствие формату, корректность, краткость, галлюцинации и следование нужному стилю.</p></details>
         </article>
         <article class="exercise-card">
-          <div class="exercise-label">Hard - ablation</div>
-          <h3>Change target modules</h3>
-          <p>Train one adapter on q/v only and one on q/k/v/o. Compare behavior and trainable parameter count.</p>
-          <details><summary>Show solution</summary><p>More target modules increase capacity and cost. On tiny data, the difference may be hard to measure unless the task is clear and evaluation is fixed.</p></details>
+          <div class="exercise-label">Hard · ablation</div>
+          <h3>Поменяй target modules</h3>
+          <p>Обучи один адаптер только на q/v и другой на q/k/v/o. Сравни поведение и число обучаемых параметров.</p>
+          <details><summary>Show solution</summary><p>Больше target modules — больше ёмкость и стоимость. На крошечных данных разницу трудно измерить, если задача нечёткая или оценка не зафиксирована.</p></details>
         </article>
         <article class="exercise-card">
-          <div class="exercise-label">Hard - deployment</div>
-          <h3>Serve the adapter locally</h3>
-          <p>Load the base model plus adapter and expose one `/generate` endpoint with FastAPI.</p>
-          <details><summary>Show solution</summary><p>Keep model loading outside the request handler, validate max_new_tokens, log latency, and return both answer and generation settings.</p></details>
+          <div class="exercise-label">Hard · деплой</div>
+          <h3>Подними адаптер локально</h3>
+          <p>Загрузи базовую модель с адаптером и сделай один endpoint <code>/generate</code> на FastAPI.</p>
+          <details><summary>Show solution</summary><p>Загружай модель вне обработчика запроса, валидируй max_new_tokens, логируй latency и возвращай и ответ, и настройки генерации.</p></details>
         </article>
       </div>
     </section>
@@ -345,20 +345,38 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
       <div class="ml-quiz__a"><p>Критерии: (1) размер — баланс качества и inference cost, (2) лицензия (Llama — commercial use с условиями, Mistral — Apache 2.0), (3) языковая поддержка, (4) context length, (5) уже ли обучена на похожей задаче (меньше fine-tuning данных нужно). Начинают с меньшей модели — быстрее итерации.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как rank LoRA связан с числом обучаемых параметров?</summary>
+      <div class="ml-quiz__a"><p>На слой: r · (d_in + d_out). Для проекции 4096×4096 при r=16: 16 · (4096 + 4096) = 131 072 параметра вместо 16.7M при полном fine-tuning. Удвоение rank удваивает число обучаемых параметров; rank задаёт размерность подпространства обновления.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему для большинства задач LoRA предпочтительнее полного fine-tuning?</summary>
+      <div class="ml-quiz__a"><p>Градиенты и optimizer state нужны только для матриц адаптера — это на порядки меньше памяти на эти части (сами базовые веса всё равно лежат в памяти; QLoRA дополнительно квантует их). Базовые веса заморожены, что снижает (но не исключает) catastrophic forgetting. Несколько адаптеров под разные задачи делят одну базовую модель. Для многих задач полезное обновление действительно хорошо приближается low-rank.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что будет, если поставить слишком большой rank?</summary>
+      <div class="ml-quiz__a"><p>Большой rank (например, r &gt; 64) без пропорционально большего датасета ведёт к переобучению: train loss падает, а качество на отложенных данных ухудшается — адаптер запоминает примеры. Следи за validation loss и используй early stopping. Кроме того, большой rank съедает выигрыш LoRA по памяти.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
 <section class="ml-checkpoint-section">
-      <h2>Learning checkpoint</h2>
+      <h2>Чекпоинт</h2>
       <ul>
-        <li>Can you explain why LoRA reduces trainable parameters?</li>
-        <li>Can you compute trainable parameters for a LoRA-adapted matrix?</li>
-        <li>Can you describe the full pipeline from raw examples to saved adapter?</li>
-        <li>Can you evaluate whether fine-tuning improved behavior or only changed style?</li>
-        <li>Can you name the main failure modes of tiny-data LoRA?</li>
+        <li>Можешь объяснить, почему LoRA уменьшает число обучаемых параметров?</li>
+        <li>Можешь посчитать число обучаемых параметров для матрицы с LoRA?</li>
+        <li>Можешь описать весь пайплайн от сырых примеров до сохранённого адаптера?</li>
+        <li>Можешь оценить, улучшил ли fine-tuning поведение или только изменил стиль?</li>
+        <li>Можешь назвать главные failure modes LoRA на крошечных данных?</li>
       </ul>
       <div class="ml-self-rating" data-topic-id="10_projects/02_finetune_llm_lora.html" data-title="Project: Fine-tune an LLM with LoRA">
-        <span>I can run and explain this LoRA project:</span>
+        <span>Могу запустить и объяснить этот LoRA-проект:</span>
         <button data-rating="1">1</button>
         <button data-rating="2">2</button>
         <button data-rating="3">3</button>
@@ -371,7 +389,7 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">Setting up LoRA fine-tuning</span>
+      <span class="ml-walkthrough__title">Настройка LoRA fine-tuning</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -382,63 +400,36 @@ print(tokenizer.decode(generated[0], skip_special_tokens=True))
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 01</span>
-      <h3 class="ml-walkthrough__step-heading">Choose target modules</h3>
-      <div class="ml-walkthrough__step-body"><p>Typically target q_proj and v_proj in attention, sometimes all linear layers. More modules means more capacity and more memory. Start narrow and expand if the model underfits the task.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Выбираем target modules</h3>
+      <div class="ml-walkthrough__step-body"><p>Обычно это q_proj и v_proj в attention, иногда все линейные слои. Больше модулей — больше ёмкость и память. Начни узко и расширяй, если модель недоучивается.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 02</span>
-      <h3 class="ml-walkthrough__step-heading">Set rank r</h3>
-      <div class="ml-walkthrough__step-body"><p>Start with r=8 or r=16. Lower rank means fewer parameters and more regularization. Higher rank increases capacity but raises overfitting risk on small datasets. Trainable params = r * (d_in + d_out) per layer.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Выбираем rank r</h3>
+      <div class="ml-walkthrough__step-body"><p>Начни с r=8 или r=16. Меньший rank — меньше параметров и сильнее регуляризация; больший — больше ёмкость, но выше риск переобучения на малых данных. Обучаемых параметров на слой: r · (d_in + d_out).</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 03</span>
-      <h3 class="ml-walkthrough__step-heading">Set alpha</h3>
-      <div class="ml-walkthrough__step-body"><p>Alpha scales the LoRA update: the adapter adds (alpha / r) · B A to the frozen weight. Set alpha = 2*r for stable training (e.g. r=16, alpha=32). This keeps the effective scaling constant as you sweep rank values.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Выбираем alpha</h3>
+      <div class="ml-walkthrough__step-body"><p>Alpha масштабирует обновление LoRA: адаптер добавляет (alpha / r) · B A к замороженному весу. Частое правило — alpha = 2·r (например, r=16, alpha=32): тогда множитель alpha/r = 2 не меняется при переборе rank, и learning rate не приходится подбирать заново.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 04</span>
-      <h3 class="ml-walkthrough__step-heading">Freeze base model weights</h3>
-      <div class="ml-walkthrough__step-body"><p>Only LoRA matrices should train. Verify with: sum(p.requires_grad for p in model.parameters()). In PEFT this happens automatically via get_peft_model, but always confirm the trainable parameter count matches expectations.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Замораживаем базовую модель</h3>
+      <div class="ml-walkthrough__step-body"><p>Обучаться должны только матрицы LoRA. Проверь: <code>sum(p.numel() for p in model.parameters() if p.requires_grad)</code> или <code>model.print_trainable_parameters()</code>. В PEFT заморозку делает get_peft_model, но всегда убеждайся, что число обучаемых параметров совпадает с ожидаемым.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Шаг 05</span>
-      <h3 class="ml-walkthrough__step-heading">Merge and save</h3>
-      <div class="ml-walkthrough__step-body"><p>After training, merge LoRA weights into base model for efficient inference: model = model.merge_and_unload(). This eliminates the adapter overhead at inference time. Keep the unmerged adapter if you want to switch tasks later.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Слияние и сохранение</h3>
+      <div class="ml-walkthrough__step-body"><p>После обучения LoRA-веса можно влить в базовую модель: <code>model = model.merge_and_unload()</code>. Это убирает overhead адаптера на inference. Несмёрженный адаптер сохрани, если хочешь потом переключать задачи.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
 </div>
 
-    <div class="ml-quiz">
-  <div class="ml-quiz__header">
-    <span class="ml-quiz__label">Проверь себя</span>
-    <h3 class="ml-quiz__title">LoRA fine-tuning</h3>
-  </div>
-  <ol class="ml-quiz__list">
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What is the relationship between LoRA rank and the number of trainable parameters?</summary>
-        <div class="ml-quiz__a"><p>Trainable parameters per layer = r * (d_in + d_out). For a 4096x4096 projection with r=16: 16 * (4096 + 4096) = 131,072 parameters instead of 16.7M for full fine-tuning. Doubling the rank doubles trainable params. Rank determines the dimensionality of the update subspace.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why is LoRA preferred over full fine-tuning for most tasks?</summary>
-        <div class="ml-quiz__a"><p>LoRA stores optimizer state only for adapter matrices, reducing GPU memory by 10-100x. The base model weights are frozen, which reduces (but does not eliminate) catastrophic forgetting — the adapter can still change behaviour a lot. Multiple task adapters can share one base model. Training is faster because fewer parameters receive gradient updates. For most tasks the useful adaptation truly lies in a low-rank subspace.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What happens if you set rank too high?</summary>
-        <div class="ml-quiz__a"><p>High rank (r &gt; 64) without a proportionally larger dataset causes the adapter to overfit — training loss drops but held-out performance degrades. The adapter memorizes the fine-tuning examples rather than adapting general capabilities. Monitor validation loss and use early stopping. Also, high rank defeats the memory efficiency purpose of LoRA.</p></div>
-      </details>
-    </li>
-  </ol>
-</div>
-
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Not freezing the base model weights defeats the purpose of LoRA — you end up full fine-tuning with extra parameters and more memory use. Optimizer state grows to cover all model parameters, eliminating the memory advantage. The adapter matrices become redundant overhead, and catastrophic forgetting risk increases significantly.</p>
+  <p>Если не заморозить базовую модель, LoRA теряет смысл: получается полный fine-tuning с лишними параметрами и большей памятью. Optimizer state растёт до всех параметров модели, преимущество по памяти исчезает, адаптер становится бесполезной надстройкой, а риск catastrophic forgetting заметно растёт.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="lora-finetuning">
