@@ -133,7 +133,7 @@
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Setting LoRA rank too high (r &gt; 64) without increasing the dataset size causes the adapter to overfit — you get great training loss but poor generalization. The adapter learns to memorize the fine-tuning data rather than adapt the model's general capabilities. Monitor held-out validation loss alongside training loss, and use the smallest rank that achieves the target task performance.</p>
+  <p>Если поднимать rank (например, до 64+) на маленьком датасете, адаптер может переобучиться: training loss отличный, а качество на новых данных хуже — адаптер заучивает примеры вместо того, чтобы аккуратно адаптировать модель. Смотри validation loss вместе с training loss и бери наименьший rank, который даёт нужное качество на задаче.</p>
 </div>
 
     <div class="card">
@@ -302,7 +302,7 @@ LoRA:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое LoRA и какую проблему он решает?</summary>
-      <div class="ml-quiz__a"><p>LoRA (Low-Rank Adaptation) замораживает предобученные веса W и добавляет обучаемое low-rank разложение: ΔW = A·B, где A ∈ ℝᵐˣʳ, B ∈ ℝʳˣⁿ, r << min(m,n). Обучается только ΔW — в 100-1000× меньше параметров. Это позволяет fine-tuning LLM на потребительских GPU.</p></div>
+      <div class="ml-quiz__a"><p>LoRA (Low-Rank Adaptation) замораживает предобученные веса W и добавляет обучаемое low-rank разложение: ΔW = B·A, где B ∈ ℝ^(d_out×r), A ∈ ℝ^(r×d_in), r << min(d_out, d_in). Обучается только ΔW — в 100-1000× меньше параметров. Это позволяет fine-tuning LLM на потребительских GPU.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -314,7 +314,7 @@ LoRA:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое QLoRA и как квантизация сочетается с LoRA?</summary>
-      <div class="ml-quiz__a"><p>QLoRA: веса базовой модели квантизируются в 4-bit NF4 (NormalFloat), но LoRA-адаптеры остаются в fp16/bf16. Double quantization снижает footprint квантизированных констант. Это позволяет обучать 65B-параметровую модель на одной GPU 24GB — разница с LoRA в 3-4× по памяти.</p></div>
+      <div class="ml-quiz__a"><p>QLoRA: веса базовой модели квантизируются в 4-bit NF4 (NormalFloat), но LoRA-адаптеры остаются в fp16/bf16. Double quantization снижает footprint квантизированных констант. Это позволяет дообучать 65B-параметровую модель на одной GPU с 48 ГБ (а 7–13B — на 24 ГБ) — разница с LoRA в 3-4× по памяти.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

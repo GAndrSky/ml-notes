@@ -216,6 +216,8 @@ assert all(field in example for field in required_fields)
           <p>Uses model-generated preference labels. Scales faster, but can amplify judge model biases and blind spots.</p>
         </div>
       </div>
+      <h3>ORPO и SimPO: без reference-модели</h3>
+      <p><strong>ORPO</strong> объединяет SFT и выравнивание в один этап: к обычному SFT-loss на chosen-ответе добавляется штраф по odds ratio между chosen и rejected, поэтому отдельная reference-модель и отдельный SFT-шаг не нужны. <strong>SimPO</strong> заменяет log-ratio к reference на среднюю (нормированную по длине) log-вероятность ответа и добавляет целевой зазор γ между chosen и rejected; нормировка по длине заодно снижает награду за многословие. Оба метода экономят память и compute (не нужно держать π_ref), но, как и DPO, полностью зависят от качества пар.</p>
     </section>
 
     <section class="ml-theory-section">
@@ -233,8 +235,8 @@ assert all(field in example for field in required_fields)
         <div class="warn">
           <strong>Training failures</strong>
           <ul>
-            <li>Beta too high: model drifts too far from reference.</li>
-            <li>Beta too low: preferences barely change behavior.</li>
+            <li>Beta too low: the anchor is weak — the model drifts far from the reference and over-optimizes the pairs.</li>
+            <li>Beta too high: the anchor is strong — preferences barely change behavior.</li>
             <li>Overfitting to style markers in preference data.</li>
             <li>Better preference score but worse factuality.</li>
           </ul>
@@ -304,7 +306,7 @@ assert all(field in example for field in required_fields)
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое отрицательный сдвиг в DPO и почему он может быть проблемой?</summary>
-      <div class="ml-quiz__a"><p>DPO может «деградировать» предпочтительный ответ, если он похож на нежелательный. Loss снижает вероятность y_l, но при этом может занизить и вероятность y_w, если β слишком мал. RLHF с KL-ограничением явно защищает от этого; IPO и другие варианты DPO исправляют эту проблему.</p></div>
+      <div class="ml-quiz__a"><p>DPO оптимизирует только разность log-ratio выбранного и отвергнутого ответов. Loss может падать, даже если вероятность y_w тоже снижается — просто медленнее, чем у y_l, особенно когда ответы похожи. Тогда модель «разучивает» и хорошие ответы. Помогают добавка SFT-loss на chosen-ответах, варианты вроде DPOP/IPO и мониторинг log-prob chosen во время обучения.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

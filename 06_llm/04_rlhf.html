@@ -137,7 +137,7 @@ J = 2.5 − 0.1×0.4 = 2.5 − 0.04 = 2.46</div>
         <p>Без KL модель нашла бы способ обмануть reward model — например, начинать каждый ответ с «Excellent question!».</p>
         <div class="wt-formula">β=0: J = E[r_φ] → модель оптимизирует только скор → reward hacking
 β>0: J штрафует за отклонение от base model → баланс</div>
-        <div class="wt-result">DPO (следующая лекция) упрощает RLHF: убирает явный RM и KL, обучая LLM напрямую на предпочтениях.</div>
+        <div class="wt-result">DPO (следующая лекция) упрощает RLHF: убирает отдельную reward model и RL-цикл и обучает LLM напрямую на парах предпочтений; KL-ограничение к reference-модели при этом остаётся — неявно, через β.</div>
       </div>
     </div>
   </div>
@@ -211,7 +211,7 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
       <div class="formula-anatomy__row"><span class="fa-sym">π_ref</span><span class="fa-name">reference policy</span><span class="fa-desc">Исходная SFT-модель, «якорь» обучения. KL-штраф удерживает π_θ рядом с ней, чтобы не деградировать.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Два противоречащих требования: максимизируй reward (E[r_φ]) и не уходи далеко от reference (KL↓). β задаёт, насколько серьёзно воспринимается второе. Это prevents reward hacking — ситуацию, когда модель «обманывает» reward model.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Два противоречащих требования: максимизируй reward (E[r_φ]) и не уходи далеко от reference (KL↓). β задаёт, насколько серьёзно воспринимается второе. Это предотвращает reward hacking — ситуацию, когда модель «обманывает» reward model.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Стажёр, которому дали цель (reward) и правило: не делай ничего, что сильно отличается от того, как делает опытный сотрудник (reference). β — строгость этого правила.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.1, E[r]=1.5, KL=2.0 → objective=1.5-0.1·2.0=1.3. Если β=1.0 → objective=1.5-2.0=-0.5: модель не выиграла от reward, потому что слишком отклонилась.</div>
     </div>
@@ -369,13 +369,13 @@ r_φ(x, y_w) > r_φ(x, y_l)</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое Constitutional AI (CAI) и чем отличается от RLHF?</summary>
-      <div class="ml-quiz__a"><p>CAI (Anthropic): вместо людских оценок пар ответов используются принципы (constitution), по которым AI сам критикует и переписывает свои ответы. Это снижает зависимость от дорогостоящей разметки людьми и масштабируется лучше — AI-feedback дешевле human feedback.</p></div>
+      <div class="ml-quiz__a"><p>CAI (Anthropic): для безвредности вместо людской разметки используются принципы (constitution): модель сама критикует и переписывает ответы (SL-этап), а затем AI-оценки по принципам заменяют людские сравнения (RLAIF). Данные о полезности (helpfulness) при этом по-прежнему собирались от людей. Это снижает зависимость от дорогостоящей разметки людьми и масштабируется лучше — AI-feedback дешевле human feedback.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему PPO сложен в реализации для LLM и что используют вместо?</summary>
-      <div class="ml-quiz__a"><p>PPO для LLM требует 4 модели одновременно в памяти (actor, critic, reference, reward), нестабилен при неправильных гиперпараметрах и медленен. DPO (Direct Preference Optimization) обходит reward model и RL полностью, напрямую оптимизируя предпочтения — проще, стабильнее, часто лучше.</p></div>
+      <div class="ml-quiz__a"><p>PPO для LLM требует 4 модели одновременно в памяти (actor, critic, reference, reward), нестабилен при неправильных гиперпараметрах и медленен. DPO (Direct Preference Optimization) обходит reward model и RL полностью, напрямую оптимизируя предпочтения — проще и стабильнее, по качеству часто сопоставимо с PPO.</p></div>
     </details>
   </li>
   </ol>

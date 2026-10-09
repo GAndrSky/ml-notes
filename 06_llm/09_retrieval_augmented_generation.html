@@ -136,6 +136,7 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> combine meaning-based search with exact-word search so neither failure mode dominates.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> find a book by both topic similarity and exact title words.</div>
       </div>
+      <p>Dense и BM25 scores живут в разных шкалах, поэтому перед смешиванием их нормируют (например, min-max внутри выдачи) или вместо взвешенной суммы используют Reciprocal Rank Fusion: score(d) = Σ 1/(k + rank_i(d)), k≈60.</p>
       <p>Reranking is usually a second stage: retrieve 50-200 candidates cheaply, then use a cross-encoder or LLM-based scorer on the top candidates to produce the final top-k context.</p>
     </section>
 
@@ -171,7 +172,9 @@ for i in top_idx:
 
 # Gotchas:
 # 1. This toy embedding is only for mechanics; use real embedding models in practice.
-# 2. Always inspect retrieved chunks before blaming the generator.</code></pre>
+# 2. Always inspect retrieved chunks before blaming the generator.
+# 3. Python hash() for strings is randomized per process (PYTHONHASHSEED),
+#    so this toy ranking can differ between runs; use a stable hash if you need reproducibility.</code></pre>
     </section>
 
     <section class="ml-theory-section">
@@ -198,6 +201,7 @@ for i in top_idx:
         </div>
       </div>
       <div class="formula" data-no-tex>Recall@K = queries_with_relevant_chunk_in_top_K / total_queries</div>
+      <p><strong>RAGAS</strong> — популярная библиотека для автоматической оценки RAG через LLM-судью: faithfulness (подтверждаются ли утверждения ответа контекстом), answer relevancy, context precision и context recall. Она удобна для регрессионных проверок, но LLM-судья сам ошибается, поэтому её оценки стоит периодически сверять с ручной разметкой.</p>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
         <div class="formula-anatomy__grid">

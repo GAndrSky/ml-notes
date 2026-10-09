@@ -267,19 +267,19 @@ for step in range(5):
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое KV-кеш и зачем он нужен при авторегрессионной генерации?</summary>
-      <div class="ml-quiz__a"><p>При генерации токена t нужно attention ко всем предыдущим токенам 1..t-1. Без кеша K и V нужно пересчитывать для всех прошлых токенов на каждом шаге — O(t) на токен. KV-кеш хранит уже вычисленные K,V: генерация каждого нового токена занимает O(1) вместо O(t).</p></div>
+      <div class="ml-quiz__a"><p>При генерации токена t нужно attention ко всем предыдущим токенам 1..t-1. Без кеша K и V нужно пересчитывать для всех прошлых токенов на каждом шаге — O(t) на токен. KV-кеш хранит уже вычисленные K,V: на новом шаге проекции считаются только для одного токена (O(d²) вместо O(t·d²)), а attention по t закешированным ключам остаётся O(t·d). Без кеша каждый шаг пересчитывал бы весь префикс.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему KV-кеш — основной потребитель памяти при инференсе LLM?</summary>
-      <div class="ml-quiz__a"><p>Размер KV-кеша = 2 × num_layers × num_heads × head_dim × seq_len × batch_size × bytes_per_element. Для LLaMA-2 13B при seq_len=4096 и batch=1 в fp16 это ≈ 3GB — сопоставимо с весами модели. При большом batch или длинном контексте KV-кеш доминирует.</p></div>
+      <div class="ml-quiz__a"><p>Размер KV-кеша = 2 × num_layers × num_heads × head_dim × seq_len × batch_size × bytes_per_element. Для LLaMA-2 13B (40 слоёв, 40 голов по 128) при seq_len=4096 и batch=1 в fp16 это ≈ 3.4 ГБ на одну последовательность; при batch=8 уже ~27 ГБ — больше, чем сами веса (~26 ГБ). При большом batch или длинном контексте KV-кеш доминирует.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое continuous batching и как он повышает пропускную способность?</summary>
-      <div class="ml-quiz__a"><p>Стандартный batching ждёт, пока все запросы в батче завершатся. Continuous batching (PagedAttention в vLLM): слоты памяти выделяются динамически, новые запросы вставляются сразу после завершения предыдущих. Это значительно повышает GPU utilization и throughput при разной длине запросов.</p></div>
+      <div class="ml-quiz__a"><p>Стандартный batching ждёт, пока все запросы в батче завершатся. Continuous (iteration-level) batching: состав батча пересобирается на каждом шаге декодирования — завершившиеся запросы уходят, новые встают на их место сразу, не дожидаясь остальных. vLLM сочетает это с PagedAttention, который выделяет KV-кеш блоками и уменьшает фрагментацию памяти. Это значительно повышает GPU utilization и throughput при разной длине запросов.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

@@ -266,7 +266,7 @@ Unigram:
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">BPE</span><span class="fa-name">Byte Pair Encoding</span><span class="fa-desc">жадный алгоритм: merge criterion = max freq(a,b). Детерминирован, быстрый, не оптимизирует вероятность корпуса напрямую. Используют GPT, GPT-2, GPT-3, LLaMA.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">WordPiece</span><span class="fa-name">merge по улучшению P(корпуса)</span><span class="fa-desc">выбирает пару, которая максимально увеличивает log-likelihood корпуса под языковой моделью. Чуть дороже BPE, но теоретически лучше согласован с задачей. Используют BERT, DistilBERT.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">SentencePiece</span><span class="fa-name">без предположений о пробеле</span><span class="fa-desc">работает на сырых байтах, не считает пробел границей слова. Универсален для языков без пробелов (китайский, японский) и mixed-корпусов. Используют T5, mBERT, XLM-R.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">SentencePiece</span><span class="fa-name">без предположений о пробеле</span><span class="fa-desc">работает на сырой Unicode-строке (с опциональным byte fallback) и кодирует пробел как обычный символ ▁, а не как границу слова. Универсален для языков без пробелов (китайский, японский) и mixed-корпусов. Используют T5, XLM-R, LLaMA 1/2 (SentencePiece-BPE).</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Unigram</span><span class="fa-name">обрезка большого словаря</span><span class="fa-desc">начинает с огромного vocab (все подстроки) и итеративно удаляет токены, которые минимально ухудшают P(корпуса). В отличие от BPE, может давать несколько валидных сегментаций.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
@@ -305,14 +305,14 @@ Unigram:
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">context window</span><span class="fa-name">размер контекстного окна в токенах</span><span class="fa-desc">фиксирован для конкретной модели (GPT-4: 128K токенов). Чем компактнее tokenizer, тем больше реального текста помещается в одно окно — одна страница может занять 300 или 500 токенов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">скорость инференса</span><span class="fa-name">зависимость от длины последовательности</span><span class="fa-desc">attention стоит O(L²) — если tokenizer «раздул» текст на 40% больше токенов, инференс замедлится на ~(1.4)²≈2× и расход памяти (KV-cache) вырастет пропорционально.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">context window</span><span class="fa-name">размер контекстного окна в токенах</span><span class="fa-desc">фиксирован для конкретной модели (GPT-4 Turbo: 128K токенов). Чем компактнее tokenizer, тем больше реального текста помещается в одно окно — одна страница может занять 300 или 500 токенов.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">скорость инференса</span><span class="fa-name">зависимость от длины последовательности</span><span class="fa-desc">attention стоит O(L²) — если tokenizer «раздул» текст на 40% больше токенов, attention-часть подорожает примерно в 1.4²≈2 раза, остальные слои и KV-cache — в 1.4 раза.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">качество на редких словах</span><span class="fa-name">покрытие и OOV</span><span class="fa-desc">tokenizer, не знающий слово «unhappiness», разбивает его на подстроки. Хороший subword tokenizer даёт осмысленные фрагменты [un, happi, ness]; плохой — [u, n, h, a, p, …] — каждый токен теряет контекст.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> tokenizer — первый «узкое горлышко» LLM. До embeddings и attention он уже решил, сколько позиций займёт текст, насколько хорошо покрыты редкие формы и как быстро KV-cache заполнится.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> выбор системы письма для книги: иероглифы (большой «vocab», компактно), алфавит (маленький vocab, длиннее). BPE — что-то среднее, оптимизированное под конкретный корпус.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 символов английского текста → ≈250 токенов BPE (GPT-4). То же у слабого tokenizer → 400 токенов. Разница: 40% больше compute на attention, 40% быстрее заполняется context window — при 128K окне это потеря ~51K «полезных» токенов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 символов английского текста → ≈250 токенов BPE (GPT-4). То же у слабого tokenizer → 400 токенов. Разница: на 60% больше токенов на тот же текст — context window заполняется в 1.6 раза быстрее, и в окно 128K помещается на ~37% меньше текста, а attention-часть дорожает в ~2.6 раза.</div>
     </div>
     <p>Если один и тот же текст распадается на 25 токенов у одного tokenizer и на 40 у другого, это влияет не только на цену, но и на то, сколько полезного контекста модель успеет увидеть.</p>
     </div>
@@ -340,14 +340,14 @@ Subword regime  -> рабочий компромисс</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">Меньше словарь → длиннее последовательности</span><span class="fa-name">char-level / byte-level крайность</span><span class="fa-desc">vocab из 256 байт покрывает всё, но одно слово = 4–8 токенов. Текст «unhappiness» → 12 токенов-байт; attention платит O(12²) вместо O(3²) для subword.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Меньше словарь → длиннее последовательности</span><span class="fa-name">char-level / byte-level крайность</span><span class="fa-desc">vocab из 256 байт покрывает всё, но одно слово = 4–8 токенов. Текст «unhappiness» → 11 токенов-байт; attention платит O(11²) вместо O(3²) для subword.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Больше словарь → короче последовательности</span><span class="fa-name">word-level крайность</span><span class="fa-desc">vocab из 1M слов: каждое слово — 1 токен, но embedding matrix = 1M × d_model весов. Rare слова встречаются слишком редко для хорошего обучения; OOV неизбежны.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Subword regime</span><span class="fa-name">рабочий компромисс (30K–100K)</span><span class="fa-desc">GPT-2: 50 257 токенов, GPT-4: ~100K, LLaMA: 32K. Среднее слово ≈ 1.3–1.5 токена. Редкие формы разбиваются на 2–5 токенов. Embedding matrix разумного размера.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> vocab size — единственный гиперпараметр, который балансирует compression ratio и coverage. Оптимум зависит от языка и домена: для кода нужно больше, для одного языка — меньше.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> выбор granularity карты — мелкий масштаб (каждый дом отдельно) даёт точность, но карта огромна; крупный масштаб (только города) компактен, но теряет детали. BPE автоматически выбирает масштаб по частоте.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> English sentence «The cat sat on the mat» (27 chars). Char-level: 27 токенов (с пробелами). Word-level: 6 токенов. BPE (50K vocab): 6 токенов (все частые). Код `for i in range(len(x)):`: char-level 31 токен; BPE с code-оптимизацией: ~10 токенов.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> English sentence «The cat sat on the mat» (22 chars). Char-level: 22 токена (с пробелами). Word-level: 6 токенов. BPE (50K vocab): 6 токенов (все частые). Код `for i in range(len(x)):`: char-level 23 токена; BPE с code-оптимизацией: ~10 токенов.</div>
     </div>
     </div>
       <div id="code" class="tab-panel">
