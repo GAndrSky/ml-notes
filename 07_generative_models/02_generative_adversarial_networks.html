@@ -42,7 +42,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>GAN — генеративная игра: generator обманывает discriminator, discriminator учится различать. Это сделало возможным фотореалистичную генерацию. Wasserstein GAN решил проблему mode collapse.</p>
+    <p>GAN — генеративная игра: generator обманывает discriminator, discriminator учится различать. Это сделало возможным фотореалистичную генерацию. Wasserstein GAN сделал обучение заметно стабильнее и смягчил mode collapse, хотя полностью его не устранил.</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -184,6 +184,12 @@
         <div class="info"><strong>Сильный G</strong><br>Хорошо, если дискриминатор всё ещё способен давать различающий градиент.</div>
         <div class="warn"><strong>Баланс</strong><br>GAN — это не просто оптимизация loss, а хрупкая динамическая игра.</div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Эволюция архитектур: DCGAN → StyleGAN</h2>
+      <p><strong>DCGAN</strong> (2015) сделал GAN на изображениях обучаемыми: только свёртки (strided conv в D, transposed conv в G, без pooling и полносвязных слоёв), BatchNorm в обеих сетях, ReLU в генераторе и LeakyReLU в дискриминаторе. Эти правила долго были стандартным стартом.</p>
+      <p><strong>Progressive GAN</strong> (2017) растил разрешение постепенно (4×4 → … → 1024×1024). <strong>StyleGAN</strong> (2019) пропускает z через mapping-сеть в промежуточное пространство w и подаёт «стиль» на каждый уровень генератора через AdaIN (в StyleGAN2 — через модуляцию весов), добавляя пошумовые входы для мелких деталей. Это дало и фотореалистичные лица, и управляемость: грубые уровни задают позу и форму, тонкие — текстуру и цвет.</p>
     </div>
 
 <!-- theory-expansion:start -->
@@ -336,7 +342,7 @@
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>If the discriminator becomes too strong relative to the generator — for example by training D for many more steps than G — D reaches near-perfect accuracy on every batch. The generator's loss becomes log(1 − D(G(z))) ≈ log(1 − 0) = 0, and the gradient of this loss with respect to G's parameters vanishes. G receives almost no update signal and training collapses: the generator stops improving regardless of how long you train.</p>
+  <p>Если дискриминатор становится слишком сильным (например, его обучают намного больше шагов, чем генератор), он почти безошибочно отличает fake: D(G(z)) ≈ 0. Тогда исходный loss генератора log(1 − D(G(z))) ≈ log 1 = 0 «насыщается», и его градиент по параметрам G почти исчезает — генератор перестаёт улучшаться. Поэтому на практике генератор учат на non-saturating loss −log D(G(z)), который даёт сильный градиент именно когда D уверенно ловит подделки, а баланс D/G поддерживают регуляризацией (spectral norm, gradient penalty).</p>
 </div>
 
 <div class="ml-self-rating" data-topic="gan">
@@ -376,7 +382,7 @@
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое mode collapse и почему он возникает в GAN?</summary>
-      <div class="ml-quiz__a"><p>Mode collapse: генератор обучается производить только часть возможных примеров (например, только одну цифру вместо 10), так как это обманывает дискриминатор. Генератор находит «уязвимую» зону D и эксплуатирует её, а не разнообразие данных. Решения: WGAN, minibatch discrimination, унrолling.</p></div>
+      <div class="ml-quiz__a"><p>Mode collapse: генератор обучается производить только часть возможных примеров (например, только одну цифру вместо 10), так как это обманывает дискриминатор. Генератор находит «уязвимую» зону D и эксплуатирует её, а не разнообразие данных. Решения: WGAN, minibatch discrimination, unrolled GAN.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

@@ -274,7 +274,7 @@
 
   <div class="warn">
     <strong>Что ломается без этого</strong>
-    <p>Without classifier-free guidance (CFG scale = 1.0, meaning unconditional only), the U-Net denoises purely according to the general image distribution it learned, ignoring the text prompt almost entirely. The outputs are statistically plausible images but semantically incoherent with respect to the prompt — blurry, averaged-looking scenes with no specific subject or style. Conversely, setting CFG too high (e.g. scale = 20+) pushes the denoising direction so far toward the conditional prediction that small floating-point errors accumulate, producing oversaturated colors, burned-out highlights, and distorted anatomy.</p>
+    <p>При s=0 используется только безусловное предсказание — модель рисует «что-нибудь правдоподобное», полностью игнорируя prompt. При s=1 guidance выключен: это обычное условное предсказание, и prompt учитывается заметно слабее, чем хотелось бы, — изображения получаются размытыми по смыслу. При слишком большом s (20+) экстраполяция ε_uncond + s·(ε_cond − ε_uncond) выталкивает латенты за пределы распределения, на котором обучался U-Net: появляются пересвеченные цвета, выжженные блики и искажённая анатомия.</p>
   </div>
 
   <div class="ml-self-rating" data-topic="stable-diffusion">
@@ -300,7 +300,7 @@
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое Latent Diffusion Model (LDM) и чем он отличается от Pixel Diffusion?</summary>
-      <div class="ml-quiz__a"><p>LDM проводит диффузию в сжатом латентном пространстве автоэнкодера (обычно 8× сжатие). Это снижает вычислительную стоимость в 64× при той же сложности задачи. Stable Diffusion = LDM + CLIP text encoder. Качество сопоставимо с pixel-diffusion, но скорость намного выше.</p></div>
+      <div class="ml-quiz__a"><p>LDM проводит диффузию в сжатом латентном пространстве автоэнкодера (обычно 8× сжатие). Это в ~48 раз меньше значений (64× по пространству, но 4 канала вместо 3), и каждый шаг денойзинга становится во много раз дешевле. Stable Diffusion = LDM + CLIP text encoder. Качество сопоставимо с pixel-diffusion, но скорость намного выше.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -312,7 +312,7 @@
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое VAE в Stable Diffusion и почему нужен именно он?</summary>
-      <div class="ml-quiz__a"><p>VAE кодирует изображение 512×512×3 в латентный код 64×64×4 (encoder) и декодирует обратно (decoder). Диффузионный процесс работает только в 64×64×4 пространстве — это быстро. VAE нужен для финального «перевода» генерированного латента в пиксели без потери деталей.</p></div>
+      <div class="ml-quiz__a"><p>VAE кодирует изображение 512×512×3 в латентный код 64×64×4 (encoder) и декодирует обратно (decoder). Диффузионный процесс работает только в 64×64×4 пространстве — это быстро. VAE нужен для финального «перевода» латента в пиксели; сжатие при этом с потерями — мелкий текст, маленькие лица и тонкие узоры часто искажаются именно на этапе VAE.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

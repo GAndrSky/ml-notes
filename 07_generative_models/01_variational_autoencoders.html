@@ -134,8 +134,8 @@ z = μ + σ × ε = 0.8 + 0.5 × 1.2 = 1.4</div>
       <h3 class="ml-walkthrough__step-heading">Интерпретация баланса</h3>
       <div class="ml-walkthrough__step-body">
         <p>Два члена конкурируют: reconstruction хочет точно запомнить x, KL хочет латентное пространство похожим на N(0,1).</p>
-        <p>β-VAE усиливает вес KL, получая disentangled пространство: каждое измерение z соответствует одному семантическому фактору.</p>
-        <div class="wt-result">Именно в латентном пространстве VAE диффузионные модели (DDPM, Stable Diffusion) выполняют диффузию.</div>
+        <p>β-VAE усиливает вес KL (β &gt; 1) и тем самым поощряет disentanglement — отдельные измерения z чаще отвечают за отдельные факторы. Гарантии нет: без дополнительных предположений disentanglement не обеспечивается (Locatello et al., 2019), а реконструкция ухудшается.</p>
+        <div class="wt-result">В латентном пространстве VAE работают latent diffusion модели (например, Stable Diffusion); классический DDPM диффундирует прямо в пространстве пикселей.</div>
       </div>
     </div>
   </div>
@@ -445,7 +445,7 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>If you skip the reparameterization trick and sample z directly from q_φ(z|x), the sampling operation has no gradient with respect to the encoder parameters φ. Backpropagation stops at the sampling node, so the encoder never receives a learning signal from the reconstruction loss. The decoder may improve slightly through the KL term alone, but the encoder's μ and σ networks do not train, producing random latent codes and a useless model.</p>
+  <p>Если сэмплировать z из q_φ(z|x) напрямую (например, через <code>.sample()</code> вместо <code>.rsample()</code>), у операции сэмплирования нет градиента по параметрам encoder-а φ: backprop останавливается на этом узле, и encoder не получает сигнала от reconstruction loss. Encoder будет учиться только от KL-члена — μ и σ просто стянутся к prior N(0, I), и z перестанет нести информацию о x. Decoder при этом учится восстанавливать по случайному z, то есть выдаёт что-то среднее по датасету.</p>
 </div>
 
 <div class="ml-self-rating" data-topic="vae">

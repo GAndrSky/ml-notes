@@ -260,7 +260,7 @@
       <li class="ml-quiz__item">
         <details class="ml-quiz__entry">
           <summary class="ml-quiz__q">What does DDIM trade off compared to DDPM sampling?</summary>
-          <div class="ml-quiz__a"><p>DDIM (Denoising Diffusion Implicit Models) replaces the stochastic Markov reverse process with a deterministic one. This allows skipping timesteps — sampling with 20–50 steps instead of 1000 without retraining the model. The trade-off: slightly lower diversity in the outputs because the stochastic noise injection is removed, but much faster generation with comparable quality.</p></div>
+          <div class="ml-quiz__a"><p>DDIM (Denoising Diffusion Implicit Models) replaces the stochastic Markov reverse process with a deterministic one. This allows skipping timesteps — sampling with 20–50 steps instead of 1000 without retraining the model. The trade-off: the trajectory is deterministic (the same x_T always gives the same image; diversity comes from sampling x_T), and with very few steps quality degrades somewhat — but generation is many times faster with comparable quality at 20–50 steps.</p></div>
         </details>
       </li>
       <li class="ml-quiz__item">
@@ -274,7 +274,7 @@
 
   <div class="warn">
     <strong>Что ломается без этого</strong>
-    <p>If the noise schedule beta values are set too large (e.g. jumping to β = 0.5 in just 100 steps instead of 1000), the forward process destroys the signal too quickly. The model sees training samples where x_100 is already indistinguishable from pure noise, so it cannot learn a meaningful reverse direction. At inference time the denoiser predicts near-zero noise at every step, and the chain never moves from pure noise toward a real image — generation produces random blurry patches.</p>
+    <p>Если β слишком велики (например, сигнал полностью разрушается уже за первые ~100 шагов из 1000), большая часть timesteps оказывается «чистым шумом» и почти ничего не учит, а каждый шаг разрушения становится крупным. Обратный шаг тогда плохо приближается гауссианой, на которой построен DDPM, и модель не успевает научиться восстанавливать мелкие детали — сэмплы получаются размытыми и бедными. Поэтому schedule подбирают так, чтобы ᾱ_t убывал плавно; cosine schedule как раз дольше сохраняет сигнал, чем linear.</p>
   </div>
 
   <div class="ml-self-rating" data-topic="diffusion">
