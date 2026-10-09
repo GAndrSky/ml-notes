@@ -1,3 +1,8 @@
+param(
+  # Rewrite scripts/unstyled-classes-allowlist.txt from the current state instead of checking it.
+  [switch]$UpdateUnstyledAllowlist
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -191,7 +196,71 @@ function Test-CourseManifest {
   }
 }
 
+function Get-SelectorClasses {
+  param([string]$Css)
+  $css = [regex]::Replace($Css, '(?s)/\*.*?\*/', ' ')
+  # Drop declaration bodies (innermost braces); what remains is selectors and at-rule preludes.
+  $css = [regex]::Replace($css, '\{[^{}]*\}', ' ')
+  $result = New-Object 'System.Collections.Generic.HashSet[string]'
+  foreach ($match in [regex]::Matches($css, '\.([A-Za-z_][\w-]*)')) {
+    [void]$result.Add($match.Groups[1].Value)
+  }
+  return ,$result
+}
+
+# Fails when a lesson uses a class that no stylesheet (shared or the page's own <style>)
+# styles and that is not in the allow-list of known JS-only hook classes.
+function Test-UnstyledClasses {
+  $sharedStyled = New-Object 'System.Collections.Generic.HashSet[string]'
+  $cssFiles = @("shared-theme.css", "shared-nav.css", "shared-search.css",
+    "vendor/katex/katex.min.css", "vendor/highlightjs/github-dark.min.css")
+  foreach ($file in $cssFiles) {
+    $css = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $file) -Encoding UTF8
+    # The ".page > .x" list only sets width; it does not style those components.
+    $css = [regex]::Replace($css, 'body\.ml-course-theme \.page > \.[\w-]+\s*,?', ' ')
+    $sharedStyled.UnionWith((Get-SelectorClasses $css))
+  }
+
+  $allowlistPath = Join-Path $PSScriptRoot "unstyled-classes-allowlist.txt"
+  $allowed = New-Object 'System.Collections.Generic.HashSet[string]'
+  if (Test-Path -LiteralPath $allowlistPath) {
+    Get-Content -LiteralPath $allowlistPath -Encoding UTF8 |
+      Where-Object { $_ -and -not $_.StartsWith("#") } |
+      ForEach-Object { [void]$allowed.Add($_.Trim()) }
+  }
+
+  $unstyled = New-Object 'System.Collections.Generic.SortedSet[string]'
+  foreach ($relativePath in $lessonPages) {
+    $html = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $relativePath) -Encoding UTF8
+    $pageCss = ([regex]::Matches($html, '(?is)<style\b[^>]*>(.*?)</style>') | ForEach-Object { $_.Groups[1].Value }) -join "`n"
+    $pageStyled = Get-SelectorClasses $pageCss
+    $markup = [regex]::Replace($html, '(?is)<script\b.*?</script>', ' ')
+
+    foreach ($attribute in [regex]::Matches($markup, '(?<![\w-])class="([^"]+)"')) {
+      foreach ($class in ($attribute.Groups[1].Value -split '\s+')) {
+        if (-not $class -or $sharedStyled.Contains($class) -or $pageStyled.Contains($class)) {
+          continue
+        }
+        [void]$unstyled.Add($class)
+        if (-not $UpdateUnstyledAllowlist -and -not $allowed.Contains($class)) {
+          Add-Issue "Unstyled class .$class in $relativePath (style it, or add it to scripts/unstyled-classes-allowlist.txt if it is a JS hook)"
+        }
+      }
+    }
+  }
+
+  if ($UpdateUnstyledAllowlist) {
+    $header = @(
+      "# Classes used in lessons that no stylesheet styles, accepted as-is (mostly JS hooks).",
+      "# Regenerate: powershell -File scripts/smoke-check-course.ps1 -UpdateUnstyledAllowlist"
+    )
+    Set-Content -LiteralPath $allowlistPath -Value ($header + @($unstyled)) -Encoding UTF8
+    Write-Host "Allow-list written: $($unstyled.Count) classes" -ForegroundColor Yellow
+  }
+}
+
 Test-SearchIndexFiles
+Test-UnstyledClasses
 Test-BundleFresh
 Test-CourseManifest
 Test-SharedAssets
