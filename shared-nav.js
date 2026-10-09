@@ -727,6 +727,12 @@
     var ratings = readSelfRatings();
 
     widgets.forEach(function (widget) {
+      // initSelfRatings runs more than once; a second set of handlers would undo every click.
+      if (widget.getAttribute("data-rating-ready") === "1") {
+        return;
+      }
+      widget.setAttribute("data-rating-ready", "1");
+
       var topicId = widget.getAttribute("data-topic-id");
       var buttons = Array.prototype.slice.call(widget.querySelectorAll("button[data-rating]"));
       var status = widget.querySelector("[data-rating-status]");
