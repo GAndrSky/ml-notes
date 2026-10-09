@@ -37,7 +37,7 @@
     <span class="ml-learning-path__label">Нужно знать</span>
     <ul>
       <li>Linux basics (команды)</li>
-      <li>Python virtual environments</li>
+      <li>Виртуальные окружения Python</li>
       <li>CUDA (желательно)</li>
     </ul>
   </div>
@@ -76,7 +76,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
     </section>
 
     <section class="card">
-      <h2>GPU containers</h2>
+      <h2>Контейнеры с GPU</h2>
       <p>Для GPU важна совместимость: host driver, CUDA runtime внутри контейнера, PyTorch build и NVIDIA Container Toolkit. Контейнер не приносит драйвер GPU сам по себе: он использует host driver через runtime.</p>
       <div class="warn">Если PyTorch видит CPU вместо GPU, проверяй не только код, но и `--gpus all`, NVIDIA runtime, версию driver и CUDA compatibility.</div>
     </section>
@@ -104,9 +104,9 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
     <section class="ml-exercises-section">
       <h2>Упражнения</h2>
       <div class="ml-exercise-list">
-        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Layer cache</h3><p>Почему `COPY requirements.txt` обычно ставят до `COPY . .`?</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Чтобы Docker мог переиспользовать слой установки зависимостей, если изменился только source code.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Кеш слоёв</h3><p>Почему `COPY requirements.txt` обычно ставят до `COPY . .`?</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Чтобы Docker мог переиспользовать слой установки зависимостей, если изменился только source code.</p></details></article>
         <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Dockerignore</h3><p>Составь `.dockerignore` для ML-проекта.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Добавь `.git`, `data/`, `runs/`, `checkpoints/`, `__pycache__/`, `.venv/`, notebooks outputs и локальные secrets.</p></details></article>
-        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>GPU debugging</h3><p>Контейнер не видит GPU. Опиши порядок диагностики.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Проверь host `nvidia-smi`, NVIDIA Container Toolkit, запуск с `--gpus all`, CUDA compatibility, PyTorch CUDA build и `torch.cuda.is_available()`.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Отладка GPU</h3><p>Контейнер не видит GPU. Опиши порядок диагностики.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Проверь host `nvidia-smi`, NVIDIA Container Toolkit, запуск с `--gpus all`, CUDA compatibility, PyTorch CUDA build и `torch.cuda.is_available()`.</p></details></article>
       </div>
     </section>
 
@@ -114,7 +114,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">Writing a Dockerfile for a PyTorch project</span>
+      <span class="ml-walkthrough__title">Пишем Dockerfile для PyTorch-проекта</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -125,28 +125,28 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 01</span>
-      <h3 class="ml-walkthrough__step-heading">Choose the base image</h3>
-      <div class="ml-walkthrough__step-body"><p>Use the official pytorch/pytorch image with an explicit tag: pytorch/pytorch:X.X.X-cuda-Y.Y-cudnnZ-runtime. This pins both the PyTorch version and the CUDA runtime, ensuring the same binary is used everywhere. Avoid using latest — it will silently change on the next build.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Выбери базовый образ</h3>
+      <div class="ml-walkthrough__step-body"><p>Используй официальный образ pytorch/pytorch с явным тегом: pytorch/pytorch:X.X.X-cuda-Y.Y-cudnnZ-runtime. Так фиксируются и версия PyTorch, и CUDA runtime — везде используется один и тот же бинарник. Избегай latest: при следующей сборке он тихо изменится.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 02</span>
-      <h3 class="ml-walkthrough__step-heading">Install system dependencies in a single layer</h3>
-      <div class="ml-walkthrough__step-body"><p>Combine all apt-get commands into one RUN instruction: RUN apt-get update &amp;&amp; apt-get install -y libgomp1 git &amp;&amp; rm -rf /var/lib/apt/lists/*. One layer keeps the image smaller and avoids intermediate cache layers that can become stale.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Ставь системные зависимости одним слоем</h3>
+      <div class="ml-walkthrough__step-body"><p>Объедини все команды apt-get в одну инструкцию RUN: RUN apt-get update &amp;&amp; apt-get install -y libgomp1 git &amp;&amp; rm -rf /var/lib/apt/lists/*. Один слой делает образ меньше и не оставляет промежуточных кеш-слоёв, которые могут устареть.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 03</span>
-      <h3 class="ml-walkthrough__step-heading">Copy requirements.txt and pip install before copying code</h3>
-      <div class="ml-walkthrough__step-body"><p>COPY requirements.txt . followed immediately by RUN pip install -r requirements.txt. Placing this before COPY . . means Docker can reuse the cached pip install layer on every code-only change, saving minutes per iteration.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Копируй requirements.txt и ставь пакеты до копирования кода</h3>
+      <div class="ml-walkthrough__step-body"><p>COPY requirements.txt . и сразу RUN pip install -r requirements.txt. Если это стоит до COPY . ., Docker переиспользует закешированный слой pip install при любых изменениях только кода — это экономит минуты на каждой итерации.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 04</span>
-      <h3 class="ml-walkthrough__step-heading">Copy code last</h3>
-      <div class="ml-walkthrough__step-body"><p>After installing dependencies, run COPY . . to copy the source code. Because code changes more frequently than requirements, putting it last ensures only the code layer (and any layers after it) is invalidated. The expensive pip install layer stays cached.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Код копируй последним</h3>
+      <div class="ml-walkthrough__step-body"><p>После установки зависимостей выполни COPY . ., чтобы скопировать исходники. Код меняется чаще зависимостей, поэтому при таком порядке инвалидируется только слой кода (и слои после него), а дорогой слой pip install остаётся в кеше.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 05</span>
-      <h3 class="ml-walkthrough__step-heading">Set ENTRYPOINT or CMD for your script</h3>
-      <div class="ml-walkthrough__step-body"><p>Use ENTRYPOINT ["python", "train.py"] for a container that always runs training, or CMD ["uvicorn", "app:app", "--host", "0.0.0.0"] for a serving container. ENTRYPOINT is the fixed executable; CMD provides default arguments that can be overridden at runtime with docker run.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Задай ENTRYPOINT или CMD</h3>
+      <div class="ml-walkthrough__step-body"><p>ENTRYPOINT ["python", "train.py"] — для контейнера, который всегда запускает обучение; CMD ["uvicorn", "app:app", "--host", "0.0.0.0"] — для serving-контейнера. ENTRYPOINT — фиксированный исполняемый файл, CMD — аргументы по умолчанию, которые можно переопределить в docker run.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
@@ -184,20 +184,20 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">Why copy requirements.txt before copying the rest of the code?</summary>
-      <div class="ml-quiz__a"><p>Docker builds images layer by layer and caches each layer. When you copy requirements.txt and run pip install before copying your source code, Docker can reuse the cached pip layer as long as requirements.txt has not changed. If you copy all code first, any change to any source file invalidates the pip install layer and forces a full reinstall — this turns a 2-second rebuild into a 3–5 minute one.</p></div>
+      <summary class="ml-quiz__q">Зачем копировать requirements.txt до остального кода?</summary>
+      <div class="ml-quiz__a"><p>Docker собирает образ по слоям и кеширует каждый. Если скопировать requirements.txt и выполнить pip install до копирования исходников, Docker переиспользует слой pip, пока requirements.txt не меняется. Если сначала скопировать весь код, любое изменение любого файла инвалидирует слой pip install и вызывает полную переустановку — пересборка за 2 секунды превращается в 3–5 минут.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">What is the difference between ENTRYPOINT and CMD?</summary>
-      <div class="ml-quiz__a"><p>ENTRYPOINT defines the fixed executable that always runs when the container starts — it cannot be overridden by docker run arguments unless you use --entrypoint. CMD provides the default arguments to that executable and can be replaced entirely by appending arguments to docker run. A common pattern is ENTRYPOINT ["python"] and CMD ["train.py"] so users can run a different script with docker run myimage eval.py without changing the image.</p></div>
+      <summary class="ml-quiz__q">Чем ENTRYPOINT отличается от CMD?</summary>
+      <div class="ml-quiz__a"><p>ENTRYPOINT задаёт исполняемый файл, который всегда запускается при старте контейнера; аргументы docker run его не заменяют (только флаг --entrypoint). CMD задаёт аргументы по умолчанию и полностью заменяется аргументами docker run. Частый паттерн — ENTRYPOINT ["python"] и CMD ["train.py"]: тогда можно запустить другой скрипт командой docker run myimage eval.py без изменения образа.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">Why should you not run ML containers as root in production?</summary>
-      <div class="ml-quiz__a"><p>Running as root inside a container means that if the process is compromised or escapes the container, it has root-level access to the host. Best practice is to add a non-root user in the Dockerfile with RUN useradd -m appuser and switch with USER appuser before the ENTRYPOINT. Many production Kubernetes clusters enforce this through security contexts and admission policies (e.g., the "restricted" Pod Security Standard), which reject containers running as root.</p></div>
+      <summary class="ml-quiz__q">Почему в продакшене ML-контейнеры не стоит запускать от root?</summary>
+      <div class="ml-quiz__a"><p>Если процесс от root внутри контейнера скомпрометирован или выбрался из контейнера, у него root-доступ к хосту. Лучшая практика — создать в Dockerfile пользователя без прав (RUN useradd -m appuser) и переключиться на него через USER appuser до ENTRYPOINT. Многие продакшен-кластеры Kubernetes требуют этого через security contexts и admission-политики (например, Pod Security Standard «restricted»), отклоняя контейнеры от root.</p></div>
     </details>
   </li>
   </ol>
@@ -205,7 +205,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Copying all code before running pip install invalidates the pip cache layer on every code change — even editing a single comment triggers a full package reinstall. A build that takes 2 seconds with correct layer order takes 3–5 minutes every time.</p>
+  <p>Если копировать весь код до pip install, слой с пакетами инвалидируется при каждом изменении кода — даже правка комментария запускает полную переустановку. Сборка, которая при правильном порядке слоёв занимает 2 секунды, каждый раз длится 3–5 минут.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="docker-ml">

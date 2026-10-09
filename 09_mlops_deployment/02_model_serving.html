@@ -45,7 +45,7 @@
 
 
     <section class="card">
-      <h2>Online vs batch inference</h2>
+      <h2>Online и batch inference</h2>
       <div class="grid-2">
         <div class="info"><strong>Online inference</strong><br>Запрос приходит сейчас, ответ нужен быстро. Важны p95/p99 latency, timeouts, retries, schema validation и graceful degradation.</div>
         <div class="success"><strong>Batch inference</strong><br>Много объектов обрабатываются пачкой. Важны throughput, стоимость, idempotency, checkpoints и устойчивость к partial failure.</div>
@@ -105,9 +105,9 @@ def predict(request: PredictRequest):
     <section class="ml-exercises-section">
       <h2>Упражнения</h2>
       <div class="ml-exercise-list">
-        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>API contract</h3><p>Опиши input/output schema для модели кредитного скоринга.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Вход: числовые признаки, категориальные признаки, id запроса, timestamp. Выход: probability, thresholded decision, model_version, reason codes if available.</p></details></article>
-        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Latency budget</h3><p>Разбей 200 ms latency budget между network, preprocessing, model inference и postprocessing.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Например: network 30 ms, validation/preprocessing 30 ms, model 100 ms, postprocessing/logging 20 ms, safety margin 20 ms.</p></details></article>
-        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Serving failure modes</h3><p>Назови 5 причин, почему offline accuracy высокая, а production API плохой.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Training-serving skew, schema drift, missing preprocessing, bad threshold, latency timeouts, stale model, class prior shift, missing monitoring.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Foundational</span></div><h3>Контракт API</h3><p>Опиши input/output schema для модели кредитного скоринга.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Вход: числовые признаки, категориальные признаки, id запроса, timestamp. Выход: probability, thresholded decision, model_version, reason codes if available.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Intermediate</span></div><h3>Бюджет latency</h3><p>Разбей 200 ms latency budget между network, preprocessing, model inference и postprocessing.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Например: network 30 ms, validation/preprocessing 30 ms, model 100 ms, postprocessing/logging 20 ms, safety margin 20 ms.</p></details></article>
+        <article class="ml-exercise-card"><div class="ml-exercise-meta"><span class="ml-exercise-badge">Hard</span></div><h3>Как ломается serving</h3><p>Назови 5 причин, почему offline accuracy высокая, а production API плохой.</p><details class="ml-exercise-solution"><summary>Показать решение</summary><p>Training-serving skew, schema drift, missing preprocessing, bad threshold, latency timeouts, stale model, class prior shift, missing monitoring.</p></details></article>
       </div>
     </section>
 
@@ -115,7 +115,7 @@ def predict(request: PredictRequest):
   <div class="ml-walkthrough__header">
     <div class="ml-walkthrough__title-row">
       <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">Deploying a model with FastAPI</span>
+      <span class="ml-walkthrough__title">Деплой модели на FastAPI</span>
     </div>
     <div class="ml-walkthrough__controls">
       <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -126,28 +126,28 @@ def predict(request: PredictRequest):
   <div class="ml-walkthrough__track">
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 01</span>
-      <h3 class="ml-walkthrough__step-heading">Load the model once at startup</h3>
-      <div class="ml-walkthrough__step-body"><p>Load weights, build the model, and move it to the correct device inside a startup event handler or at module level — not inside the request handler. Loading per request adds 5–10 seconds of cold-start latency on every call.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Загружай модель один раз при старте</h3>
+      <div class="ml-walkthrough__step-body"><p>Загрузи веса, собери модель и перенеси её на нужное устройство в обработчике старта или на уровне модуля — не внутри обработчика запроса. Загрузка на каждый запрос добавляет секунды cold-start к каждому вызову.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 02</span>
-      <h3 class="ml-walkthrough__step-heading">Define input/output schema with Pydantic</h3>
-      <div class="ml-walkthrough__step-body"><p>Use a Pydantic BaseModel to declare the exact types, required fields, and value constraints for the request and response. FastAPI will validate and document the schema automatically, and reject malformed requests before they reach the model.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Опиши схему входа/выхода через Pydantic</h3>
+      <div class="ml-walkthrough__step-body"><p>Pydantic BaseModel задаёт точные типы, обязательные поля и ограничения значений для запроса и ответа. FastAPI автоматически валидирует и документирует схему и отклоняет некорректные запросы до того, как они дойдут до модели.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 03</span>
-      <h3 class="ml-walkthrough__step-heading">Preprocess input exactly as in training</h3>
-      <div class="ml-walkthrough__step-body"><p>Apply the identical normalization, tokenization, or feature encoding that was used during training. Any mismatch — different mean/std, different tokenizer, different feature order — silently corrupts the model input and produces wrong outputs without raising an error.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Предобрабатывай вход ровно как при обучении</h3>
+      <div class="ml-walkthrough__step-body"><p>Применяй ту же нормализацию, токенизацию и кодирование признаков, что и при обучении. Любое расхождение — другие mean/std, другой tokenizer, другой порядок признаков — тихо портит вход модели и даёт неверные выходы без всякой ошибки.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 04</span>
-      <h3 class="ml-walkthrough__step-heading">Run inference with model.eval(), no_grad(), and autocast</h3>
-      <div class="ml-walkthrough__step-body"><p>Call model.eval() to disable dropout and batch norm training mode. Wrap inference in torch.no_grad() to skip gradient computation and reduce memory usage. Use torch.autocast for FP16/BF16 speedup on CUDA. Together they remove gradient bookkeeping and switch to the inference behaviour of the layers; on GPUs with Tensor Cores autocast often gives a large additional speed-up, but the exact gain depends on the model and hardware — measure it.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Inference с model.eval(), no_grad() и autocast</h3>
+      <div class="ml-walkthrough__step-body"><p>model.eval() выключает dropout и переводит BatchNorm в режим inference. torch.no_grad() (или inference_mode()) отключает вычисление градиентов и снижает память. torch.autocast даёт ускорение FP16/BF16 на CUDA. Вместе они убирают учёт градиентов и включают inference-поведение слоёв; на GPU с Tensor Cores autocast часто даёт заметное дополнительное ускорение, но точный выигрыш зависит от модели и железа — меряй.</p></div>
     </div>
     <div class="ml-walkthrough__step">
       <span class="ml-walkthrough__step-num">Step 05</span>
-      <h3 class="ml-walkthrough__step-heading">Post-process and return a structured response with latency</h3>
-      <div class="ml-walkthrough__step-body"><p>Convert raw model output (logits, tensors) to a user-facing value (score, label, top-k items). Measure total request latency using time.perf_counter() and include it in the response or logs. Return a structured JSON object that includes the model version so logs can be matched to deployments.</p></div>
+      <h3 class="ml-walkthrough__step-heading">Постобработка и структурированный ответ с latency</h3>
+      <div class="ml-walkthrough__step-body"><p>Преобразуй сырой выход модели (logits, тензоры) в значение для пользователя (score, метку, top-k). Измеряй полную latency запроса через time.perf_counter() и добавляй её в ответ или логи. Возвращай структурированный JSON с версией модели, чтобы логи можно было сопоставить с деплоями.</p></div>
     </div>
   </div>
   <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
@@ -185,20 +185,20 @@ def predict(request: PredictRequest):
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">Why must preprocessing at serving match training exactly?</summary>
-      <div class="ml-quiz__a"><p>The model learned weights calibrated to the exact distribution produced by training preprocessing. If serving applies different normalization values, a different tokenizer, or a different feature order, the model receives inputs it was never trained on. The output will be wrong and the error is silent — no exception is raised, just bad predictions.</p></div>
+      <summary class="ml-quiz__q">Почему предобработка при serving должна точно совпадать с обучением?</summary>
+      <div class="ml-quiz__a"><p>Веса модели подогнаны под распределение, которое давала предобработка при обучении. Если serving применяет другие значения нормализации, другой tokenizer или другой порядок признаков, модель получает входы, на которых никогда не училась. Выход будет неверным, а ошибка — тихой: никаких исключений, просто плохие предсказания.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">What is the difference between latency and throughput?</summary>
-      <div class="ml-quiz__a"><p>Latency is how long one request waits for a response — measured in milliseconds, typically as p50/p95/p99. Throughput is how many requests the system handles per unit of time — measured in requests per second. A system can have high throughput (many requests processed) with high latency (each request waits a long time), which is acceptable for batch jobs but not for real-time APIs.</p></div>
+      <summary class="ml-quiz__q">Чем latency отличается от throughput?</summary>
+      <div class="ml-quiz__a"><p>Latency — сколько один запрос ждёт ответа, в миллисекундах, обычно p50/p95/p99. Throughput — сколько запросов система обрабатывает в единицу времени, в запросах в секунду. Система может иметь высокий throughput при высокой latency — это приемлемо для batch-задач, но не для real-time API.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">When does batching hurt latency but help throughput?</summary>
-      <div class="ml-quiz__a"><p>Batching collects multiple requests before running a single forward pass, which amortizes the GPU kernel launch overhead and increases hardware utilization — throughput rises. But each individual request now waits for the batch to fill before being processed, so p99 latency increases. Dynamic batching with a short timeout (e.g., 5ms) can balance the two, but always sets a ceiling on latency that does not exist in single-request serving.</p></div>
+      <summary class="ml-quiz__q">Когда batching ухудшает latency, но улучшает throughput?</summary>
+      <div class="ml-quiz__a"><p>Batching собирает несколько запросов в один forward pass: накладные расходы на запуск kernel-ов распределяются, загрузка железа растёт — растёт и throughput. Но каждый запрос теперь ждёт заполнения batch, так что p99 latency увеличивается. Dynamic batching с коротким таймаутом (например, 5 мс) балансирует эти цели, но всегда добавляет задержку, которой нет при обработке по одному запросу.</p></div>
     </details>
   </li>
   </ol>
@@ -206,7 +206,7 @@ def predict(request: PredictRequest):
 
     <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Loading the model inside the request handler means a full cold-load on every request — typically 5–10 seconds for a PyTorch model — instead of a millisecond-scale forward pass. The service appears to work but is unusable at any real traffic volume.</p>
+  <p>Загрузка модели внутри обработчика запроса означает полную загрузку на каждый запрос — секунды для PyTorch-модели — вместо forward pass за миллисекунды. Сервис вроде бы работает, но при реальном трафике непригоден.</p>
 </div>
 
     <div class="ml-self-rating" data-topic="model-serving">
