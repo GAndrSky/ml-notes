@@ -23,7 +23,7 @@
         <span class="tag">Validation</span>
       </div>
       <h1>2.22 Time Series Fundamentals</h1>
-      <p class="muted">Time series problems break many standard ML assumptions because order matters. Random train/test split can leak the future, distribution changes over time, and seasonality can look like signal even when it is only calendar structure.</p>
+      <p class="muted">Временные ряды ломают многие стандартные допущения ML, потому что важен порядок. Случайный train/test split протаскивает будущее, распределение меняется со временем, а сезонность может выглядеть как сигнал, хотя это лишь структура календаря.</p>
     </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -52,36 +52,36 @@
 
 <section class="card">
       <h2>TL;DR</h2>
-      <p>A time series is data indexed by time. The key ideas are trend, seasonality, stationarity, autocorrelation, lag features, rolling statistics, and time-aware validation. For ML, the main rule is: never let the future leak into training features or validation.</p>
+      <p>Временной ряд — данные, упорядоченные по времени. Ключевые идеи: тренд, сезонность, стационарность, автокорреляция, lag-признаки, скользящие статистики и валидация с учётом времени. Главное правило для ML: будущее никогда не должно утекать в признаки или валидацию.</p>
     </section>
 
     <section class="ml-theory-section">
       <h2>Зачем это нужно</h2>
-      <p>Demand forecasting, sales prediction, monitoring metrics, sensor data, finance, fraud, user activity, and model drift are time series problems. A model can look excellent with random split and fail completely in production because it accidentally learned from the future.</p>
+      <p>Прогноз спроса и продаж, метрики мониторинга, данные сенсоров, финансы, фрод, активность пользователей и drift моделей — всё это задачи с временными рядами. Модель может выглядеть отлично на случайном сплите и полностью провалиться в продакшене, потому что случайно училась на будущем.</p>
       <div class="grid-2">
         <div class="success">
-          <strong>Core questions</strong>
+          <strong>Ключевые вопросы</strong>
           <ul>
-            <li>What is the forecast horizon?</li>
-            <li>How frequently is data observed?</li>
-            <li>What information is available at prediction time?</li>
-            <li>Does the pattern change over time?</li>
+            <li>Какой горизонт прогноза?</li>
+            <li>Как часто наблюдаются данные?</li>
+            <li>Какая информация доступна в момент прогноза?</li>
+            <li>Меняется ли паттерн со временем?</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Most common failure</strong>
+          <strong>Самые частые ошибки</strong>
           <ul>
-            <li>Using random split.</li>
-            <li>Computing rolling features with future rows.</li>
-            <li>Scaling using all data before splitting.</li>
-            <li>Evaluating one-step forecast while product needs 30-day forecast.</li>
+            <li>Случайный split.</li>
+            <li>Скользящие признаки, посчитанные с будущими строками.</li>
+            <li>Масштабирование по всем данным до разбиения.</li>
+            <li>Оценка прогноза на один шаг, когда продукту нужен прогноз на 30 дней.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Components of a time series</h2>
+      <h2>Компоненты временного ряда</h2>
       <div class="formula" data-no-tex>y_t = trend_t + seasonality_t + residual_t</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -99,7 +99,7 @@
 
     <section class="ml-theory-section">
       <h2>Stationarity</h2>
-      <p>A stationary series has statistical properties that do not change over time. In practice this usually means stable mean, variance, and autocorrelation structure.</p>
+      <p>У стационарного ряда статистические свойства не меняются со временем. На практике обычно имеют в виду стабильные среднее, дисперсию и структуру автокорреляции.</p>
       <div class="formula" data-no-tex>E[y_t] = mu, Var(y_t) = sigma^2, Cov(y_t, y_{t-k}) depends only on k</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -113,7 +113,7 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the series behaves similarly no matter where you look in time.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a machine that vibrates around the same level all year is more stationary than a growing business metric.</div>
       </div>
-      <p>Many classical methods prefer stationarity. Differencing, detrending, log transform, and seasonal adjustment are common ways to make a series easier to model.</p>
+      <p>Многие классические методы предполагают стационарность. Разности, удаление тренда, логарифмирование и сезонная корректировка — обычные способы сделать ряд удобнее для моделирования.</p>
     </section>
 
     <section class="ml-theory-section">
@@ -135,8 +135,8 @@
     </section>
 
     <section class="ml-theory-section">
-      <h2>ARIMA intuition</h2>
-      <p>ARIMA models combine autoregression, differencing, and moving-average error correction.</p>
+      <h2>Интуиция ARIMA</h2>
+      <p>ARIMA сочетает авторегрессию, взятие разностей и поправку на ошибки скользящего среднего.</p>
       <div class="formula" data-no-tex>ARIMA(p,d,q) = AR(p) + differencing(d) + MA(q)</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -150,11 +150,11 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> predict from past values, remove trend, and correct systematic past mistakes.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> estimate tomorrow by looking at recent days, adjusting for growth, and remembering recent forecast errors.</div>
       </div>
-      <p>For many production ML tasks, tree models with lag and rolling features are easier to combine with external regressors than pure ARIMA.</p>
+      <p>Во многих продакшен-задачах деревья с lag- и rolling-признаками проще объединить с внешними регрессорами, чем «чистую» ARIMA.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Feature engineering for ML</h2>
+      <h2>Feature engineering для ML</h2>
       <div class="formula" data-no-tex>features_t = [y_{t-1}, y_{t-7}, rolling_mean(y_{t-7:t-1}), calendar_t, external_t]</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -196,7 +196,7 @@ print(features.head())
     </section>
 
     <section class="ml-theory-section">
-      <h2>Time-aware validation</h2>
+      <h2>Валидация с учётом времени</h2>
       <div class="formula" data-no-tex>train: [1..t], validation: [t+1..t+h]</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -210,51 +210,51 @@ print(features.head())
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> validate by pretending you are standing in the past and predicting the future.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> you cannot use next month's sales report to forecast next month.</div>
       </div>
-      <p>Use rolling-origin validation when possible: train on older data, validate on the next horizon, move the cutoff forward, and repeat.</p>
+      <p>По возможности используй rolling-origin валидацию: учись на старых данных, валидируйся на следующем горизонте, сдвигай точку отсечения вперёд и повторяй.</p>
     </section>
 
     <section class="ml-theory-section">
       <h2>Metrics</h2>
       <div class="grid-2">
         <div class="card">
-          <h3>Scale-dependent</h3>
+          <h3>Зависят от масштаба</h3>
           <ul>
-            <li>MAE: robust and interpretable in original units.</li>
-            <li>RMSE: penalizes large errors more.</li>
+            <li>MAE: устойчива и интерпретируема в исходных единицах.</li>
+            <li>RMSE: сильнее штрафует большие ошибки.</li>
           </ul>
         </div>
         <div class="card">
-          <h3>Scale-free</h3>
+          <h3>Не зависят от масштаба</h3>
           <ul>
-            <li>WAPE = Σ|y − ŷ| / Σ|y|: aggregate business error, robust to individual near-zero values.</li>
-            <li>MAPE: intuitive but breaks near zero.</li>
-            <li>SMAPE: less asymmetric than MAPE.</li>
-            <li>MASE: compares against naive baseline.</li>
+            <li>WAPE = Σ|y − ŷ| / Σ|y|: агрегированная бизнес-ошибка, устойчива к отдельным значениям около нуля.</li>
+            <li>MAPE: интуитивна, но ломается около нуля.</li>
+            <li>SMAPE: менее асимметрична, чем MAPE.</li>
+            <li>MASE: сравнивает с наивным baseline.</li>
           </ul>
         </div>
       </div>
-      <p>Always compare against a naive baseline such as "tomorrow equals today" or "this Monday equals last Monday". If your model cannot beat that, feature engineering or validation is wrong.</p>
+      <p>Всегда сравнивай с наивным baseline вроде «завтра как сегодня» или «этот понедельник как прошлый». Если модель его не побеждает — что-то не так с признаками или валидацией.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Typical mistakes</h2>
+      <h2>Типичные ошибки</h2>
       <div class="grid-2">
         <div class="warn">
-          <strong>Leakage mistakes</strong>
+          <strong>Ошибки утечки</strong>
           <ul>
-            <li>Random split across time.</li>
-            <li>Rolling windows that include current or future target.</li>
-            <li>Global normalization before time split.</li>
-            <li>Using features unknown at prediction time.</li>
+            <li>Случайный split через время.</li>
+            <li>Скользящие окна, включающие текущий или будущий target.</li>
+            <li>Глобальная нормализация до разбиения по времени.</li>
+            <li>Признаки, неизвестные в момент прогноза.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Modeling mistakes</strong>
+          <strong>Ошибки моделирования</strong>
           <ul>
-            <li>Ignoring forecast horizon.</li>
-            <li>Ignoring calendar and known future covariates.</li>
-            <li>Trusting one validation split during regime change.</li>
-            <li>Using MAPE when true values are near zero.</li>
+            <li>Игнорировать горизонт прогноза.</li>
+            <li>Игнорировать календарь и известные будущие ковариаты.</li>
+            <li>Доверять одному валидационному сплиту при смене режима.</li>
+            <li>Использовать MAPE, когда истинные значения около нуля.</li>
           </ul>
         </div>
       </div>
@@ -265,21 +265,21 @@ print(features.head())
       <div class="ml-exercise-list">
         <article class="exercise-card">
           <div class="exercise-label">Foundational</div>
-          <h3>Find leakage</h3>
-          <p>A feature is `rolling_7_mean = y.rolling(7).mean()`. Why is this wrong for one-step forecasting?</p>
-          <details><summary>Показать решение</summary><p>It includes y_t in the feature for predicting y_t. Use y.shift(1).rolling(7).mean() instead.</p></details>
+          <h3>Найди утечку</h3>
+          <p>Признак: <code>rolling_7_mean = y.rolling(7).mean()</code>. Почему это неверно для прогноза на один шаг?</p>
+          <details><summary>Показать решение</summary><p>Он включает y_t в признак для предсказания y_t. Используй y.shift(1).rolling(7).mean().</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Choose validation</h3>
-          <p>You forecast weekly demand four weeks ahead. Design a validation split.</p>
-          <details><summary>Показать решение</summary><p>Use rolling cutoffs. For each cutoff, train on past weeks and validate on the next four weeks. Average metrics across cutoffs.</p></details>
+          <h3>Выбери валидацию</h3>
+          <p>Ты прогнозируешь недельный спрос на четыре недели вперёд. Спроектируй валидационный сплит.</p>
+          <details><summary>Показать решение</summary><p>Используй скользящие точки отсечения: для каждой учись на прошлых неделях и валидируйся на следующих четырёх. Усредни метрики по всем отсечениям.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Hard</div>
-          <h3>Baseline challenge</h3>
-          <p>Create a seasonal naive baseline for daily data with weekly seasonality and compare MAE against a tree model.</p>
-          <details><summary>Показать решение</summary><p>Seasonal naive prediction is y_hat_t = y_{t-7}. If a complex model does not beat it, inspect leakage, features, horizon, and metric.</p></details>
+          <h3>Побей baseline</h3>
+          <p>Сделай сезонный наивный baseline для дневных данных с недельной сезонностью и сравни его MAE с моделью на деревьях.</p>
+          <details><summary>Показать решение</summary><p>Сезонный наивный прогноз: y_hat_t = y_{t-7}. Если сложная модель его не побеждает, проверь утечки, признаки, горизонт и метрику.</p></details>
         </article>
       </div>
     </section>
@@ -320,14 +320,14 @@ print(features.head())
 <section class="ml-checkpoint-section">
       <h2>Чекпоинт</h2>
       <ul>
-        <li>Can you explain why random split is wrong for time series?</li>
-        <li>Can you define trend, seasonality, stationarity, and autocorrelation?</li>
-        <li>Can you build lag and rolling features without leakage?</li>
-        <li>Can you design rolling-origin validation for a forecast horizon?</li>
-        <li>Can you choose a naive baseline and a metric?</li>
+        <li>Можешь объяснить, почему случайный split неверен для временных рядов?</li>
+        <li>Можешь определить тренд, сезонность, стационарность и автокорреляцию?</li>
+        <li>Можешь построить lag- и rolling-признаки без утечки?</li>
+        <li>Можешь спроектировать rolling-origin валидацию под горизонт прогноза?</li>
+        <li>Можешь выбрать наивный baseline и метрику?</li>
       </ul>
       <div class="ml-self-rating" data-topic-id="02_classic_ml/22_time_series_fundamentals.html" data-title="Time Series Fundamentals">
-        <span>I can design a leakage-safe time series baseline:</span>
+        <span>Могу спроектировать baseline для временного ряда без утечек:</span>
         <button data-rating="1">1</button>
         <button data-rating="2">2</button>
         <button data-rating="3">3</button>
