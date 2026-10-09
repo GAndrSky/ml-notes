@@ -259,7 +259,33 @@ function Test-UnstyledClasses {
   }
 }
 
+# A raw "<" in text (e.g. "\hat{p}<t" or "0<p<1") is parsed as a tag and silently eats content.
+function Test-RawLessThan {
+  $knownTags = @("a","abbr","article","aside","b","blockquote","body","br","button","canvas","caption","code","col",
+    "colgroup","dd","details","div","dl","dt","em","figcaption","figure","footer","h1","h2","h3","h4","h5","h6","head",
+    "header","hr","html","i","img","input","kbd","label","legend","li","link","main","mark","meta","nav","noscript","ol",
+    "optgroup","option","p","pre","q","s","section","select","small","span","strong","sub","summary","sup","table",
+    "tbody","td","textarea","tfoot","th","thead","title","tr","u","ul","var","svg","g","path","rect","circle","line",
+    "polyline","polygon","text","tspan","defs","marker","ellipse","lineargradient","radialgradient","stop","use",
+    "clippath","mask","pattern","foreignobject","math","mi","mo","mn","mrow","msup","msub","mfrac","wbr","video","source")
+  foreach ($relativePath in $lessonPages) {
+    $html = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $relativePath) -Encoding UTF8
+    $html = [regex]::Replace($html, '(?is)<script\b.*?</script>|<style\b.*?</style>|<!--.*?-->', ' ')
+    $html = [regex]::Replace($html, '="[^"]*"', '=""')
+    foreach ($match in [regex]::Matches($html, '</?([A-Za-z][A-Za-z0-9-]*)([^A-Za-z0-9-])')) {
+      $name = $match.Groups[1].Value.ToLowerInvariant()
+      $next = $match.Groups[2].Value
+      if (($name -notin $knownTags) -or ($next -notmatch '[\s>/]')) {
+        $start = [Math]::Max(0, $match.Index - 25)
+        $snippet = $html.Substring($start, [Math]::Min(50, $html.Length - $start)) -replace '\s+', ' '
+        Add-Issue "Raw '<' parsed as a tag in ${relativePath}: ...$snippet... (escape it as &lt;)"
+      }
+    }
+  }
+}
+
 Test-SearchIndexFiles
+Test-RawLessThan
 Test-UnstyledClasses
 Test-BundleFresh
 Test-CourseManifest
