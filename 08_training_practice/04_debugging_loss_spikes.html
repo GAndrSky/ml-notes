@@ -207,7 +207,7 @@ optimizer.step()
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 01</span>
           <h3 class="ml-walkthrough__step-heading">Check if the spike is in validation loss only — overfitting or data leakage</h3>
-          <div class="ml-walkthrough__step-body"><p>If training loss is smooth but validation loss spikes, the model is not numerically unstable — it is overfitting, or validation data is leaking from or contaminating training. Audit the preprocessing pipeline: check that no validation examples appear in the training set, that normalization statistics were computed on training data only, and that any data augmentation or tokenization is applied consistently. A val-only spike that appears suddenly mid-training often signals a data pipeline bug introduced by a recent change.</p></div>
+          <div class="ml-walkthrough__step-body"><p>If training loss is smooth but validation loss spikes, the problem is usually not numerical instability. Typical causes: overfitting (val loss trends up while train goes down), a small or outlier-heavy validation set, BatchNorm running statistics that do not match eval data, or a bug in the validation preprocessing (different normalization, resizing or tokenization than in training). Note that leakage between train and validation makes validation look too good, not worse. A val-only spike that appears suddenly mid-training often signals a data pipeline bug introduced by a recent change.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 02</span>
@@ -227,7 +227,7 @@ optimizer.step()
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 05</span>
           <h3 class="ml-walkthrough__step-heading">Check mixed precision — FP16 overflow causes NaN, verify loss scaling, switch to BF16 on Ampere+</h3>
-          <div class="ml-walkthrough__step-body"><p>FP16 has a maximum representable value of ~65504. If any activation or gradient exceeds this, it becomes Inf, which then propagates to NaN via Inf - Inf in subsequent ops. PyTorch's GradScaler multiplies the loss by a large scale factor before backward to prevent underflow, but if the scale is too large it causes overflow instead. Check <code>scaler.get_scale()</code> — if it is unusually large or dropping rapidly, that is your sign. On Ampere and newer GPUs (A100, RTX 30xx+), BF16 has the same range as FP32 and eliminates overflow issues entirely.</p></div>
+          <div class="ml-walkthrough__step-body"><p>FP16 has a maximum representable value of ~65504. If any activation or gradient exceeds this, it becomes Inf, which then propagates to NaN via Inf - Inf in subsequent ops. PyTorch's GradScaler multiplies the loss by a large scale factor before backward to prevent underflow, but if the scale is too large it causes overflow instead. Check <code>scaler.get_scale()</code> — if it is unusually large or dropping rapidly, that is your sign. On Ampere and newer GPUs (A100, RTX 30xx+), BF16 has the same exponent range as FP32, so overflow becomes very rare and loss scaling is usually unnecessary (precision is lower, though).</p></div>
         </div>
       </div>
       <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
@@ -262,7 +262,7 @@ optimizer.step()
 
     <div class="warn">
       <strong>Что ломается без этого</strong>
-      <p>Turning off gradient clipping when using large learning rates almost guarantees eventual loss explosion. Even with a well-tuned LR, any single batch with an outlier sample can produce a gradient norm that is orders of magnitude larger than usual. Without clipping, that single bad update pushes model weights far from the current optimum — sometimes irreversibly. The model may partially recover (a visible spike followed by slow recovery), or it may never recover (divergence). With clipping at max_norm=1.0, the same bad batch produces a bounded update, and training continues normally. The cost is zero when gradients are small; the benefit is a hard upper bound on the damage from any single batch.</p>
+      <p>Turning off gradient clipping when using large learning rates sharply raises the risk of an eventual loss explosion. Even with a well-tuned LR, any single batch with an outlier sample can produce a gradient norm that is orders of magnitude larger than usual. Without clipping, that single bad update pushes model weights far from the current optimum — sometimes irreversibly. The model may partially recover (a visible spike followed by slow recovery), or it may never recover (divergence). With clipping at max_norm=1.0, the same bad batch produces a bounded update, and training continues normally. The cost is zero when gradients are small; the benefit is a hard upper bound on the damage from any single batch.</p>
     </div>
 
     <div class="ml-self-rating" data-topic="debugging-loss">
@@ -288,7 +288,7 @@ optimizer.step()
       <article class="ml-endcap-card">
         <h3>Когда применять</h3>
         <ul class="ml-endcap-list">
-        <li>Всегда сохраняй checkpoint перед каждым шагом с большим grad norm.</li>
+        <li>Сохраняй checkpoint регулярно и держи несколько последних, чтобы при спайке можно было откатиться к состоянию до него.</li>
         <li>Логируй grad_norm, loss, lr на каждом шаге — не только loss.</li>
         <li>При NaN: первым делом проверяй входные данные, не архитектуру.</li>
         </ul>

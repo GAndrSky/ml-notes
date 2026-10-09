@@ -74,6 +74,13 @@
     </section>
 
     <section class="card">
+      <h2>Tensor и pipeline parallelism</h2>
+      <p><strong>Tensor parallelism</strong> режет сами матрицы слоя между GPU: например, в MLP первую матрицу делят по столбцам, вторую — по строкам, и каждому GPU нужна лишь своя часть весов; в конце слоя результаты суммируются all-reduce. Коммуникация происходит внутри каждого слоя, поэтому TP почти всегда держат внутри одного узла с быстрым NVLink.</p>
+      <p><strong>Pipeline parallelism</strong> кладёт разные группы слоёв на разные GPU. Чтобы GPU не простаивали, batch делят на m micro-batches, и стадии работают «конвейером». Простой (bubble) остаётся в начале и конце: его доля ≈ (p − 1) / (m + p − 1) для p стадий, например p=4, m=16 → 3/19 ≈ 16%. Больше micro-batches — меньше пузырь, но больше памяти под активации.</p>
+      <p>Большие LLM обучают «3D-параллелизмом»: TP внутри узла, PP между узлами, data parallel/FSDP поверх.</p>
+    </section>
+
+    <section class="card">
       <h2>Как выбирать</h2>
       <div class="grid-2">
         <div>
@@ -251,8 +258,8 @@ for epoch in range(num_epochs):
         </li>
         <li class="ml-quiz__item">
           <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">Why does global batch size stay constant when scaling DDP workers?</summary>
-            <div class="ml-quiz__a"><p>In DDP, adding more workers does not automatically increase the global batch — it divides the same work across more GPUs. If you keep local_batch constant while doubling workers, the global batch doubles, which changes the optimization dynamics (larger batches typically need a higher learning rate to converge at the same speed). To keep the same optimization trajectory when scaling, either halve the local batch or adjust the learning rate using the linear scaling rule: new_lr = old_lr × (new_world_size / old_world_size).</p></div>
+            <summary class="ml-quiz__q">What happens to the global batch when you add DDP workers, and how do you compensate?</summary>
+            <div class="ml-quiz__a"><p>In DDP the global batch is local_batch × world_size × accumulation, so it changes whenever the number of workers changes. If you keep local_batch constant while doubling workers, the global batch doubles, which changes the optimization dynamics (larger batches typically need a higher learning rate to converge at the same speed). To keep the same optimization trajectory when scaling, either halve the local batch or adjust the learning rate using the linear scaling rule: new_lr = old_lr × (new_world_size / old_world_size).</p></div>
           </details>
         </li>
       </ol>

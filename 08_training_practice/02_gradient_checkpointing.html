@@ -239,7 +239,7 @@ loss.backward()
         <li class="ml-quiz__item">
           <details class="ml-quiz__entry">
             <summary class="ml-quiz__q">When should you NOT use checkpointing?</summary>
-            <div class="ml-quiz__a"><p>Avoid checkpointing when: (1) your model already fits comfortably in GPU memory — you pay ~30% compute overhead for no benefit; (2) training is already compute-bound, meaning the GPU is the bottleneck and adding more computation will extend run time proportionally; (3) you are using operations with randomness (e.g., dropout) inside a checkpointed segment without explicitly saving and restoring the RNG state — the recomputation will produce different random values, giving incorrect gradients. In case 3, use <code>use_reentrant=False</code> or manage RNG state manually.</p></div>
+            <div class="ml-quiz__a"><p>Avoid checkpointing when: (1) your model already fits comfortably in GPU memory — you pay ~30% compute overhead for no benefit; (2) training is already compute-bound, meaning the GPU is the bottleneck and adding more computation will extend run time proportionally; (3) the checkpointed code is not safe to re-run: it has side effects or randomness that is not captured. Note that <code>torch.utils.checkpoint</code> saves and restores the RNG state by default (<code>preserve_rng_state=True</code>), so ordinary dropout is recomputed identically; the problem appears if you disable that, use your own recomputation, or draw random numbers from a generator PyTorch does not track.</p></div>
           </details>
         </li>
       </ol>
@@ -291,7 +291,7 @@ loss.backward()
         <ul class="ml-endcap-list">
         <li>Checkpoint granularity: каждый слой vs каждые k слоёв — баланс памяти и скорости.</li>
         <li>Совмещение с torch.compile() требует осторожности — проверяй совместимость.</li>
-        <li>segment_size в gradient_checkpointing_enable() в Hugging Face Transformers.</li>
+        <li>В Hugging Face Transformers: model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False}) — checkpoint ставится на каждый слой декодера.</li>
         </ul>
       </article>
       <article class="ml-endcap-card">
