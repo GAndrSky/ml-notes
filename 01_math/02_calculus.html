@@ -354,7 +354,7 @@ f(1.001) = (2.002+1)² = 3.002² = 9.012
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Разбиение на узлы — это вычислительный граф. Backprop идёт справа налево и перемножает локальные производные каждого узла.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как сборочная линия в обратном направлении: каждый цех передаёт «ответственность за ошибку» предыдущему, умноженную на свою локальную чувствительность.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=1.2. u=1.44, v=2.44. du/dx=2.4, dv/du=1, dh/dv=cos(2.44)≈−0.775. dh/dx=−0.775·1·2.4≈−1.86.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=1.2. u=1.44, v=2.44. du/dx=2.4, dv/du=1, dh/dv=cos(2.44)≈−0.764. dh/dx=−0.764·1·2.4≈−1.833.</div>
     </div>
     <div class="intuition" style="font-size:0.88em;">
         💡 Это и есть backprop в миниатюре: сначала считаем forward, потом идём назад по графу вычислений и перемножаем локальные производные.
@@ -543,7 +543,7 @@ f(1.001) = (2.002+1)² = 3.002² = 9.012
       <div class="formula-anatomy__row"><span class="fa-sym">i, j</span><span class="fa-name">индексы строки и столбца</span><span class="fa-desc">Пробегают от 1 до n. Матрица Гессе кодирует взаимодействие каждой пары переменных: насколько сильно изменение x_j влияет на скорость роста f по x_i.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент показывает наклон поверхности, Гессиан — кривизну. Если все собственные значения H положительны — функция выпукла (есть минимум). Если разных знаков — это седловая точка.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Градиент показывает наклон поверхности, Гессиан — кривизну. Если в стационарной точке (∇f=0) все собственные значения H положительны — это локальный минимум, и рядом с ним функция выпукла. Если знаки разные — седловая точка.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Градиент — как уклон трассы, Гессиан — как её кривизна (прямая или крутой поворот). Большой Гессиан означает «резкий изгиб» поверхности потерь.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x,y)=x²+2y². H=[[2,0],[0,4]]. Собственные значения 2 и 4 — оба положительны, значит (0,0) — минимум. Кривизна в направлении y вдвое сильнее, чем по x.</div>
     </div>
@@ -638,7 +638,7 @@ f(1.001) = (2.002+1)² = 3.002² = 9.012
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Taylor первого порядка говорит: «при малом шаге функция ведёт себя как прямая с наклоном f'(x)». Это основа gradient descent — мы используем линейную аппроксимацию loss.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как прогноз по скорости: если скорость 60 км/ч, то через 0.01 часа машина проедет ≈0.6 км. Точно так же f'(x)·Δx — это «скорость изменения» × «время».</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=sin(x), x=0. f(0)=0, f'(0)=1. f(0.3)≈0+1·0.3=0.3. Точное значение: sin(0.3)≈0.296. Ошибка ≈0.004 (порядок Δx²).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=sin(x), x=0. f(0)=0, f'(0)=1. f(0.3)≈0+1·0.3=0.3. Точное значение: sin(0.3)≈0.296. Ошибка ≈0.0045: у sin в нуле квадратичный член равен нулю, поэтому ошибка ≈ Δx³/6 = 0.027/6.</div>
     </div>
     <h3>Для многих переменных</h3>
   <div class="formula">
@@ -664,11 +664,11 @@ f(1.001) = (2.002+1)² = 3.002² = 9.012
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">∇f(x)^T Δx</span><span class="fa-name">линейный член — наклон</span><span class="fa-desc">Первый порядок Taylor: предсказывает изменение по касательной. Доминирует при малых Δx.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">1/2 · Δx^T H Δx</span><span class="fa-name">квадратичный член — кривизна</span><span class="fa-desc">Второй порядок: учитывает «изгиб» поверхности. Δx^T H Δx — квадратичная форма: Δx «взвешивается» Гессианом H. Коэффициент 1/2 следует из интеграла Taylor.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/2 · Δx^T H Δx</span><span class="fa-name">квадратичный член — кривизна</span><span class="fa-desc">Второй порядок: учитывает «изгиб» поверхности. Δx^T H Δx — квадратичная форма: Δx «взвешивается» Гессианом H. Коэффициент 1/2 — это 1/2! из ряда Тейлора.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">H</span><span class="fa-name">матрица Гессе в точке x</span><span class="fa-desc">Матрица вторых производных. Учёт H позволяет адаптировать шаг к кривизне поверхности — идея Newton-метода: Δx = −H^{-1} ∇f.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Второй порядок Taylor добавляет «парабольную» поправку к «прямолинейной» аппроксимации. Newton-метод использует именно это — минимизирует квадратичное приближение аналитически.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Второй порядок Taylor добавляет «параболическую» поправку к «прямолинейной» аппроксимации. Newton-метод использует именно это — минимизирует квадратичное приближение аналитически.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Первый порядок — прямая дорога. Второй порядок — учёт поворота: знаем не только наклон, но и насколько дорога изгибается, и корректируем маршрут.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> f(x)=x², x=1, Δx=0.5. f'(1)=2, f''(1)=2. Taylor 2: f(1)+2·0.5+0.5·2·0.25=1+1+0.25=2.25. Точное: f(1.5)=2.25. Для квадратики 2й порядок точен!</div>
     </div>
@@ -1072,7 +1072,7 @@ drawGD();
 calcJacobian();
 calcHessian();
   </script>
-  </div>
+  
 
   <section class="card">
     <h2>Как думать о производной в ML</h2>
@@ -1473,5 +1473,6 @@ print(np.array(traj)[-5:])
     </div>
   </section>
 <!-- step1-learning:end -->
+</div>
 </body>
 </html>

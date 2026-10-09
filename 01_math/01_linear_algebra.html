@@ -228,7 +228,7 @@ attention:       softmax(Q K^T / sqrt(d_k)) V
       <div class="formula-anatomy__row"><span class="fa-sym">X, W</span><span class="fa-name">матрица батча и весов слоя</span><span class="fa-desc">Полный слой: Z = X W^T + b. X имеет shape (B, d_in), W — (d_out, d_in), результат Z — (B, d_out). Одна операция вместо B отдельных нейронов.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Q, K, V</span><span class="fa-name">запрос, ключ, значение</span><span class="fa-desc">В механизме attention: Q K^T вычисляет сходство запросов с ключами, затем взвешенно суммируются значения V. Делим на sqrt(d_k), чтобы стабилизировать градиенты.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">dL/dW</span><span class="fa-name">градиент по весам</span><span class="fa-desc">Частная производная функции потерь по матрице весов. Показывает, в каком направлении изменить W, чтобы уменьшить ошибку. Обратное распространение — это цепочка таких производных.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия инициализации</span><span class="fa-desc">Веса W инициализируются случайно с дисперсией σ². Xavier: σ² = 1/fan_in, He: σ² = 2/fan_in. Правильный выбор предотвращает затухание/взрыв активаций.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия инициализации</span><span class="fa-desc">Веса W инициализируются случайно с дисперсией σ². LeCun: σ² = 1/fan_in, Xavier: σ² = 2/(fan_in + fan_out), He: σ² = 2/fan_in. Правильный выбор предотвращает затухание/взрыв активаций.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">fan_in</span><span class="fa-name">число входных нейронов</span><span class="fa-desc">Количество входов слоя. Чем больше fan_in, тем меньше должна быть дисперсия весов — иначе взвешенная сумма будет слишком велика уже на первом шаге.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
@@ -289,7 +289,7 @@ shape: (3,)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вектор задаёт точку или направление в пространстве признаков. Embedding слова — вектор, градиент — вектор, строка матрицы весов — вектор.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вектор — как GPS-координаты: набор чисел, каждое из которых отвечает за своё измерение (широта, долгота, высота).</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[0.2, 0.8, −0.5]. Норма ||x||_2 = sqrt(0.04+0.64+0.25) ≈ 0.975. Нормированный вектор x/||x||_2 ≈ [0.205, 0.821, −0.513].</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[0.2, 0.8, −0.5]. Норма ||x||_2 = sqrt(0.04+0.64+0.25) = sqrt(0.93) ≈ 0.964. Нормированный вектор x/||x||_2 ≈ [0.207, 0.830, −0.518].</div>
     </div>
     </div>
       <div class="mini-card" style="margin-top:10px">
@@ -443,7 +443,7 @@ x^T y = sum_i x_i y_i = ||x|| ||y|| cos(theta)
 
 <div class="card">
   <h2>Матрицы и матричное умножение</h2>
-  <p class="muted">Ниже расширенный калькулятор из текущего конспекта: A (2×3) умножается на B (3×2), а результатом становится C (2×2).</p>
+  <p class="muted">Калькулятор ниже умножает A (2×3) на B (3×2); результат — C (2×2).</p>
   <div class="formula">
 C[i, j] = sum_k A[i, k] * B[k, j]
 условие совместимости: (m, k) * (k, n) -> (m, n)
@@ -506,7 +506,7 @@ C[i, j] = sum_k A[i, k] * B[k, j]
 
 <div class="card">
   <h2>Линейное преобразование, базис и determinant</h2>
-  <p class="muted">Здесь объединены идеи из обеих версий: и геометрическая деформация сетки, и интерпретация матрицы через действие на базисные векторы.</p>
+  <p class="muted">Две взаимодополняющие картинки: геометрическая деформация сетки и интерпретация матрицы через действие на базисные векторы.</p>
   <div class="grid-2">
     <div>
       <div class="slider-row">
@@ -625,7 +625,7 @@ X + b -> bias добавляется к каждой строке батча
 
 <div class="card">
   <h2>Нормы, SVD и rank матрицы</h2>
-  <p>Этот блок пришел из текущего конспекта и хорошо дополняет вводную часть: он показывает, что матрицу можно не только умножать, но и анализировать через ее геометрию и спектр.</p>
+  <p>Матрицу можно не только умножать, но и анализировать через её геометрию и спектр.</p>
   <div class="formula">
 A = U Σ V^T
 
@@ -639,7 +639,7 @@ V: ортогональная матрица правых направлений
       <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">исходная матрица</span><span class="fa-desc">Произвольная матрица shape (m, n). SVD раскладывает её в произведение трёх специальных матриц: A = U Σ V^T.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">U</span><span class="fa-name">левые сингулярные векторы</span><span class="fa-desc">Ортогональная матрица shape (m, m). Столбцы U — «выходные» направления: куда A отправляет данные. U^T U = I.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">матрица сингулярных значений</span><span class="fa-desc">Диагональная матрица shape (m, n). Диагональные элементы σ₁ ≥ σ₂ ≥ ... ≥ 0 — сингулярные значения. Это НЕ знак суммы, а специальная матрица масштабирования.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">V^T</span><span class="fa-name">правые сингулярные векторы (транспонированные)</span><span class="fa-desc">V — ортогональная матрица shape (n, n). Столбцы V — «входные» направления. V^T V = I. PCA — частный случай SVD для ковариационной матрицы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">V^T</span><span class="fa-name">правые сингулярные векторы (транспонированные)</span><span class="fa-desc">V — ортогональная матрица shape (n, n). Столбцы V — «входные» направления. V^T V = I. PCA — это SVD центрированной матрицы данных (эквивалентно собственному разложению ковариационной матрицы).</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">σ_i</span><span class="fa-name">i-е сингулярное значение</span><span class="fa-desc">Масштаб i-го «режима» матрицы. Большой σ_i означает направление с сильным влиянием. Если σ_i=0, i-й режим отсутствует — rank матрицы меньше.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
@@ -687,7 +687,7 @@ cond(A) = 2
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">A = [[3,1],[1,3]]</span><span class="fa-name">конкретная матрица для разбора</span><span class="fa-desc">Симметричная матрица 2×2. Симметричные матрицы встречаются в коваториационных матрицах и ядрах. Их собственные и сингулярные значения совпадают (берём абсолютные).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">A = [[3,1],[1,3]]</span><span class="fa-name">конкретная матрица для разбора</span><span class="fa-desc">Симметричная матрица 2×2. Симметричные матрицы встречаются в ковариационных матрицах и ядрах. Их собственные и сингулярные значения совпадают (берём абсолютные).</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">σ1 = 4, σ2 = 2</span><span class="fa-name">два сингулярных значения</span><span class="fa-desc">σ1=4 — главное направление: матрица растягивает в 4 раза. σ2=2 — второстепенное: растягивает в 2 раза. Оба ненулевые → rank = 2.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">rank = 2</span><span class="fa-name">полный ранг</span><span class="fa-desc">Оба сингулярных значения ненулевые, значит матрица имеет полный ранг: она обратима, информация не теряется.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">cond = 2</span><span class="fa-name">число обусловленности = σ1/σ2</span><span class="fa-desc">cond = 4/2 = 2 — отличная обусловленность. Для сравнения: матрица [[3,2.9],[2.9,3]] имела бы σ_min ≈ 0.1, cond ≈ 60.</span></div>
@@ -724,7 +724,7 @@ A v = λ v
       <div class="formula-anatomy__row"><span class="fa-sym">A</span><span class="fa-name">квадратная матрица</span><span class="fa-desc">Только квадратные матрицы имеют собственные числа (eigenvalues). В нейросетях рекуррентные матрицы переходов W в RNN — квадратные, их спектр определяет стабильность.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">v</span><span class="fa-name">собственный вектор</span><span class="fa-desc">Ненулевой вектор, который матрица A не поворачивает, а только масштабирует. A v = λ v: v остаётся на той же прямой, но изменяется по длине на λ.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">λ</span><span class="fa-name">собственное значение (eigenvalue)</span><span class="fa-desc">Коэффициент масштабирования собственного вектора. Может быть отрицательным (переворот) или комплексным (поворот). Спектральный радиус = max|λ_i|.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">|λ| &gt; 1 / &lt; 1 / = 1</span><span class="fa-name">режим нормы при многократном применении</span><span class="fa-desc">|λ|&gt;1: повторное применение A растит норму → взрыв градиентов. |λ|&lt;1: затухает → мёртвые градиенты. |λ|=1: норма сохраняется → идеальный нейтральный режим.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">|λ| &gt; 1 / &lt; 1 / = 1</span><span class="fa-name">режим нормы при многократном применении</span><span class="fa-desc">|λ|&gt;1: повторное применение A растит норму → взрыв градиентов. |λ|&lt;1: затухает → затухающие градиенты. |λ|=1: норма сохраняется → идеальный нейтральный режим.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Собственные числа — это «усилители» матрицы в особых направлениях. В RNN матрица W применяется на каждом шаге: если |λ|&gt;1, сигнал взрывается, если |λ|&lt;1 — затухает.</div>
@@ -772,9 +772,9 @@ Var(W) = 2 / fan_in
       <div class="formula-anatomy__row"><span class="fa-sym">He / Kaiming</span><span class="fa-name">инициализация для ReLU</span><span class="fa-desc">Var(W) = 2/fan_in. ReLU обнуляет половину нейронов, поэтому нужна вдвое большая дисперсия по сравнению с Xavier. В PyTorch: nn.init.kaiming_uniform_ или kaiming_normal_.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Если слой берёт fan_in входов и суммирует их, дисперсия суммы = fan_in · Var(W). Чтобы итоговая дисперсия оставалась ~1, нужно Var(W) = 1/fan_in. Xavier и He — конкретные рецепты для разных нелинейностей.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Если слой берёт fan_in входов и суммирует их, при независимых входах с Var(x)=1 дисперсия суммы = fan_in · Var(W). Чтобы итоговая дисперсия оставалась ~1, нужно Var(W) = 1/fan_in. Xavier и He — конкретные рецепты для разных нелинейностей.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Инициализация — как настройка громкости перед концертом: слишком громко — обрезание (взрыв активаций), слишком тихо — шум глушит сигнал (затухание градиентов).</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слой 512→256. Xavier: Var(W) = 2/(512+256) ≈ 0.0026, std ≈ 0.051. He: Var(W) = 2/512 ≈ 0.0039, std ≈ 0.0625. В PyTorch по умолчанию Linear использует Kaiming uniform.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Слой 512→256. Xavier: Var(W) = 2/(512+256) ≈ 0.0026, std ≈ 0.051. He: Var(W) = 2/512 ≈ 0.0039, std ≈ 0.0625. В PyTorch nn.Linear по умолчанию вызывает kaiming_uniform_ с a=√5, что даёт U(−1/√fan_in, 1/√fan_in), то есть Var = 1/(3·fan_in) — это не He-инициализация; для ReLU-сетей её задают явно.</div>
     </div>
     <div class="grid-2">
     <div>
@@ -1202,7 +1202,7 @@ calcInit();
 drawEig();
 drawSVD();
   </script>
-  </div>
+  
 
   <section class="card">
     <h2>Почему линейная алгебра так глубоко сидит в ML</h2>
@@ -1532,5 +1532,6 @@ print(&#39;area ratio=&#39;, polygon_area(transformed) / polygon_area(square))
     </div>
   </section>
 <!-- step1-learning:end -->
+</div>
 </body>
 </html>
