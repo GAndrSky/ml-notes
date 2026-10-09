@@ -687,7 +687,7 @@ print(loss.item())
   <div class="step highlight">Cross-Entropy = цена кодирования истинного распределения моделью</div>
   <div class="step highlight">KL = насколько Q хуже описывает мир, где истинно P</div>
   <div class="step highlight">Cross-Entropy = Entropy + KL</div>
-  <div class="step highlight">Classification loss = -log(probability of true class)</div>
+  <div class="step highlight">Loss классификации = −log(вероятность истинного класса)</div>
 
   <div class="intuition">
     💡 Если совсем упростить: теория информации в ML объясняет, почему модель должна давать высокую вероятность правильным ответам — иначе истинные события становятся слишком “дорогими” по информации.
@@ -891,7 +891,7 @@ calcBinaryCE();
     <div class="ml-exercise-list">
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Тип A — вывод</span>
             <span class="ml-exercise-badge">Foundational</span>
           </div>
           <p>Посчитай entropy для честной монеты и для монеты с P(head)=0.9. Объясни, почему честная монета имеет большую неопределённость.</p>
@@ -903,7 +903,7 @@ calcBinaryCE();
         </article>
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type A — Derivation</span>
+            <span class="ml-exercise-badge">Тип A — вывод</span>
             <span class="ml-exercise-badge">Intermediate</span>
           </div>
           <p>Покажи, что cross-entropy H(p,q)=H(p)+KL(p||q). Что это значит для обучения классификатора?</p>
@@ -915,7 +915,7 @@ calcBinaryCE();
         </article>
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Тип B — код</span>
             <span class="ml-exercise-badge">Foundational</span>
           </div>
           <p>Реализуй entropy и KL divergence для дискретных распределений и проверь значения на двух монетах.</p>
@@ -945,7 +945,7 @@ print(kl(p, q), kl(q, p))
         </article>
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type B — Coding</span>
+            <span class="ml-exercise-badge">Тип B — код</span>
             <span class="ml-exercise-badge">Intermediate</span>
           </div>
           <p>Реализуй softmax cross-entropy для batch logits и labels без PyTorch. Используй log-sum-exp trick.</p>
@@ -970,7 +970,7 @@ print(cross_entropy(logits, y))
         </article>
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Тип C — концепция</span>
             <span class="ml-exercise-badge">Foundational</span>
           </div>
           <p>Почему cross-entropy штрафует уверенные неправильные ответы сильнее, чем неуверенные?</p>
@@ -982,7 +982,7 @@ print(cross_entropy(logits, y))
         </article>
         <article class="ml-exercise-card">
           <div class="ml-exercise-meta">
-            <span class="ml-exercise-badge">Type C — Conceptual</span>
+            <span class="ml-exercise-badge">Тип C — концепция</span>
             <span class="ml-exercise-badge">Hard</span>
           </div>
           <p>Почему KL divergence не является настоящим расстоянием?</p>
@@ -998,14 +998,12 @@ print(cross_entropy(logits, y))
 
 <!-- phase4-go-deeper:start -->
   <section class="ml-advanced-section" data-phase4-go-deeper="information-theory">
-    <h2>Go Deeper: mutual information, bottlenecks, and rate-distortion</h2>
-    <p class="muted">This section connects information theory to representation learning, feature selection, VAEs, contrastive learning, and compression. The research-track question is: what information should a model keep, discard, or transmit?</p>
+    <h2>Глубже: взаимная информация, bottleneck и rate-distortion</h2>
+    <p class="muted">Раздел связывает теорию информации с representation learning, отбором признаков, VAE, contrastive learning и сжатием. Вопрос исследовательского трека: какую информацию модель должна сохранить, отбросить или передать?</p>
 
     <details class="intuition-block" open>
-      <summary>Mutual information: shared information between variables</summary>
-      <div class="intuition-content">
-        Mutual information measures how much knowing one variable reduces uncertainty about another. Unlike correlation, it can capture nonlinear dependence. In representation learning, it helps formalize whether a learned representation keeps information about labels, inputs, or nuisance factors.
-      </div>
+      <summary>Взаимная информация: общая информация двух переменных</summary>
+      <div class="intuition-content">Взаимная информация измеряет, насколько знание одной переменной уменьшает неопределённость другой. В отличие от корреляции, она улавливает и нелинейную зависимость. В representation learning она помогает формализовать, сохраняет ли выученное представление информацию о метках, входах или мешающих факторах.</div>
     </details>
     <div class="formula" data-no-tex>I(X;Y) = H(X) - H(X | Y)</div>
     <div class="formula-anatomy">
@@ -1022,10 +1020,8 @@ print(cross_entropy(logits, y))
     </div>
 
     <details class="intuition-block">
-      <summary>Information bottleneck principle</summary>
-      <div class="intuition-content">
-        The information bottleneck idea says a representation Z should keep information about target Y while discarding unnecessary information about input X. This gives a formal language for useful compression: keep predictive structure, remove nuisance details. It connects to regularization, invariance, representation learning, and some interpretations of deep networks.
-      </div>
+      <summary>Принцип information bottleneck</summary>
+      <div class="intuition-content">Идея information bottleneck: представление Z должно сохранять информацию о target Y и отбрасывать лишнюю информацию о входе X. Это формальный язык полезного сжатия — сохранить предсказательную структуру, убрать мешающие детали. Он связан с регуляризацией, инвариантностью, representation learning и некоторыми интерпретациями глубоких сетей.</div>
     </details>
     <div class="formula" data-no-tex>minimize I(X;Z) - beta I(Z;Y)</div>
     <div class="formula-anatomy">
@@ -1044,10 +1040,8 @@ print(cross_entropy(logits, y))
     </div>
 
     <details class="intuition-block">
-      <summary>Rate-distortion theory</summary>
-      <div class="intuition-content">
-        Rate-distortion theory formalizes the trade-off between compression rate and reconstruction quality. In ML, this idea appears in autoencoders, VAEs, quantization, representation compression, and lossy data storage. The central question is: how many bits are needed to preserve a useful level of fidelity?
-      </div>
+      <summary>Теория rate-distortion</summary>
+      <div class="intuition-content">Теория rate-distortion формализует компромисс между степенью сжатия и качеством восстановления. В ML эта идея появляется в autoencoders, VAE, квантизации, сжатии представлений и хранении данных с потерями. Главный вопрос: сколько бит нужно, чтобы сохранить полезный уровень точности?</div>
     </details>
     <div class="formula" data-no-tex>R(D) = min I(X;Z) subject to E[d(X, X_hat)] <= D</div>
     <div class="formula-anatomy">
@@ -1065,10 +1059,8 @@ print(cross_entropy(logits, y))
     </div>
 
     <details class="intuition-block">
-      <summary>Connection to VAEs and beta-VAE</summary>
-      <div class="intuition-content">
-        A VAE balances reconstruction quality and latent compression through its reconstruction term and KL term. Increasing the KL weight in beta-VAE pushes the latent code to carry less information, often improving disentanglement but hurting reconstruction. This is rate-distortion thinking in a deep generative model.
-      </div>
+      <summary>Связь с VAE и beta-VAE</summary>
+      <div class="intuition-content">VAE балансирует качество восстановления и сжатие латентного кода через reconstruction-член и KL-член. Увеличение веса KL в beta-VAE заставляет латентный код нести меньше информации — это часто улучшает disentanglement, но ухудшает восстановление. Это и есть rate-distortion мышление в глубокой генеративной модели.</div>
     </details>
   </section>
 <!-- phase4-go-deeper:end -->
@@ -1108,32 +1100,32 @@ print(cross_entropy(logits, y))
 </div>
 
 <section class="ml-checkpoint-section" data-learning-checkpoint="1">
-    <h2>Learning checkpoint</h2>
+    <h2>Чекпоинт</h2>
     <div class="ml-advanced-grid">
       <article class="ml-checkpoint-card">
-        <h3>Answer without hints</h3>
+        <h3>Ответь без подсказок</h3>
         <ol class="ml-checkpoint-list">
-          <li>What does entropy measure and when is it maximal?</li>
-          <li>Why is KL(p || q) not the same as KL(q || p)?</li>
-          <li>How is cross-entropy connected to maximum likelihood?</li>
-          <li>Why is the log-sum-exp trick needed?</li>
-          <li>How is mutual information different from correlation?</li>
+          <li>Что измеряет энтропия и когда она максимальна?</li>
+          <li>Почему KL(p || q) не равно KL(q || p)?</li>
+          <li>Как cross-entropy связана с maximum likelihood?</li>
+          <li>Зачем нужен трюк log-sum-exp?</li>
+          <li>Чем взаимная информация отличается от корреляции?</li>
         </ol>
       </article>
       <article class="ml-checkpoint-card">
-        <h3>Explain to a rubber duck</h3>
+        <h3>Объясни резиновой уточке</h3>
         <ol class="ml-checkpoint-list">
-          <li>Explain entropy as average surprise without formulas.</li>
-          <li>Explain KL divergence as the cost of using the wrong map of the world.</li>
+          <li>Объясни энтропию как «среднее удивление» без формул.</li>
+          <li>Объясни KL-дивергенцию как цену использования неверной карты мира.</li>
         </ol>
         <div class="ml-self-rating" data-topic-id="01_math/04_information_theory">
-          <span class="ml-self-rating__label">I can explain this:</span>
+          <span class="ml-self-rating__label">Могу объяснить:</span>
           <button type="button" data-rating="1">1</button>
           <button type="button" data-rating="2">2</button>
           <button type="button" data-rating="3">3</button>
           <button type="button" data-rating="4">4</button>
           <button type="button" data-rating="5">5</button>
-          <span class="ml-self-rating__label" data-rating-status>No rating yet</span>
+          <span class="ml-self-rating__label" data-rating-status>Пока без оценки</span>
         </div>
       </article>
     </div>
@@ -1141,39 +1133,39 @@ print(cross_entropy(logits, y))
 <!-- learning-checkpoint:end -->
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">
-    <h2>How to consolidate this topic: Information Theory</h2>
-    <p class="muted">Use information theory to understand uncertainty, compression, cross-entropy losses, KL regularization, and representation learning.</p>
+    <h2>Как закрепить тему: Information Theory</h2>
+    <p class="muted">Теория информации помогает понимать неопределённость, сжатие, cross-entropy loss, KL-регуляризацию и representation learning.</p>
     <div class="ml-endcap-grid">
       <article class="ml-endcap-card">
-        <h3>When to use it</h3>
+        <h3>Когда применять</h3>
         <ul class="ml-endcap-list">
-          <li>When interpreting classification loss, language-model loss, or KL terms.</li>
-          <li>When reasoning about compression, bottlenecks, and representation quality.</li>
-          <li>When comparing distributions in VAEs, distillation, RLHF, DPO, or diffusion.</li>
+          <li>При интерпретации loss классификации и языковых моделей или KL-членов.</li>
+          <li>При рассуждениях о сжатии, bottleneck-ах и качестве представлений.</li>
+          <li>При сравнении распределений в VAE, дистилляции, RLHF, DPO или диффузии.</li>
         </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Typical mistakes</h3>
+        <h3>Типичные ошибки</h3>
         <ul class="ml-endcap-list">
-          <li>Treating KL as a symmetric distance metric.</li>
-          <li>Forgetting that entropy depends on the whole distribution, not only the most likely class.</li>
-          <li>Using unstable softmax or log computations instead of log-sum-exp.</li>
+          <li>Считать KL симметричной метрикой расстояния.</li>
+          <li>Забывать, что энтропия зависит от всего распределения, а не только от самого вероятного класса.</li>
+          <li>Использовать неустойчивые вычисления softmax/log вместо log-sum-exp.</li>
         </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>What to tune or inspect</h3>
+        <h3>Что тюнить / проверить</h3>
         <ul class="ml-endcap-list">
-          <li>Temperature, label smoothing, KL weight, entropy regularization, and compression strength.</li>
-          <li>Whether distributions are compared in the correct direction.</li>
-          <li>Whether loss is measured in bits, nats, or averaged token/object units.</li>
+          <li>Temperature, label smoothing, вес KL, регуляризацию энтропии и силу сжатия.</li>
+          <li>Сравниваются ли распределения в правильном направлении.</li>
+          <li>В чём измеряется loss — в битах, натах, усреднён ли по токенам/объектам.</li>
         </ul>
       </article>
       <article class="ml-endcap-card">
-        <h3>Connections</h3>
+        <h3>Связи с другими темами</h3>
         <ul class="ml-endcap-list">
-          <li><a href="../03_neural_basics/04_loss_functions.html">3.4 Loss Functions</a> uses cross-entropy directly.</li>
-          <li><a href="../07_generative_models/01_variational_autoencoders.html">7.1 VAE</a> uses KL as a latent regularizer.</li>
-          <li><a href="../06_llm/08_dpo_alignment_alternatives.html">6.8 DPO</a> relies on reference-model KL-style control.</li>
+          <li><a href="../03_neural_basics/04_loss_functions.html">3.4 Loss Functions</a> напрямую использует cross-entropy.</li>
+          <li><a href="../07_generative_models/01_variational_autoencoders.html">7.1 VAE</a> использует KL как регуляризатор латентного пространства.</li>
+          <li><a href="../06_llm/08_dpo_alignment_alternatives.html">6.8 DPO</a> опирается на KL-контроль относительно reference-модели.</li>
         </ul>
       </article>
     </div>
