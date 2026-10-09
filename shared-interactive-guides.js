@@ -149,77 +149,6 @@
     return null;
   }
 
-  function kindFor(card) {
-    var text = (headingOf(card) + " " + textOf(card)).toLowerCase();
-    if (/gradient|градиент|loss|optimizer|learning rate|scheduler|adam|momentum|clipping|stability/.test(text)) {
-      return "training";
-    }
-    if (/tree|gini|entropy|split|forest|boosting|svm|cluster|pca|metric|regression|classification/.test(text)) {
-      return "classic";
-    }
-    if (/attention|transformer|cnn|rnn|lstm|resnet|normalization|vit|positional/.test(text)) {
-      return "architecture";
-    }
-    if (/token|bpe|rlhf|lora|scaling|vae|gan|diffusion/.test(text) || /06_llm|07_generative/.test(pagePath)) {
-      return "advanced";
-    }
-    if (/matrix|vector|derivative|probability|entropy|jacobian|hessian|calculus/.test(text)) {
-      return "math";
-    }
-    return "general";
-  }
-
-  function copyFor(kind, title, fullText) {
-    var special = specialCopyFor(title, fullText);
-    if (special) {
-      return special;
-    }
-
-    var common = {
-      title: "Как читать этот интерактив",
-      intro: "Блок относится к секции «" + title + "».",
-      items: [
-        "Смотри не только на итоговое число, а на то, какая часть механизма меняется при движении ползунка.",
-        "Меняй один параметр за раз: так проще понять причинную связь между настройкой и поведением модели.",
-        "Если картинка резко меняется от малого движения, это признак чувствительного режима или нестабильной области."
-      ]
-    };
-
-    var map = {
-      math: [
-        "Визуализация показывает геометрию формулы: как меняется объект, направление, поверхность или распределение.",
-        "Следи за осями, масштабом и тем, какая величина остаётся фиксированной.",
-        "Числовой вывод рядом с графиком полезно читать как проверку интуиции: он показывает конкретное значение того, что видно на экране."
-      ],
-      classic: [
-        "Интерактив показывает, как меняется bias-variance, impurity, граница решения или метрика при другой настройке модели.",
-        "Обращай внимание на trade-off: улучшение train-качества часто покупается переобучением.",
-        "Threshold, глубина, k, C, gamma и число кластеров — это ручки, которые меняют форму решения, а не просто качество."
-      ],
-      training: [
-        "Здесь важно смотреть на динамику: шаг, градиент, variance, масштаб активаций и устойчивость обучения.",
-        "Ползунок обычно имитирует гиперпараметр training loop, который меняет траекторию обучения.",
-        "Опасные режимы проявляются как взрыв, затухание, резкие скачки или почти полное отсутствие движения."
-      ],
-      architecture: [
-        "Интерактив показывает поток информации внутри архитектуры: receptive field, память, attention-веса, residual path или позиционный сигнал.",
-        "Смотри, какие элементы начинают влиять друг на друга и где возникает bottleneck: по пространству, времени, каналам или токенам.",
-        "Хорошая интерпретация здесь — понять, какую информацию архитектура может передать дальше."
-      ],
-      advanced: [
-        "Интерактив связывает абстрактную идею с инженерным поведением: токены, reward, low-rank update, шум или процесс генерации.",
-        "Следи за тем, какая величина меняется локально, а какая влияет на всю систему.",
-        "Если результат выглядит неожиданно, ищи скрытый компромисс: качество против compute, устойчивость против скорости, diversity против точности."
-      ]
-    };
-
-    return {
-      title: common.title,
-      intro: common.intro,
-      items: map[kind] || common.items
-    };
-  }
-
   function makeGuide(data) {
     var guide = document.createElement("div");
     guide.className = "ml-interactive-guide";
@@ -248,8 +177,11 @@
 
     cards.forEach(function (card) {
       var title = headingOf(card);
-      var data = copyFor(kindFor(card), title, textOf(card));
-      card.appendChild(makeGuide(data));
+      // Only hand-written guides for specific interactives; no generic keyword-based copy.
+      var data = specialCopyFor(title, textOf(card));
+      if (data) {
+        card.appendChild(makeGuide(data));
+      }
     });
   }
 
