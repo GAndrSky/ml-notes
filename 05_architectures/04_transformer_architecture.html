@@ -163,7 +163,7 @@
   </section>
 <!-- architecture-deepening:end -->
 <div class="card">
-<p>Attention — перестановочно-инвариантная операция: порядок токенов не имеет значения без явной информации о позиции. PE вводит её.</p>
+<p>Self-attention перестановочно-эквивариантна: если переставить токены, выходы переставятся так же — модель не знает порядка без явной информации о позиции. PE вводит её.</p>
 
 <h3>Синусоидальный PE (Vaswani et al., 2017)</h3>
 <div class="formula">PE[pos, 2i]   = sin(pos / <span class="hl-a">10000^(2i/d_model)</span>)
@@ -172,22 +172,22 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
         <div class="formula-anatomy__row"><span class="fa-sym">pos</span><span class="fa-name">позиция токена</span><span class="fa-desc">порядковый номер токена в последовательности (0, 1, …, T−1). Одно и то же слово на разных позициях получит разный PE-вектор.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс измерения</span><span class="fa-desc">пробегает 0…d_model/2−1. Малый i → низкая частота (длинные волны); большой i → высокая частота (короткие волны).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс измерения</span><span class="fa-desc">пробегает 0…d_model/2−1. Малый i → высокая частота (короткие волны); большой i → низкая частота (длинные волны).</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">10000^(2i/d_model)</span><span class="fa-name">базовая длина волны</span><span class="fa-desc">знаменатель растёт геометрически с i. При i=0: 10000⁰=1 (быстрые колебания), при i=d_model/2−1: ≈10000 (медленные). Разные частоты кодируют разные масштабы расстояний.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">d_model</span><span class="fa-name">размерность модели</span><span class="fa-desc">полная размерность PE-вектора. PE добавляется к embedding токена, поэтому их размерности совпадают.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждое измерение PE колышется со своей частотой — как набор часов разной скорости. Вместе они однозначно идентифицируют любую позицию, не требуя обучения.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> двоичный счётчик в аналоговом виде: младший бит (высокая частота) меняется каждый шаг, старший (низкая) — раз в тысячи шагов.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, i=0: знаменатель=1 → PE[10,0]=sin(10)≈−0.54, PE[11,0]=sin(11)≈−1.0. i=128: знаменатель=10000 → PE[10,256]=sin(0.001)≈0.001. Быстрые измерения различают соседей, медленные — далёкие позиции.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, i=0: знаменатель=1 → PE[10,0]=sin(10)≈−0.54, PE[11,0]=sin(11)≈−1.0. i=255 (последняя пара): знаменатель=10000^(510/512)≈9600 → PE[10,510]=sin(10/9600)≈0.001. Быстрые измерения различают соседей, медленные — далёкие позиции.</div>
     </div>
     <p>pos — позиция в последовательности, i — индекс измерения (0..d_model/2-1)</p>
 
 <h3>Свойства синусоидального PE</h3>
 <div class="step-box"><span class="sn">1.</span>Каждая позиция имеет уникальный паттерн — однозначная кодировка</div>
 <div class="step-box"><span class="sn">2.</span>PE[pos+k] — линейная функция PE[pos] → модель может учить относительные расстояния</div>
-<div class="step-box"><span class="sn">3.</span>Нет параметров — детерминировано, обобщается на любую длину</div>
-<div class="step-box"><span class="sn">4.</span>Частоты: от 2π (i=0) до 20000π (i=d/2-1) — как спектр</div>
+<div class="step-box"><span class="sn">3.</span>Нет параметров — детерминировано, считается для любой длины (но качество за пределами длины обучения всё равно падает)</div>
+<div class="step-box"><span class="sn">4.</span>Длины волн: от 2π (i=0) почти до 10000·2π (i=d/2−1) — как спектр</div>
 
 <div class="info-box"><strong>Вход в Transformer:</strong> x_emb + PE, где x_emb ∈ ℝ<sup>L×d</sup> — обученные эмбеддинги токенов, PE — фиксированные синусоиды одного размера.</div>
 
@@ -209,7 +209,7 @@ PE[pos, 2i+1] = cos(pos / <span class="hl-a">10000^(2i/d_model)</span>)</div>
 
 <h3>RoPE (Rotary Position Embedding, GPT-NeoX, LLaMA)</h3>
 <div class="formula">Применяется к Q и K через вращение в 2D-подпространствах:
-q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|</div>
+q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от разности pos_q − pos_k</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
@@ -223,7 +223,7 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> часовые стрелки: по углу между стрелками двух часов сразу видно разницу во времени, не зная абсолютного времени каждых.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> q на позиции 5, k на позиции 3 → |5−3|=2. То же самое расстояние у q=105, k=103 → q'·k' будет одинаковым. Это и есть трансляционная инвариантность RoPE.</div>
     </div>
-    <p class="muted">Кодирует относительные позиции прямо в attention, обобщается за max_len.</p>
+    <p class="muted">Кодирует относительные позиции прямо в attention. За пределы длины обучения переносится лучше learned PE, но для заметного удлинения контекста обычно нужны приёмы вроде position interpolation, NTK-scaling или YaRN.</p>
 </div>
 
 <h2>Визуализация PE</h2>
@@ -303,7 +303,7 @@ q'·k' = f(q,pos_q)·f(k,pos_k) зависит только от |pos_q - pos_k|
   Нестабильно — нужен warmup, clipnorm
 </div>
 <div class="step-box">
-  <strong class="hl-g">Pre-LN (GPT-2, BERT-large)</strong><br>
+  <strong class="hl-g">Pre-LN (GPT-2, GPT-3, большинство современных LLM)</strong><br>
   x = x + Sublayer(LN(x))<br>
   Стабильнее, быстрее сходится
 </div>
@@ -353,7 +353,7 @@ d_ff = 4·d_model  (стандарт)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MHA смешивает информацию между токенами, FFN перерабатывает её внутри каждого токена. Расширение до 4·d_model даёт «рабочее пространство» для сложных нелинейных преобразований.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> если MHA — это совещание (обмен информацией между людьми), то FFN — индивидуальная обработка услышанного каждым участником.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, d_ff=2048. W₁: 512×2048=1M параметров, W₂: 2048×512=1M. Итого FFN: ~2M на слой, MHA: ~1M. В GPT-3 (d_model=12288, 96 слоёв): FFN содержит ~57% всех параметров.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d_model=512, d_ff=2048. W₁: 512×2048=1M параметров, W₂: 2048×512=1M. Итого FFN: ~2M на слой, MHA: ~1M. В GPT-3 (d_model=12288, 96 слоёв): FFN содержит около 2/3 параметров каждого блока (8d² из 12d²).</div>
     </div>
     <div class="info-box"><strong>Зачем FFN?</strong> MHA — линейная операция над значениями (V взвешиваются, не трансформируются). FFN добавляет нелинейность <em>внутри каждой позиции</em>. Интерпретация: FFN хранит «фактические знания» (Geva et al., 2021 — «Transformer Feed-Forward Layers Are Key-Value Memories»).</div>
 
@@ -412,7 +412,7 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Pre-LN (normalize before attention) and Post-LN (normalize after) have different training stability profiles. Post-LN requires careful learning rate warmup — skip it and the model will diverge in the first 1000 steps. Pre-LN is more stable but slightly worse at final performance. Most modern transformers use Pre-LN for this reason. If you switch from a Pre-LN reference implementation to Post-LN without adding warmup, training will diverge early and the failure may be misattributed to other hyperparameters.</p>
+  <p>Pre-LN (нормализация до attention) и Post-LN (после residual-сложения) по-разному устойчивы. Post-LN требует аккуратного warmup: без него глубокая модель часто расходится в первые тысячи шагов. Pre-LN стабильнее, хотя иногда чуть хуже по финальному качеству — поэтому большинство современных трансформеров используют Pre-LN. Если перейти с Pre-LN-реализации на Post-LN без warmup, обучение может разойтись, а причину легко списать на другие гиперпараметры.</p>
 </div>
 
 <!-- ===== ОБУЧЕНИЕ ===== -->
@@ -488,7 +488,7 @@ x'' = x' + <span class="hl-g">FFN</span>(LN(x'))     ← residual + Pre-LN</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> β₂=0.98 вместо 0.999 означает, что второй момент обновляется быстрее — Adam лучше отслеживает резкие изменения масштаба градиентов, которые типичны при обучении Transformer с Noam schedule.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> настройка амортизации автомобиля под конкретную дорогу — стандартные значения оптимальны в среднем, но для трассы (Transformer + Noam) нужна своя настройка.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> после 1 шага с g=0.01: β₂=0.999 → v̂≈0.001, √v̂≈0.032; β₂=0.98 → v̂≈0.0002, √v̂≈0.014. Меньший знаменатель → больший эффективный шаг → Adam не «осторожничает» излишне при малых начальных градиентах.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> после первого шага bias correction даёт v̂ = g² при любом β₂. Разница — в памяти: β₂=0.999 усредняет ~1000 последних шагов, β₂=0.98 — ~50. Если градиенты резко уменьшились (типично в начале обучения Transformer), при β₂=0.98 знаменатель √v̂ быстрее «забывает» старые большие значения и шаг не становится излишне осторожным.</div>
     </div>
     <h3>Dropout в Transformer</h3>
 <div class="step-box"><span class="sn">1.</span>После каждого Sublayer перед сложением с residual: p=0.1</div>
@@ -553,9 +553,9 @@ RMS(x) = √(1/d · Σ xᵢ²)   ← без вычитания среднего<
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSNorm проще LayerNorm — не вычитает среднее и не использует β. Гипотеза: именно масштабная инвариантность (re-scaling invariance) важна для стабильности, а центрирование (re-centering) избыточно.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> нормировать вектор на его длину — каждый вектор приводится к единичной «энергии», направление сохраняется, затем γ настраивает нужный масштаб.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,4,0,−2], d=4. Σxᵢ²=4+16+0+4=24. RMS=√(24/4)=√6≈2.45. x/RMS≈[0.82, 1.63, 0, −0.82]. При γ=[1,1,1,1]: выход=[0.82,1.63,0,−0.82]. LayerNorm также вычел бы μ=1 — разница минимальна, но RMSNorm на 10–20% быстрее.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> x=[2,4,0,−2], d=4. Σxᵢ²=4+16+0+4=24. RMS=√(24/4)=√6≈2.45. x/RMS≈[0.82, 1.63, 0, −0.82]. При γ=[1,1,1,1]: выход=[0.82,1.63,0,−0.82]. LayerNorm также вычел бы μ=1 — на практике разница в качестве минимальна, а RMSNorm дешевле.</div>
     </div>
-    <p class="muted">Нет bias — на 7% быстрее LN, аналогичное качество.</p>
+    <p class="muted">Нет вычитания среднего и bias — в статье RMSNorm быстрее LayerNorm на 7–64% в зависимости от модели и реализации, при сопоставимом качестве.</p>
 </div>
 
 <h2>Сравнение: Encoder-only vs Decoder-only vs Enc-Dec</h2>
@@ -689,7 +689,9 @@ class SinusoidalPE(nn.Module):
 # Пример использования
 model = Transformer(src_vocab=32000, tgt_vocab=32000)
 print(f"Параметры: {sum(p.numel() for p in model.parameters()):,}")
-# → Параметры: ~44M при d=512, N=6</div>
+# → Параметры: ~93M при d=512, N=6, vocab=32000
+#   (~44M в блоках + ~49M в двух эмбеддингах и выходной проекции;
+#    в оригинальной статье эмбеддинги общие — weight tying, ≈65M)</div>
 
 <h3>Noam LR Schedule</h3>
 <div class="code-block">class NoamScheduler:
@@ -869,14 +871,15 @@ function calcTFParams(){
   const ffn_params=2*d*dff;
   const ln_params=2*d;
   const block_params=mha_params+ffn_params+2*ln_params;
-  const total=N*(block_params)*2; // enc+dec (approx)
+  const dec_block_params=2*mha_params+ffn_params+3*ln_params; // + cross-attention
+  const total=N*(block_params+dec_block_params); // без эмбеддингов
   const fmt=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
   document.getElementById('tf-params-result').innerHTML=
     `MHA: 4·d²  = <span class="hl-b">${fmt(mha_params)}</span><br>`+
     `FFN: 2·d·d_ff = <span class="hl-g">${fmt(ffn_params)}</span>  (d_ff=${dff})<br>`+
     `LN×2: <span class="hl-a">${fmt(2*ln_params)}</span><br>`+
-    `Один блок: <span class="hl-p">${fmt(block_params)}</span><br>`+
-    `Encoder+Decoder (${N} слоёв ×2): <span class="hl-a">${fmt(total)}</span>`;
+    `Блок энкодера: <span class="hl-p">${fmt(block_params)}</span>, блок декодера (+cross-attn): <span class="hl-p">${fmt(dec_block_params)}</span><br>`+
+    `Encoder+Decoder (${N}+${N} слоёв, без эмбеддингов): <span class="hl-a">${fmt(total)}</span>`;
 }
 
 // ---- RESID CANVAS ----

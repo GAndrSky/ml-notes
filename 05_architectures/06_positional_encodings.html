@@ -138,7 +138,7 @@
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
         <div class="formula-anatomy__row"><span class="fa-sym">pos</span><span class="fa-name">позиция токена</span><span class="fa-desc">номер токена в последовательности (0, 1, 2, …, T−1). Одно и то же слово на разных позициях получит разный PE-вектор.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс измерения</span><span class="fa-desc">пробегает от 0 до d/2−1. При малом i — низкая частота (длинные волны); при большом i — высокая частота (короткие волны).</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">i</span><span class="fa-name">индекс измерения</span><span class="fa-desc">пробегает от 0 до d/2−1. При малом i — высокая частота (короткие волны, различают соседние позиции); при большом i — низкая частота (длинные волны, различают далёкие позиции).</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">2i/d</span><span class="fa-name">доля размерности</span><span class="fa-desc">определяет длину волны для пары координат (2i, 2i+1). При i=0: 10000⁰=1, быстрые колебания; при i=d/2−1: 10000¹, медленные.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">10000^(2i/d)</span><span class="fa-name">базовая длина волны</span><span class="fa-desc">знаменатель растёт геометрически с i, поэтому разные пары кодируют позицию на разных масштабах — от единиц до тысяч токенов.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">d</span><span class="fa-name">размерность embedding</span><span class="fa-desc">полная размерность вектора токена (например, 512). Половина координат — синусы, половина — косинусы.</span></div>
@@ -146,7 +146,7 @@
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждое измерение embedding колышется со своей частотой — как набор часов с разными скоростями стрелок. Вместе они однозначно кодируют любую позицию до очень больших значений.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> двоичный счётчик: младший бит меняется каждый шаг, старший — раз в 2ᵏ шагов. PE делает то же самое, но плавно через синусы.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d=512, i=0 → знаменатель=1; pos=10: PE=sin(10)≈−0.54, pos=11: PE=sin(11)≈−1.0. i=128 → знаменатель=10000; pos=10: PE=sin(0.001)≈0.001, pos=11: PE=sin(0.0011)≈0.0011. Высокочастотные измерения различают соседние токены, низкочастотные — далёкие.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> d=512, i=0 → знаменатель=1; pos=10: PE=sin(10)≈−0.54, pos=11: PE=sin(11)≈−1.0. i=255 (последняя пара) → знаменатель≈9600; pos=10: PE=sin(0.00104)≈0.001, pos=11: PE≈0.0011. Высокочастотные измерения различают соседние токены, низкочастотные — далёкие.</div>
     </div>
     <div class="formula" data-no-tex>RoPE:
 Q, K разбиваются на пары координат
@@ -247,7 +247,7 @@ k_rot = k * cos + rotate_half(k) * sin</div></div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему трансформеру нужны positional encodings?</summary>
-      <div class="ml-quiz__a"><p>Self-attention — инвариантна к перестановке токенов (permutation equivariant): без позиций «собака кусает человека» ≡ «человек кусает собаку». Positional encoding добавляет к embedding токена уникальный вектор, кодирующий его позицию, давая модели понятие порядка.</p></div>
+      <div class="ml-quiz__a"><p>Self-attention перестановочно-эквивариантна (permutation equivariant): переставишь токены — выходы переставятся так же, а порядка модель не видит: без позиций «собака кусает человека» ≡ «человек кусает собаку». Positional encoding добавляет к embedding токена уникальный вектор, кодирующий его позицию, давая модели понятие порядка.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

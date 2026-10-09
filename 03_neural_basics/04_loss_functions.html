@@ -392,16 +392,16 @@ log-sum-exp трюк (ХОРОШО):
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>zᵢ</span><span class=”fa-name”>i-й логит</span><span class=”fa-desc”>Сырое число на выходе линейного слоя. Может быть очень большим (1000+), что ломает наивный softmax.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>m = max(z)</span><span class=”fa-name”>максимальный логит</span><span class=”fa-desc”>Вычитается из каждого zᵢ перед exp. Гарантирует zᵢ−m ≤ 0, поэтому exp(zᵢ−m) ∈ (0, 1] — нет overflow.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>exp(zᵢ−m)</span><span class=”fa-name”>сдвинутая экспонента</span><span class=”fa-desc”>Всегда ≤ 1 (так как zᵢ−m ≤ 0). Математически идентична exp(zᵢ)/exp(m) — после нормировки exp(m) сокращается.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>Σⱼ exp(zⱼ−m)</span><span class=”fa-name”>нормировочная сумма</span><span class=”fa-desc”>Знаменатель softmax в безопасном диапазоне. Не бесконечность, не ноль.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>p̂ᵢ</span><span class=”fa-name”>вероятность i-го класса</span><span class=”fa-desc”>Результат стабильного softmax: математически идентичен наивному, но без численных проблем.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">zᵢ</span><span class="fa-name">i-й логит</span><span class="fa-desc">Сырое число на выходе линейного слоя. Может быть очень большим (1000+), что ломает наивный softmax.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">m = max(z)</span><span class="fa-name">максимальный логит</span><span class="fa-desc">Вычитается из каждого zᵢ перед exp. Гарантирует zᵢ−m ≤ 0, поэтому exp(zᵢ−m) ∈ (0, 1] — нет overflow.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">exp(zᵢ−m)</span><span class="fa-name">сдвинутая экспонента</span><span class="fa-desc">Всегда ≤ 1 (так как zᵢ−m ≤ 0). Математически идентична exp(zᵢ)/exp(m) — после нормировки exp(m) сокращается.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σⱼ exp(zⱼ−m)</span><span class="fa-name">нормировочная сумма</span><span class="fa-desc">Знаменатель softmax в безопасном диапазоне. Не бесконечность, не ноль.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">p̂ᵢ</span><span class="fa-name">вероятность i-го класса</span><span class="fa-desc">Результат стабильного softmax: математически идентичен наивному, но без численных проблем.</span></div>
       </div>
-      <hr class=”formula-anatomy__divider”>
-      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Вычитание m не меняет вероятности: exp(zᵢ−m)/Σ exp(zⱼ−m) = exp(zᵢ)/Σ exp(zⱼ) (exp(m) сокращается). Но exp(0)=1 вместо exp(1000)=∞. Математика та же — числа безопасные.</div>
-      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Как оценивать рейтинг: вычесть минимальную оценку из всех — места не изменятся, но числа удобнее сравнивать.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> z=[1000, 998]. Naive: exp(1000)=∞ → nan. LSE trick: m=1000, exp([0,−2])=[1, 0.135]. p̂=[1/1.135, 0.135/1.135]≈[0.881, 0.119] — корректно, без overflow!</div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Вычитание m не меняет вероятности: exp(zᵢ−m)/Σ exp(zⱼ−m) = exp(zᵢ)/Σ exp(zⱼ) (exp(m) сокращается). Но exp(0)=1 вместо exp(1000)=∞. Математика та же — числа безопасные.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как оценивать рейтинг: вычесть минимальную оценку из всех — места не изменятся, но числа удобнее сравнивать.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> z=[1000, 998]. Naive: exp(1000)=∞ → nan. LSE trick: m=1000, exp([0,−2])=[1, 0.135]. p̂=[1/1.135, 0.135/1.135]≈[0.881, 0.119] — корректно, без overflow!</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 PyTorch <code style="color:var(--amber)">F.cross_entropy</code> и <code style="color:var(--amber)">F.log_softmax</code> применяют этот трюк автоматически. Именно поэтому <strong>передавай логиты, а не вероятности</strong> в CrossEntropyLoss.

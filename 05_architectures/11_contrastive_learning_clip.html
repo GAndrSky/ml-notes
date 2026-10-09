@@ -35,7 +35,7 @@
       <li>Contrastive loss — InfoNCE и почему он работает</li>
       <li>CLIP: совместное обучение image и text encoder на N² пар</li>
       <li>Zero-shot classification — как CLIP классифицирует без дообучения</li>
-      <li>DINO и SimCLR — self-supervised contrastive learning</li>
+      <li>SimCLR (contrastive) и DINO (self-distillation без негативов) — self-supervised обучение представлений</li>
     </ul>
   </div>
   <div class="ml-learning-path__prereqs">
@@ -214,7 +214,7 @@ print(logits)
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему InfoNCE loss работает хуже с маленьким батчем?</summary>
-      <div class="ml-quiz__a"><p>InfoNCE рассматривает все другие примеры в батче как негативные. Маленький батч → мало негативов → задача слишком проста, representation learning неэффективен. SimCLR требует batch_size=4096+; MoCo решает это через memory bank с тысячами негативов, независимо от батча.</p></div>
+      <div class="ml-quiz__a"><p>InfoNCE рассматривает все другие примеры в батче как негативные. Маленький батч → мало негативов → задача слишком проста, representation learning неэффективен. SimCLR требует batch_size=4096+; MoCo решает это очередью (queue) из десятков тысяч негативов, закодированных медленно обновляемым momentum-encoder-ом, — независимо от размера батча.</p></div>
     </details>
   </li>
   </ol>
@@ -255,7 +255,7 @@ print(logits)
       <article class="ml-endcap-card">
         <h3>Что тюнить / проверить</h3>
         <ul class="ml-endcap-list">
-        <li>Температура τ в InfoNCE: слишком низкая → collapse, слишком высокая → медленная сходимость.</li>
+        <li>Температура τ в InfoNCE: слишком низкая → нестабильное обучение и чрезмерный фокус на hard negatives (в том числе ложных), слишком высокая → слабый сигнал и размытые представления.</li>
         <li>Batch size: больше = лучше, но дороже.</li>
         <li>Augmentation strategy: сила аугментаций влияет на «сложность» positives.</li>
         </ul>

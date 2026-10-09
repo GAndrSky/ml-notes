@@ -319,14 +319,14 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
         <div class="formula-anatomy__row"><span class="fa-sym">‖∂hₜ/∂h₁‖</span><span class="fa-name">норма суммарного Якобиана</span><span class="fa-desc">Насколько hₜ чувствительно к h₁. Если близко к 0 — дальние зависимости исчезают; если >1 — взрыв.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">λ_max</span><span class="fa-name">наибольшее сингулярное число Wₕ</span><span class="fa-desc">Characterizes norm-amplification per step from Wₕ. λ_max > 1 → potential explosion; λ_max < 1 → potential vanishing.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">λ_max</span><span class="fa-name">наибольшее сингулярное число Wₕ</span><span class="fa-desc">Во сколько раз Wₕ максимум растягивает вектор за один шаг. λ_max &gt; 1 → возможен взрыв градиента, λ_max &lt; 1 → затухание.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">max|tanh'|</span><span class="fa-name">максимум производной tanh</span><span class="fa-desc">tanh'(z)=1−tanh²(z)∈[0,1]; максимум = 1 достигается при z=0. В насыщении (|z|≫0) производная → 0 и усиливает затухание.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">(T-1)</span><span class="fa-name">степень = число шагов назад</span><span class="fa-desc">Произведение умножается T-1 раз. Экспоненциальный рост или затухание в зависимости от базы λ_max·max|tanh'|.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> если произведение λ_max·max|tanh'| меньше 1, норма градиента убывает экспоненциально с глубиной T — модель «не видит» дальние шаги.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> мяч, теряющий 20% кинетической энергии при каждом отскоке: после 50 отскоков останется 0.8⁵⁰≈0.00014 от начальной энергии.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ_max=0.9, max|tanh'|=0.8 → база=0.72; T=20: 0.72¹⁹≈0.00045 — практически ноль.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> мяч, теряющий 20% кинетической энергии при каждом отскоке: после 50 отскоков останется 0.8⁵⁰≈0.000014 от начальной энергии.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> λ_max=0.9, max|tanh'|=0.8 → база=0.72; T=20: 0.72¹⁹≈0.002 — градиент ослаб в ~500 раз.</div>
     </div>
     <p>где λ_max — наибольшее сингулярное число Wₕ.</p>
 
@@ -468,7 +468,7 @@ yₜ = <span class="hl-p">Wᵧ</span>·hₜ  +  bᵧ</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> вместо одного рычага управления (RNN) — четыре отдельных тумблера (f, i, c̃, o), каждый со своим контроллером.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> H=128, n=32: 4·128·(128+32+1) = 512·161 = 82 432 параметра. Базовый RNN: 128·(128+32+1) = 20 608.</div>
     </div>
-    <p class="muted">В 4 раза больше, чем у RNN — за каждый из 4 вентилей (f, i, c̃, o)</p>
+    <p class="muted">В 4 раза больше, чем у RNN — за каждый из 4 вентилей (f, i, c̃, o). В PyTorch у каждого gate два bias-вектора (b_ih и b_hh), поэтому nn.LSTM даёт 4H(H+n+2)</p>
 </div>
 
 <h2>Интерактивный шаг LSTM</h2>
@@ -564,7 +564,7 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
   <tr><td>GRU</td><td>2 (r, z)</td><td>3H(n+H+1)+O(H+1)</td><td>нет</td><td>средняя</td></tr>
   <tr><td>LSTM</td><td>3 (f, i, o)</td><td>4H(n+H+1)+O(H+1)</td><td>да</td><td>медленнее</td></tr>
 </table>
-<p class="muted" style="margin-top:8px">На практике GRU ≈ LSTM по качеству на большинстве задач, но в 1.3× быстрее.</p>
+<p class="muted" style="margin-top:8px">На практике GRU ≈ LSTM по качеству на большинстве задач, но у GRU на ~25% меньше параметров, и он обычно немного быстрее.</p>
 
 <h3>Параметры GRU</h3>
 <div class="formula">3 · (H·(H+n) + H)  =  3H(H + n + 1)  параметров</div>
@@ -600,7 +600,7 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
       <div class="formula-anatomy__row"><span class="fa-sym">Σₜ</span><span class="fa-name">сумма по времени</span><span class="fa-desc">Вклад каждого шага суммируется. Из-за этого ∂L/∂Wₕ содержит сумму по t — и для каждого t нужен backprop через k≤t шагов назад.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый шаг получает свою ошибку, а backprop «разносит» её назад через всю историю к параметрам Wₕ, Wₓ. Поэтому полный BPTT = T · T/2 операций.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> каждый шаг получает свою ошибку, а backprop «разносит» её назад через всю историю к параметрам Wₕ, Wₓ. Если считать каждое слагаемое отдельно, вышло бы ~T²/2 операций, но BPTT накапливает градиент одним проходом назад за O(T).</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> проверить всё эссе целиком и выставить общую оценку — но для обратной связи нужно объяснить каждую ошибку, начиная с самого раннего предложения.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=5, cross-entropy на каждом шаге: L=L₁+L₂+L₃+L₄+L₅. ∂L/∂Wₕ = сумма 5 вкладов, каждый из которых проходит назад на k шагов.</div>
     </div>
@@ -615,7 +615,7 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
         <div class="formula-anatomy__row"><span class="fa-sym">∂Lₜ/∂hₜ</span><span class="fa-name">градиент loss t по hₜ</span><span class="fa-desc">«С чем пришёл backprop от потери шага t?» Это начальный сигнал, который нужно распространить назад на k шагов.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">Π_{j=k+1}^{t} ∂hⱼ/∂hⱼ₋₁</span><span class="fa-name">цепочка Якобианов</span><span class="fa-desc">Произведение (t−k) матриц diag(tanh')·Wₕᵀ. Именно здесь происходит затухание или взрыв при большом (t−k).</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">∂hₖ/∂Wₕ = hₖ₋₁ᵀ</span><span class="fa-name">вклад шага k</span><span class="fa-desc">На каждом шаге k, где Wₕ применялся, его вклад в потерю = hₖ₋₁ᵀ (внешнее произведение с incoming gradient).</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">Σ_{k=1}^{t}</span><span class="fa-name">сумма по всем прошлым шагам</span><span class="fa-desc">Wₕ влияет на hₜ через все шаги k≤t. Для T=100 и каждого t это до 100 слагаемых — O(T²) операций суммарно.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">Σ_{k=1}^{t}</span><span class="fa-name">сумма по всем прошлым шагам</span><span class="fa-desc">Wₕ влияет на hₜ через все шаги k≤t. Для T=100 и каждого t это до 100 слагаемых; если раскрывать сумму напрямую — O(T²), но рекурсия δₜ₋₁ = δₜ·∂hₜ/∂hₜ₋₁ + ∂Lₜ₋₁/∂hₜ₋₁ даёт тот же результат за O(T).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> полный BPTT должен пройти от каждого шага t назад ко всем k≤t. Это дорого и страдает от затухающего градиента при больших (t−k).</div>
@@ -656,14 +656,14 @@ hₜ  = (1 - <span class="hl-g">zₜ</span>) ⊙ hₜ₋₁  +  <span class="hl-
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> вместо произведения T матриц с tanh' (RNN) — произведение T скаляров fₜ∈(0,1). При fₜ≈1 gradient по cₜ пути практически не затухает даже через 100+ шагов.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> RNN передаёт послание по испорченному телефону через 50 человек; LSTM — по прямому телефонному кабелю с регулируемым объёмом.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=50, fₜ=0.99 (постоянно): 0.99⁵⁰≈0.605 — gradient сохраняет 60%. RNN с нормой 0.8: 0.8⁵⁰≈0.000143 — практически ноль.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=50, fₜ=0.99 (постоянно): 0.99⁵⁰≈0.605 — gradient сохраняет 60%. RNN с нормой 0.8: 0.8⁵⁰≈0.000014 — практически ноль.</div>
     </div>
     <p>Это «шоссе градиента» (gradient highway) — ключевое преимущество LSTM над RNN.</p>
 
 <h3>Числовой пример: BPTT для RNN (T=3)</h3>
 <div class="step-box"><span class="sn">Дано:</span>T=3, H=1, Wₕ=0.5, hₜ=tanh(Wₕ·hₜ₋₁+Wₓ·xₜ), h₀=0, x=[1,1,1], L=h₃²</div>
-<div class="step-box"><span class="sn">Forward:</span>h₁=tanh(0+Wₓ)≈0.76, h₂=tanh(0.5·0.76+Wₓ)≈0.91, h₃=tanh(0.5·0.91+Wₓ)≈0.95 (Wₓ=1)</div>
-<div class="step-box"><span class="sn">∂L/∂h₃</span>= 2·h₃ = 1.90</div>
+<div class="step-box"><span class="sn">Forward:</span>h₁=tanh(0+Wₓ)≈0.76, h₂=tanh(0.5·0.76+Wₓ)≈0.88, h₃=tanh(0.5·0.88+Wₓ)≈0.89 (Wₓ=1)</div>
+<div class="step-box"><span class="sn">∂L/∂h₃</span>= 2·h₃ ≈ 1.79</div>
 <div class="step-box"><span class="sn">∂L/∂Wₕ</span>= ∂L/∂h₃ · [(1-h₃²)·h₂ + (1-h₃²)·Wₕ·(1-h₂²)·h₁ + …]</div>
 </div>
 <!-- architecture-deepening:start:5-2-truncated-bptt -->
@@ -1158,13 +1158,13 @@ drawLSTMDyn();
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему простые RNN страдают от vanishing gradient?</summary>
-      <div class="ml-quiz__a"><p>При backpropagation через время (BPTT) градиент умножается на матрицу весов Wₕ на каждом шаге. Если σ_max(Wₕ) < 1 — градиент экспоненциально убывает с длиной последовательности. Это означает, что RNN не может «помнить» зависимости через 10+ шагов.</p></div>
+      <div class="ml-quiz__a"><p>При backpropagation через время (BPTT) градиент умножается на матрицу весов Wₕ на каждом шаге. Если σ_max(Wₕ) < 1 — градиент экспоненциально убывает с длиной последовательности. Поэтому обычная RNN плохо учит зависимости длиннее нескольких десятков шагов.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как LSTM решает проблему долгосрочных зависимостей?</summary>
-      <div class="ml-quiz__a"><p>LSTM вводит cell state c — прямой «конвейер» памяти с аддитивными, а не мультипликативными обновлениями. Гейты (forget, input, output) обучаются контролировать что сохранять, добавлять и читать. Аддитивное обновление c ← f⊙c + i⊙g предотвращает vanishing gradient.</p></div>
+      <div class="ml-quiz__a"><p>LSTM вводит cell state c — прямой «конвейер» памяти с аддитивными, а не мультипликативными обновлениями. Гейты (forget, input, output) обучаются контролировать что сохранять, добавлять и читать. Аддитивное обновление c ← f⊙c + i⊙g сильно смягчает vanishing gradient (при fₜ≈1 градиент по cₜ почти не затухает).</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

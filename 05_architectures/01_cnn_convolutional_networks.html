@@ -599,9 +599,9 @@
 <tr><td>Conv(3→64, 7×7, S=2)</td><td>64 × 112 × 112</td><td>9 408</td></tr>
 <tr><td>MaxPool(3×3, S=2)</td><td>64 × 56 × 56</td><td>0</td></tr>
 <tr><td>ResBlock(64→64) ×3</td><td>64 × 56 × 56</td><td>≈221K</td></tr>
-<tr><td>ResBlock(128→128) ×4, S=2</td><td>128 × 28 × 28</td><td>≈1.2M</td></tr>
-<tr><td>ResBlock(256→256) ×6, S=2</td><td>256 × 14 × 14</td><td>≈7.1M</td></tr>
-<tr><td>ResBlock(512→512) ×3, S=2</td><td>512 × 7 × 7</td><td>≈14.9M</td></tr>
+<tr><td>ResBlock(128→128) ×4, S=2</td><td>128 × 28 × 28</td><td>≈1.1M</td></tr>
+<tr><td>ResBlock(256→256) ×6, S=2</td><td>256 × 14 × 14</td><td>≈6.8M</td></tr>
+<tr><td>ResBlock(512→512) ×3, S=2</td><td>512 × 7 × 7</td><td>≈13.1M</td></tr>
 <tr><td>GAP → Linear(512→1000)</td><td>1000</td><td>513K</td></tr>
 </table>
 <p class="muted" style="margin-top:6px">ResNet-34: всего ≈21.8M параметров</p>
@@ -663,8 +663,8 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">1/C_out</span><span class="fa-name">вклад pointwise-шага</span><span class="fa-desc">Pointwise стоит C_in·C_out·H·W против обычного k²·C_in·C_out·H·W — экономия в k² раз по сравнению с обычным pointwise...</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">1/k²</span><span class="fa-name">вклад depthwise-шага</span><span class="fa-desc">Depthwise стоит k²·C_in·H·W — в C_out раз меньше, чем у обычного Conv. При больших C_out это слагаемое мало.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1/C_out</span><span class="fa-name">вклад depthwise-шага</span><span class="fa-desc">Depthwise стоит k²·C_in·H·W, обычная conv — k²·C_in·C_out·H·W: отношение 1/C_out. При больших C_out это слагаемое мало.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">1/k²</span><span class="fa-name">вклад pointwise-шага</span><span class="fa-desc">Pointwise стоит C_in·C_out·H·W против k²·C_in·C_out·H·W у обычной conv: отношение 1/k². Именно оно задаёт основную экономию.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">≈ 1/k²</span><span class="fa-name">асимптотика при C_out→∞</span><span class="fa-desc">При C_out≫k² слагаемое 1/C_out пренебрежимо мало и основная экономия определяется размером ядра k.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">k</span><span class="fa-name">размер ядра</span><span class="fa-desc">Для k=3: Ratio≈1/9, т.е. ~9× экономия. Именно поэтому depthwise separable conv так эффективна при k=3.</span></div>
       </div>
@@ -673,7 +673,7 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> разделить работу на два специализированных этапа выгоднее тем больше, чем сложнее исходная задача (большее k).</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> k=3, C_out=128: Ratio = 1/128 + 1/9 ≈ 0.008 + 0.111 = 0.119 → ~8.4× экономия FLOPs.</div>
     </div>
-    <p class="muted">Для k=3: экономия в <span class="hl-a">~9×</span> при сохранении аналогичной выразительности.</p>
+    <p class="muted">Для k=3: экономия почти в <span class="hl-a">~9×</span>; выразительность одного слоя ниже, поэтому MobileNet-подобные сети компенсируют её шириной и глубиной.</p>
 </div>
 </div>
 
@@ -720,7 +720,7 @@ Ratio = <span class="hl-g">1/C_out + 1/k²</span> ≈ <span class="hl-a">1/k²</
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> если прямой проход — "размазать" ядро по входу, то обратный — "собрать" ошибки обратно по тем же путям.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> K=[[1,0],[-1,0]], δ=[[1,1],[1,1]] → ∂L/∂I[0,0] = δ[0,0]·K[0,0]=1·1=1; ∂L/∂I[1,0] = δ[1,0]·K[0,0]+δ[0,0]·K[1,0]=1+(−1)=0.</div>
     </div>
-    <div class="step-box"><span class="step-num">Суть:</span> это полная свёртка δ с <em>повёрнутым на 180°</em> ядром K — или traspозиционная свёртка</div>
+    <div class="step-box"><span class="step-num">Суть:</span> это полная свёртка δ с <em>повёрнутым на 180°</em> ядром K — или транспонированная свёртка (transposed convolution)</div>
 
 <h3>Градиент по bias</h3>
 <div class="formula">
@@ -777,7 +777,7 @@ class ConvBlock(nn.Module):
 <div class="code-block">class SimpleCNN(nn.Module):
     def __init__(self, num_classes=10):
         super().__init__()
-        # Encoder: (3,32,32) → (256,4,4)
+        # Encoder: (3,32,32) → (512,1,1)
         self.features = nn.Sequential(
             ConvBlock(3, 64),               # (64,32,32)
             ConvBlock(64, 128),             # (128,32,32)
@@ -796,7 +796,7 @@ class ConvBlock(nn.Module):
 
 model = SimpleCNN()
 print(f"Параметры: {sum(p.numel() for p in model.parameters()):,}")
-# → Параметры: 3,742,730</div>
+# → Параметры: 2,147,402</div>
 
 <h3>Проверка размерностей вручную</h3>
 <div class="code-block">x = torch.randn(4, 3, 32, 32)   # batch=4, RGB, 32×32
@@ -827,13 +827,13 @@ regular = nn.Conv2d(64, 128, 3, padding=1)
 dws     = DepthwiseSeparable(64, 128)
 print(f"Обычная: {sum(p.numel() for p in regular.parameters()):,}")
 print(f"DW-Sep:  {sum(p.numel() for p in dws.parameters()):,}")
-# → Обычная: 73,728  DW-Sep: 8,448  (экономия ~8.7×)</div>
+# → Обычная: 73,856  DW-Sep: 9,152  (экономия ~8.1×)</div>
 
 <h3>Визуализация фильтров первого слоя</h3>
 <div class="code-block">import matplotlib.pyplot as plt
 import torchvision.models as models
 
-resnet = models.resnet18(pretrained=True)
+resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 w = resnet.conv1.weight.data  # (64, 3, 7, 7)
 
 fig, axes = plt.subplots(8, 8, figsize=(10, 10))
@@ -1132,7 +1132,7 @@ drawEquivar();
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое receptive field и как он растёт с глубиной?</summary>
-      <div class="ml-quiz__a"><p>Receptive field — область входного изображения, влияющая на один нейрон. После каждого свёрточного слоя 3×3 он растёт на 2 пикселя. Pooling 2×2 удваивает рецептивное поле. Dilated convolution позволяет резко увеличить рецептивное поле без потери разрешения.</p></div>
+      <div class="ml-quiz__a"><p>Receptive field — область входного изображения, влияющая на один нейрон. После каждого свёрточного слоя 3×3 он растёт на 2 пикселя. Pooling или stride 2 удваивает шаг, с которым RF растёт на следующих слоях. Dilated convolution позволяет резко увеличить рецептивное поле без потери разрешения.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

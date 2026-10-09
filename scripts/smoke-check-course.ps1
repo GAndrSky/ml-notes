@@ -284,8 +284,22 @@ function Test-RawLessThan {
   }
 }
 
+function Test-CurlyQuotedAttributes {
+  # class=”x” (typographic quotes) is not an attribute value: the class silently stops applying.
+  $curly = [string][char]0x201C + [char]0x201D
+  foreach ($relativePath in $lessonPages) {
+    $html = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $relativePath) -Encoding UTF8
+    $html = [regex]::Replace($html, '(?is)<script\b.*?</script>|<style\b.*?</style>|<!--.*?-->', ' ')
+    foreach ($match in [regex]::Matches($html, "<[A-Za-z][^<>]*=[$curly][^<>]*>")) {
+      $snippet = $match.Value.Substring(0, [Math]::Min(60, $match.Value.Length))
+      Add-Issue "Typographic quotes used for an attribute in ${relativePath}: $snippet (use straight quotes)"
+    }
+  }
+}
+
 Test-SearchIndexFiles
 Test-RawLessThan
+Test-CurlyQuotedAttributes
 Test-UnstyledClasses
 Test-BundleFresh
 Test-CourseManifest

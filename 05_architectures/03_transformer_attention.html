@@ -395,7 +395,7 @@ Output = 0.198×[1,0] + 0.401×[0,1] + 0.401×[1,1]
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Without dividing by √d_k, dot products grow with dimension. At d_k=512, raw dot products have variance ~512, pushing softmax into saturation where gradients vanish and the model can only attend to one token at a time. This was the original scaling insight from Attention Is All You Need. A saturated attention matrix produces near-zero gradients back through softmax, preventing the model from learning meaningful attention patterns.</p>
+  <p>Без деления на √d_k скалярные произведения растут вместе с размерностью: при d_k=512 их дисперсия ≈512. Softmax уходит в насыщение, внимание становится почти one-hot, а градиент через softmax почти обнуляется — модель перестаёт учить осмысленные паттерны внимания. Именно это масштабирование предложено в «Attention Is All You Need».</p>
 </div>
 
 <h2>Пошаговое вычисление (числовой пример)</h2>
@@ -404,8 +404,8 @@ Output = 0.198×[1,0] + 0.401×[0,1] + 0.401×[1,1]
 <div class="step-box"><span class="sn">Шаг 1.</span>Q = [[1,0],[0,1],[1,1]], K = [[1,0],[0,1],[1,1]], V = [[1,0],[0,1],[1,1]]</div>
 <div class="step-box"><span class="sn">Шаг 2.</span>QKᵀ = [[1,0,1],[0,1,1],[1,1,2]]  (матрица совместимости 3×3)</div>
 <div class="step-box"><span class="sn">Шаг 3.</span>/ √2 = [[0.71,0,0.71],[0,0.71,0.71],[0.71,0.71,1.41]]</div>
-<div class="step-box"><span class="sn">Шаг 4.</span>softmax по строкам → A[0] = [0.42, 0.21, 0.37] (сумма=1)</div>
-<div class="step-box"><span class="sn">Шаг 5.</span>A·V → выходной вектор для токена 0: 0.42·[1,0]+0.21·[0,1]+0.37·[1,1] = [0.79, 0.58]</div>
+<div class="step-box"><span class="sn">Шаг 4.</span>softmax по строкам → A[0] = softmax([0.71, 0, 0.71]) = [0.401, 0.198, 0.401] (сумма=1)</div>
+<div class="step-box"><span class="sn">Шаг 5.</span>A·V → выходной вектор для токена 0: 0.401·[1,0]+0.198·[0,1]+0.401·[1,1] = [0.80, 0.60]</div>
 </div>
 </div>
 
@@ -469,7 +469,7 @@ MHA(Q,K,V) = Concat(head<sub>1</sub>, …, head<sub>h</sub>) · <span class="hl-
       <div class="formula-anatomy__grid">
         <div class="formula-anatomy__row"><span class="fa-sym">W_i^Q, W_i^K, W_i^V</span><span class="fa-name">проекционные матрицы головы i</span><span class="fa-desc">каждая голова проецирует Q, K, V в подпространство d_k. Разные головы используют разные матрицы → смотрят на разные аспекты.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">head_i</span><span class="fa-name">результат одной головы</span><span class="fa-desc">Attention(Q·W_i^Q, K·W_i^K, V·W_i^V) — вектор размера d_v. Разные головы специализируются на синтаксисе, кореференции, семантике и т.д.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">h</span><span class="fa-name">число голов</span><span class="fa-desc">типично 8–32 (ViT-Base: 12, GPT-3: 96). d_k = d_model/h — размер каждой головы остаётся постоянным.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">h</span><span class="fa-name">число голов</span><span class="fa-desc">типично 8–96 (BERT-Base и ViT-Base: 12, GPT-3: 96). d_k = d_model/h — размер каждой головы остаётся постоянным.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">Concat(...)</span><span class="fa-name">конкатенация голов</span><span class="fa-desc">соединяет h векторов по d_v в один вектор h·d_v = d_model. Это вход для выходной проекции W^O.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">W^O</span><span class="fa-name">выходная проекция</span><span class="fa-desc">матрица d_model×d_model. Смешивает информацию от всех голов обратно в единое пространство токена.</span></div>
       </div>
@@ -635,7 +635,7 @@ FFN:              O(<span class="hl-g">L</span>·d²)  — линейно по �
       <div class="formula-anatomy__row"><span class="fa-sym">d²</span><span class="fa-name">квадрат по размерности (FFN)</span><span class="fa-desc">FFN расширяет d → 4d (W₁) и сжимает обратно 4d → d (W₂). Каждый токен обрабатывается независимо: стоимость = L × (d × 4d + 4d × d) = O(L·d²).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> при коротких последовательностях доминирует FFN (O(L·d²)), при длинных — attention (O(L²·d)). Точка пересечения: L ≈ d. Для d=512 это L≈512; при больших L attention становится узким местом.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> при коротких последовательностях доминирует FFN (O(L·d²)), при длинных — attention (O(L²·d)). По порядку величины они сравниваются при L ~ d (с учётом 4× расширения FFN и проекций Q/K/V/O — при L в несколько d). Для d=512 это сотни–пара тысяч токенов; при больших L attention становится узким местом.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> матрица attention — как таблица пар рукопожатий: N человек → N² пар. Добавить одного человека — прибавить N рукопожатий, а не одно.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> L=1024, d=512: Self-Attention O(L²·d)=536M, FFN O(L·d²)=268M — сопоставимо. L=8192: Attention=34G, FFN=2G — attention доминирует в 17 раз, нужен FlashAttention.</div>
     </div>

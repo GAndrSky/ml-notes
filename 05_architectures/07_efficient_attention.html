@@ -53,7 +53,7 @@
         <span class="tag">5.8 ViT</span>
       </div>
       <h1>5.7 Efficient Attention</h1>
-      <p class="muted">Когда последовательность становится длинной, классический attention начинает проигрывать по памяти и пропускной способности. Здесь разбираем, как именно FlashAttention, sparse attention и Longformer-подходи меняют экономику вычислений.</p>
+      <p class="muted">Когда последовательность становится длинной, классический attention начинает проигрывать по памяти и пропускной способности. Здесь разбираем, как именно FlashAttention, sparse attention и Longformer-подходы меняют экономику вычислений.</p>
     </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -163,6 +163,10 @@
           <tr><td>Longformer / sliding window</td><td>Структурное ограничение связей</td><td>Документы, где локальный контекст особенно важен</td></tr>
         </tbody>
       </table>
+      <h3>MQA и GQA: экономия KV-кеша</h3>
+      <p>При генерации каждый слой хранит K и V всех прошлых токенов — KV-кеш размером 2 · n_layers · n_kv_heads · d_head · L чисел. <strong>MQA</strong> оставляет одну пару K/V на все головы запросов (кеш меньше в h раз), <strong>GQA</strong> — G общих пар на группы голов (кеш меньше в h/G раз; например, h=32, G=8 → в 4 раза). Качество почти не падает, а скорость декодирования растёт, потому что генерация упирается в чтение кеша из памяти.</p>
+      <h3>Linear attention</h3>
+      <p>Если заменить softmax(qᵀk) на произведение признаковых отображений φ(q)ᵀφ(k), можно переставить скобки: (φ(Q)φ(K)ᵀ)V = φ(Q)(φ(K)ᵀV). Матрица φ(K)ᵀV имеет размер d×d и не зависит от L, поэтому стоимость становится O(L·d²) вместо O(L²·d). Цена — это уже аппроксимация softmax-attention: на многих задачах качество ниже, чем у exact attention с FlashAttention.</p>
     </div>
 <!-- architecture-deepening:start:5-7-sparse-approx-tradeoff -->
   <section class="concept-walkthrough" data-architecture-deepening="5-7-sparse-approx-tradeoff">
@@ -241,7 +245,7 @@ for token in sequence:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему обычный attention O(n²) становится проблемой при длинном контексте?</summary>
-      <div class="ml-quiz__a"><p>Матрица attention n×n при n=16k токенов занимает 16k×16k×2 байт ≈ 512 MB только для одной головы. Для 32 голов × 32 слоя это терабайты. Вычисление тоже O(n²), что делает длинные контексты (100k+ токенов) недоступными без специальных методов.</p></div>
+      <div class="ml-quiz__a"><p>Матрица attention n×n при n=16k токенов занимает 16k×16k×2 байт ≈ 512 MB только для одной головы. Для 32 голов × 32 слоёв это уже порядка 550 ГБ — больше памяти любой одной GPU. Вычисление тоже O(n²), что делает длинные контексты (100k+ токенов) недоступными без специальных методов.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -259,7 +263,7 @@ for token in sequence:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое Grouped Query Attention (GQA) и чем он отличается от MQA?</summary>
-      <div class="ml-quiz__a"><p>GQA — компромисс: G групп ключей/значений на h голов (1 < G < h). Головы внутри группы делят одну пару KV. При G=1 — MQA, при G=h — стандартный MHA. GQA даёт хороший баланс между скоростью и качеством; используется в LLaMA 2/3, Gemma.</p></div>
+      <div class="ml-quiz__a"><p>GQA — компромисс: G групп ключей/значений на h голов (1 < G < h). Головы внутри группы делят одну пару KV. При G=1 — MQA, при G=h — стандартный MHA. GQA даёт хороший баланс между скоростью и качеством; используется в LLaMA 2 (34B/70B), во всех LLaMA 3, в Mistral и Gemma.</p></div>
     </details>
   </li>
   </ol>

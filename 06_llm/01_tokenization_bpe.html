@@ -116,19 +116,19 @@ e+s -> es
 es+t -> est
 l+o -> lo
 lo+w -> low</div>
-    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
-      <div class=”formula-anatomy__header”>Что означают символы</div>
-      <div class=”formula-anatomy__grid”>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>(a, b)</span><span class=”fa-name”>соседняя пара токенов</span><span class=”fa-desc”>два символа или субслова, стоящие рядом в корпусе. BPE считает, сколько раз каждая пара встречается, и берёт самую частую.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>-></span><span class=”fa-name”>операция слияния</span><span class=”fa-desc”>пара `a b` заменяется новым токеном `ab` во всём корпусе. Например, `e s` -> `es` означает: везде, где стояло e затем s, теперь стоит единый токен es.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>freq(a, b)</span><span class=”fa-name”>частота пары</span><span class=”fa-desc”>число вхождений пары (a, b) в текущем состоянии корпуса. На каждом шаге берём пару с максимальным freq — это жадный критерий BPE.</span></div>
+    <div class="formula-anatomy" data-static-formula-anatomy="1">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+      <div class="formula-anatomy__row"><span class="fa-sym">(a, b)</span><span class="fa-name">соседняя пара токенов</span><span class="fa-desc">два символа или субслова, стоящие рядом в корпусе. BPE считает, сколько раз каждая пара встречается, и берёт самую частую.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">-></span><span class="fa-name">операция слияния</span><span class="fa-desc">пара `a b` заменяется новым токеном `ab` во всём корпусе. Например, `e s` -> `es` означает: везде, где стояло e затем s, теперь стоит единый токен es.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">freq(a, b)</span><span class="fa-name">частота пары</span><span class="fa-desc">число вхождений пары (a, b) в текущем состоянии корпуса. На каждом шаге берём пару с максимальным freq — это жадный критерий BPE.</span></div>
       </div>
-      <hr class=”formula-anatomy__divider”>
-      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> BPE — жадное сжатие: самая частая пара сливается первой. За несколько сотен шагов байты превращаются в слова и морфемы без всякой лингвистической разметки.</div>
-      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> как ZIP-сжатие: часто повторяющийся кусок получает короткий код. BPE делает то же самое, только строит «коды» как токены словаря.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> freq(e,s)=40, freq(l,o)=12. Шаг 1: сливаем `e s` → `es` во всём корпусе. Шаг 2: считаем заново — теперь (l,o) может стать лидером. Каждый шаг уменьшает среднюю длину последовательности на freq(a,b) / размер_корпуса.</div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BPE — жадное сжатие: самая частая пара сливается первой. За несколько сотен шагов байты превращаются в слова и морфемы без всякой лингвистической разметки.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> как ZIP-сжатие: часто повторяющийся кусок получает короткий код. BPE делает то же самое, только строит «коды» как токены словаря.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> freq(e,s)=40, freq(l,o)=12. Шаг 1: сливаем `e s` → `es` во всём корпусе. Шаг 2: считаем заново — теперь (l,o) может стать лидером. Каждый шаг уменьшает среднюю длину последовательности на freq(a,b) / размер_корпуса.</div>
     </div>
-    <div class=”info”>BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
+    <div class="info">BPE не пытается найти “истинную морфологию”. Он ищет статистически выгодные слияния, которые уменьшают длину последовательностей и повторно используют частые фрагменты.</div>
     </div>
 <!-- frontier-deepening:start:6-1-bpe-compression -->
   <section class="concept-walkthrough" data-frontier-deepening="6-1-bpe-compression">
@@ -178,18 +178,18 @@ Subword-level:
 sequence length ↑
 coverage ↑
 reuse of frequent fragments ↑</div>
-    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
-      <div class=”formula-anatomy__header”>Что означают символы</div>
-      <div class=”formula-anatomy__grid”>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>vocabulary size ↑↑</span><span class=”fa-name”>размер словаря (word-level)</span><span class=”fa-desc”>при токенизации по целым словам словарь взрывается: каждая новая форма слова, имя, термин — отдельный токен. Миллионы токенов → огромная embedding matrix.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>sequence length ↑</span><span class=”fa-name”>длина последовательности (subword)</span><span class=”fa-desc”>subword-токены меньше слов → одно предложение занимает больше позиций. Цена: attention платит O(L²), и контекстное окно расходуется быстрее.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>coverage ↑</span><span class=”fa-name”>покрытие словаря</span><span class=”fa-desc”>subword-токенизатор не теряет редкие слова: любое слово разбивается на известные фрагменты. Word-level часто встречает OOV (out-of-vocabulary) токены.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>reuse ↑</span><span class=”fa-name”>переиспользование фрагментов</span><span class=”fa-desc”>один subword-токен «est» появляется в newest, latest, fastest — модель видит общий паттерн. Word-level видит три разных токена.</span></div>
+    <div class="formula-anatomy" data-static-formula-anatomy="1">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+      <div class="formula-anatomy__row"><span class="fa-sym">vocabulary size ↑↑</span><span class="fa-name">размер словаря (word-level)</span><span class="fa-desc">при токенизации по целым словам словарь взрывается: каждая новая форма слова, имя, термин — отдельный токен. Миллионы токенов → огромная embedding matrix.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">sequence length ↑</span><span class="fa-name">длина последовательности (subword)</span><span class="fa-desc">subword-токены меньше слов → одно предложение занимает больше позиций. Цена: attention платит O(L²), и контекстное окно расходуется быстрее.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">coverage ↑</span><span class="fa-name">покрытие словаря</span><span class="fa-desc">subword-токенизатор не теряет редкие слова: любое слово разбивается на известные фрагменты. Word-level часто встречает OOV (out-of-vocabulary) токены.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">reuse ↑</span><span class="fa-name">переиспользование фрагментов</span><span class="fa-desc">один subword-токен «est» появляется в newest, latest, fastest — модель видит общий паттерн. Word-level видит три разных токена.</span></div>
       </div>
-      <hr class=”formula-anatomy__divider”>
-      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> subword — компромисс между двумя крайностями: char-level (полное покрытие, но очень длинные последовательности) и word-level (короткие последовательности, но OOV и огромный vocab).</div>
-      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> разница между азбукой (маленький vocab, длинные записи) и стенографией (большой vocab, короткие записи). BPE находит оптимальную «стенографическую систему» для конкретного корпуса.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Word-level vocab для English Wikipedia ≈ 13M уникальных слов. BPE с 50K merges: vocab=50K, покрытие >99.9%. Слово «unhappiness»: word-level — 1 токен (редкий); BPE — «un + happi + ness» — 3 частых токена с переиспользуемой статистикой.</div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> subword — компромисс между двумя крайностями: char-level (полное покрытие, но очень длинные последовательности) и word-level (короткие последовательности, но OOV и огромный vocab).</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> разница между азбукой (маленький vocab, длинные записи) и стенографией (большой vocab, короткие записи). BPE находит оптимальную «стенографическую систему» для конкретного корпуса.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Word-level vocab для English Wikipedia ≈ 13M уникальных слов. BPE с 50K merges: vocab=50K, покрытие >99.9%. Слово «unhappiness»: word-level — 1 токен (редкий); BPE — «un + happi + ness» — 3 частых токена с переиспользуемой статистикой.</div>
     </div>
     <p>Именно поэтому современные LLM не “читают словами”. Они работают с кусочками, которые статистически выгодно переиспользовать по всему корпусу. Это снижает проблему редкости и даёт embeddings больше повторяемых шаблонов.</p>
     </div>

@@ -188,7 +188,7 @@
 <div class="wb"><span class="hr">He et al. 2015:</span> 56-слойная plain сеть хуже 20-слойной на CIFAR-10 — и train, и test. Деградация!</div>
 <div class="sb"><span class="sn">Проблема.</span>Если оптимум — identity H(x)=x, слою надо W→0. Трудно при случайной инициализации.</div>
 <div class="sb"><span class="sn">Решение He.</span>Учим остаток <span class="ha">F(x)=H(x)−x</span>, тогда <span class="hg">H(x)=F(x)+x</span>. Identity → F(x)=0 — легко.</div>
-<div class="sb"><span class="sn">Ансамбль (Veit 2016).</span>ResNet c N блоков = ансамбль из 2ᴺ путей. Удаление блока ≈ не меняет ответ.</div>
+<div class="sb"><span class="sn">Ансамбль (Veit 2016).</span>ResNet c N блоков = ансамбль из 2ᴺ путей. Удаление одного блока лишь немного ухудшает качество (в plain-сети — ломает её).</div>
 </div>
 <h2>Plain vs ResNet — loss по эпохам</h2>
 <div class="card">
@@ -199,6 +199,7 @@
 <div class="sr"><span>Глубина (слоёв)</span><input type="range" id="sl0" min="5" max="110" step="5" value="20" oninput="updDep()"><span class="sv" id="vsl0">20</span></div>
 <canvas id="cv0b" height="160"></canvas>
 <div id="inf0" style="margin-top:6px;font-size:.88em"></div>
+<p class="muted" style="font-size:.8rem;margin-top:6px">ResNet: test accuracy на CIFAR-10 из таблицы 6 статьи He et al., 2015 (глубины 20/32/44/56/110, между ними — линейная интерполяция; ниже 20 слоёв — экстраполяция). Plain: схематическая кривая по мотивам рис. 6 той же статьи — до ~20 слоёв plain-сеть не хуже, а дальше качество падает, хотя параметров больше.</p>
 </div>
 </div>
 
@@ -233,14 +234,14 @@ skip(x) = BN(Conv1×1(x, stride=s))</div>
 <div class="fm">W₁: 1×1  C→C/4   squeeze
 W₂: 3×3  C/4→C/4 process
 W₃: 1×1  C/4→C   expand
-Параметров ≈ <span class="hg">3.5C²/4</span>  (в ~3× меньше Basic)</div>
+Параметров = <span class="hg">17C²/16 ≈ 1.06C²</span>  (в ~17× меньше Basic той же ширины C)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">число каналов</span><span class="fa-desc">ширина residual stream — число feature map каналов на входе и выходе блока. Bottleneck сохраняет C, но сжимает внутри до C/4.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">C/4</span><span class="fa-name">bottleneck width</span><span class="fa-desc">внутренняя ширина после 1×1 squeeze. При C=256: C/4=64. Именно здесь происходит дорогая 3×3 свёртка — в пространстве вчетверо меньшего числа каналов.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">W₁, W₂, W₃</span><span class="fa-name">три свёрточных слоя</span><span class="fa-desc">W₁: 1×1 (C→C/4, squeeze), W₂: 3×3 (C/4→C/4, spatial), W₃: 1×1 (C/4→C, expand). Параметры: 1·C·C/4 + 9·(C/4)² + 1·C/4·C = C²/4+9C²/16+C²/4 ≈ 3.5C²/4.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">3.5C²/4</span><span class="fa-name">число параметров Bottleneck</span><span class="fa-desc">vs Basic Block: 18C². При C=256: Bottleneck≈57K, Basic≈1.18M — в ~20× меньше! Это позволяет строить ResNet-50/101/152 без взрывного роста параметров.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">W₁, W₂, W₃</span><span class="fa-name">три свёрточных слоя</span><span class="fa-desc">W₁: 1×1 (C→C/4, squeeze), W₂: 3×3 (C/4→C/4, spatial), W₃: 1×1 (C/4→C, expand). Параметры: 1·C·C/4 + 9·(C/4)² + 1·C/4·C = C²/4+9C²/16+C²/4 = 17C²/16 ≈ 1.06C².</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">17C²/16</span><span class="fa-name">число параметров Bottleneck</span><span class="fa-desc">vs Basic Block: 18C². При C=256: Bottleneck≈70K, Basic≈1.18M — в ~17× меньше. Это позволяет строить ResNet-50/101/152 без взрывного роста параметров.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> squeeze-expand структура выносит дорогую 3×3 свёртку в узкое пространство каналов. 1×1 слои — это channel mixing без пространственной обработки; они дёшевы, но позволяют контролировать ширину для 3×3.</div>
@@ -368,17 +369,17 @@ Plain: ∂L/∂x_l = ∂L/∂x_L · <span class="hr">ΠWᵢ·σ′ᵢ</span> →
 <div class="g2">
 <div><h3>DenseNet</h3><div class="fm">x_l = H([x₀,x₁,…,x_{l-1}])
 Concat вместо Add</div>
-    <div class=”formula-anatomy” data-static-formula-anatomy=”1”>
-      <div class=”formula-anatomy__header”>Что означают символы</div>
-      <div class=”formula-anatomy__grid”>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>x_l</span><span class=”fa-name”>выход слоя l</span><span class=”fa-desc”>в DenseNet — функция от конкатенации ВСЕХ предыдущих слоёв [x₀,…,x_{l-1}], а не только x_{l-1}. Каждый слой получает градиенты напрямую от всех последующих.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>H([x₀,…,x_{l-1}])</span><span class=”fa-name”>composite функция от конкатенации</span><span class=”fa-desc”>H — это BN+ReLU+Conv, применённые к конкатенации feature maps всех предыдущих слоёв. Конкатенация (не сложение) сохраняет все предыдущие признаки в явном виде.</span></div>
-      <div class=”formula-anatomy__row”><span class=”fa-sym”>Concat vs Add</span><span class=”fa-name”>ключевое отличие от ResNet</span><span class=”fa-desc”>ResNet: x_l = x_{l-1} + F(x_{l-1}) — сложение «стирает» предыдущее в один вектор. DenseNet: [x₀,…,x_{l-1}] — все слои видны явно. Память: O(L²) vs O(L), но recognition улучшается.</span></div>
+    <div class="formula-anatomy" data-static-formula-anatomy="1">
+      <div class="formula-anatomy__header">Что означают символы</div>
+      <div class="formula-anatomy__grid">
+      <div class="formula-anatomy__row"><span class="fa-sym">x_l</span><span class="fa-name">выход слоя l</span><span class="fa-desc">в DenseNet — функция от конкатенации ВСЕХ предыдущих слоёв [x₀,…,x_{l-1}], а не только x_{l-1}. Каждый слой получает градиенты напрямую от всех последующих.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">H([x₀,…,x_{l-1}])</span><span class="fa-name">composite функция от конкатенации</span><span class="fa-desc">H — это BN+ReLU+Conv, применённые к конкатенации feature maps всех предыдущих слоёв. Конкатенация (не сложение) сохраняет все предыдущие признаки в явном виде.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Concat vs Add</span><span class="fa-name">ключевое отличие от ResNet</span><span class="fa-desc">ResNet: x_l = x_{l-1} + F(x_{l-1}) — сложение «стирает» предыдущее в один вектор. DenseNet: [x₀,…,x_{l-1}] — все слои видны явно. Память: O(L²) vs O(L), но recognition улучшается.</span></div>
       </div>
-      <hr class=”formula-anatomy__divider”>
-      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> DenseNet — extreme version of residual: каждый слой видит все предыдущие как прямые входы. Это максимизирует gradient flow и feature reuse, но резко растёт ширина конкатенации с глубиной.</div>
-      <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> группа студентов, где каждый новый читает все предыдущие конспекты, а не только последний. ResNet — читает только вчерашний и добавляет свои заметки поверх.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> growth rate k=32 (каждый слой добавляет 32 канала). Слой 5 получает [x₀,x₁,x₂,x₃,x₄] с шириной 4×32=128 каналов (плюс начальные). Слой 10: 9×32=288 каналов на входе — растёт линейно.</div>
+      <hr class="formula-anatomy__divider">
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> DenseNet — extreme version of residual: каждый слой видит все предыдущие как прямые входы. Это максимизирует gradient flow и feature reuse, но резко растёт ширина конкатенации с глубиной.</div>
+      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> группа студентов, где каждый новый читает все предыдущие конспекты, а не только последний. ResNet — читает только вчерашний и добавляет свои заметки поверх.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> growth rate k=32 (каждый слой добавляет 32 канала). Слой 5 получает [x₀,x₁,x₂,x₃,x₄] с шириной 4×32=128 каналов (плюс начальные). Слой 10: 9×32=288 каналов на входе — растёт линейно.</div>
     </div>
     </div>
 <div><h3>Transformer</h3><div class="fm">x = x + MHA(LN(x))
@@ -450,7 +451,7 @@ Train: batch stats   Test: running EMA (momentum=0.1)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> BatchNorm нормирует каждый канал по всему батчу — это делает активации стабильными и ускоряет обучение. Но создаёт train/test разрыв: на training μ из батча, на test — из EMA. При маленьком батче (B&lt;8) статистика шумная → BN работает хуже.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> нормировать оценки по классу: у каждого предмета (канала) своя средняя по всем студентам (батчу) и пространству. На финальном экзамене (inference) используется историческое среднее, а не текущей группы.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=3, B=4, H=W=2 → 4×2×2=16 элементов. x_{b,3,h,w}=[1,2,3,4,5,6,7,8,2,3,4,5,6,7,8,9]. μ_3=5.0, σ²_3=5.25. x̂=нормированные. После γ=1,β=0: выход центрирован.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=3, B=4, H=W=2 → 4×2×2=16 элементов. x_{b,3,h,w}=[1,2,3,4,5,6,7,8,2,3,4,5,6,7,8,9]. μ_3=5.0, σ²_3=5.5. x̂=нормированные. После γ=1,β=0: выход центрирован.</div>
     </div>
     <h3>Layer Norm (Ba et al., 2016)</h3>
 <div class="fm">μ_b = <span class="hg">1/(C·H·W)</span> · Σ_{c,h,w} x_{b,c,h,w}   ← per sample
@@ -482,7 +483,7 @@ Style transfer — убирает стиль, держит структуру</d
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> IN нормирует каждый канал каждого изображения по его собственному пространственному среднему, «стирая» стиль. Для классификации плохо (теряем информацию о яркости и контрасте), для style transfer — идеально.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> перевести фото в оттенки серого и выровнять гистограмму — убрать «стиль» освещения, оставив только форму объектов.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=0 картинки b=0: x=[100,120,80,110], H·W=4. μ=102.5. x̂≈[−0.19,1.32,−1.70,0.57]. Заменяем μ,σ на статистику стилевого изображения → пиксели принимают его «тон».</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> канал c=0 картинки b=0: x=[100,120,80,110], H·W=4. μ=102.5. σ²=218.75, σ≈14.8 → x̂≈[−0.17, 1.18, −1.52, 0.51]. Заменяем μ,σ на статистику стилевого изображения → пиксели принимают его «тон».</div>
     </div>
     <h3>Group Norm (Wu & He, 2018)</h3>
 <div class="fm">Делим C на G групп, нормируем внутри:
@@ -504,7 +505,7 @@ G=32 стандарт, не зависит от B → detection</div>
     <h3>RMSNorm (Zhang & Sennrich, 2019)</h3>
 <div class="fm">RMS(x) = √(1/d · Σ xᵢ²)
 y = <span class="ha">γ · x / RMS(x)</span>    ← нет μ, нет β!
-~7% быстрее LN. LLaMA, Mistral, Gemma.</div>
+Быстрее LN (в статье на 7–64% в зависимости от модели). LLaMA, Mistral, Gemma.</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
@@ -720,8 +721,16 @@ function drawDegCurves(){
 }
 function updDep(){
   const N=+g('sl0').value; g('vsl0').textContent=N;
-  const plain=N<=20?0.70+0.009*N:Math.max(0.50,0.88-0.003*(N-20));
-  const res=Math.min(0.97,0.68+0.0028*N);
+  // ResNet: published CIFAR-10 test accuracy (He et al., 2015, Table 6), linear interpolation between depths
+  const pts=[[20,.9125],[32,.9249],[44,.9283],[56,.9303],[110,.9357]];
+  function resAt(n){
+    if(n<=20) return .9125-(20-n)*.004; // schematic below 20 layers
+    for(let i=1;i<pts.length;i++) if(n<=pts[i][0]){const[a,fa]=pts[i-1],[b,fb]=pts[i];return fa+(fb-fa)*(n-a)/(b-a);}
+    return pts[pts.length-1][1];
+  }
+  const res=resAt(N);
+  // Plain: schematic — matches ResNet up to ~20 layers, then degrades (plain-56 is worse than plain-20)
+  const plain=N<=20?res:Math.max(.80,resAt(20)-.0013*(N-20));
   const{ctx,W,H}=getCtx('cv0b');
   const bw=80,px=40,py=16,ph=H-32;
   [{v:plain,c:'#ef4444',l:'Plain'},{v:res,c:'#60a5fa',l:'ResNet'}].forEach(({v,c,l},i)=>{
@@ -734,7 +743,7 @@ function updDep(){
   });
   ctx.strokeStyle='#30363d';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py+ph+1);ctx.stroke();
   [0,50,100].forEach(v=>{ctx.fillStyle='#8b949e';ctx.font='9px system-ui';ctx.textAlign='right';ctx.fillText(v+'%',px-3,py+ph-v/100*ph+4);});
-  g('inf0').innerHTML=`Глубина: <b>${N}</b> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${(res*100).toFixed(1)}%</span> &nbsp; Plain: <span style="color:var(--r)">${(plain*100).toFixed(1)}%</span> &nbsp;|&nbsp; +<span style="color:var(--g)">${((res-plain)*100).toFixed(1)}%</span>`;
+  g('inf0').innerHTML=`Глубина: <b>${N}</b> &nbsp;|&nbsp; ResNet: <span style="color:var(--b)">${(res*100).toFixed(1)}%</span> &nbsp; Plain: <span style="color:var(--r)">${(plain*100).toFixed(1)}%</span> &nbsp;|&nbsp; разница <span style="color:var(--g)">${((res-plain)*100).toFixed(1)} п.п.</span>`;
 }
 
 // ── TAB 1: Blocks ─────────────────────────────────────
@@ -756,7 +765,7 @@ function showBlock(type){
      fills:['rgba(96,165,250,.18)','rgba(245,158,11,.18)','rgba(245,158,11,.18)','rgba(245,158,11,.18)','rgba(16,185,129,.25)','rgba(96,165,250,.18)'],
      strokes:['#60a5fa','#f59e0b','#f59e0b','#f59e0b','#10b981','#60a5fa'],
      skip:{col:'#10b981',from:0,to:4},
-     info:'Bottleneck: 1×1→3×3→1×1. Параметров ≈ 3.5C²/4 — ~3× меньше Basic. ResNet-50/101/152.'},
+     info:'Bottleneck: 1×1→3×3→1×1. Параметров = 17C²/16 ≈ 1.06C² — в ~17× меньше Basic той же ширины. ResNet-50/101/152.'},
     {steps:['Input x','BN + ReLU','Conv 3×3','BN + ReLU','Conv 3×3','Output y'],
      fills:['rgba(96,165,250,.18)','rgba(16,185,129,.18)','rgba(245,158,11,.18)','rgba(16,185,129,.18)','rgba(245,158,11,.18)','rgba(96,165,250,.18)'],
      strokes:['#60a5fa','#10b981','#f59e0b','#10b981','#f59e0b','#60a5fa'],
