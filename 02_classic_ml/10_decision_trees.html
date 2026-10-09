@@ -1790,7 +1790,8 @@ print("best score :", search.best_score_)</div>
       return Math.min(0.55 + 0.07*d + 0.015*d*d, 0.99);
     }
     function valCurve(d){
-      return Math.max(0.62 + 0.07*d - 0.012*d*d, 0.45);
+      // schematic: validation never exceeds train, peaks around depth 3, then degrades
+      return Math.max(Math.min(trainCurve(d) - 0.01, 0.62 + 0.07*d - 0.012*d*d), 0.45);
     }
 
     function drawDepthDemo(){
@@ -1934,7 +1935,7 @@ print("best score :", search.best_score_)</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое pruning и зачем он нужен деревьям решений?</summary>
-      <div class="ml-quiz__a"><p>Дерево без ограничений растёт до запоминания каждого примера (depth=log₂n, leaf содержит 1 пример) — это переобучение. Pruning ограничивает глубину, мин. число примеров в листе или мин. прирост качества, что снижает variance за счёт небольшого роста bias.</p></div>
+      <div class="ml-quiz__a"><p>Дерево без ограничений растёт до запоминания каждого примера (в каждом листе остаётся по одному примеру или только объекты одного класса; глубина при этом может быть намного больше log₂n) — это переобучение. Pruning ограничивает глубину, мин. число примеров в листе или мин. прирост качества, что снижает variance за счёт небольшого роста bias.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

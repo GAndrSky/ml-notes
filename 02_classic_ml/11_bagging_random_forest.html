@@ -260,35 +260,43 @@ Tree 3 → класс ● (1)</div>
   </div>
 </div>
 <script>
-
 (function(){
+  // Exact formula from this lesson: Var(average of B trees) = ρσ² + (1−ρ)σ²/B.
+  // Fixed illustration: per-tree variance σ² = 1, tree-to-tree correlation ρ = 0.3,
+  // bias² = 0.05 and irreducible noise 0.10 (the forest does not change either of them).
   var sl = document.getElementById('sl-rf');
   var disp = document.getElementById('sl-rf-disp');
   var out = document.getElementById('sl-out-rf');
+  var RHO = 0.3, SIGMA2 = 1, BIAS2 = 0.05, NOISE = 0.1;
+  function ensembleVar(B){ return RHO * SIGMA2 + (1 - RHO) * SIGMA2 / B; }
+  function bar(label, value, scale, cls){
+    return '<div class="sl-bar-row"><span>' + label + '</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.max(2, Math.min(100, 100 * value / scale)) + '%"></div></div></div>';
+  }
   function render(){
-    var n = +sl.value;
-    disp.textContent = n;
-    var oobErr   = Math.round(5 + 45 * Math.exp(-n / 30));
-    var variance = Math.round(5 + 80 * Math.exp(-n / 25));
-    var time     = Math.min(100, Math.round(n / 5));
+    var B = +sl.value;
+    disp.textContent = B;
+    var v = ensembleVar(B), floor = RHO * SIGMA2, reducible = v - floor;
+    var err = BIAS2 + v + NOISE, err1 = BIAS2 + ensembleVar(1) + NOISE;
+    var share = reducible / floor;
     var verdict, vclass, txt;
-    if (n < 10) {
-      verdict = 'Нестабильно'; vclass = 'sl-verdict-warn';
-      txt = n + ' деревьев: высокая дисперсия предсказаний. Каждый запуск даёт разный результат. OOB error нестабилен.';
-    } else if (n <= 100) {
-      verdict = 'Хороший диапазон'; vclass = 'sl-verdict-ok';
-      txt = n + ' деревьев: ошибка быстро снижается и приближается к плато. Для большинства задач достаточно 50–200 деревьев.';
+    if (share > 0.25) {
+      verdict = 'Ещё заметно шумит'; vclass = 'sl-verdict-warn';
+      txt = B + ' деревьев: сокращаемая часть дисперсии (1−ρ)σ²/B = ' + reducible.toFixed(3) + ' — это ещё ' + Math.round(100 * share) + '% от пола ρσ² = ' + floor.toFixed(2) + '. Добавление деревьев заметно помогает.';
+    } else if (share > 0.05) {
+      verdict = 'Почти плато'; vclass = 'sl-verdict-ok';
+      txt = B + ' деревьев: сокращаемая часть = ' + reducible.toFixed(3) + ' (' + Math.round(100 * share) + '% от пола ρσ²). Дальше выигрыш небольшой.';
     } else {
-      verdict = 'Убывающая отдача'; vclass = 'sl-verdict-ok';
-      txt = n + ' деревьев: ошибка почти не снижается, но время растёт линейно. Увеличивайте n только если важна стабильность предсказания.';
+      verdict = 'Плато'; vclass = 'sl-verdict-ok';
+      txt = B + ' деревьев: дисперсия ансамбля ' + v.toFixed(3) + ' почти равна полу ρσ² = ' + floor.toFixed(2) + '. Больше деревьев почти ничего не даёт, а время обучения растёт линейно. Снизить пол можно только уменьшив корреляцию ρ (max_features).';
     }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>OOB error ↓</span><div class="sl-bar-wrap"><div class="sl-bar ' + (oobErr > 30 ? 'sl-bad' : oobErr > 15 ? 'sl-warn' : 'sl-good') + '" style="width:' + oobErr + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Дисперсия пред-ния</span><div class="sl-bar-wrap"><div class="sl-bar ' + (variance > 50 ? 'sl-bad' : variance > 20 ? 'sl-warn' : 'sl-good') + '" style="width:' + variance + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Время обучения</span><div class="sl-bar-wrap"><div class="sl-bar ' + (time > 70 ? 'sl-warn' : 'sl-good') + '" style="width:' + time + '%"></div></div></div>' +
+        bar('Дисперсия ансамбля = ' + v.toFixed(3), v, ensembleVar(1), share > 0.25 ? 'sl-warn' : 'sl-good') +
+        bar('Ожидаемая ошибка = ' + err.toFixed(3) + ' (одно дерево: ' + err1.toFixed(2) + ')', err, err1, 'sl-accent') +
+        bar('Время обучения ∝ B = ' + B, B, 500, B > 300 ? 'sl-warn' : 'sl-accent') +
       '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Расчёт по формуле Var = ρσ² + (1−ρ)σ²/B при σ² = 1 и ρ = 0.3; ожидаемая ошибка = bias² (0.05) + Var + шум (0.10). Числа иллюстративные, но зависимость от B — точная: ансамбль убирает только (1−ρ)σ²/B.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
   }
