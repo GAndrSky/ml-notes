@@ -53,7 +53,7 @@
     <ul>
       <li>Как GMM отличается от k-Means — soft vs hard assignment</li>
       <li>EM-алгоритм: E-step (posterior) и M-step (MLE параметров)</li>
-      <li>Почему EM сходится и к какому минимуму он приходит</li>
+      <li>Почему EM сходится и к какому максимуму likelihood он приходит</li>
       <li>Применения GMM: плотностная оценка и anomaly detection</li>
     </ul>
   </div>
@@ -143,7 +143,7 @@
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> M-step: обновляем параметры каждой компоненты, используя всё ещё объекты, но с мягкими весами γ_ik вместо жёстких меток.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как среднее с весами: объект «на 70% в кластере 1» вносит 70% своего значения в μ₁ и 30% в μ₂.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> γ_i1=0.9, x_i=3; γ_i2=0.1 → вклад в μ₁ — 0.9·3=2.7; вклад в μ₂ — 0.1·3=0.3.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> γ_i1=0.9, x_i=3; γ_i2=0.1 → в числитель μ₁ объект добавляет 0.9·3=2.7, а в N₁ — 0.9; в числитель μ₂ — 0.1·3=0.3, а в N₂ — 0.1.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -174,10 +174,10 @@
       <canvas id="mixCanvas" width="860" height="300"></canvas>
 <div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
-      <h3>Как читать эллипсы GMM</h3>
+      <h3>Как читать 1D-смесь</h3>
       <ul>
-        <li>Размер и наклон эллипса показывают ковариацию компоненты.</li>
-        <li>Перекрытие эллипсов означает неопределенность принадлежности точки.</li>
+        <li>Ширина каждого колокола — это σ компоненты, высота пропорциональна весу π.</li>
+        <li>Где колокола перекрываются, responsibilities близки к 0.5: принадлежность точки неопределённа. В 2D те же компоненты выглядели бы как эллипсы, форму которых задаёт Σ_k.</li>
         <li>Мягкие цвета важнее жестких границ: GMM оценивает вероятности, а не только labels.</li>
       </ul>
     </div>
@@ -218,7 +218,8 @@
         <button class="tab-btn active" onclick="showTab('sk', this)">sklearn</button>
         <button class="tab-btn" onclick="showTab('diag', this)">Практика</button>
       </div>
-      <div id="sk" class="tab-panel active"><div class="formula" data-no-tex data-code-block>from sklearn.mixture import GaussianMixture
+      <div id="sk" class="tab-panel active"><div class="formula" data-no-tex data-code-block>import numpy as np
+from sklearn.mixture import GaussianMixture
 
 gmm = GaussianMixture(
     n_components=3,
@@ -228,7 +229,12 @@ gmm = GaussianMixture(
 )
 gmm.fit(X)
 proba = gmm.predict_proba(X)
-labels = gmm.predict(X)</div></div>
+labels = gmm.predict(X)
+
+# плотностная оценка и аномалии: log p(x) для каждого объекта
+log_density = gmm.score_samples(X)
+threshold = np.percentile(log_density, 1)   # 1% самых маловероятных точек
+anomalies = X[log_density &lt; threshold]</div></div>
       <div id="diag" class="tab-panel"><div class="formula" data-no-tex>Если кластеры вытянуты и пересекаются:
 GMM обычно лучше k-means.
 
@@ -356,7 +362,7 @@ GMM намного содержательнее.</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как выбрать число компонент в GMM?</summary>
-      <div class="ml-quiz__a"><p>Используют информационные критерии: BIC = -2·log L + k·log n или AIC = -2·log L + 2k, где k — число параметров. BIC сильнее штрафует за сложность, предпочтительнее при отборе моделей. Выбирают число компонент с минимальным BIC.</p></div>
+      <div class="ml-quiz__a"><p>Используют информационные критерии: BIC = -2·log L + k·log n или AIC = -2·log L + 2k, где k — число параметров. BIC штрафует сложность сильнее AIC, как только ln n &gt; 2 (n ≥ 8), поэтому выбирает более простые смеси. Обычно строят BIC для K = 1…K_max и берут минимум; в sklearn — <code>gmm.bic(X)</code>.</p></div>
     </details>
   </li>
   </ol>

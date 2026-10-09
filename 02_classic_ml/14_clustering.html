@@ -188,7 +188,7 @@
         <div class="wt-formula">d(A, μ₁)=0,       d(A, μ₂)=√98≈9.9  → кластер 1
 d(B, μ₁)=1,       d(B, μ₂)=√85≈9.2  → кластер 1
 d(C, μ₁)=√98≈9.9, d(C, μ₂)=1        → кластер 2
-d(D, μ₁)=√128≈11, d(D, μ₂)=1        → кластер 2</div>
+d(D, μ₁)=√113≈10.6, d(D, μ₂)=1        → кластер 2</div>
       </div>
     </div>
     <div class="ml-walkthrough__step">
@@ -241,7 +241,7 @@ d(D, μ₁)=√128≈11, d(D, μ₂)=1        → кластер 2</div>
         <input type="range" class="ml-slider-lab__range" id="sl-k"
                min="1" max="20" step="1" value="3">
         <div class="ml-slider-lab__range-labels">
-          <span>1 (всё один)</span><span>20 (каждый сам)</span>
+          <span>1 (один кластер)</span><span>20 (дробим)</span>
         </div>
       </div>
     </div>
@@ -249,38 +249,100 @@ d(D, μ₁)=√128≈11, d(D, μ₂)=1        → кластер 2</div>
   </div>
 </div>
 <script>
-
 (function(){
+  // Real k-means (k-means++ init, best of 10 restarts) on a fixed 2D dataset:
+  // 4 Gaussian blobs (σ = 0.6) with 50 points each. For every k = 1..20 we compute
+  // inertia and the mean silhouette score once; the slider only reads the results.
   var sl = document.getElementById('sl-k');
   var disp = document.getElementById('sl-k-disp');
   var out = document.getElementById('sl-out-k');
+  var TRUE_K = 4, KMAX = 20;
+
+  function rng(seed){ return function(){ seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }; }
+  function gauss(r){ var u = Math.max(r(), 1e-12), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  var r = rng(42), centres = [[0, 0], [4, 0.5], [1, 4], [5, 4.5]], X = [];
+  centres.forEach(function(c){ for (var i = 0; i < 50; i++) X.push([c[0] + 0.6 * gauss(r), c[1] + 0.6 * gauss(r)]); });
+  var n = X.length;
+  function d2(a, b){ var dx = a[0] - b[0], dy = a[1] - b[1]; return dx * dx + dy * dy; }
+
+  function kmeans(k, rand){
+    var mu = [X[Math.floor(rand() * n)].slice()];
+    while (mu.length < k) { // k-means++: next centre with probability ∝ squared distance to the nearest one
+      var dist = X.map(function(x){ return Math.min.apply(null, mu.map(function(m){ return d2(x, m); })); });
+      var total = dist.reduce(function(a, b){ return a + b; }, 0), t = rand() * total, j = 0;
+      while (j < n - 1 && (t -= dist[j]) > 0) j++;
+      mu.push(X[j].slice());
+    }
+    var lab = new Array(n).fill(-1);
+    for (var it = 0; it < 100; it++) {
+      var changed = false;
+      for (var i = 0; i < n; i++) {
+        var best = 0;
+        for (var c = 1; c < k; c++) if (d2(X[i], mu[c]) < d2(X[i], mu[best])) best = c;
+        if (lab[i] !== best) { lab[i] = best; changed = true; }
+      }
+      for (var c2 = 0; c2 < k; c2++) {
+        var sx = 0, sy = 0, cnt = 0;
+        for (var p = 0; p < n; p++) if (lab[p] === c2) { sx += X[p][0]; sy += X[p][1]; cnt++; }
+        if (cnt) mu[c2] = [sx / cnt, sy / cnt];
+      }
+      if (!changed) break;
+    }
+    var inertia = 0;
+    for (var q = 0; q < n; q++) inertia += d2(X[q], mu[lab[q]]);
+    return { inertia: inertia, lab: lab };
+  }
+  var D = X.map(function(a){ return X.map(function(b){ return Math.sqrt(d2(a, b)); }); });
+  function silhouette(lab, k){
+    if (k < 2) return null;
+    var s = 0;
+    for (var i = 0; i < n; i++) {
+      var sum = new Array(k).fill(0), cnt = new Array(k).fill(0);
+      for (var j = 0; j < n; j++) if (j !== i) { sum[lab[j]] += D[i][j]; cnt[lab[j]]++; }
+      if (!cnt[lab[i]]) continue; // singleton cluster: s(i) = 0 by convention
+      var a = sum[lab[i]] / cnt[lab[i]], b = Infinity;
+      for (var c = 0; c < k; c++) if (c !== lab[i] && cnt[c]) b = Math.min(b, sum[c] / cnt[c]);
+      s += (b - a) / Math.max(a, b);
+    }
+    return s / n;
+  }
+  var res = [], rand = rng(7), bestSil = 2;
+  for (var k = 1; k <= KMAX; k++) {
+    var best = null;
+    for (var rep = 0; rep < 10; rep++) { var m = kmeans(k, rand); if (!best || m.inertia < best.inertia) best = m; }
+    res[k] = { inertia: best.inertia, sil: silhouette(best.lab, k) };
+    if (k >= 2 && res[k].sil > res[bestSil].sil) bestSil = k;
+  }
+
+  function bar(label, value, scale, cls){
+    return '<div class="sl-bar-row"><span>' + label + '</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.max(2, Math.min(100, 100 * value / scale)) + '%"></div></div></div>';
+  }
   function render(){
-    var k = +sl.value;
+    var k = +sl.value, c = res[k];
     disp.textContent = k;
-    var inertia   = Math.round(100 * Math.exp(-k / 5) + 5);
-    var interDist = Math.max(5, Math.round(100 - k * 4));
-    var interp    = Math.max(5, Math.round(100 - (k - 1) * 6));
+    var drop = k > 1 ? 100 * (res[k - 1].inertia - c.inertia) / res[k - 1].inertia : 0;
     var verdict, vclass, txt;
     if (k === 1) {
-      verdict = 'Бессмысленно'; vclass = 'sl-verdict-bad';
-      txt = 'k=1: все точки в одном кластере. Модель не обнаруживает никакой структуры. Центроид = среднее всего датасета.';
-    } else if (k <= 5) {
-      verdict = 'Разумное k'; vclass = 'sl-verdict-ok';
-      txt = 'k=' + k + ': хороший диапазон для многих датасетов. Silhouette score обычно достигает максимума здесь. Используйте elbow method для выбора.';
-    } else if (k <= 10) {
-      verdict = 'Допустимо'; vclass = 'sl-verdict-warn';
-      txt = 'k=' + k + ': inertia падает медленнее. Зависит от данных — если есть реальные кластеры, это может быть оправдано.';
+      verdict = 'Нет структуры'; vclass = 'sl-verdict-bad';
+      txt = 'k=1: все точки в одном кластере, центроид = среднее датасета. Inertia максимальна, silhouette не определён.';
+    } else if (k === bestSil) {
+      verdict = 'Лучший silhouette'; vclass = 'sl-verdict-ok';
+      txt = 'k=' + k + ': максимум silhouette на этих данных, и здесь же «локоть»: переход от k=' + (k - 1) + ' уменьшил inertia на ' + drop.toFixed(0) + '%, а следующий шаг даёт лишь ' + (100 * (c.inertia - res[k + 1].inertia) / c.inertia).toFixed(0) + '%.';
+    } else if (k < bestSil) {
+      verdict = 'Мало кластеров'; vclass = 'sl-verdict-warn';
+      txt = 'k=' + k + ': некоторые настоящие группы слиты в один кластер — inertia ещё сильно падает при добавлении кластера (−' + drop.toFixed(0) + '% на этом шаге).';
     } else {
-      verdict = 'Слишком много'; vclass = 'sl-verdict-bad';
-      txt = 'k=' + k + ': каждая точка почти в своём кластере. Inertia низкая, но кластеры не интерпретируемы и не стабильны.';
+      verdict = 'Дробим группы'; vclass = k > 8 ? 'sl-verdict-bad' : 'sl-verdict-warn';
+      txt = 'k=' + k + ': inertia продолжает падать (−' + drop.toFixed(0) + '% на этом шаге) просто потому, что кластеров больше, но silhouette ниже максимума: настоящие группы режутся на куски.';
     }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Inertia (↓ лучше)</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + inertia + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Расст. между кл-ми</span><div class="sl-bar-wrap"><div class="sl-bar ' + (interDist > 50 ? 'sl-good' : interDist > 25 ? 'sl-warn' : 'sl-bad') + '" style="width:' + interDist + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Интерпретируемость</span><div class="sl-bar-wrap"><div class="sl-bar ' + (interp > 50 ? 'sl-good' : interp > 20 ? 'sl-warn' : 'sl-bad') + '" style="width:' + interp + '%"></div></div></div>' +
+        bar('Inertia = ' + c.inertia.toFixed(0) + ' (↓ всегда при росте k)', c.inertia, res[1].inertia, 'sl-accent') +
+        bar('Silhouette = ' + (c.sil === null ? '—' : c.sil.toFixed(2)) + ' (↑ лучше)', c.sil === null ? 0 : Math.max(0, c.sil), 1, k === bestSil ? 'sl-good' : 'sl-warn') +
+        bar('Лучший silhouette (k=' + bestSil + ') = ' + res[bestSil].sil.toFixed(2), res[bestSil].sil, 1, 'sl-good') +
       '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Реальный расчёт: k-means (k-means++, лучший из 10 запусков) на 200 точках из ' + TRUE_K + ' гауссовых облаков (σ = 0.6). Inertia — сумма квадратов расстояний до центроидов, silhouette — среднее s(i) по всем точкам.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
   }
@@ -299,18 +361,6 @@ d(D, μ₁)=√128≈11, d(D, μ₂)=1        → кластер 2</div>
       <div class="formula">Интуитивная цель:
 within-cluster similarity  ↑
 between-cluster similarity ↓</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центроид</span><span class="fa-desc">Центр k-го кластера.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">c_i</span><span class="fa-name">назначение кластера</span><span class="fa-desc">К какому кластеру отнесён i-й объект.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число кластеров</span><span class="fa-desc">Сколько групп ищет алгоритм.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает компактность или разделённость групп без использования правильных labels.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разложить вещи по коробкам так, чтобы внутри коробки предметы были похожи.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если точка ближе к центроиду A, чем к B, k-means назначит её кластеру A.</div>
-    </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
       <h3>Кластеризация ищет структуру без ответов</h3>
@@ -612,14 +662,13 @@ s(i) = (b(i) - a(i)) / max(a(i), b(i))</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">μ_k</span><span class="fa-name">центроид</span><span class="fa-desc">Центр k-го кластера.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">c_i</span><span class="fa-name">назначение кластера</span><span class="fa-desc">К какому кластеру отнесён i-й объект.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">K</span><span class="fa-name">число кластеров</span><span class="fa-desc">Сколько групп ищет алгоритм.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">a(i)</span><span class="fa-name">сплочённость</span><span class="fa-desc">Среднее расстояние от точки i до остальных точек её же кластера. Чем меньше, тем плотнее точка сидит в своей группе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b(i)</span><span class="fa-name">отделённость</span><span class="fa-desc">Для каждого чужого кластера считаем среднее расстояние от i до его точек и берём минимум — это «ближайший соседний» кластер.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">s(i)</span><span class="fa-name">silhouette точки</span><span class="fa-desc">Лежит в [−1, 1]; деление на max(a, b) делает оценку безразмерной.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула описывает компактность или разделённость групп без использования правильных labels.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разложить вещи по коробкам так, чтобы внутри коробки предметы были похожи.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если точка ближе к центроиду A, чем к B, k-means назначит её кластеру A.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Сравниваем, насколько точка ближе к своим, чем к ближайшим чужим. Общий silhouette score — среднее s(i) по всем точкам.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> a(i)=1.0, b(i)=2.5 → s(i)=(2.5−1.0)/2.5=0.6. Если бы a(i)=3.0 при той же b(i), s(i)=(2.5−3.0)/3.0≈−0.17 — точка ближе к соседнему кластеру.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -640,6 +689,7 @@ s(i) = (b(i) - a(i)) / max(a(i), b(i))</div>
             Средний silhouette score часто полезнее inertia,
             потому что он учитывает и компактность, и разделимость кластеров.
           </div>
+          <p><strong>Davies-Bouldin index</strong> — ещё одна внутренняя метрика: для каждого кластера берём самый «похожий» на него соседний, считаем (s_i + s_j) / d(μ_i, μ_j), где s — средний разброс точек вокруг центроида, и усредняем по кластерам. Здесь <em>меньше — лучше</em> (0 — идеально разделённые компактные группы). В sklearn: <code>davies_bouldin_score(X, labels)</code>; считается быстро, но, как и inertia, предпочитает выпуклые кластеры.</p>
         </div>
       </div>
 
@@ -750,18 +800,6 @@ s(i) = (b(i) - a(i)) / max(a(i), b(i))</div>
 - complete
 - average
 - ward</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">B</span><span class="fa-name">число деревьев</span><span class="fa-desc">Сколько bootstrap-моделей входит в ансамбль.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">T_b(x)</span><span class="fa-name">прогноз дерева</span><span class="fa-desc">Ответ b-го дерева для объекта x.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">vote / mean</span><span class="fa-name">агрегация</span><span class="fa-desc">Голосование для классификации или среднее для регрессии.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула усредняет много нестабильных деревьев, чтобы снизить variance итоговой модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как решение жюри: один эксперт шумит, но среднее мнение группы стабильнее.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если три дерева дают 0,1,1, majority vote выбирает класс 1.</div>
-    </div>
     </div>
 
     <div class="card">
@@ -845,7 +883,7 @@ min_samples — минимум соседей для "плотной" точки
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> eps и min_samples вместе задают понятие "плотности": сначала находим core points (достаточно соседей в eps-шаре), затем расширяем кластер через них.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как определить "оживлённый район": eps — радиус квартала, min_samples — минимальное число магазинов в нём.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> eps=0.5, min_samples=3: точка является core, если в радиусе 0.5 не менее 3 соседей (не считая саму себя).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> eps=0.5, min_samples=3: точка является core, если в радиусе 0.5 лежат не менее 3 точек, включая её саму (так считает sklearn).</div>
     </div>
     <div class="grid-2">
         <div>
@@ -1766,7 +1804,7 @@ GMM:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему k-Means плохо работает с кластерами неевклидовой формы?</summary>
-      <div class="ml-quiz__a"><p>k-Means предполагает сферические кластеры одинакового размера — граница между ними всегда прямая линия в пространстве признаков. Для «полумесяцев», спиралей и других несферических форм нужны DBSCAN, спектральная кластеризация или GMM.</p></div>
+      <div class="ml-quiz__a"><p>k-Means предполагает сферические кластеры одинакового размера — граница между двумя соседними кластерами всегда линейная (гиперплоскость: клетки Вороного вокруг центроидов). Для «полумесяцев», спиралей и других несферических форм нужны DBSCAN, спектральная кластеризация или GMM.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -1778,7 +1816,7 @@ GMM:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Чем DBSCAN отличается от k-Means и когда он лучше?</summary>
-      <div class="ml-quiz__a"><p>DBSCAN не требует задавать k заранее, сам определяет число кластеров и умеет находить кластеры произвольной формы, отделяя шум (выбросы). Слабость: плохо работает при сильно различающейся плотности и плохо масштабируется — сложность O(n log n) при использовании kd-tree.</p></div>
+      <div class="ml-quiz__a"><p>DBSCAN не требует задавать k заранее, сам определяет число кластеров и умеет находить кластеры произвольной формы, отделяя шум (выбросы). Слабости: плохо работает при сильно различающейся плотности; с индексом (kd-tree, ball tree) в низкой размерности работает примерно за O(n log n), но в высокой размерности поиск соседей деградирует к O(n²), а eps становится трудно подобрать.</p></div>
     </details>
   </li>
   </ol>

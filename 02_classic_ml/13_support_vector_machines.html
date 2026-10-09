@@ -219,7 +219,8 @@
   function result(v){ return cache[v] || (cache[v] = solve(Math.pow(10, -2 + 4 * v / 100))); }
   var bestV = 0;
   for (var v = 0; v <= 100; v += 5) if (result(v).val < result(bestV).val) bestV = v;
-  var maxMargin = result(0).margin;
+  var maxMargin = result(0).margin, minMargin = result(100).margin;
+  function logShare(m){ return Math.log(m / minMargin) / Math.log(maxMargin / minMargin); } // margin spans ~2 orders of magnitude
 
   function fmtC(C){ return C < 0.1 ? C.toFixed(3) : C < 10 ? C.toFixed(2) : C.toFixed(0); }
   function bar(label, value, scale, cls){
@@ -234,7 +235,7 @@
       txt = 'C = ' + fmtC(C) + ': validation error в пределах 1.5 п.п. от лучшего на этой сетке (C ≈ ' + fmtC(Math.pow(10, -2 + 4 * bestV / 100)) + ').';
     } else if (v < bestV) {
       verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
-      txt = 'C = ' + fmtC(C) + ': нарушения margin почти ничего не стоят — широкий margin, ' + r.sv + ' из ' + NTR + ' точек стали support vectors, граница слишком грубая.';
+      txt = 'C = ' + fmtC(C) + ': нарушения margin стоят дёшево — margin шире, чем у лучшей модели, ' + r.sv + ' из ' + NTR + ' точек стали support vectors, и граница сглаживает часть настоящего круга (validation ' + (100 * r.val).toFixed(1) + '% против ' + (100 * best.val).toFixed(1) + '% у лучшего C).';
     } else {
       verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
       txt = 'C = ' + fmtC(C) + ': ошибки на train стоят очень дорого — margin узкий, train error ' + (100 * r.train).toFixed(1) + '%, граница изгибается вокруг перевёрнутых (шумных) меток, и validation error растёт.';
@@ -242,7 +243,7 @@
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        bar('Ширина margin 2/‖w‖ = ' + r.margin.toFixed(3), r.margin, maxMargin, 'sl-good') +
+        bar('Ширина margin 2/‖w‖ = ' + r.margin.toFixed(3) + ' (лог. шкала)', logShare(r.margin), 1, 'sl-good') +
         bar('Train error = ' + (100 * r.train).toFixed(1) + '%', r.train, 0.5, 'sl-accent') +
         bar('Validation error = ' + (100 * r.val).toFixed(1) + '%', r.val, 0.5, r.val <= best.val + 0.015 ? 'sl-good' : 'sl-warn') +
         bar('Support vectors = ' + r.sv + ' из ' + NTR, r.sv, NTR, 'sl-accent') +
