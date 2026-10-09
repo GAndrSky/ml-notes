@@ -245,35 +245,87 @@ w_norm = [0.167, 0.167, 0.500, 0.167]</div>
   </div>
 </div>
 <script>
-
 (function(){
+  // Real gradient boosting (MSE loss) with depth-3 regression trees on a fixed 1D task:
+  // y = sin(2πx) + noise (σ = 0.35), 60 training points, 1000 validation points, learning_rate = 0.05.
+  // The whole train/validation curve for 1..500 trees is computed once; the slider only reads it.
   var sl = document.getElementById('sl-boost');
   var disp = document.getElementById('sl-boost-disp');
   var out = document.getElementById('sl-out-boost');
+  var LR = 0.05, DEPTH = 3, NOISE = 0.35, MAXN = 500;
+
+  function rng(seed){ return function(){ seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }; }
+  function gauss(r){ var u = Math.max(r(), 1e-12), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function sample(n, seed){
+    var r = rng(seed), xs = [], ys = [];
+    for (var i = 0; i < n; i++) { var x = r(); xs.push(x); ys.push(Math.sin(2 * Math.PI * x) + NOISE * gauss(r)); }
+    return { x: xs, y: ys };
+  }
+  var train = sample(60, 7), val = sample(1000, 2024);
+
+  // Regression tree on 1D input: best split = minimum sum of squared errors, leaves predict the mean.
+  function fitTree(idx, target, depth){
+    var n = idx.length, sum = 0;
+    for (var i = 0; i < n; i++) sum += target[idx[i]];
+    var mean = sum / n;
+    if (depth === 0 || n < 4) return { v: mean };
+    var sorted = idx.slice().sort(function(a, b){ return train.x[a] - train.x[b]; });
+    var best = null, left = 0, sq = 0;
+    for (var k = 0; k < n; k++) sq += target[sorted[k]] * target[sorted[k]];
+    var leftSq = 0;
+    for (var j = 0; j < n - 1; j++) {
+      var t = target[sorted[j]]; left += t; leftSq += t * t;
+      if (train.x[sorted[j]] === train.x[sorted[j + 1]] || j < 1 || j > n - 3) continue; // ≥2 points per leaf
+      var nl = j + 1, nr = n - nl;
+      var sse = (leftSq - left * left / nl) + ((sq - leftSq) - (sum - left) * (sum - left) / nr);
+      if (!best || sse < best.sse) best = { sse: sse, j: j };
+    }
+    if (!best) return { v: mean };
+    var thr = (train.x[sorted[best.j]] + train.x[sorted[best.j + 1]]) / 2;
+    return { thr: thr, l: fitTree(sorted.slice(0, best.j + 1), target, depth - 1), r: fitTree(sorted.slice(best.j + 1), target, depth - 1) };
+  }
+  function predict(node, x){ while (node.thr !== undefined) node = x < node.thr ? node.l : node.r; return node.v; }
+
+  var F0 = train.y.reduce(function(a, b){ return a + b; }, 0) / train.y.length;
+  var Ftr = train.x.map(function(){ return F0; }), Fva = val.x.map(function(){ return F0; });
+  var all = train.x.map(function(_, i){ return i; });
+  function mse(F, y){ var s = 0; for (var i = 0; i < y.length; i++) s += (y[i] - F[i]) * (y[i] - F[i]); return s / y.length; }
+  var curve = [{ train: mse(Ftr, train.y), val: mse(Fva, val.y) }], best = 1;
+  for (var m = 1; m <= MAXN; m++) {
+    var resid = train.y.map(function(y, i){ return y - Ftr[i]; }); // pseudo-residuals of MSE
+    var tree = fitTree(all, resid, DEPTH);
+    for (var i = 0; i < Ftr.length; i++) Ftr[i] += LR * predict(tree, train.x[i]);
+    for (var q = 0; q < Fva.length; q++) Fva[q] += LR * predict(tree, val.x[q]);
+    curve[m] = { train: mse(Ftr, train.y), val: mse(Fva, val.y) };
+    if (curve[m].val < curve[best].val) best = m;
+  }
+  var scale = curve[0].val;
+
+  function bar(label, value, cls){
+    return '<div class="sl-bar-row"><span>' + label + ' = ' + value.toFixed(3) + '</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.max(2, Math.min(100, 100 * value / scale)) + '%"></div></div></div>';
+  }
   function render(){
-    var n = +sl.value;
+    var n = +sl.value, c = curve[n];
     disp.textContent = n;
-    var trainErr = Math.max(2, Math.round(60 * Math.exp(-n / 30)));
-    var testErr  = Math.round(15 + Math.max(0, (n - 100) / 500 * 25) + 40 * Math.exp(-n / 40));
-    var time     = Math.min(100, Math.round(n / 5));
     var verdict, vclass, txt;
-    if (n < 10) {
+    if (c.val <= curve[best].val * 1.05) {
+      verdict = 'Около оптимума'; vclass = 'sl-verdict-ok';
+      txt = n + ' деревьев: validation MSE в пределах 5% от минимума (минимум на этих данных — при ' + best + ' деревьях). Здесь сработал бы early stopping.';
+    } else if (n < best) {
       verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
-      txt = n + ' деревьев — слишком мало. Ансамбль ещё не исправил ошибки слабых классификаторов. High bias.';
-    } else if (n <= 150) {
-      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
-      txt = n + ' деревьев: хороший диапазон. Train error падает, val error минимален. Early stopping обычно срабатывает здесь.';
+      txt = n + ' деревьев: ансамбль ещё не исправил систематическую ошибку — и train, и validation MSE высокие (high bias).';
     } else {
-      verdict = 'Осторожно'; vclass = 'sl-verdict-warn';
-      txt = n + ' деревьев: Boosting без регуляризации начинает переобучаться при большом n. Используйте early stopping или снижайте learning_rate.';
+      verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
+      txt = n + ' деревьев: train MSE продолжает падать (' + c.train.toFixed(3) + '), а validation MSE вырос с ' + curve[best].val.toFixed(3) + ' до ' + c.val.toFixed(3) + ': новые деревья подгоняются под шум обучающих точек.';
     }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Train error ↓</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar ' + (testErr > 35 ? 'sl-bad' : testErr > 22 ? 'sl-warn' : 'sl-good') + '" style="width:' + testErr + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Время обучения</span><div class="sl-bar-wrap"><div class="sl-bar ' + (time > 70 ? 'sl-bad' : time > 40 ? 'sl-warn' : 'sl-good') + '" style="width:' + time + '%"></div></div></div>' +
+        bar('Train MSE', c.train, 'sl-accent') +
+        bar('Validation MSE', c.val, n === best ? 'sl-good' : 'sl-warn') +
+        bar('Лучший validation MSE (' + best + ' деревьев)', curve[best].val, 'sl-good') +
       '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Реальный расчёт: gradient boosting с MSE, деревья глубины 3, learning_rate = 0.05; данные y = sin(2πx) + шум (σ = 0.35, поэтому validation MSE ниже ≈ ' + (NOISE * NOISE).toFixed(3) + ' недостижим), 60 обучающих и 1000 валидационных точек.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
   }
@@ -750,18 +802,6 @@ w_j — веса листьев
 Leaf-wise growth:
 каждый раз расщепляем тот лист,
 который даёт наибольшее уменьшение loss</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">F_m(x)</span><span class="fa-name">текущий ансамбль</span><span class="fa-desc">Прогноз после m добавленных weak learners.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новая слабая модель</span><span class="fa-desc">Поправка, которую добавляют на текущем шаге.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Насколько сильно добавляется новая поправка.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет слабую модель как поправку к текущему ансамблю, обычно в сторону ошибок или градиента.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как редактировать черновик: каждый проход исправляет оставшиеся слабые места.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если F₀=10, новое дерево даёт h=2, а η=0.1, новый прогноз F₁=10.2.</div>
-    </div>
     <div class="intuition">
             Leaf-wise рост часто быстрее приводит к сильному дереву,
             потому что алгоритм тратит ресурс именно туда, где ожидается наибольший выигрыш.
@@ -872,18 +912,6 @@ Leaf-wise growth:
 без использования "будущих" объектов для текущего примера
 
 Иначе легко получить leakage.</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fit</span><span class="fa-name">обучить состояние</span><span class="fa-desc">Вычислить параметры preprocessing или модели на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">transform</span><span class="fa-name">применить состояние</span><span class="fa-desc">Преобразовать данные уже найденными параметрами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">train/val/test</span><span class="fa-name">разделы данных</span><span class="fa-desc">Разные роли данных для обучения, выбора и финальной проверки.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует порядок обработки данных, чтобы обучение и проверка проходили честно и воспроизводимо.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как производственная линия: каждый шаг должен быть тем же на train, validation и будущих данных.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Scaler fit-ится на train, а validation только transform-ится; иначе появляется leakage.</div>
-    </div>
     </div>
 
     <div class="card">
@@ -1177,7 +1205,7 @@ from sklearn.metrics import classification_report, roc_auc_score
 gb = GradientBoostingClassifier(
     n_estimators=200,
     learning_rate=0.05,
-    max_depth=3,   # через базовый tree estimator в некоторых реализациях
+    max_depth=3,   # глубина каждого дерева
     random_state=42
 )
 
@@ -1205,6 +1233,7 @@ xgb = XGBClassifier(
     reg_lambda=1.0,
     objective="binary:logistic",
     eval_metric="auc",
+    early_stopping_rounds=50,   # остановка, если AUC на eval_set не растёт 50 итераций
     random_state=42
 )
 
@@ -1219,7 +1248,8 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       </div>
 
       <div id="code-lgbm" class="tab-panel">
-        <div class="code">from lightgbm import LGBMClassifier
+        <div class="code">import lightgbm as lgb
+from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score
 
 lgbm = LGBMClassifier(
@@ -1229,6 +1259,7 @@ lgbm = LGBMClassifier(
     max_depth=-1,
     min_child_samples=20,
     subsample=0.8,
+    subsample_freq=1,   # без этого LightGBM игнорирует subsample
     colsample_bytree=0.8,
     random_state=42
 )
@@ -1236,7 +1267,8 @@ lgbm = LGBMClassifier(
 lgbm.fit(
     X_train, y_train,
     eval_set=[(X_valid, y_valid)],
-    eval_metric="auc"
+    eval_metric="auc",
+    callbacks=[lgb.early_stopping(50)]
 )
 
 proba = lgbm.predict_proba(X_valid)[:, 1]
@@ -1843,7 +1875,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">В чём принципиальная идея бустинга в отличие от бэггинга?</summary>
-      <div class="ml-quiz__a"><p>Бэггинг обучает независимые модели параллельно и усредняет их. Бустинг обучает модели последовательно: каждая следующая фокусируется на ошибках предыдущих, исправляя их. В итоге бустинг снижает и bias, и variance, тогда как бэггинг — преимущественно variance.</p></div>
+      <div class="ml-quiz__a"><p>Бэггинг обучает независимые модели параллельно и усредняет их. Бустинг обучает модели последовательно: каждая следующая фокусируется на ошибках предыдущих, исправляя их. В итоге бустинг прежде всего снижает bias (shrinkage и subsample помогают держать variance), тогда как бэггинг снижает преимущественно variance.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

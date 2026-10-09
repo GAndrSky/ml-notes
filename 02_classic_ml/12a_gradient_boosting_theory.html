@@ -88,12 +88,12 @@
 <div class="card">
       <h2>Ключевая идея</h2>
       <p>Boosting строит модель <strong>поэтапно</strong>. На каждом шаге мы не переучиваем всё с нуля, а добавляем маленькую функцию, которая лучше всего исправляет текущую ошибку ансамбля.</p>
-      <div class="formula" data-render-tex data-tex-source="F_M(x) = \sum_{m=0}^{M} \nu \rho_m h_m(x)">F_M(x) = Σ ν ρ_m h_m(x)</div>
+      <div class="formula" data-render-tex data-tex-source="F_M(x) = F_0(x) + \sum_{m=1}^{M} \nu \rho_m h_m(x)">F_M(x) = F_0(x) + Σ ν ρ_m h_m(x)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">F_M(x)</span><span class="fa-name">итоговый ансамбль из M деревьев</span><span class="fa-desc">Предсказание всего gradient boosting ансамбля для объекта x после M итераций.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по итерациям m=0..M</span><span class="fa-desc">Суммирует вклады всех M деревьев. Каждая итерация добавляет одно дерево h_m с весом ν·ρ_m.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">Σ</span><span class="fa-name">сумма по итерациям m=1..M</span><span class="fa-desc">Суммирует вклады всех M деревьев поверх стартового прогноза F_0(x) (для MSE — среднее y). Каждая итерация добавляет одно дерево h_m с весом ν·ρ_m.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">ν</span><span class="fa-name">learning rate (shrinkage)</span><span class="fa-desc">Гиперпараметр, масштабирующий вклад каждого нового дерева. Обычно 0.01–0.3. Маленький ν → нужно больше итераций, но ансамбль устойчивее.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">ρ_m</span><span class="fa-name">оптимальный шаг m-й итерации</span><span class="fa-desc">Line search: ρ_m = argmin L(F_{m-1}(x)+ρ·h_m(x)). Масштабирует m-е дерево так, чтобы максимально снизить loss.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">m-й слабый learner (дерево)</span><span class="fa-desc">Неглубокое дерево, обученное приближать антиградиент loss. Само по себе слабое, но в сумме формирует мощный ансамбль.</span></div>
@@ -153,14 +153,14 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">F_m(x)</span><span class="fa-name">текущий ансамбль</span><span class="fa-desc">Прогноз после m добавленных weak learners.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новая слабая модель</span><span class="fa-desc">Поправка, которую добавляют на текущем шаге.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Насколько сильно добавляется новая поправка.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">F_{m-1}(x)</span><span class="fa-name">ансамбль до шага m</span><span class="fa-desc">Прогноз после m−1 деревьев; в этой точке считались псевдорезидуалы.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новое дерево</span><span class="fa-desc">Дерево, обученное приближать псевдорезидуалы r_i^(m).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ρ_m</span><span class="fa-name">шаг line search</span><span class="fa-desc">Множитель, при котором добавление h_m сильнее всего уменьшает loss (в деревьях обычно ищется отдельно для каждого листа).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">ν</span><span class="fa-name">learning rate (shrinkage)</span><span class="fa-desc">Доля найденного шага, которую реально добавляем: ν &lt; 1 делает каждую поправку осторожнее.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет слабую модель как поправку к текущему ансамблю, обычно в сторону ошибок или градиента.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как редактировать черновик: каждый проход исправляет оставшиеся слабые места.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если F₀=10, новое дерево даёт h=2, а η=0.1, новый прогноз F₁=10.2.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дерево задаёт направление поправки, ρ_m — её оптимальную длину, а ν намеренно укорачивает шаг, чтобы ансамбль не подстраивался под шум текущих остатков.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> F_{m-1}(x)=10, h_m(x)=2, ρ_m=1 (для MSE line search в листе даёт ровно среднее остатков), ν=0.1 → F_m(x)=10+0.1·1·2=10.2.</div>
     </div>
     <div class="intuition">В MSE boosting буквально подгоняет <strong>остатки</strong>. В logloss или exponential loss он подгоняет уже не остатки по значению, а направление, в котором нужно менять логиты модели.</div>
     </div>
@@ -206,19 +206,7 @@
       <div class="grid-2">
         <div>
           <h3>Shrinkage</h3>
-          <div class="formula" data-render-tex data-tex-source="\nu \downarrow \Rightarrow \text{медленнее, но устойчивее}">\nu ↓ ⇒ медленнее, но устойчивее</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">F_m(x)</span><span class="fa-name">текущий ансамбль</span><span class="fa-desc">Прогноз после m добавленных weak learners.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">h_m(x)</span><span class="fa-name">новая слабая модель</span><span class="fa-desc">Поправка, которую добавляют на текущем шаге.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">η</span><span class="fa-name">learning rate</span><span class="fa-desc">Насколько сильно добавляется новая поправка.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула добавляет слабую модель как поправку к текущему ансамблю, обычно в сторону ошибок или градиента.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как редактировать черновик: каждый проход исправляет оставшиеся слабые места.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если F₀=10, новое дерево даёт h=2, а η=0.1, новый прогноз F₁=10.2.</div>
-    </div>
+          <div class="formula" data-render-tex data-tex-source="\nu \downarrow \Rightarrow \text{медленнее, но устойчивее}">ν ↓ ⇒ медленнее, но устойчивее</div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
       <h3>Почему теория важна для практики</h3>

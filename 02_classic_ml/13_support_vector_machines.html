@@ -153,10 +153,10 @@
       <div>
         <div class="ml-slider-lab__param-header">
           <span class="ml-slider-lab__param-name">C (штраф за ошибку)</span>
-          <span class="ml-slider-lab__param-value" id="sl-svc-disp">20</span>
+          <span class="ml-slider-lab__param-value" id="sl-svc-disp">1.00</span>
         </div>
         <input type="range" class="ml-slider-lab__range" id="sl-svc"
-               min="0" max="100" step="1" value="20">
+               min="0" max="100" step="1" value="50">
         <div class="ml-slider-lab__range-labels">
           <span>0.01 (мягкий)</span><span>100 (жёсткий)</span>
         </div>
@@ -166,38 +166,88 @@
   </div>
 </div>
 <script>
-
 (function(){
+  // Real soft-margin SVM with an RBF kernel (γ = GAMMA), solved by dual coordinate descent:
+  //   max Σα_i − ½ΣΣ α_i α_j y_i y_j K(x_i,x_j),  0 ≤ α_i ≤ C.
+  // The bias is absorbed into the kernel (K + 1). Data: points in [−1,1]², class +1 inside a circle
+  // of radius 0.6, 15% of labels flipped; 120 training and 1000 validation points.
+  // The slider position v ∈ [0,100] maps to C = 10^(−2 + 4v/100), i.e. 0.01 … 100 on a log scale.
   var sl = document.getElementById('sl-svc');
   var disp = document.getElementById('sl-svc-disp');
   var out = document.getElementById('sl-out-svc');
+  var GAMMA = 4, NTR = 120, NVA = 1000, FLIP = 0.15;
+
+  function rng(seed){ return function(){ seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }; }
+  function sample(n, seed){
+    var r = rng(seed), pts = [];
+    for (var i = 0; i < n; i++) {
+      var x = 2 * r() - 1, z = 2 * r() - 1, y = x * x + z * z < 0.36 ? 1 : -1;
+      if (r() < FLIP) y = -y;
+      pts.push({ x: x, z: z, y: y });
+    }
+    return pts;
+  }
+  var train = sample(NTR, 5), val = sample(NVA, 77);
+  function k(a, b){ var dx = a.x - b.x, dz = a.z - b.z; return Math.exp(-GAMMA * (dx * dx + dz * dz)) + 1; }
+  var Ktr = train.map(function(a){ return train.map(function(b){ return k(a, b); }); });
+  var Kva = val.map(function(a){ return train.map(function(b){ return k(a, b); }); });
+
+  function solve(C){
+    var n = NTR, alpha = new Array(n).fill(0), f = new Array(n).fill(0); // f_i = Σ_j α_j y_j K_ij
+    for (var epoch = 0; epoch < 300; epoch++) {
+      var maxChange = 0;
+      for (var i = 0; i < n; i++) {
+        var yi = train[i].y, G = yi * f[i] - 1;
+        var a = Math.min(C, Math.max(0, alpha[i] - G / Ktr[i][i])), d = a - alpha[i];
+        if (d !== 0) {
+          alpha[i] = a;
+          for (var j = 0; j < n; j++) f[j] += d * yi * Ktr[i][j];
+          if (Math.abs(d) > maxChange) maxChange = Math.abs(d);
+        }
+      }
+      if (maxChange < 1e-6) break;
+    }
+    var w2 = 0, sv = 0, trainWrong = 0, valWrong = 0;
+    for (var p = 0; p < n; p++) { w2 += alpha[p] * train[p].y * f[p]; if (alpha[p] > 1e-8) sv++; if (f[p] * train[p].y <= 0) trainWrong++; }
+    for (var q = 0; q < NVA; q++) {
+      var s = 0; for (var t = 0; t < n; t++) s += alpha[t] * train[t].y * Kva[q][t];
+      if (s * val[q].y <= 0) valWrong++;
+    }
+    return { margin: 2 / Math.sqrt(w2), sv: sv, train: trainWrong / n, val: valWrong / NVA };
+  }
+  var cache = {};
+  function result(v){ return cache[v] || (cache[v] = solve(Math.pow(10, -2 + 4 * v / 100))); }
+  var bestV = 0;
+  for (var v = 0; v <= 100; v += 5) if (result(v).val < result(bestV).val) bestV = v;
+  var maxMargin = result(0).margin;
+
+  function fmtC(C){ return C < 0.1 ? C.toFixed(3) : C < 10 ? C.toFixed(2) : C.toFixed(0); }
+  function bar(label, value, scale, cls){
+    return '<div class="sl-bar-row"><span>' + label + '</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.max(2, Math.min(100, 100 * value / scale)) + '%"></div></div></div>';
+  }
   function render(){
-    var v = +sl.value;
-    var C = v === 0 ? 0.01 : v;
-    disp.textContent = C < 1 ? '0.01' : C;
-    var margin      = Math.round(100 - v * 0.95);
-    var trainErr    = Math.max(2, Math.round(40 - v * 0.38));
-    var testErr     = Math.round(25 + Math.abs(v - 20) * 0.45);
-    var overfit     = Math.round(v * 0.9);
+    var v = +sl.value, C = Math.pow(10, -2 + 4 * v / 100), r = result(v), best = result(bestV);
+    disp.textContent = fmtC(C);
     var verdict, vclass, txt;
-    if (v < 5) {
+    if (r.val <= best.val + 0.015) {
+      verdict = 'Около оптимума'; vclass = 'sl-verdict-ok';
+      txt = 'C = ' + fmtC(C) + ': validation error в пределах 1.5 п.п. от лучшего на этой сетке (C ≈ ' + fmtC(Math.pow(10, -2 + 4 * bestV / 100)) + ').';
+    } else if (v < bestV) {
       verdict = 'Недообучение'; vclass = 'sl-verdict-warn';
-      txt = 'C ≈ ' + (v === 0 ? '0.01' : v) + ': широкий margin, много точек внутри. SVM игнорирует часть обучающих примеров. Граница простая, возможно недообучение.';
-    } else if (v <= 40) {
-      verdict = 'Оптимально'; vclass = 'sl-verdict-ok';
-      txt = 'C = ' + v + ': хороший баланс. Margin умеренный, SVM штрафует выбросы, но не запоминает каждую точку.';
+      txt = 'C = ' + fmtC(C) + ': нарушения margin почти ничего не стоят — широкий margin, ' + r.sv + ' из ' + NTR + ' точек стали support vectors, граница слишком грубая.';
     } else {
       verdict = 'Переобучение'; vclass = 'sl-verdict-bad';
-      txt = 'C = ' + v + ': узкий margin. SVM старается правильно классифицировать все обучающие точки → может переобучиться, особенно с шумными данными.';
+      txt = 'C = ' + fmtC(C) + ': ошибки на train стоят очень дорого — margin узкий, train error ' + (100 * r.train).toFixed(1) + '%, граница изгибается вокруг перевёрнутых (шумных) меток, и validation error растёт.';
     }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Ширина margin</span><div class="sl-bar-wrap"><div class="sl-bar sl-good" style="width:' + margin + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Train error</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainErr + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Val error</span><div class="sl-bar-wrap"><div class="sl-bar ' + (testErr > 40 ? 'sl-bad' : testErr > 28 ? 'sl-warn' : 'sl-good') + '" style="width:' + testErr + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Риск overfitting</span><div class="sl-bar-wrap"><div class="sl-bar ' + (overfit > 60 ? 'sl-bad' : overfit > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + overfit + '%"></div></div></div>' +
+        bar('Ширина margin 2/‖w‖ = ' + r.margin.toFixed(3), r.margin, maxMargin, 'sl-good') +
+        bar('Train error = ' + (100 * r.train).toFixed(1) + '%', r.train, 0.5, 'sl-accent') +
+        bar('Validation error = ' + (100 * r.val).toFixed(1) + '%', r.val, 0.5, r.val <= best.val + 0.015 ? 'sl-good' : 'sl-warn') +
+        bar('Support vectors = ' + r.sv + ' из ' + NTR, r.sv, NTR, 'sl-accent') +
       '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Реальный расчёт: soft-margin SVM с RBF-ядром (γ = ' + GAMMA + '), решённый dual coordinate descent. Класс +1 — точки внутри круга радиуса 0.6, у 15% меток знак перевёрнут (поэтому ошибка ниже ~15% недостижима); 120 обучающих и 1000 валидационных точек. Ширина margin измеряется в пространстве признаков ядра.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
   }
@@ -245,32 +295,19 @@
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w, b</span><span class="fa-name">гиперплоскость</span><span class="fa-desc">Параметры разделяющей границы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">цена нарушения</span><span class="fa-desc">Насколько сильно штрафуются ошибки margin.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ξ_i</span><span class="fa-name">slack</span><span class="fa-desc">Величина нарушения margin для объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">w</span><span class="fa-name">вектор нормали</span><span class="fa-desc">Перпендикуляр к границе: задаёт её наклон. Длина ‖w‖ определяет ширину margin.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">b</span><span class="fa-name">смещение</span><span class="fa-desc">Сдвигает границу параллельно самой себе.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">x</span><span class="fa-name">объект</span><span class="fa-desc">Вектор признаков; знак wᵀx + b говорит, с какой стороны границы он лежит.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула ищет границу с большим margin и штрафует объекты, которые нарушают зазор.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как провести коридор между двумя группами точек: граница должна быть не вплотную к объектам.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если margin violation равен 0, объект не добавляет hinge-loss; если violation 0.7, он штрафуется.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Граница — это все точки, где score wᵀx + b равен нулю; положительный score — класс +1, отрицательный — класс −1. Расстояние от точки до границы равно |wᵀx + b| / ‖w‖.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w = (1, 1), b = −1, x = (2, 1): wᵀx + b = 2 → класс +1, расстояние до границы 2/√2 ≈ 1.41.</div>
     </div>
     <p>
             Тогда две margin-линии:
           </p>
           <div class="formula" data-render-tex data-tex-source="\begin{aligned}w^{\top}x + b &= +1 \\ w^{\top}x + b &= -1\end{aligned}">wᵀx + b = +1
 wᵀx + b = -1</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">w, b</span><span class="fa-name">гиперплоскость</span><span class="fa-desc">Параметры разделяющей границы.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">C</span><span class="fa-name">цена нарушения</span><span class="fa-desc">Насколько сильно штрафуются ошибки margin.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">ξ_i</span><span class="fa-name">slack</span><span class="fa-desc">Величина нарушения margin для объекта.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула ищет границу с большим margin и штрафует объекты, которые нарушают зазор.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как провести коридор между двумя группами точек: граница должна быть не вплотную к объектам.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если margin violation равен 0, объект не добавляет hinge-loss; если violation 0.7, он штрафуется.</div>
-    </div>
     <p>
             А ширина margin равна:
           </p>
@@ -1047,7 +1084,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       <div class="formula-anatomy__row"><span class="fa-sym">||w||</span><span class="fa-name">L2-норма вектора весов</span><span class="fa-desc">Длина нормали к разделяющей гиперплоскости. Большой ||w|| → узкий margin → хуже обобщение. Минимизация ||w||² при SVM = максимизация margin.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Большой margin означает: граница решения далека от обоих классов. Это делает SVM устойчивым к шуму — небольшие отклонения данных не пересекут разделительную полосу. Теория VC-размерности гарантирует: большой margin → хорошая generalization.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Большой margin означает: граница решения далека от обоих классов. Это делает SVM устойчивым к шуму — небольшие отклонения данных не пересекут разделительную полосу. Теория (margin-based оценки обобщения) связывает больший margin с меньшей эффективной сложностью, но это оценка, а не гарантия на конкретных данных.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Дорога с широкой разделительной полосой безопаснее, чем со сплошной линией. Чем шире полоса, тем меньше риска при небольшом отклонении от курса.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> w=[3,4] → ||w||=5, margin=2/5=0.4. w=[1,0] → ||w||=1, margin=2 — этот вариант SVM предпочтёт как более устойчивый.</div>
     </div>
@@ -1212,10 +1249,10 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 
       let sCount = 0;
 
-      function drawClass(points, fill, label){
+      function drawClass(points, fill, label, yi){
         points.forEach(([x,y])=>{
-          const d = Math.abs(signedDistance(x,y,w1,w2,c));
-          const support = d < 1.25;
+          // y_i·f(x_i) with f(x) = y − (a·x + b): the +1 class lies above the line
+          const support = yi * (y - (a*x + b)) <= 1; // on the margin, inside it or misclassified
           if(support) sCount++;
           const [cx,cy] = toCanvas(x,y,W,H);
 
@@ -1229,8 +1266,8 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
         });
       }
 
-      drawClass(posPts,'#10b981','+');
-      drawClass(negPts,'#ef4444','-');
+      drawClass(posPts,'#10b981','+', 1);
+      drawClass(negPts,'#ef4444','-', -1);
       supportCount.textContent = sCount;
     }
 
@@ -1539,7 +1576,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое kernel trick и зачем он нужен?</summary>
-      <div class="ml-quiz__a"><p>Kernel trick позволяет неявно работать в пространстве высокой размерности без явного вычисления координат. Функция ядра K(x,z) = φ(x)·φ(z) вычисляет скалярное произведение в исходном пространстве, заменяя дорогое преобразование φ. Это делает SVM практичным для нелинейных задач.</p></div>
+      <div class="ml-quiz__a"><p>Kernel trick позволяет неявно работать в пространстве высокой размерности без явного вычисления координат. Функция ядра K(x,z) = φ(x)·φ(z) даёт скалярное произведение в пространстве признаков φ, но вычисляется по исходным x и z — само преобразование φ строить не нужно. Это делает SVM практичным для нелинейных задач.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -1551,7 +1588,7 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему SVM плохо масштабируется на большие датасеты?</summary>
-      <div class="ml-quiz__a"><p>SVM решает задачу квадратичного программирования, которая в наивной реализации требует O(n²)–O(n³) вычислений и памяти O(n²) для матрицы ядра. На n>100k примеров это становится непрактичным. Используют SGD-аппроксимации (LinearSVC) или нейросетевые подходы.</p></div>
+      <div class="ml-quiz__a"><p>SVM решает задачу квадратичного программирования, которая в наивной реализации требует O(n²)–O(n³) вычислений и памяти O(n²) для матрицы ядра. На n>100k примеров это становится непрактичным. Используют линейный SVM (LinearSVC на liblinear, SGDClassifier(loss="hinge")) или приближение ядра (Nystroem, RBFSampler) + линейную модель.</p></div>
     </details>
   </li>
   </ol>
