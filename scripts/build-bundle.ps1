@@ -20,11 +20,11 @@ $bundleParts = foreach ($relativePath in $sourceFiles) {
     throw "Missing source file for bundle: $relativePath"
   }
 
-  "// BEGIN $relativePath`r`n" + (Get-Content -Raw -LiteralPath $fullPath -Encoding UTF8) + "`r`n// END $relativePath`r`n"
+  "// BEGIN $relativePath`n" + (Get-Content -Raw -LiteralPath $fullPath -Encoding UTF8) + "`n// END $relativePath`n"
 }
 
 $bundlePath = Join-Path $repoRoot "bundle.js"
-Set-Content -LiteralPath $bundlePath -Value ($bundleParts -join "`r`n").TrimEnd() -Encoding UTF8 -NoNewline
+Set-Content -LiteralPath $bundlePath -Value ($bundleParts -join "`n").TrimEnd() -Encoding UTF8 -NoNewline
 
 Write-Host "Bundle rebuilt:" -ForegroundColor Green
 Write-Host " - bundle.js"
