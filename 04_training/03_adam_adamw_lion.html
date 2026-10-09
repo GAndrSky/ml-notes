@@ -29,7 +29,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>Adam — стандарт глубокого обучения. AdamW исправляет его скрытый баг с L2-регуляризацией. Lion работает только со знаком градиента и втрое экономит память.</p>
+    <p>Adam — стандарт глубокого обучения. AdamW исправляет его скрытый баг с L2-регуляризацией. Lion работает только со знаком обновления и хранит один момент вместо двух — вдвое меньше памяти под состояние оптимизатора.</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -71,7 +71,7 @@ output layer:      grad ≈ 1.0</div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> При едином η=0.01: embedding (grad=1e-4) почти не обучается, output layer (grad=1.0) взрывается. Адаптивный lr делит η на √EMA[g²], автоматически выравнивая шаги.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η=0.01. Embedding: g≈1e-4, EMA[g²]≈1e-8 → η_eff=0.01/1e-4=100×η. Output: g≈1.0, EMA[g²]≈1.0 → η_eff≈η. Адаптация компенсирует разницу в 10000 раз автоматически.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η=0.01. Embedding: g≈1e-4, EMA[g²]≈1e-8 → η_eff=0.01/1e-4=100 (в 10⁴ раз больше η), шаг η_eff·g = 0.01. Output: g≈1.0, EMA[g²]≈1.0 → η_eff≈η, шаг ≈ 0.01. Разница градиентов в 10⁴ раз скомпенсирована: шаги одинакового порядка.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">При одном глобальном lr: либо embedding почти не обучается, либо output layer взрывается.</p>
     </div>
@@ -166,7 +166,7 @@ AdamW (ПРАВИЛЬНО — Loshchilov & Hutter, 2019):
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В Adam+L2 decay попадает в EMA и масштабируется 1/√v̂ — параметры с большим v̂ (шумные) регуляризируются меньше. В AdamW decay применяется отдельно: η·λ·θ одинаков независимо от истории градиентов.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=1.0, η=1e-3, λ=0.01, v̂=0.25. Adam+L2: WD-шаг = η·λθ/√v̂ = 0.00001/0.5 = 0.00002 (занижен). AdamW: WD-шаг = η·λ·θ = 0.00001 (чистый, предсказуемый).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=1.0, η=1e-3, λ=0.01, v̂=0.25. Adam+L2: WD-шаг ≈ η·λθ/√v̂ = 0.00001/0.5 = 0.00002 — вдвое больше задуманного, а у параметра с √v̂=10 был бы в 10 раз меньше: decay зависит от истории градиентов. AdamW: WD-шаг = η·λ·θ = 0.00001 для всех параметров.</div>
     </div>
     <div class="grid-2" style="margin-top:12px;">
     <div>
@@ -174,7 +174,7 @@ AdamW (ПРАВИЛЬНО — Loshchilov & Hutter, 2019):
         💡 Decoupled weight decay обеспечивает:<br>
         • Равномерный λ для всех параметров<br>
         • Правильная L2-регуляризация в пространстве θ<br>
-        • Доказано: Adam+L2 ≠ SGD+L2, AdamW+wd ≈ SGD+L2
+        • Для SGD L2 и weight decay эквивалентны (с пересчётом λ через lr); для Adam — нет, и AdamW возвращает поведение настоящего weight decay
       </div>
       <div class="info" style="font-size:.85em;margin-top:8px;">
         📌 Практика: weight_decay=0.01..0.1 для большинства Transformer.<br>
@@ -280,7 +280,7 @@ Lion делает шаги фиксированного размера η в л�
   <div class="grid-2" style="margin-top:14px;">
     <div class="intuition" style="font-size:.85em;">
       💡 <strong>Почему sign?</strong><br>
-      sign(v) = v/|v| — единичный вектор в направлении v.<br>
+      sign(v) берётся поэлементно: каждая координата сдвигается ровно на ±η (вектор из ±1, а не единичный вектор).<br>
       Lion — это SGD с Momentum, но шаг всегда фиксированный η.<br>
       Более «демократичен»: все параметры обновляются одинаково сильно.
     </div>
@@ -289,7 +289,7 @@ Lion делает шаги фиксированного размера η в л�
       • lr в 3-10× меньше чем у Adam<br>
       • Сильный weight decay обязателен (0.1..1.0)<br>
       • Меньше памяти: нет v_t (только m_t)<br>
-      • Хорошо для ViT, LLM: <br>&nbsp;&nbsp;Google Brain, Orca 2, некоторые production модели
+      • В статье (Google, 2023) хорошо показал себя на ViT и языковых моделях; массового перехода с AdamW пока не произошло — проверяй на своей задаче
     </div>
   </div>
 </div>
@@ -378,7 +378,7 @@ formula: `<div class="formula">Инициализация: m₀=0, v₀=0, t=0
         <div class="formula-anatomy__row"><span class="fa-sym">v_t</span><span class="fa-name">второй момент (EMA g²)</span><span class="fa-desc">β₂·v_{t-1}+(1−β₂)·g_t² — оценка «шумности» параметра. Растёт там, где градиенты большие.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">m̂_t</span><span class="fa-name">скоррект. 1й момент</span><span class="fa-desc">m_t/(1−β₁ᵗ) — компенсирует занижение на первых шагах. При t=1, β₁=0.9: m̂=m/0.1=10×m.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">v̂_t</span><span class="fa-name">скоррект. 2й момент</span><span class="fa-desc">v_t/(1−β₂ᵗ) — аналогично для v. При t→∞ поправка исчезает (β^t→0).</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">ε=1e-8</span><span class="fa-name">защита от нуля</span><span class="fa-desc">Добавляется к √v̂ в знаменателе. Когда v̂ мало, ε задаёт максимальный effective lr ≈ η/ε — огромный, поэтому warmup важен.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">ε=1e-8</span><span class="fa-name">защита от нуля</span><span class="fa-desc">Добавляется к √v̂ в знаменателе, чтобы не делить на 0. Поскольку |m̂| обычно ≲ √v̂, шаг Adam и так не больше ~η; ε важен для параметров с почти нулевыми градиентами (там он гасит шаг) и в fp16, где 1e-8 может округлиться до нуля — поэтому иногда берут 1e-6.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">η·m̂/(√v̂+ε)</span><span class="fa-name">итоговый шаг</span><span class="fa-desc">Направление из m̂, масштаб из 1/√v̂. Параметр с большой историей шума (v̂↑) получает меньший шаг.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
@@ -446,8 +446,8 @@ function calcAdam() {
   const eff_lr = step/g || 0;
 
   document.getElementById('adamCalc').innerHTML =
-    `m_t  = β₁·m_prev + (1−β₁)·g = ${b1}·${mp} + ${(1-b1)}·${g} = <span style="color:var(--amber);font-weight:600;">${m.toFixed(6)}</span>\n`+
-    `v_t  = β₂·v_prev + (1−β₂)·g² = ${b2}·${vp} + ${(1-b2)}·${(g*g).toFixed(4)} = <span style="color:var(--amber);font-weight:600;">${v.toFixed(6)}</span>\n\n`+
+    `m_t  = β₁·m_prev + (1−β₁)·g = ${b1}·${mp} + ${(1-b1).toFixed(3)}·${g} = <span style="color:var(--amber);font-weight:600;">${m.toFixed(6)}</span>\n`+
+    `v_t  = β₂·v_prev + (1−β₂)·g² = ${b2}·${vp} + ${(1-b2).toFixed(3)}·${(g*g).toFixed(4)} = <span style="color:var(--amber);font-weight:600;">${v.toFixed(6)}</span>\n\n`+
     `Bias correction (t=${t}):\n`+
     `m̂_t = m/(1−β₁ᵗ) = ${m.toFixed(6)}/${(1-Math.pow(b1,t)).toFixed(6)} = <span style="color:var(--green);font-weight:600;">${mh.toFixed(6)}</span>\n`+
     `v̂_t = v/(1−β₂ᵗ) = ${v.toFixed(6)}/${(1-Math.pow(b2,t)).toFixed(6)} = <span style="color:var(--green);font-weight:600;">${vh.toFixed(6)}</span>\n\n`+

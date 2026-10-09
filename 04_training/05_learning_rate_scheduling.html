@@ -209,6 +209,12 @@
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> η₀=0.1, γ=0.1, s=30. t=0..29: η=0.1. t=30..59: η=0.01. t=60..89: η=0.001. t=90: η=0.0001 — за 3 «ступеньки» lr упал в 1000×.</div>
     </div>
     <p>Простой и понятный. Хорош в классических CNN-режимах, но грубее, чем cosine.</p>
+    <h3>Polynomial decay</h3>
+    <div class="formula" data-tex-source="\eta_t = (\eta_0 - \eta_{\text{end}})\left(1 - \frac{t}{T}\right)^{p} + \eta_{\text{end}}">η_t = (η₀ − η_end)·(1 − t/T)^p + η_end</div>
+    <p>При p=1 это linear decay (стандарт в BERT), при p&gt;1 lr падает быстрее в начале и медленнее в конце.</p>
+    <h3>Noam schedule («Attention Is All You Need»)</h3>
+    <div class="formula" data-tex-source="\eta_t = d_{\text{model}}^{-0.5}\cdot \min\left(t^{-0.5},\; t\cdot T_{\text{warmup}}^{-1.5}\right)">η_t = d_model^(−0.5) · min(t^(−0.5), t · T_warmup^(−1.5))</div>
+    <p>Первые T_warmup шагов lr растёт линейно, затем убывает как 1/√t; пик в t = T_warmup равен (d_model·T_warmup)^(−0.5). В оригинальной статье d_model=512, T_warmup=4000 → пик ≈ 7·10⁻⁴.</p>
     </div>
     <div>
       <h3>OneCycleLR</h3>
@@ -598,7 +604,7 @@ print([round(lr_at(s), 8) for s in [0, 10, 99, 100, 500, 999]])
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как cosine annealing отличается от step decay?</summary>
-      <div class="ml-quiz__a"><p>Step decay резко уменьшает lr через равные интервалы (×0.1 каждые 30 эпох) — есть резкие скачки. Cosine annealing плавно снижает lr по косинусной кривой: lr_t = lr_min + 0.5(lr_max - lr_min)(1 + cos(πt/T)). Более плавный переход — лучшее обобщение.</p></div>
+      <div class="ml-quiz__a"><p>Step decay резко уменьшает lr через равные интервалы (×0.1 каждые 30 эпох) — есть резкие скачки. Cosine annealing плавно снижает lr по косинусной кривой: lr_t = lr_min + 0.5(lr_max - lr_min)(1 + cos(πt/T)). Плавный переход без резких скачков часто даёт немного лучшее обобщение, но не всегда.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

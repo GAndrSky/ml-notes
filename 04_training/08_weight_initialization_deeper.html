@@ -173,8 +173,8 @@ a = sqrt(6 / (fan_in + fan_out))</div>
         <div class="formula-anatomy__row"><span class="fa-sym">n_in</span><span class="fa-name">fan-in</span><span class="fa-desc">Число входов в слой. Только n_in — не n_out: ReLU оптимизирован для сохранения forward variance.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Xavier даёт Var(W)=1/n_in. После ReLU variance делится на ~2 (половина нейронов = 0). He добавляет ×2 заранее, чтобы после ReLU variance оставалась ≈1. Стандарт для ResNet, EfficientNet и большинства современных CNN.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_in=512. He: Var(W)=2/512≈0.0039, std≈0.0625. Xavier: Var(W)=1/512≈0.002. После одного ReLU-слоя: He → Var(a)≈1.0 ✓; Xavier → Var(a)≈0.5 → за 10 слоёв: 0.5^10≈0.001 (исчезновение).</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> «Линейная» схема (LeCun; Xavier при n_in = n_out) даёт Var(W)=1/n_in. После ReLU variance делится на ~2 (половина нейронов = 0). He добавляет ×2 заранее, чтобы после ReLU variance оставалась ≈1. Стандарт для ResNet, EfficientNet и большинства современных CNN.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n_in=512. He: Var(W)=2/512≈0.0039, std≈0.0625. Xavier/LeCun (квадратный слой 512→512): Var(W)=1/512≈0.002. После одного ReLU-слоя: He → Var(a)≈1.0 ✓; Xavier → Var(a)≈0.5 → за 10 слоёв: 0.5^10≈0.001 (исчезновение).</div>
     </div>
     </div>
         <div>
@@ -601,13 +601,13 @@ for scale in [0.05, np.sqrt(2/128), 0.3]:
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое spectral normalization и в каких моделях оно применяется?</summary>
-      <div class="ml-quiz__a"><p>Spectral normalization делит веса слоя на их спектральную норму (наибольшее сингулярное значение): W̄ = W/σ₁(W). Это ограничивает Lipschitz-константу дискриминатора в GAN, стабилизируя обучение и предотвращая mode collapse. Также применяется в самовнимании трансформеров.</p></div>
+      <div class="ml-quiz__a"><p>Spectral normalization делит веса слоя на их спектральную норму (наибольшее сингулярное значение): W̄ = W/σ₁(W). Это ограничивает Lipschitz-константу дискриминатора в GAN (SN-GAN, Miyato et al., 2018), стабилизирует обучение и помогает против mode collapse, хотя полностью его не устраняет.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое orthogonal initialization и в каких ситуациях она полезна?</summary>
-      <div class="ml-quiz__a"><p>Orthogonal init инициализирует матрицу весов как случайную ортогональную матрицу (Q из QR-разложения). Её сингулярные значения равны 1, что гарантирует isometry: нет amplification или attenuation сигнала. Особенно полезна для RNN, где повторные умножения легко вызывают взрыв/затухание.</p></div>
+      <div class="ml-quiz__a"><p>Orthogonal init инициализирует матрицу весов как случайную ортогональную матрицу (Q из QR-разложения). Её сингулярные значения равны 1, что делает линейное преобразование изометрией (до нелинейности): нет amplification или attenuation сигнала. Особенно полезна для RNN, где повторные умножения легко вызывают взрыв/затухание.</p></div>
     </details>
   </li>
   </ol>

@@ -46,7 +46,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>Без gradient clipping обучение трансформеров взрывается за секунды. Это одна строка кода, которая делает возможным обучение 100B-параметровых моделей.</p>
+    <p>Редкие всплески градиента могут за один шаг испортить веса и состояние оптимизатора. Gradient clipping — одна строка кода, которая страхует от таких шагов; поэтому её включают почти во всех рецептах обучения больших трансформеров (обычно max_norm=1.0).</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -82,7 +82,7 @@
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Backprop умножает сигнал ошибки на цепочку Jacobian-ов. При T=100 шагах даже ||J||=1.1 на каждом шаге даёт 1.1^100≈13780× рост — гарантированный взрыв градиента.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=10, ||∂h_t/∂h_{t-1}||=1.5. ||∂L/∂h₁|| ≈ ||∂L/∂h_T|| × 1.5^9 ≈ 38× больше. При T=50: × 1.5^49 ≈ 600 000×. Gradient clipping — «предохранитель» на выходе этого произведения.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> T=10, ||∂h_t/∂h_{t-1}||=1.5. ||∂L/∂h₁|| ≈ ||∂L/∂h_T|| × 1.5^9 ≈ 38× больше. При T=50: × 1.5^49 ≈ 4·10⁸×. Gradient clipping — «предохранитель» на выходе этого произведения.</div>
     </div>
     <div class="grid-3">
     <div class="warn"><h3>Симптомы</h3><p>loss резко взлетает, веса становятся огромными, появляются NaN/Inf, а optimizer перестаёт восстанавливаться.</p></div>
@@ -440,7 +440,7 @@ print(norm, scale, clipped)
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему skip-connections в ResNet помогают со стабильностью градиентов?</summary>
-      <div class="ml-quiz__a"><p>Skip-connections создают альтернативный путь градиента: dL/dx = dL/dy · (1 + dF/dx). Слагаемое «1» обеспечивает, что градиент всегда имеет путь к ранним слоям, даже если dF/dx мал. Это фактически устраняет проблему затухающего градиента в deep residual сетях.</p></div>
+      <div class="ml-quiz__a"><p>Skip-connections создают альтернативный путь градиента: dL/dx = dL/dy · (1 + dF/dx). Слагаемое «1» обеспечивает, что градиент всегда имеет путь к ранним слоям, даже если dF/dx мал. Это сильно смягчает проблему затухающего градиента в глубоких residual-сетях (вместе с нормализацией и правильной инициализацией).</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

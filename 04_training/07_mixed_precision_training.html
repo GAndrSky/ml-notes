@@ -46,7 +46,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>FP16/BF16 удваивает throughput и вдвое сокращает память по сравнению с FP32. Именно mixed precision позволяет дообучать большие модели на потребительском железе.</p>
+    <p>FP16/BF16 вдвое уменьшают память под активации и на GPU с Tensor Cores заметно ускоряют matmul (часто в 1.5–3 раза на всём шаге обучения), хотя master weights и состояние оптимизатора обычно остаются в FP32. Именно mixed precision позволяет дообучать большие модели на потребительском железе.</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -54,7 +54,7 @@
       <li>Чем FP32, FP16 и BF16 отличаются по диапазону и точности</li>
       <li>Как loss scaling предотвращает underflow при вычислениях в FP16</li>
       <li>Что хранится в FP32 (мастер-веса), а что в FP16 (активации, градиенты)</li>
-      <li>Как использовать torch.cuda.amp.GradScaler в PyTorch</li>
+      <li>Как использовать torch.amp (autocast и GradScaler) в PyTorch</li>
     </ul>
   </div>
   <div class="ml-learning-path__prereqs">
@@ -208,7 +208,7 @@ clip / optimizer.step() → обновляем master weights</div>
 
 <script>
 const CODES = {
-  fp16: `scaler = torch.cuda.amp.GradScaler()
+  fp16: `scaler = torch.amp.GradScaler('cuda')
 
 for batch in loader:
     optimizer.zero_grad()
@@ -349,12 +349,12 @@ from torch import nn
 
 model = nn.Linear(4, 1).cuda()
 opt = torch.optim.AdamW(model.parameters(), lr=1e-3)
-scaler = torch.cuda.amp.GradScaler()
+scaler = torch.amp.GradScaler('cuda')
 x = torch.randn(32, 4, device=&#39;cuda&#39;)
 y = torch.randn(32, 1, device=&#39;cuda&#39;)
 
 opt.zero_grad(set_to_none=True)
-with torch.cuda.amp.autocast():
+with torch.autocast(device_type='cuda', dtype=torch.float16):
     loss = ((model(x) - y) ** 2).mean()
 scaler.scale(loss).backward()
 scaler.step(opt)
@@ -424,7 +424,7 @@ scaler.update()
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">В чём разница между FP16 и BF16?</summary>
-      <div class="ml-quiz__a"><p>FP16: 5 бит экспоненты, 10 бит мантиссы — высокая точность, но малый диапазон (underflow/overflow при обучении). BF16: 8 бит экспоненты, 7 бит мантиссы — тот же диапазон, что у FP32, меньшая точность, но проблема underflow исчезает. BF16 проще использовать (не нужен loss scaling).</p></div>
+      <div class="ml-quiz__a"><p>FP16: 5 бит экспоненты, 10 бит мантиссы — высокая точность, но малый диапазон (underflow/overflow при обучении). BF16: 8 бит экспоненты, 7 бит мантиссы — тот же диапазон, что у FP32, меньшая точность, зато underflow/overflow случаются гораздо реже. BF16 проще использовать: loss scaling обычно не нужен.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

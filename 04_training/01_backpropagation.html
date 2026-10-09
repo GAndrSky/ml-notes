@@ -140,7 +140,7 @@ Backprop: один forward + один backward → O(1) по числу прох
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Сеть с P=1000 параметрами. Брутфорс: 1000 forward pass-ов × 0.1 мс = 100 мс на один update. Backprop: 1 forward (0.1 мс) + 1 backward (≈0.2 мс) = 0.3 мс. Выигрыш: 333×.</div>
     </div>
     <div class="intuition">
-    💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — то же время, что один forward pass.
+    💡 При P=175 млрд параметров (GPT-3) брутфорс невозможен. Backprop вычисляет все градиенты за <strong>одну пару forward+backward</strong> — примерно 2–3 forward pass по времени (backward обычно в ~2 раза дороже forward), независимо от числа параметров.
   </div>
 </div>
 <!-- training-deepening:start:4-1-backprop-as-credit-assignment -->
@@ -256,7 +256,7 @@ h  = ReLU(z₁) = ReLU(1.0) = 1.0   ← 1.0 > 0, поэтому не режет�
         <p>Один шаг градиентного спуска. Новые веса дают ŷ ближе к y = 1.0.</p>
         <div class="wt-formula">w₁_new = 0.5 − 0.1 × (−0.84) = 0.5 + 0.084 = 0.584
 w₂_new = 0.3 − 0.1 × (−1.4)  = 0.3 + 0.14  = 0.440</div>
-        <div class="wt-result"><strong>Новый ŷ</strong> = w₂_new · ReLU(w₁_new · x) = 0.44 × ReLU(0.584 × 2) = 0.44 × 1.168 ≈ <strong>0.514</strong>. Loss упал с 0.49 → 0.235. ✓</div>
+        <div class="wt-result"><strong>Новый ŷ</strong> = w₂_new · ReLU(w₁_new · x) = 0.44 × ReLU(0.584 × 2) = 0.44 × 1.168 ≈ <strong>0.514</strong>. Loss упал с 0.49 → 0.236. ✓</div>
       </div>
     </div>
 
@@ -366,7 +366,7 @@ J = ∂y/∂x — якобиан слоя</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Полный якобиан J может быть огромным (миллионы × миллионы). Backprop никогда не строит его явно — только вычисляет произведение Jᵀv, которое имеет размер входа. Это на порядки эффективнее хранения полного J.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Зная таблицу умножения (якобиан), не нужно хранить её всю в памяти. Достаточно уметь умножить нужную строку на входной вектор — это и есть VJP.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y = Wx, W — матрица 3×2. J = W (3×2). v = [0.5, 0.3, 0.1] (3D upstream). VJP = Wᵀ·v — матрица (2×3) умноженная на вектор (3) = вектор (2). Никакой явной якобиановой матрицы 3×2 хранить не нужно.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> y = Wx, W — матрица 3×2. J = W (3×2). v = [0.5, 0.3, 0.1] (3D upstream). VJP = Wᵀ·v — матрица (2×3) умноженная на вектор (3) = вектор (2). Здесь якобиан совпадает с W и так хранится; но для поэлементных операций (например, ReLU на векторе из 10⁶ чисел) полный якобиан был бы 10⁶×10⁶, и его не строят — считают сразу Jᵀ·v (для ReLU это просто маска ⊙ v).</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">На практике нам не нужен полный якобиан J — только произведение Jᵀv. Это VJP (Vector-Jacobian Product) — именно это вычисляет autograd.</p>
     </div>
@@ -1501,7 +1501,7 @@ print(finite_diff(w))
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
-      <summary class="ml-quiz__q">Почему gradient checkpointing (реkomputation) используется при обучении больших моделей?</summary>
+      <summary class="ml-quiz__q">Почему gradient checkpointing (recomputation) используется при обучении больших моделей?</summary>
       <div class="ml-quiz__a"><p>Обычно все активации кешируются для backward pass — это O(depth × batch) памяти. Gradient checkpointing сохраняет только каждый k-й слой, пересчитывая промежуточные активации при необходимости. Это снижает память в √depth раз за счёт ~33% замедления.</p></div>
     </details>
   </li>

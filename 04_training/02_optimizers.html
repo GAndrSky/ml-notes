@@ -121,8 +121,8 @@ v̂₁ = v₁ / (1−β₂^t) = 0.00025 / 0.001 = 0.25</div>
         <p>Adam делит lr на корень из v̂ — адаптивный размер шага.</p>
         <div class="wt-formula">w_new = w − lr × m̂₁ / (√v̂₁ + ε)
       = 2.0 − 0.1 × (−0.5) / (√0.25 + 1e-8)
-      = 2.0 + 0.1 / 0.5 = 2.0 + 0.2 = 2.20</div>
-        <div class="wt-result"><strong>Adam: w → 2.20</strong> — шаг в 4× крупнее SGD при том же lr! Это эффект bias correction на первом шаге.</div>
+      = 2.0 + 0.1 × 1 = 2.10</div>
+        <div class="wt-result"><strong>Adam: w → 2.10</strong> — шаг в 2× крупнее SGD при том же lr. На первом шаге m̂/√v̂ = g/|g| = ±1, поэтому Adam шагает ровно на lr, каким бы ни был масштаб градиента (bias correction лишь убирает занижение m и v).</div>
       </div>
     </div>
   </div>
@@ -141,13 +141,13 @@ v̂₁ = v₁ / (1−β₂^t) = 0.00025 / 0.001 = 0.25</div>
     <div class="ml-slider-lab__controls">
       <div>
         <div class="ml-slider-lab__param-header">
-          <span class="ml-slider-lab__param-name">η (learning rate) ×10⁻³</span>
-          <span class="ml-slider-lab__param-value" id="sl-lr-disp">10</span>
+          <span class="ml-slider-lab__param-name">η (learning rate, лог. шкала)</span>
+          <span class="ml-slider-lab__param-value" id="sl-lr-disp">0.050</span>
         </div>
         <input type="range" class="ml-slider-lab__range" id="sl-lr"
-               min="1" max="1000" step="1" value="10">
+               min="1" max="1000" step="1" value="567">
         <div class="ml-slider-lab__range-labels">
-          <span>0.001 (медленно)</span><span>1.0 (опасно)</span>
+          <span>0.001 (медленно)</span><span>1.0 (расходится)</span>
         </div>
       </div>
     </div>
@@ -155,39 +155,61 @@ v̂₁ = v₁ / (1−β₂^t) = 0.00025 / 0.001 = 0.25</div>
   </div>
 </div>
 <script>
-
 (function(){
+  // Real gradient descent on f(x, y) = ½(x² + 5y²), start (4, 2).
+  // The curvatures are 1 and 5, so GD converges only for η < 2/5 = 0.4,
+  // oscillates in y for η > 1/5 = 0.2 and is fastest near η* = 2/(1+5) ≈ 0.33.
+  // The slider position v ∈ [1, 1000] maps to η = 10^(−3 + 3·(v−1)/999), i.e. 0.001 … 1.0 on a log scale.
   var sl = document.getElementById('sl-lr');
   var disp = document.getElementById('sl-lr-disp');
   var out = document.getElementById('sl-out-lr');
+  var L1 = 1, L2 = 5, X0 = 4, Y0 = 2, MAXSTEPS = 2000;
+  function f(x, y){ return 0.5 * (L1 * x * x + L2 * y * y); }
+  var f0 = f(X0, Y0);
+  function run(lr){
+    var x = X0, y = Y0, flips = 0, prevY = y, steps = null, f50 = null;
+    for (var t = 1; t <= MAXSTEPS; t++) {
+      x -= lr * L1 * x; y -= lr * L2 * y;
+      if (steps === null && y * prevY < 0) flips++; // count oscillations until convergence
+      prevY = y;
+      var ft = f(x, y);
+      if (t === 50) f50 = ft;
+      if (!isFinite(ft) || ft > 1e12) return { diverged: true, step: t, f50: f50 === null ? Infinity : f50 };
+      if (steps === null && ft < 1e-6 * f0) steps = t;
+    }
+    return { diverged: false, steps: steps, f50: f50, flips: flips };
+  }
+  function fmt(lr){ return lr < 0.01 ? lr.toFixed(4) : lr < 0.1 ? lr.toFixed(3) : lr.toFixed(2); }
+  function bar(label, share, cls){
+    return '<div class="sl-bar-row"><span>' + label + '</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.max(2, Math.min(100, Math.round(100 * share))) + '%"></div></div></div>';
+  }
   function render(){
-    var v = +sl.value; // 1..1000 representing 0.001..1.0
-    var lr = v / 1000;
-    disp.textContent = lr < 0.01 ? lr.toFixed(4) : lr < 0.1 ? lr.toFixed(3) : lr.toFixed(2);
-    var speed    = Math.min(100, Math.round(v / 10));
-    var stable   = Math.max(0, Math.round(100 - v / 12));
-    var steps    = Math.max(5, Math.round(200 - v / 6));
-    var verdict, vclass, txt;
-    if (v < 5) {
-      verdict = 'Слишком медленно'; vclass = 'sl-verdict-warn';
-      txt = 'η=' + lr.toFixed(4) + ': обучение будет сходиться, но потребует тысячи эпох. Градиенты маленькие, веса почти не меняются.';
-    } else if (v <= 50) {
-      verdict = 'Хороший диапазон'; vclass = 'sl-verdict-ok';
-      txt = 'η=' + lr.toFixed(3) + ': рекомендуемый диапазон для большинства задач (0.001–0.05). Стабильная сходимость за разумное число шагов.';
-    } else if (v <= 200) {
-      verdict = 'Осторожно'; vclass = 'sl-verdict-warn';
-      txt = 'η=' + lr.toFixed(2) + ': для некоторых задач работает (SGD с momentum), но риск осцилляций растёт. Мониторьте loss curve.';
+    var v = +sl.value, lr = Math.pow(10, -3 + 3 * (v - 1) / 999), r = run(lr);
+    disp.textContent = fmt(lr);
+    var verdict, vclass, txt, bars;
+    if (r.diverged) {
+      verdict = 'Расходимость'; vclass = 'sl-verdict-bad';
+      txt = 'η=' + fmt(lr) + ' ≥ 2/5 = 0.4: по крутой оси y каждый шаг перелетает минимум всё дальше (множитель |1−5η| > 1), loss уходит в бесконечность за ' + r.step + ' шагов.';
+      bars = bar('Loss после 50 шагов: ∞', 1, 'sl-bad');
     } else {
-      verdict = 'Расходится'; vclass = 'sl-verdict-bad';
-      txt = 'η=' + lr.toFixed(2) + ': слишком большой! Loss будет расти или осциллировать. Модель «перепрыгивает» минимум.';
+      var reduction = r.f50 / f0;
+      if (r.steps === null) {
+        verdict = 'Слишком медленно'; vclass = 'sl-verdict-warn';
+        txt = 'η=' + fmt(lr) + ': по пологой оси x шаг сокращает ошибку лишь в (1−η) раз — за ' + MAXSTEPS + ' шагов loss не упал в 10⁶ раз.';
+      } else if (lr > 0.2) {
+        verdict = r.steps <= 30 ? 'Быстро, но с колебаниями' : 'Колебания'; vclass = r.steps <= 30 ? 'sl-verdict-ok' : 'sl-verdict-warn';
+        txt = 'η=' + fmt(lr) + ': сходится за ' + r.steps + ' шагов, но по крутой оси y точка прыгает через минимум (' + r.flips + ' смен знака y) — это видимый «зигзаг» в узкой долине.';
+      } else {
+        verdict = r.steps <= 60 ? 'Хороший шаг' : 'Медленно'; vclass = r.steps <= 60 ? 'sl-verdict-ok' : 'sl-verdict-warn';
+        txt = 'η=' + fmt(lr) + ': монотонный спуск без колебаний, loss падает в 10⁶ раз за ' + r.steps + ' шагов. Быстрее всего — около η* = 2/(1+5) ≈ 0.33.';
+      }
+      bars = bar('Шагов до loss/10⁶: ' + (r.steps === null ? '>' + MAXSTEPS : r.steps), r.steps === null ? 1 : Math.log(r.steps) / Math.log(MAXSTEPS), r.steps !== null && r.steps <= 60 ? 'sl-good' : 'sl-warn') +
+             bar('Loss после 50 шагов: ' + (reduction < 1e-4 ? reduction.toExponential(1) : reduction.toFixed(4)) + ' от начального', Math.min(1, reduction), reduction < 1e-3 ? 'sl-good' : 'sl-warn');
     }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
-      '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Скорость сходимости</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + speed + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Стабильность</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stable > 60 ? 'sl-good' : stable > 30 ? 'sl-warn' : 'sl-bad') + '" style="width:' + stable + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Шагов до минимума</span><div class="sl-bar-wrap"><div class="sl-bar ' + (steps > 150 ? 'sl-bad' : steps > 80 ? 'sl-warn' : 'sl-good') + '" style="width:' + Math.min(100,steps/2) + '%"></div></div></div>' +
-      '</div>' +
+      '<div class="sl-bars">' + bars + '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Реальный расчёт: обычный градиентный спуск на f(x, y) = ½(x² + 5y²) из точки (4, 2). Кривизны 1 и 5: GD сходится только при η &lt; 2/5, колеблется по y при η &gt; 1/5. На реальной сети пороги другие, но картина та же: самый крутой участок поверхности задаёт предел для learning rate.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
   }
@@ -352,15 +374,15 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
     <div class="formula-anatomy" data-static-formula-anatomy="1">
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
-        <div class="formula-anatomy__row"><span class="fa-sym">v_t</span><span class="fa-name">скорость (velocity)</span><span class="fa-desc">EMA градиентов: v_t = β·v_{t-1} + (1−β)·g_t. «Инерция» оптимизации.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">v_t</span><span class="fa-name">скорость (velocity)</span><span class="fa-desc">Накопленная скорость: v_t = β·v_{t-1} + g_t (так в PyTorch). Это сумма прошлых градиентов с весами β^k, т.е. EMA, умноженная на 1/(1−β).</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">β</span><span class="fa-name">momentum coefficient (обычно 0.9)</span><span class="fa-desc">Вес прошлой скорости: β=0.9 → 90% инерции, 10% нового градиента. Эффективное окно ≈ 1/(1−β)=10 шагов.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">v_{t-1}</span><span class="fa-name">скорость предыдущего шага</span><span class="fa-desc">Накопленная история градиентов. Придаёт «инерцию» — направление меняется плавно.</span></div>
-        <div class="formula-anatomy__row"><span class="fa-sym">(1−β)·g_t</span><span class="fa-name">вклад текущего градиента</span><span class="fa-desc">При β=0.9: (1−0.9)·g_t = 0.1·g_t. Маленький вклад = сильное сглаживание шума.</span></div>
+        <div class="formula-anatomy__row"><span class="fa-sym">(1−β)·g_t</span><span class="fa-name">вклад текущего градиента</span><span class="fa-desc">В записи v = βv + g текущий градиент входит целиком; в EMA-записи v = βv + (1−β)g он входит с весом 0.1 — разница лишь в масштабе, который поглощается learning rate.</span></div>
         <div class="formula-anatomy__row"><span class="fa-sym">θ_{t+1} = θ_t − η·v_t</span><span class="fa-name">шаг по скорости</span><span class="fa-desc">Optimizer двигается по накопленной скорости, не по сырому градиенту.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Momentum — физический шарик на рельефе. Он набирает скорость в постоянном направлении и не меняет курс резко при шуме батча. При g=[3,3,3,...] скорость постепенно растёт до 3.0, ускоряя сходимость в 1/(1−β)=10 раз.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=3 (стабильно). v₁=0.3, v₂=0.27+0.3=0.57, v₃=0.51+0.3=0.81, ..., v∞→3.0. «Разгон» по постоянному направлению — ускорение сходимости.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Momentum — физический шарик на рельефе. Он набирает скорость в постоянном направлении и не меняет курс резко при шуме батча. При g=[3,3,3,...] скорость постепенно растёт до g/(1−β) = 30 — шаг вдоль устойчивого направления в 1/(1−β)=10 раз больше, чем у SGD.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=3 (стабильно). v₁=3, v₂=0.9·3+3=5.7, v₃=0.9·5.7+3=8.13, ..., v∞→3/(1−0.9)=30. «Разгон» по постоянному направлению — ускорение сходимости.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">v_t — «скорость» (velocity). Аналог физической инерции: шарик катится вниз, набирает скорость, не меняет направление резко.</p>
       <br>
@@ -381,7 +403,7 @@ g_t = ∂L_batch/∂θ   (на мини-батче)</div>
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> EMA — это «плавное» среднее с памятью. Случайные всплески одного шага не меняют его резко. Постоянный сигнал накапливается: если g_t=1 постоянно, EMA медленно сходится к 1.0. Параметр β контролирует, насколько быстро «забывается» прошлое.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=1 (постоянно). EMA_1=0.1, EMA_2=0.09+0.1=0.19, EMA_5≈0.41, EMA_10≈0.65, EMA_∞→1.0. Постепенный «разгон» к истинному среднему.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> β=0.9, g_t=1 (постоянно), нормированная EMA = (1−β)·Σβ^k g: EMA_1=0.1, EMA_2=0.09+0.1=0.19, EMA_5≈0.41, EMA_10≈0.65, EMA_∞→1.0. Сумма v_t без множителя (1−β) ведёт себя так же, но в 10 раз крупнее: v_∞ = 10.</div>
     </div>
     <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 Эффективное окно памяти ≈ 1/(1−β).<br>
@@ -505,7 +527,7 @@ AdamW (правильно):
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> В Adam weight decay λ·θ добавляется к gradient перед адаптивным нормированием — он делится на √v̂ и теряет L2-смысл. AdamW разделяет: Adam шаг + прямой weight decay η·λ·θ. Именно AdamW используется в трансформерах (GPT, BERT), где регуляризация важна.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=1.0, η=0.001, λ=0.01, √v̂=0.1. Adam WD шаг в gradient: λ·θ/√v̂=0.01/0.1=0.1 (усилен!). AdamW WD шаг: η·λ·θ=0.00001 (чистый, предсказуемый).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=1.0, η=0.001, λ=0.01, √v̂=0.1. Adam+L2: вклад decay в шаг ≈ η·λθ/√v̂ = 0.001·0.01/0.1 = 1e-4 — в 10 раз больше задуманного и зависит от v̂ конкретного параметра. AdamW: η·λ·θ = 1e-5 для всех параметров одинаково предсказуемо.</div>
     </div>
     <div class="warn" style="margin-top:10px;font-size:.85em;">
         ⚠️ В Adam+L2 weight decay масштабируется адаптивными ставками v̂, из-за чего параметры с большим v̂ (частые, шумные) регуляризируются слабее. AdamW применяет decay напрямую к параметрам — равномерно.
@@ -525,7 +547,7 @@ AdamW (правильно):
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Without weight decay (AdamW vs Adam), the L2 regularization interacts with adaptive learning rates incorrectly — parameters with small gradients accumulate large weight norms because Adam's scaling prevents the weight decay from having effect. This causes models to overfit more than expected and is why AdamW was introduced. For transformer training, always use AdamW rather than Adam with L2 regularization added to the loss.</p>
+  <p>Если добавить L2-штраф в loss и обучать Adam, штраф λθ проходит через ту же нормировку 1/√v̂, что и градиент. Веса с большими историческими градиентами (большой v̂) почти не регуляризуются, а с маленькими — регуляризуются непредсказуемо сильно. Поэтому Adam + L2 обобщает хуже, чем ожидается, и для трансформеров используют AdamW с decoupled weight decay.</p>
 </div>
 
 <!-- 7. Сравнительная таблица -->
@@ -821,7 +843,7 @@ function updateBS(){
   document.getElementById('bsVal').textContent=B;
   const noise=Math.sqrt(1/B);
   document.getElementById('bsInfo').innerHTML=
-    `B=${B}\nGrad variance ∝ 1/B: ~${(noise*100).toFixed(0)}% отн. к B=1\n`+
+    `B=${B}\nStd градиента ∝ 1/√B: ~${(noise*100).toFixed(0)}% от B=1 (дисперсия: ${(100/B).toFixed(1)}%)\n`+
     `Linear scaling: lr ≈ ${(0.001*B/32).toFixed(4)}\n`+
     `Рекомендация: ${B<=32?'мало памяти, шумный grad':B<=256?'баланс шум/скорость':'низкий шум, нужен warmup'}`;
 }
@@ -1221,7 +1243,7 @@ document.getElementById('trajBeta').addEventListener('input', function(){
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое weight decay и чем AdamW лучше L2-регуляризованного Adam?</summary>
-      <div class="ml-quiz__a"><p>В оригинальном Adam L2-регуляризация неэффективна: she делится на √v̂ и теряет смысл регуляризации при адаптивном шаге. AdamW применяет weight decay напрямую к весам (w ← w - lr·decay·w), независимо от адаптивного шага, что корректно реализует L2.</p></div>
+      <div class="ml-quiz__a"><p>В оригинальном Adam L2-регуляризация работает плохо: её градиент делится на √v̂ и теряет смысл регуляризации при адаптивном шаге. AdamW применяет weight decay напрямую к весам (w ← w - lr·decay·w), независимо от адаптивного шага, что реализует настоящий weight decay (для SGD он эквивалентен L2, для Adam — нет).</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

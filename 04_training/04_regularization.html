@@ -64,7 +64,7 @@
       <div>
         <div class="ml-slider-lab__param-header">
           <span class="ml-slider-lab__param-name">Dropout rate (p)</span>
-          <span class="ml-slider-lab__param-value" id="sl-drop-disp">50</span>
+          <span class="ml-slider-lab__param-value" id="sl-drop-disp">0.50</span>
         </div>
         <input type="range" class="ml-slider-lab__range" id="sl-drop"
                min="0" max="90" step="5" value="50">
@@ -77,43 +77,107 @@
   </div>
 </div>
 <script>
-
 (function(){
+  // Real training of a small MLP (2 → 128 ReLU → 1, sigmoid + BCE, full-batch Adam, lr 0.01, 1500 steps)
+  // with inverted dropout on the hidden layer. Data: "two moons", 60 training points with 15% flipped labels,
+  // 1000 clean-distribution validation points (same 15% noise). Accuracies are measured in eval mode
+  // (no dropout). Each dropout rate is trained once with the same seed and cached.
   var sl = document.getElementById('sl-drop');
   var disp = document.getElementById('sl-drop-disp');
   var out = document.getElementById('sl-out-drop');
-  function render(){
-    var v = +sl.value; // 0..90
-    var p = v / 100;
-    disp.textContent = p.toFixed(2);
-    var capacity   = Math.round(100 - v);
-    var regStrength = Math.round(v);
-    var trainAcc   = Math.round(95 - v * 0.4);
-    var valAcc     = Math.round(60 + (v < 50 ? v * 0.5 : 25 - (v - 50) * 0.6));
-    var verdict, vclass, txt;
-    if (v === 0) {
-      verdict = 'Нет регуляризации'; vclass = 'sl-verdict-warn';
-      txt = 'Dropout=0: все нейроны всегда активны. Сеть может переобучиться — нейроны «договорятся» и начнут зависеть друг от друга (co-adaptation).';
-    } else if (v <= 30) {
-      verdict = 'Лёгкая рег-ция'; vclass = 'sl-verdict-ok';
-      txt = 'Dropout=' + p.toFixed(2) + ': небольшое отключение. Хорошо для первых слоёв или небольших сетей.';
-    } else if (v <= 60) {
-      verdict = 'Стандартный диапазон'; vclass = 'sl-verdict-ok';
-      txt = 'Dropout=' + p.toFixed(2) + ': классический диапазон [0.3, 0.5]. Эффективная регуляризация: нейроны учатся независимым признакам.';
-    } else {
-      verdict = 'Слишком много'; vclass = 'sl-verdict-bad';
-      txt = 'Dropout=' + p.toFixed(2) + ': при p>0.7 обучение замедляется катастрофически. Большинство нейронов отключены, сигнал не проходит.';
+  var H = 128, STEPS = 1500, LR = 0.01, NTR = 60, NVA = 1000, FLIP = 0.15;
+
+  function rng(seed){ return function(){ seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }; }
+  function gauss(r){ var u = Math.max(r(), 1e-12), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function moons(n, seed){
+    var r = rng(seed), X = [], Y = [];
+    for (var i = 0; i < n; i++) {
+      var c = r() < 0.5 ? 0 : 1, t = Math.PI * r();
+      var x = c === 0 ? Math.cos(t) : 1 - Math.cos(t), y = c === 0 ? Math.sin(t) : 0.5 - Math.sin(t);
+      x += 0.15 * gauss(r); y += 0.15 * gauss(r);
+      if (r() < FLIP) c = 1 - c;
+      X.push([x - 0.5, y - 0.25]); Y.push(c);
     }
+    return { X: X, Y: Y };
+  }
+  var tr = moons(NTR, 21), va = moons(NVA, 77);
+
+  function train(p){
+    var r = rng(5), W1 = [], b1 = new Float64Array(H), W2 = new Float64Array(H), b2 = 0;
+    for (var j = 0; j < H; j++) { W1.push([gauss(r) * Math.sqrt(2 / 2), gauss(r) * Math.sqrt(2 / 2)]); W2[j] = gauss(r) * Math.sqrt(1 / H); }
+    // Adam state
+    var mW1 = W1.map(function(){ return [0, 0]; }), vW1 = W1.map(function(){ return [0, 0]; });
+    var mb1 = new Float64Array(H), vb1 = new Float64Array(H), mW2 = new Float64Array(H), vW2 = new Float64Array(H), mb2 = 0, vb2 = 0;
+    var B1 = 0.9, B2 = 0.999, EPS = 1e-8, dr = rng(99);
+    var hid = new Float64Array(H), mask = new Float64Array(H);
+    for (var step = 1; step <= STEPS; step++) {
+      var gW1 = W1.map(function(){ return [0, 0]; }), gb1 = new Float64Array(H), gW2 = new Float64Array(H), gb2 = 0;
+      for (var i = 0; i < NTR; i++) {
+        var x = tr.X[i], z = b2;
+        for (var k = 0; k < H; k++) {
+          var a = W1[k][0] * x[0] + W1[k][1] * x[1] + b1[k];
+          mask[k] = p > 0 ? (dr() < p ? 0 : 1 / (1 - p)) : 1; // inverted dropout
+          hid[k] = a > 0 ? a * mask[k] : 0;
+          z += W2[k] * hid[k];
+        }
+        var d = (1 / (1 + Math.exp(-z)) - tr.Y[i]) / NTR; // dBCE/dz
+        gb2 += d;
+        for (var q = 0; q < H; q++) {
+          gW2[q] += d * hid[q];
+          if (hid[q] > 0) { var dh = d * W2[q] * mask[q]; gW1[q][0] += dh * x[0]; gW1[q][1] += dh * x[1]; gb1[q] += dh; }
+        }
+      }
+      var c1 = 1 - Math.pow(B1, step), c2 = 1 - Math.pow(B2, step);
+      function adam(g, m, v){ m = B1 * m + (1 - B1) * g; v = B2 * v + (1 - B2) * g * g; return [m, v, LR * (m / c1) / (Math.sqrt(v / c2) + EPS)]; }
+      for (var u = 0; u < H; u++) {
+        for (var e = 0; e < 2; e++) { var s = adam(gW1[u][e], mW1[u][e], vW1[u][e]); mW1[u][e] = s[0]; vW1[u][e] = s[1]; W1[u][e] -= s[2]; }
+        var sb = adam(gb1[u], mb1[u], vb1[u]); mb1[u] = sb[0]; vb1[u] = sb[1]; b1[u] -= sb[2];
+        var sw = adam(gW2[u], mW2[u], vW2[u]); mW2[u] = sw[0]; vW2[u] = sw[1]; W2[u] -= sw[2];
+      }
+      var s2 = adam(gb2, mb2, vb2); mb2 = s2[0]; vb2 = s2[1]; b2 -= s2[2];
+    }
+    function acc(data){
+      var ok = 0;
+      for (var i = 0; i < data.X.length; i++) {
+        var x = data.X[i], z = b2;
+        for (var k = 0; k < H; k++) { var a = W1[k][0] * x[0] + W1[k][1] * x[1] + b1[k]; if (a > 0) z += W2[k] * a; }
+        if ((z > 0 ? 1 : 0) === data.Y[i]) ok++;
+      }
+      return ok / data.X.length;
+    }
+    return { train: acc(tr), val: acc(va) };
+  }
+
+  var cache = {}, pending = null;
+  function show(p, res){
+    var base = cache[0], gap = res.train - res.val, verdict, vclass, txt;
+    if (p === 0) {
+      verdict = 'Без dropout'; vclass = gap > 0.12 ? 'sl-verdict-bad' : 'sl-verdict-warn';
+      txt = 'p=0: сеть со 128 скрытыми нейронами на 60 шумных точках заучивает train (' + Math.round(100 * res.train) + '%), а на validation — ' + Math.round(100 * res.val) + '%: разрыв ' + Math.round(100 * gap) + ' п.п.';
+    } else if (base && res.val > base.val + 0.01 && res.train > 0.75) {
+      verdict = 'Регуляризует'; vclass = 'sl-verdict-ok';
+      txt = 'p=' + p.toFixed(2) + ': train падает до ' + Math.round(100 * res.train) + '%, а validation растёт до ' + Math.round(100 * res.val) + '% (без dropout ' + Math.round(100 * base.val) + '%): сеть перестаёт подгоняться под перевёрнутые метки.' + (p >= 0.7 ? ' Даже при таком p в среднем остаётся ' + Math.round(H * (1 - p)) + ' активных нейронов из ' + H + ' — для простой 2D-задачи этого хватает; на сложных задачах такой dropout обычно уже вредит.' : '');
+    } else if (res.train < 0.75) {
+      verdict = 'Слишком сильно'; vclass = 'sl-verdict-bad';
+      txt = 'p=' + p.toFixed(2) + ': выключается так много нейронов, что сеть не успевает выучить даже основную форму классов — train ' + Math.round(100 * res.train) + '%, validation ' + Math.round(100 * res.val) + '%.';
+    } else {
+      verdict = 'Слабый эффект'; vclass = 'sl-verdict-warn';
+      txt = 'p=' + p.toFixed(2) + ': validation ' + Math.round(100 * res.val) + '% против ' + (base ? Math.round(100 * base.val) : '—') + '% без dropout — на этих данных выигрыш небольшой.';
+    }
+    function bar(label, value, cls){ return '<div class="sl-bar-row"><span>' + label + ' = ' + Math.round(100 * value) + '%</span><div class="sl-bar-wrap"><div class="sl-bar ' + cls + '" style="width:' + Math.round(100 * value) + '%"></div></div></div>'; }
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
-      '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Ёмкость модели</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + capacity + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Сила регуляризации</span><div class="sl-bar-wrap"><div class="sl-bar ' + (regStrength > 60 ? 'sl-bad' : regStrength > 30 ? 'sl-warn' : 'sl-good') + '" style="width:' + regStrength + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Train accuracy</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + trainAcc + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Val accuracy</span><div class="sl-bar-wrap"><div class="sl-bar ' + (valAcc > 75 ? 'sl-good' : valAcc > 55 ? 'sl-warn' : 'sl-bad') + '" style="width:' + valAcc + '%"></div></div></div>' +
-      '</div>' +
+      '<div class="sl-bars">' + bar('Train accuracy', res.train, 'sl-accent') + bar('Validation accuracy', res.val, 'sl-good') + '</div>' +
+      '<p class="muted" style="font-size:.8rem;margin-top:8px">Реальный расчёт: MLP 2→128→1 (ReLU, sigmoid + BCE), full-batch Adam, ' + STEPS + ' шагов, inverted dropout на скрытом слое; данные «two moons», 60 обучающих точек и 1000 валидационных, у 15% меток класс перевёрнут (поэтому точность выше ~85% недостижима). Accuracy измеряется в eval-режиме, без dropout.</p>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
+  }
+  function ensure(p){ if (!cache[p]) cache[p] = train(p); return cache[p]; }
+  function render(){
+    var p = +sl.value / 100;
+    disp.textContent = p.toFixed(2);
+    clearTimeout(pending);
+    pending = setTimeout(function(){ ensure(0); var res = ensure(p); if (+sl.value / 100 === p) show(p, res); }, 80);
   }
   sl.addEventListener('input', render); render();
 })();
@@ -193,7 +257,7 @@ Underfitting:  train loss ↑   test loss ↑
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> L2 эквивалентно Байесовскому приору θ ~ N(0, 1/λ): модель «верит», что веса должны быть маленькими, если данные не говорят иначе. При каждом шаге вес умножается на (1−ηλ) — небольшое, но постоянное «сжатие» к нулю.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=10, η=0.01, λ=0.01, g=0.5. Без WD: θ←10−0.005=9.995. С WD: θ←(1−0.0001)·10−0.005=9.994−0.005=9.989. После 1000 шагов без данных: θ·(1−0.0001)^1000≈θ·0.905 — вес уменьшился на 9.5%.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ=10, η=0.01, λ=0.01, g=0.5. Без WD: θ←10−0.005=9.995. С WD: θ←(1−0.0001)·10−0.005=9.999−0.005=9.994. После 1000 шагов без данных: θ·(1−0.0001)^1000≈θ·0.905 — вес уменьшился на 9.5%.</div>
     </div>
     <p style="font-size:.88em;margin-top:8px;">При каждом шаге веса <strong>умножаются на (1−ηλ) < 1</strong> — «тянутся к нулю». Это эквивалентно MAP-оценке с гауссовым приором θ ~ N(0, 1/λ).</p>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
@@ -247,9 +311,9 @@ Test:    a_tilde = a                  <- без маски, без масшта�
       </div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Каждый шаг обучения — случайная подсеть. Нейрон не может «рассчитывать» на своих соседей → сеть учится распределять информацию. На тесте используется полная сеть = неявное ансамблирование 2^H вариантов.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=0.5, a=[1,2,3,4], mask=[1,0,1,0]. a_tilde=[1/0.5, 0, 3/0.5, 0]=[2,0,6,0]. E[a_tilde]=E[2,0,6,0]=2=E[1,2,3,4]=2.5 ... нет: E[a]=(1+2+3+4)/4=2.5, E[a_tilde]=(2+0+6+0)/4=2.0 → ×1/0.5 исправляет: (2+0+6+0)/4×... — правильно E сохраняется по ожиданию Bernoulli.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> p=0.5, a=[1,2,3,4], mask=[1,0,1,0] → a_tilde=[1/0.5, 0, 3/0.5, 0]=[2,0,6,0]. Среднее по этой одной маске 2.0, а не 2.5 — и это нормально: сохраняется ожидание по случайным маскам, для каждого нейрона E[a_tilde_i] = (1−p)·a_i/(1−p) = a_i.</div>
     </div>
-    <p style="font-size:.88em;margin-top:8px;">При каждом forward pass случайно <strong>обнуляем долю (1−p) нейронов</strong>. Сеть не может полагаться на любой конкретный нейрон.</p>
+    <p style="font-size:.88em;margin-top:8px;">При каждом forward pass случайно <strong>обнуляем долю p нейронов</strong> (остаётся доля 1−p). Сеть не может полагаться на любой конкретный нейрон.</p>
       <div class="intuition" style="font-size:.85em;margin-top:8px;">
         💡 <strong>Байесовская интерпретация:</strong><br>
         Dropout ≈ обучение ансамбля из 2^H сетей (H нейронов скрытого слоя) с общими весами. Inference = геометрическое среднее ансамбля.<br><br>
@@ -309,7 +373,7 @@ Test:    a_tilde = a                  <- без маски, без масшта�
 
 <div class="warn">
   <strong>Что ломается без этого</strong>
-  <p>Leaving dropout enabled during inference (not calling model.eval()) randomly zeroes activations — predictions become non-deterministic and typically 10-20% worse. Always call model.eval() before inference and model.train() before the training loop. In PyTorch, model.eval() disables dropout and switches BatchNorm to use running statistics rather than batch statistics.</p>
+  <p>Если забыть <code>model.eval()</code> на inference, dropout продолжит случайно обнулять активации: предсказания станут недетерминированными и обычно хуже. Вызывай <code>model.eval()</code> перед inference и <code>model.train()</code> перед циклом обучения. В PyTorch <code>model.eval()</code> выключает dropout и переключает BatchNorm с батчевых статистик на running mean/var.</p>
 </div>
 
 <!-- 3. BatchNorm -->
@@ -362,19 +426,19 @@ yᵢ = γ·x̂ᵢ + β                ← масштаб+сдвиг (learnable)<
   <h3>Почему BN помогает обучению?</h3>
   <div class="grid-2">
     <div class="intuition" style="font-size:.85em;">
-      💡 <strong>Internal Covariate Shift:</strong><br>
+      💡 <strong>Internal Covariate Shift (исходная мотивация статьи):</strong><br>
       Без BN: распределение активаций постоянно меняется при обновлении весов предыдущего слоя. Каждый слой вынужден адаптироваться к «движущейся цели».<br>
       С BN: активации всегда нормированы → следующий слой получает стабильное распределение.
     </div>
     <div class="intuition" style="font-size:.85em;">
       💡 <strong>Более гладкая loss surface:</strong><br>
       Lipschitz-константа loss и градиентов уменьшается. Можно использовать больший lr. Менее чувствительна к инициализации.<br>
-      BN → lr в 10× больше → быстрее сходимость.
+      Позднейшие работы (Santurkar et al., 2018) показали, что главный эффект BN — именно сглаживание ландшафта, а не устранение covariate shift. На практике BN часто позволяет заметно больший lr и быструю сходимость.
     </div>
   </div>
 
   <h3 style="margin-top:12px;">Backward pass BatchNorm</h3>
-  <div class="formula" style="font-size:.85em;">∂L/∂γ = Σᵢ ∂L/∂yᵢ · x̂ᵢ
+  <div class="formula" style="font-size:.85em;" data-tex-source="\begin{aligned} \frac{\partial L}{\partial \gamma} &= \sum_i \frac{\partial L}{\partial y_i}\,\hat x_i, \qquad \frac{\partial L}{\partial \beta} = \sum_i \frac{\partial L}{\partial y_i} \\ \frac{\partial L}{\partial \hat x_i} &= \frac{\partial L}{\partial y_i}\,\gamma \\ \frac{\partial L}{\partial \sigma^2} &= \sum_i \frac{\partial L}{\partial \hat x_i}\,(x_i-\mu)\cdot\left(-\tfrac12\right)(\sigma^2+\varepsilon)^{-3/2} \\ \frac{\partial L}{\partial \mu} &= \sum_i \frac{\partial L}{\partial \hat x_i}\cdot\frac{-1}{\sqrt{\sigma^2+\varepsilon}} + \frac{\partial L}{\partial \sigma^2}\cdot\frac{-2}{B}\sum_i (x_i-\mu) \\ \frac{\partial L}{\partial x_i} &= \frac{\partial L}{\partial \hat x_i}\frac{1}{\sqrt{\sigma^2+\varepsilon}} + \frac{\partial L}{\partial \sigma^2}\frac{2(x_i-\mu)}{B} + \frac{\partial L}{\partial \mu}\frac{1}{B} \end{aligned}">∂L/∂γ = Σᵢ ∂L/∂yᵢ · x̂ᵢ
 ∂L/∂β = Σᵢ ∂L/∂yᵢ
 
 ∂L/∂x̂ᵢ = ∂L/∂yᵢ · γ
@@ -476,7 +540,7 @@ LayerNorm: нормирует по <span class="hl-green">признакам</sp
       📌 <strong>Pre-LN vs Post-LN:</strong><br>
       Original Transformer (2017): Post-LN (после Attention)<br>
       GPT-2+, современные LLM: Pre-LN (перед Attention)<br>
-      Pre-LN стабильнее, не нужна lr warmup такой длинный.
+      Pre-LN стабильнее: warmup нужен короче, а иногда можно обойтись без него.
     </div>
   </div>
 </div>
