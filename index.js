@@ -1,5 +1,6 @@
 /* index.js - behaviour for index.html only (was inline). */
 
+/* ── Floating course-map menu ─────────────────────────────────────── */
 (function () {
   var menu = document.getElementById("mindmap-menu");
   if (!menu) {
@@ -38,209 +39,16 @@
       setMenuOpen(false);
     }
   });
+})();
 
-  var preview = document.querySelector(".mindmap-preview");
-  var graphNodes = Array.prototype.slice.call(document.querySelectorAll(".mindmap-node"));
-  var activeNode = null;
-
-  function getSectionForNode(node) {
-    var href = node.getAttribute("href") || "";
-    if (!href || href.charAt(0) !== "#") {
-      return null;
-    }
-    return document.querySelector(href);
-  }
-
-  function getNodeTitle(node, section) {
-    if (section) {
-      var title = section.querySelector(".section-head h2");
-      if (title) {
-        return title.textContent.trim();
-      }
-    }
-    return node.textContent.trim();
-  }
-
-  function renderPreview(node) {
-    if (!preview || !node) {
-      return;
-    }
-
-    var section = getSectionForNode(node);
-    var title = getNodeTitle(node, section);
-    var description = section && section.querySelector(".section-head span");
-    var cards = section
-      ? Array.prototype.slice.call(section.querySelectorAll(".card")).slice(0, 8)
-      : [];
-
-    preview.style.transition = "opacity 0.1s ease";
-    preview.style.opacity = "0";
-
-    setTimeout(function () {
-      preview.querySelector(".mindmap-preview__kicker").textContent = section
-        ? "Theme " + (section.dataset.block || "")
-        : "Core graph";
-      preview.querySelector("h3").textContent = title;
-      preview.querySelector("p").textContent = description
-        ? description.textContent.trim()
-        : "Центральный узел связывает все блоки курса в одну карту.";
-      preview.querySelector(".mindmap-preview__count").textContent = section
-        ? cards.length + " из " + section.querySelectorAll(".card").length + " тем показано"
-        : "11 разделов · 87 тем";
-
-      var list = preview.querySelector(".mindmap-preview__list");
-      list.innerHTML = "";
-      if (!cards.length) {
-        ["Математика", "Классическое ML", "Архитектуры", "LLM"].forEach(function (item) {
-          var li = document.createElement("li");
-          li.textContent = item;
-          list.appendChild(li);
-        });
-      } else {
-        cards.forEach(function (card) {
-          var badge = card.querySelector(".badge");
-          var heading = card.querySelector("h3");
-          var li = document.createElement("li");
-          li.textContent =
-            (badge ? badge.textContent.trim() + " · " : "") +
-            (heading ? heading.textContent.trim() : card.textContent.trim());
-          list.appendChild(li);
-        });
-      }
-
-      preview.style.opacity = "1";
-    }, 110);
-  }
-
-  function setActiveNode(node) {
-    if (activeNode) {
-      activeNode.classList.remove("is-previewed");
-    }
-    activeNode = node;
-
-    // Update spoke path highlighting
-    var graph = document.querySelector(".mindmap-graph");
-    var spokePaths = Array.prototype.slice.call(
-      document.querySelectorAll(".mindmap-graph__links path[data-node]")
-    );
-    spokePaths.forEach(function (p) { p.classList.remove("is-connected"); });
-
-    if (activeNode) {
-      activeNode.classList.add("is-previewed");
-      renderPreview(activeNode);
-
-      var cls = activeNode.className || "";
-      var match = cls.match(/mindmap-node--(\w+)/);
-      var nodeType = match ? match[1] : null;
-      if (nodeType && nodeType !== "core") {
-        var spoke = document.querySelector(
-          '.mindmap-graph__links path[data-node="' + nodeType + '"]'
-        );
-        if (spoke) spoke.classList.add("is-connected");
-        if (graph) graph.classList.add("has-preview");
-      } else {
-        if (graph) graph.classList.remove("has-preview");
-      }
-    } else {
-      if (graph) graph.classList.remove("has-preview");
-    }
-  }
-
-  graphNodes.forEach(function (node) {
-    node.addEventListener("mouseenter", function () {
-      setActiveNode(node);
-    });
-    node.addEventListener("focus", function () {
-      setActiveNode(node);
-    });
-  });
-
-  if (graphNodes.length) {
-    setActiveNode(graphNodes[0]);
-  }
-
-  // Progress dashboard: show empty-state hint when no progress recorded
-  (function () {
-    var dash = document.getElementById('my-progress');
-    if (!dash) return;
-    function checkEmpty() {
-      var el = document.querySelector('[data-progress-total]');
-      if (!el || el.textContent.trim() === '0%') {
-        dash.classList.add('progress-is-empty');
-      }
-    }
-    if (document.readyState === 'complete') {
-      setTimeout(checkEmpty, 350);
-    } else {
-      window.addEventListener('load', function () { setTimeout(checkEmpty, 350); });
-    }
-  })();
-
-  // Phase 5: stagger node pop-in animation delays (70ms per node)
-  graphNodes.forEach(function (node, i) {
-    node.style.animationDelay = (i * 70) + 'ms';
-  });
-
-  // Phase 5: after SVG draw-on completes, switch paths to pulse mode
-  // Longest draw-on: delay 0.70s + duration 0.52s = 1.22s; 1.4s gives buffer
-  var linksEl = document.querySelector('.mindmap-graph__links');
-  if (linksEl) {
-    setTimeout(function () { linksEl.classList.add('draw-done'); }, 1400);
-  }
-
-  function enhanceSubgroupMenus() {
-    Array.prototype.slice.call(document.querySelectorAll(".topic-context-menu")).forEach(function (menu) {
-      menu.remove();
-    });
-
-    Array.prototype.slice.call(document.querySelectorAll(".index-subgroup")).forEach(function (subgroup) {
-      if (subgroup.querySelector(".subgroup-context-menu")) {
+/* ── Topic hover popup: full description + key terms as chips ─────── */
+(function () {
+  function enhanceTopicMenus() {
+    Array.prototype.slice.call(document.querySelectorAll(".section .card")).forEach(function (card) {
+      if (card.querySelector(".topic-detail-menu")) {
         return;
       }
 
-      var label = subgroup.querySelector(".index-subgroup__label");
-      var topics = [];
-      var cursor = subgroup.nextElementSibling;
-
-      while (cursor && !cursor.classList.contains("index-subgroup")) {
-        if (cursor.classList.contains("card")) {
-          topics.push(cursor);
-        }
-        cursor = cursor.nextElementSibling;
-      }
-
-      var menu = document.createElement("div");
-      menu.className = "subgroup-context-menu";
-      menu.setAttribute("aria-hidden", "true");
-
-      var items = topics.slice(0, 8).map(function (card) {
-        var badge = card.querySelector(".badge");
-        var heading = card.querySelector("h3");
-        return (
-          "<li>" +
-          "<span>" + (badge ? badge.textContent.trim() : "") + "</span>" +
-          (heading ? heading.textContent.trim() : card.textContent.trim()) +
-          "</li>"
-        );
-      }).join("");
-
-      menu.innerHTML =
-        "<strong>" + (label ? label.textContent.trim() : "Темы") + "</strong>" +
-        "<p>Внутри: " + topics.length + " тем.</p>" +
-        '<ul class="subgroup-context-menu__list">' + items + "</ul>";
-
-      subgroup.appendChild(menu);
-    });
-  }
-
-  function enhanceTopicMenus() {
-    Array.prototype.slice.call(document.querySelectorAll(".topic-detail-menu")).forEach(function (menu) {
-      menu.remove();
-    });
-
-    Array.prototype.slice.call(document.querySelectorAll(".section .card")).forEach(function (card) {
-      var badge = card.querySelector(".badge");
-      var heading = card.querySelector("h3");
       var description = card.querySelector("p");
       var text = description ? description.textContent.trim() : "";
       var fragments = text
@@ -257,129 +65,30 @@
       var menu = document.createElement("div");
       menu.className = "topic-detail-menu";
       menu.setAttribute("aria-hidden", "true");
-      menu.innerHTML =
-        '<span class="topic-detail-menu__kicker">' +
-        (badge ? badge.textContent.trim() : "Topic") +
-        "</span>" +
-        "<strong>" +
-        (heading ? heading.textContent.trim() : "Тема") +
-        "</strong>" +
-        '<div class="topic-detail-menu__description">' +
-        text +
-        "</div>" +
-        '<div class="topic-detail-menu__chips">' +
-        fragments.map(function (item) {
-          return "<span>" + item + "</span>";
-        }).join("") +
-        "</div>";
+
+      var body = document.createElement("div");
+      body.className = "topic-detail-menu__description";
+      body.textContent = text;
+      menu.appendChild(body);
+
+      var chips = document.createElement("div");
+      chips.className = "topic-detail-menu__chips";
+      fragments.forEach(function (item) {
+        var chip = document.createElement("span");
+        chip.textContent = item;
+        chips.appendChild(chip);
+      });
+      menu.appendChild(chips);
+
       card.appendChild(menu);
     });
   }
 
-  window.addEventListener("load", function () {
-    window.setTimeout(function () {
-      enhanceSubgroupMenus();
-      enhanceTopicMenus();
-    }, 0);
-  });
-
-  function initRobotArm() {
-    var stage = document.querySelector(".robot-arm-lab__stage");
-    if (!stage) {
-      return;
-    }
-
-    var base = { x: 170, y: 350 };
-    var lengths = [135, 118, 76];
-    var parts = [
-      stage.querySelector(".robot-arm-lab__segment--one"),
-      stage.querySelector(".robot-arm-lab__segment--two"),
-      stage.querySelector(".robot-arm-lab__segment--three")
-    ];
-    var joints = {
-      base: stage.querySelector(".robot-arm-lab__joint--base"),
-      elbow: stage.querySelector(".robot-arm-lab__joint--elbow"),
-      wrist: stage.querySelector(".robot-arm-lab__joint--wrist"),
-      hand: stage.querySelector(".robot-arm-lab__joint--hand"),
-      target: stage.querySelector(".robot-arm-lab__target"),
-      glow: stage.querySelector(".robot-arm-lab__target-glow")
-    };
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function pointOnSvg(event) {
-      var point = stage.createSVGPoint();
-      point.x = event.clientX;
-      point.y = event.clientY;
-      return point.matrixTransform(stage.getScreenCTM().inverse());
-    }
-
-    function setCircle(circle, point) {
-      circle.setAttribute("cx", point.x.toFixed(2));
-      circle.setAttribute("cy", point.y.toFixed(2));
-    }
-
-    function setLine(line, start, end) {
-      line.setAttribute("x1", start.x.toFixed(2));
-      line.setAttribute("y1", start.y.toFixed(2));
-      line.setAttribute("x2", end.x.toFixed(2));
-      line.setAttribute("y2", end.y.toFixed(2));
-    }
-
-    function solve(target) {
-      var dx = target.x - base.x;
-      var dy = target.y - base.y;
-      var angleToTarget = Math.atan2(dy, dx);
-      var wristTarget = {
-        x: target.x - Math.cos(angleToTarget) * lengths[2],
-        y: target.y - Math.sin(angleToTarget) * lengths[2]
-      };
-      var wx = wristTarget.x - base.x;
-      var wy = wristTarget.y - base.y;
-      var distance = clamp(Math.hypot(wx, wy), 26, lengths[0] + lengths[1] - 2);
-      var cosElbow = clamp((distance * distance - lengths[0] * lengths[0] - lengths[1] * lengths[1]) / (2 * lengths[0] * lengths[1]), -1, 1);
-      var elbowAngle = Math.acos(cosElbow);
-      var shoulderAngle =
-        Math.atan2(wy, wx) -
-        Math.atan2(lengths[1] * Math.sin(elbowAngle), lengths[0] + lengths[1] * Math.cos(elbowAngle));
-      var elbow = {
-        x: base.x + Math.cos(shoulderAngle) * lengths[0],
-        y: base.y + Math.sin(shoulderAngle) * lengths[0]
-      };
-      var wrist = {
-        x: elbow.x + Math.cos(shoulderAngle + elbowAngle) * lengths[1],
-        y: elbow.y + Math.sin(shoulderAngle + elbowAngle) * lengths[1]
-      };
-      var handAngle = Math.atan2(target.y - wrist.y, target.x - wrist.x);
-      var hand = {
-        x: wrist.x + Math.cos(handAngle) * lengths[2],
-        y: wrist.y + Math.sin(handAngle) * lengths[2]
-      };
-
-      setLine(parts[0], base, elbow);
-      setLine(parts[1], elbow, wrist);
-      setLine(parts[2], wrist, hand);
-      setCircle(joints.elbow, elbow);
-      setCircle(joints.wrist, wrist);
-      setCircle(joints.hand, hand);
-      setCircle(joints.target, target);
-      setCircle(joints.glow, target);
-    }
-
-    stage.addEventListener("pointerdown", function (event) {
-      var point = pointOnSvg(event);
-      solve({
-        x: clamp(point.x, 56, 566),
-        y: clamp(point.y, 68, 454)
-      });
-    });
-
-    solve({ x: 430, y: 210 });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", enhanceTopicMenus);
+  } else {
+    enhanceTopicMenus();
   }
-
-  initRobotArm();
 })();
 
 (function () {
@@ -543,17 +252,15 @@
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      /* Label — right/left of node, tiny */
-      ctx.font = '9.5px "Segoe UI",system-ui,sans-serif';
-      var tw  = ctx.measureText(def.label).width;
-      var gap = r + 6;
-      var lx, align;
-      if (x + gap + tw < W - 8) { lx = x + gap; align = 'left';  }
-      else                       { lx = x - gap; align = 'right'; }
-      ctx.textAlign    = align;
+      /* Label — centred under the node (above it near the bottom edge), kept inside the canvas */
+      ctx.font = '10px "Segoe UI",system-ui,sans-serif';
+      var tw = ctx.measureText(def.label).width;
+      var lx = Math.max(tw / 2 + 4, Math.min(W - tw / 2 - 4, x));
+      var ly = y + r + 10 > H - 6 ? y - r - 9 : y + r + 9;
+      ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle    = isHov ? '#e8f4ff' : 'rgba(168,186,210,0.72)';
-      ctx.fillText(def.label, lx, y);
+      ctx.fillText(def.label, lx, ly);
 
       ctx.globalAlpha = 1;
     });
