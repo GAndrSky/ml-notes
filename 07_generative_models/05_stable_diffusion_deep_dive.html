@@ -187,27 +187,17 @@
     </section>
 
     <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Derivation: CFG direction</summary><div class="intuition-content">Rewrite CFG as eps_hat = (1-s) eps_uncond + s eps_cond. Explain why s > 1 extrapolates beyond the conditional prediction.</div></details>
-      <details class="intuition-block"><summary>Coding: toy CFG</summary><div class="intuition-content">Given two arrays eps_cond and eps_uncond, implement classifier-free guidance and test several guidance scales.</div></details>
-      <details class="intuition-block"><summary>Conceptual: latent vs pixel diffusion</summary><div class="intuition-content">Explain the computational reason latent diffusion is cheaper and the quality risk introduced by compression.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What does the VAE do in Stable Diffusion?</li>
-        <li>Why does the UNet denoise latents instead of pixels?</li>
-        <li>How does cross-attention connect prompt tokens to image regions?</li>
-        <li>Why can too much CFG hurt generation quality?</li>
-      </ol>
+      <h2>Упражнения</h2>
+      <details class="intuition-block"><summary>Вывод: направление CFG</summary><div class="intuition-content">Перепиши CFG как eps_hat = (1−s)·eps_uncond + s·eps_cond. Объясни, почему при s &gt; 1 это экстраполяция за пределы conditional-предсказания.</div></details>
+      <details class="intuition-block"><summary>Код: игрушечный CFG</summary><div class="intuition-content">Даны два массива eps_cond и eps_uncond: реализуй classifier-free guidance и сравни несколько значений guidance scale.</div></details>
+      <details class="intuition-block"><summary>Концепция: latent vs pixel diffusion</summary><div class="intuition-content">Объясни, почему latent diffusion вычислительно дешевле и какой риск для качества вносит сжатие.</div></details>
     </section>
 
   <div class="ml-walkthrough">
     <div class="ml-walkthrough__header">
       <div class="ml-walkthrough__title-row">
         <span class="ml-walkthrough__label">Пошагово</span>
-        <span class="ml-walkthrough__title">Stable Diffusion Inference Pipeline — from prompt to pixel</span>
+        <span class="ml-walkthrough__title">Inference-пайплайн Stable Diffusion — от промпта к пикселям</span>
       </div>
       <div class="ml-walkthrough__controls">
         <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -218,58 +208,31 @@
     <div class="ml-walkthrough__track">
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 01</span>
-        <h3 class="ml-walkthrough__step-heading">Encode the prompt with the CLIP text encoder</h3>
-        <div class="ml-walkthrough__step-body"><p>Tokenize the input text and pass it through a frozen CLIP text transformer. The output is a sequence of token embeddings (e.g. 77 tokens × 768 dimensions for CLIP ViT-L/14). These embeddings are not a single vector — they retain per-token granularity so that each word can influence different spatial regions of the image through cross-attention.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Кодируем промпт CLIP text encoder-ом</h3>
+        <div class="ml-walkthrough__step-body"><p>Токенизируем текст и пропускаем через замороженный CLIP text transformer. На выходе — последовательность token embeddings (например, 77 токенов × 768 в CLIP ViT-L/14). Это не один вектор: эмбеддинги сохраняются по токенам, чтобы каждое слово через cross-attention влияло на свои области изображения.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 02</span>
-        <h3 class="ml-walkthrough__step-heading">Initialize latent z_T ~ N(0,I) in 4×64×64 space</h3>
-        <div class="ml-walkthrough__step-body"><p>Sample a random noise tensor of shape [4, 64, 64] — this is the starting point for generation of a 512×512 image. The factor of 8 spatial compression comes from the VAE encoder (512/64 = 8). The 4 channels correspond to the VAE's learned latent features. The denoising loop will iteratively refine this noise tensor over T steps.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Инициализируем latent z_T ~ N(0, I) размера 4×64×64</h3>
+        <div class="ml-walkthrough__step-body"><p>Сэмплируем шумовой тензор формы [4, 64, 64] — стартовая точка для изображения 512×512. Сжатие в 8 раз по каждой стороне задаёт VAE (512/64 = 8), 4 канала — латентные признаки VAE. Цикл денойзинга уточняет этот тензор за T шагов.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 03</span>
-        <h3 class="ml-walkthrough__step-heading">U-Net predicts noise conditioned on text embedding</h3>
-        <div class="ml-walkthrough__step-body"><p>The U-Net receives the noisy latent z_t, the current timestep t (as a sinusoidal embedding), and the CLIP token embeddings. Residual blocks handle the latent features; cross-attention layers let latent patch features query the text token embeddings. The U-Net outputs a predicted noise tensor ε̂ of the same [4, 64, 64] shape. Classifier-free guidance then combines conditional and unconditional predictions: ε̂_guided = ε̂_uncond + s·(ε̂_cond − ε̂_uncond).</p></div>
+        <h3 class="ml-walkthrough__step-heading">U-Net предсказывает шум с учётом текста</h3>
+        <div class="ml-walkthrough__step-body"><p>U-Net получает зашумлённый latent z_t, шаг t (синусоидальный embedding) и CLIP token embeddings. Residual-блоки обрабатывают латентные признаки, а в cross-attention признаки патчей latent-а служат query к эмбеддингам токенов. Выход — предсказанный шум ε̂ той же формы [4, 64, 64]. Затем classifier-free guidance комбинирует conditional и unconditional предсказания: ε̂_guided = ε̂_uncond + s·(ε̂_cond − ε̂_uncond).</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 04</span>
-        <h3 class="ml-walkthrough__step-heading">DDIM step updates z, repeat T times</h3>
-        <div class="ml-walkthrough__step-body"><p>Apply the DDIM update rule to compute z_{t-1} from z_t and ε̂_guided. DDIM is deterministic: given the same initial z_T and same noise seed, you always get the same output. Repeat this U-Net forward pass and update for each timestep from T down to 1, typically 20–50 steps. Each step moves the latent from pure noise toward a structured representation matching the prompt.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Шаг DDIM обновляет z, повторяем T раз</h3>
+        <div class="ml-walkthrough__step-body"><p>По правилу DDIM вычисляем z_{t-1} из z_t и ε̂_guided. DDIM детерминирован: при том же z_T (том же seed) результат одинаков. Повторяем forward U-Net и обновление для шагов от T до 1 — обычно 20–50 шагов. Каждый шаг сдвигает latent от шума к структуре, соответствующей промпту.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 05</span>
-        <h3 class="ml-walkthrough__step-heading">VAE decoder maps z_0 to pixel space</h3>
-        <div class="ml-walkthrough__step-body"><p>After the final denoising step, the clean latent z_0 of shape [4, 64, 64] is passed through the VAE decoder. The decoder upsamples the latent 8× spatially and converts the 4 latent channels into RGB pixels, producing the final 512×512×3 image. The VAE decoder is the only part of the pipeline operating in pixel space — all diffusion happens in the compressed latent space.</p></div>
+        <h3 class="ml-walkthrough__step-heading">VAE decoder переводит z_0 в пиксели</h3>
+        <div class="ml-walkthrough__step-body"><p>После последнего шага чистый latent z_0 формы [4, 64, 64] проходит через VAE decoder: он увеличивает разрешение в 8 раз и превращает 4 латентных канала в RGB, давая изображение 512×512×3. Decoder — единственная часть пайплайна, работающая в пикселях; вся диффузия идёт в сжатом latent-пространстве.</p></div>
       </div>
     </div>
     <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-  </div>
-
-  <div class="ml-quiz">
-    <div class="ml-quiz__header">
-      <span class="ml-quiz__label">Проверь себя</span>
-      <h3 class="ml-quiz__title">Stable Diffusion — latent space, CFG, and VAE</h3>
-    </div>
-    <ol class="ml-quiz__list">
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">Why does Stable Diffusion work in latent space rather than pixel space?</summary>
-          <div class="ml-quiz__a"><p>A 512×512×3 image has ~786k values. Diffusion in pixel space requires the U-Net to process and denoise all of them at every timestep, which is extremely expensive. The VAE compresses this to 64×64×4 ≈ 16k values — about 48× fewer. This makes both training and inference dramatically faster with comparable quality, because the VAE has already learned to preserve perceptually important structure in the latent representation.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">What is classifier-free guidance and how does it strengthen prompt adherence?</summary>
-          <div class="ml-quiz__a"><p>During training, the conditioning text c is randomly dropped (replaced with an empty token) with ~10–20% probability, so the model learns both conditional ε_θ(z_t, t, c) and unconditional ε_θ(z_t, t, ∅) noise prediction. At inference, CFG extrapolates: ε̂ = ε_uncond + s·(ε_cond − ε_uncond). The scale s (typically 7–12) amplifies the direction from unconditional toward conditional prediction, making the output more closely match the prompt at the cost of diversity.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">What does the VAE encoder and decoder do in Stable Diffusion, and when is each used?</summary>
-          <div class="ml-quiz__a"><p>The VAE encoder (used during training and image-to-image workflows) compresses a 512×512×3 pixel image into a 64×64×4 latent. The VAE decoder (used at the end of every inference run) expands the final denoised latent z_0 back into a 512×512×3 pixel image. In standard text-to-image generation, only the decoder is used at inference time — the encoder is not needed because the process starts from random latent noise rather than from an input image.</p></div>
-        </details>
-      </li>
-    </ol>
   </div>
 
   <div class="warn">
@@ -312,7 +275,7 @@
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое VAE в Stable Diffusion и почему нужен именно он?</summary>
-      <div class="ml-quiz__a"><p>VAE кодирует изображение 512×512×3 в латентный код 64×64×4 (encoder) и декодирует обратно (decoder). Диффузионный процесс работает только в 64×64×4 пространстве — это быстро. VAE нужен для финального «перевода» латента в пиксели; сжатие при этом с потерями — мелкий текст, маленькие лица и тонкие узоры часто искажаются именно на этапе VAE.</p></div>
+      <div class="ml-quiz__a"><p>VAE кодирует изображение 512×512×3 в латентный код 64×64×4 (encoder) и декодирует обратно (decoder). Диффузионный процесс работает только в 64×64×4 пространстве — это быстро. В text-to-image на inference нужен только decoder (генерация стартует из шума); encoder используется при обучении и в img2img. VAE нужен для финального «перевода» латента в пиксели; сжатие при этом с потерями — мелкий текст, маленькие лица и тонкие узоры часто искажаются именно на этапе VAE.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -321,10 +284,16 @@
       <div class="ml-quiz__a"><p>DreamBooth fine-tuning: обучаем всю модель на 3-20 фотографиях субъекта с уникальным идентификатором («a sks dog»). Модель учится ассоциировать идентификатор с конкретным субъектом. Prior preservation loss предотвращает catastrophic forgetting: параллельно генерируем обычных собак.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое classifier-free guidance и как он усиливает следование промпту?</summary>
+      <div class="ml-quiz__a"><p>При обучении текст c случайно заменяют пустым (≈10–20% примеров), так что модель учится и conditional ε_θ(z_t, t, c), и unconditional ε_θ(z_t, t, ∅). На inference CFG экстраполирует: ε̂ = ε_uncond + s·(ε_cond − ε_uncond). Scale s (обычно 7–12) усиливает направление от unconditional к conditional — изображение точнее следует промпту ценой разнообразия, а при слишком большом s появляются пересвеченные, «пережатые» картинки.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="gen-7-5"><h2>Checkpoint: 7.5 Stable Diffusion</h2><ul><li>Почему diffusion работает в latent space?</li><li>Что делает VAE encoder/decoder?</li><li>Как CLIP text conditioning попадает в UNet?</li><li>Что меняет classifier-free guidance scale?</li><li>Rubber duck: объясни Stable Diffusion как denoising в компактном latent-пространстве под управлением текста.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-5"><h2>Checkpoint: 7.5 Stable Diffusion</h2><ul><li>Почему diffusion работает в latent space?</li><li>Что делает VAE encoder/decoder?</li><li>Как CLIP text conditioning попадает в UNet?</li><li>Что меняет classifier-free guidance scale?</li><li>Почему слишком большой CFG scale портит изображение?</li><li>Rubber duck: объясни Stable Diffusion как denoising в компактном latent-пространстве под управлением текста.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

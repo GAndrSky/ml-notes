@@ -379,70 +379,6 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
   </section>
 <!-- step1-learning:end -->
 
-<div class="ml-walkthrough">
-  <div class="ml-walkthrough__header">
-    <div class="ml-walkthrough__title-row">
-      <span class="ml-walkthrough__label">Пошагово</span>
-      <span class="ml-walkthrough__title">ELBO Derivation — from log p(x) to a trainable objective</span>
-    </div>
-    <div class="ml-walkthrough__controls">
-      <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
-      <span class="ml-walkthrough__counter"><span data-wt-cur>1</span> / <span data-wt-tot></span></span>
-      <button class="ml-walkthrough__btn" data-wt-next type="button">→</button>
-    </div>
-  </div>
-  <div class="ml-walkthrough__track">
-    <div class="ml-walkthrough__step">
-      <span class="ml-walkthrough__step-num">Шаг 01</span>
-      <h3 class="ml-walkthrough__step-heading">Start with log p(x)</h3>
-      <div class="ml-walkthrough__step-body"><p>We want to maximize the marginal log-likelihood log p_θ(x) = log ∫ p_θ(x|z) p(z) dz. This integral is intractable for complex decoders because it requires summing over every possible latent z. We cannot compute it directly, so we need a proxy objective.</p></div>
-    </div>
-    <div class="ml-walkthrough__step">
-      <span class="ml-walkthrough__step-num">Шаг 02</span>
-      <h3 class="ml-walkthrough__step-heading">Introduce the approximate posterior q via KL</h3>
-      <div class="ml-walkthrough__step-body"><p>We introduce an encoder q_φ(z|x) and multiply-and-divide by it inside the expectation. This lets us write: log p_θ(x) = E_q[log p_θ(x,z)/q_φ(z|x)] + KL(q_φ(z|x) ‖ p_θ(z|x)). Because KL ≥ 0, the first term is always a lower bound on log p_θ(x).</p></div>
-    </div>
-    <div class="ml-walkthrough__step">
-      <span class="ml-walkthrough__step-num">Шаг 03</span>
-      <h3 class="ml-walkthrough__step-heading">ELBO = reconstruction term − KL divergence</h3>
-      <div class="ml-walkthrough__step-body"><p>Expanding the joint: ELBO = E_q[log p_θ(x|z)] − KL(q_φ(z|x) ‖ p(z)). The first term rewards the decoder for accurately reconstructing x from z. The second term penalizes the encoder when its posterior drifts far from the prior N(0,I). We maximize ELBO instead of the intractable log p_θ(x).</p></div>
-    </div>
-    <div class="ml-walkthrough__step">
-      <span class="ml-walkthrough__step-num">Шаг 04</span>
-      <h3 class="ml-walkthrough__step-heading">Reparameterization trick enables backprop through sampling</h3>
-      <div class="ml-walkthrough__step-body"><p>The ELBO contains E_q[log p_θ(x|z)], which requires sampling z ~ q_φ(z|x). Sampling is not differentiable with respect to φ. The fix: write z = μ_φ(x) + σ_φ(x) ⊙ ε where ε ~ N(0,I). Now z is a deterministic function of the encoder outputs μ and σ, so gradients flow through them normally. The randomness lives in ε, which has no learned parameters.</p></div>
-    </div>
-  </div>
-  <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-</div>
-
-<div class="ml-quiz">
-  <div class="ml-quiz__header">
-    <span class="ml-quiz__label">Проверь себя</span>
-    <h3 class="ml-quiz__title">VAE — ELBO and reparameterization</h3>
-  </div>
-  <ol class="ml-quiz__list">
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why does the KL term in the ELBO regularize the latent space?</summary>
-        <div class="ml-quiz__a"><p>KL(q_φ(z|x) ‖ p(z)) measures how far the encoder's posterior is from the prior N(0,I). Minimizing it forces every encoder output to stay close to a standard Gaussian. This prevents the model from assigning each training example its own isolated region in latent space, and ensures that interpolations between latent points decode to plausible outputs.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">What happens if the KL weight is set to zero (pure reconstruction objective)?</summary>
-        <div class="ml-quiz__a"><p>With KL weight = 0 the model degenerates to an ordinary autoencoder. Each example gets a tight, isolated code with near-zero variance. The latent space has gaps between clusters of training examples, so sampling z ~ N(0,I) lands in empty regions and decodes to nonsense. Generation becomes impossible.</p></div>
-      </details>
-    </li>
-    <li class="ml-quiz__item">
-      <details class="ml-quiz__entry">
-        <summary class="ml-quiz__q">Why is the reparameterization trick necessary, and what problem does it solve?</summary>
-        <div class="ml-quiz__a"><p>Computing the ELBO requires sampling z from q_φ(z|x). A direct sample is a stochastic node in the computation graph, which breaks standard backpropagation because you cannot differentiate through a random draw with respect to the distribution parameters. Reparameterization rewrites z = μ + σ⊙ε, moving all stochasticity into a parameter-free noise variable ε. Gradients then flow deterministically through μ and σ.</p></div>
-      </details>
-    </li>
-  </ol>
-</div>
-
 <div class="warn">
   <strong>Что ломается без этого</strong>
   <p>Если сэмплировать z из q_φ(z|x) напрямую (например, через <code>.sample()</code> вместо <code>.rsample()</code>), у операции сэмплирования нет градиента по параметрам encoder-а φ: backprop останавливается на этом узле, и encoder не получает сигнала от reconstruction loss. Encoder будет учиться только от KL-члена — μ и σ просто стянутся к prior N(0, I), и z перестанет нести информацию о x. Decoder при этом учится восстанавливать по случайному z, то есть выдаёт что-то среднее по датасету.</p>
@@ -498,6 +434,18 @@ z = μ_φ(x) + σ_φ(x) ⊙ ε
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как использовать обученный VAE для генерации новых примеров?</summary>
       <div class="ml-quiz__a"><p>Сэмплируем z ~ N(0, I) из prior, затем пропускаем через декодер: x = decoder(z). Если KL-регуляризация хорошо сработала, всё латентное пространство заполнено «осмысленными» точками и интерполяция между ними генерирует правдоподобные примеры.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему KL-член в ELBO регуляризует латентное пространство?</summary>
+      <div class="ml-quiz__a"><p>KL(q_φ(z|x) ‖ p(z)) измеряет, насколько posterior encoder-а далёк от prior N(0, I). Его минимизация удерживает все коды близко к стандартному гауссиану. Модель не может выделить каждому примеру свою изолированную область, поэтому латентное пространство остаётся «сплошным», и интерполяции между точками декодируются в правдоподобные объекты.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что произойдёт, если вес KL-члена поставить в ноль (только reconstruction)?</summary>
+      <div class="ml-quiz__a"><p>Модель вырождается в обычный autoencoder: каждый пример получает узкий код с почти нулевой дисперсией, между кластерами появляются пустоты. Сэмпл z ~ N(0, I) попадает в пустую область и декодируется в мусор — генерация перестаёт работать.</p></div>
     </details>
   </li>
   </ol>

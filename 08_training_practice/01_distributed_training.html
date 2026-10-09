@@ -184,6 +184,24 @@ for epoch in range(num_epochs):
       <div class="ml-quiz__a"><p>Gradient accumulation: обновляем веса каждые k мини-батчей, не каждый. Это эмулирует больший effective batch size без дополнительной памяти GPU: effective_batch = batch_size × accumulation_steps. Используется, когда нужный batch_size не влезает в память одного GPU.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое all-reduce и почему он — узкое место DDP?</summary>
+      <div class="ml-quiz__a"><p>All-reduce — коллективная операция, которая суммирует (усредняет) тензоры градиентов по всем workers, так что у каждого оказывается одинаковый градиент. В DDP она идёт на каждом шаге и синхронна: все workers ждут друг друга, объём передачи растёт с размером модели (у 7B-модели градиенты в fp16 ≈ 14 GB). DDP частично прячет её, перекрывая коммуникацию с backward по bucket-ам, но на медленном interconnect она всё равно доминирует.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что FSDP шардирует такого, чего не шардирует DDP?</summary>
+      <div class="ml-quiz__a"><p>DDP держит на каждой GPU полную копию параметров, градиентов и optimizer state и только синхронизирует градиенты. FSDP шардирует всё это между workers: в покое каждая GPU хранит 1/N параметров, а перед вычислением блока нужные шарды собираются через all-gather, используются и освобождаются. Поэтому FSDP может учить модели, которые не помещаются на одну GPU.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что происходит с global batch при добавлении DDP workers и как это компенсировать?</summary>
+      <div class="ml-quiz__a"><p>Global batch = local_batch × world_size × accumulation, поэтому он меняется вместе с числом workers. Если удвоить workers при том же local_batch, global batch удвоится и динамика оптимизации изменится. Чтобы сохранить её, уменьши local batch (или accumulation) либо подстрой LR — например, по linear scaling rule: new_lr = old_lr × (new_global_batch / old_global_batch), обычно с warmup.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
@@ -205,7 +223,7 @@ for epoch in range(num_epochs):
       <div class="ml-walkthrough__header">
         <div class="ml-walkthrough__title-row">
           <span class="ml-walkthrough__label">Пошагово</span>
-          <span class="ml-walkthrough__title">Choosing DDP vs FSDP</span>
+          <span class="ml-walkthrough__title">Выбор между DDP и FSDP</span>
         </div>
         <div class="ml-walkthrough__controls">
           <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -216,53 +234,26 @@ for epoch in range(num_epochs):
       <div class="ml-walkthrough__track">
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 01</span>
-          <h3 class="ml-walkthrough__step-heading">Check if the model fits on a single GPU with full training state</h3>
-          <div class="ml-walkthrough__step-body"><p>Run a single forward + backward pass on one GPU and observe peak memory. "Fitting" means parameters + gradients + optimizer state + activations all stay under VRAM. If this works without OOM, DDP is your first choice — it is simpler, better understood, and easier to debug.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Проверь, помещается ли модель с полным training state на одну GPU</h3>
+          <div class="ml-walkthrough__step-body"><p>Сделай один forward + backward на одной GPU и посмотри peak memory. «Помещается» значит: параметры + градиенты + optimizer state + активации укладываются в VRAM. Если OOM нет — начинай с DDP: он проще, лучше изучен и легче отлаживается.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 02</span>
-          <h3 class="ml-walkthrough__step-heading">Estimate memory: ~16 bytes per parameter for AdamW</h3>
-          <div class="ml-walkthrough__step-body"><p>A rough formula: fp16 params (2 bytes) + fp16 grads (2 bytes) + fp32 optimizer state — master weights, first moment, second moment (12 bytes) = 16 bytes/param. A 7B model needs ~112 GB just for training state, far more than a single 80 GB A100. If the estimate exceeds your GPU VRAM, move to FSDP.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Оценка памяти: ~16 байт на параметр для AdamW</h3>
+          <div class="ml-walkthrough__step-body"><p>Грубая формула для mixed precision: fp16-параметры (2 байта) + fp16-градиенты (2) + fp32 optimizer state — master weights, первый и второй моменты (12) = 16 байт/параметр. Модели 7B нужно ~112 GB только на training state (без активаций) — больше, чем одна A100 80 GB. Если оценка превышает VRAM, переходи на FSDP.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 03</span>
-          <h3 class="ml-walkthrough__step-heading">With FSDP, choose the right sharding strategy</h3>
-          <div class="ml-walkthrough__step-body"><p>FULL_SHARD (ZeRO-3 equivalent) shards params, grads, and optimizer state — maximum memory savings, highest communication cost. SHARD_GRAD_OP shards only grads and optimizer state — middle ground with lower communication overhead. NO_SHARD is equivalent to DDP and useful for ablating. Start with FULL_SHARD when memory is the binding constraint.</p></div>
+          <h3 class="ml-walkthrough__step-heading">В FSDP выбери стратегию шардирования</h3>
+          <div class="ml-walkthrough__step-body"><p>FULL_SHARD (аналог ZeRO-3) шардирует параметры, градиенты и optimizer state — максимум экономии памяти и максимум коммуникаций. SHARD_GRAD_OP шардирует только градиенты и optimizer state (аналог ZeRO-2) — компромисс с меньшим overhead. NO_SHARD эквивалентен DDP и полезен для сравнения. Если ограничение — память, начинай с FULL_SHARD.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 04</span>
-          <h3 class="ml-walkthrough__step-heading">Always benchmark throughput — FSDP adds communication overhead</h3>
-          <div class="ml-walkthrough__step-body"><p>FSDP gathers sharded parameters before each layer's forward and backward, which creates additional all-gather collectives. On slow interconnects (e.g., PCIe vs NVLink), FSDP can be slower than DDP even when memory is not the issue. Measure tokens/second or samples/second with the actual config before committing to FSDP for a long run.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Всегда меряй throughput — FSDP добавляет коммуникации</h3>
+          <div class="ml-walkthrough__step-body"><p>FSDP собирает шардированные параметры перед forward и backward каждого блока — это дополнительные all-gather. На медленном interconnect (PCIe вместо NVLink) FSDP может быть медленнее DDP, даже когда память не проблема. Перед длинным запуском измерь tokens/s или samples/s на реальной конфигурации.</p></div>
         </div>
       </div>
       <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-    </div>
-
-    <div class="ml-quiz">
-      <div class="ml-quiz__header">
-        <span class="ml-quiz__label">Проверь себя</span>
-        <h3 class="ml-quiz__title">DDP, FSDP, and distributed fundamentals</h3>
-      </div>
-      <ol class="ml-quiz__list">
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">What is all-reduce and why is it the DDP bottleneck?</summary>
-            <div class="ml-quiz__a"><p>All-reduce is a collective operation that sums gradient tensors across all workers so every worker ends up with the same averaged gradient. In DDP this happens after every backward pass. It becomes the bottleneck because it requires synchronous communication: all workers must participate, the bandwidth required scales with model size, and the latency blocks the next optimizer step. On a 7B model the gradient tensor alone is ~14 GB in fp16, which must be transmitted every step.</p></div>
-          </details>
-        </li>
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">What does FSDP shard that DDP does not?</summary>
-            <div class="ml-quiz__a"><p>DDP keeps a full copy of parameters, gradients, and optimizer state on every GPU — it only synchronizes gradients. FSDP additionally shards the parameters themselves and the optimizer state across all workers. Each GPU holds only 1/N of the parameters at rest; before computing a layer, the needed shard is gathered via all-gather, used, then discarded. This is what allows FSDP to train models that are too large for a single GPU.</p></div>
-          </details>
-        </li>
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">What happens to the global batch when you add DDP workers, and how do you compensate?</summary>
-            <div class="ml-quiz__a"><p>In DDP the global batch is local_batch × world_size × accumulation, so it changes whenever the number of workers changes. If you keep local_batch constant while doubling workers, the global batch doubles, which changes the optimization dynamics (larger batches typically need a higher learning rate to converge at the same speed). To keep the same optimization trajectory when scaling, either halve the local batch or adjust the learning rate using the linear scaling rule: new_lr = old_lr × (new_world_size / old_world_size).</p></div>
-          </details>
-        </li>
-      </ol>
     </div>
 
     <div class="warn">

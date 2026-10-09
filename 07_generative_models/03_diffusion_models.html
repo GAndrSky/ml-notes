@@ -189,25 +189,11 @@
       </ul>
     </section>
 
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>Why is the forward process fixed instead of learned?</li>
-        <li>What does alpha_bar_t measure?</li>
-        <li>Why is noise prediction easier than directly predicting x_{t-1}?</li>
-        <li>How does the timestep help the denoiser?</li>
-      </ol>
-      <details class="intuition-block">
-        <summary>Rubber duck prompt</summary>
-        <div class="intuition-content">Explain diffusion as a training curriculum where the model learns to clean data at many corruption levels.</div>
-      </details>
-    </section>
-
   <div class="ml-walkthrough">
     <div class="ml-walkthrough__header">
       <div class="ml-walkthrough__title-row">
         <span class="ml-walkthrough__label">Пошагово</span>
-        <span class="ml-walkthrough__title">DDPM Sampling — from pure noise to a generated image</span>
+        <span class="ml-walkthrough__title">DDPM sampling — от чистого шума к изображению</span>
       </div>
       <div class="ml-walkthrough__controls">
         <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -218,58 +204,31 @@
     <div class="ml-walkthrough__track">
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 01</span>
-        <h3 class="ml-walkthrough__step-heading">Start from pure Gaussian noise x_T</h3>
-        <div class="ml-walkthrough__step-body"><p>Sample x_T ~ N(0, I). This is a tensor of the same spatial dimensions as the images you want to generate, filled entirely with independent Gaussian noise. At this point there is no structure at all — we have not started denoising yet. The sampling process will iteratively refine this over T steps.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Начинаем с чистого гауссова шума x_T</h3>
+        <div class="ml-walkthrough__step-body"><p>Сэмплируем x_T ~ N(0, I) — тензор той же формы, что и генерируемое изображение, заполненный независимым гауссовым шумом. Структуры в нём ещё нет; sampling будет постепенно уточнять его за T шагов.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 02</span>
-        <h3 class="ml-walkthrough__step-heading">Predict noise ε with the U-Net at timestep t</h3>
-        <div class="ml-walkthrough__step-body"><p>Pass the current noisy sample x_t and the timestep index t into the trained neural network ε_θ(x_t, t). The network outputs a predicted noise tensor of the same shape as x_t. The timestep is embedded as a Fourier or sinusoidal feature and injected into each U-Net block so the model knows how much noise is present.</p></div>
+        <h3 class="ml-walkthrough__step-heading">U-Net предсказывает шум ε на шаге t</h3>
+        <div class="ml-walkthrough__step-body"><p>Подаём текущий зашумлённый x_t и номер шага t в обученную сеть ε_θ(x_t, t); она возвращает предсказанный шум той же формы, что x_t. Шаг t кодируется синусоидальным (Fourier) embedding и подаётся в каждый блок U-Net, чтобы модель знала, сколько шума присутствует.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 03</span>
-        <h3 class="ml-walkthrough__step-heading">Compute x_{t-1} from x_t and predicted noise</h3>
-        <div class="ml-walkthrough__step-body"><p>Use the DDPM reverse step formula: x_{t-1} = (1/sqrt(α_t)) * (x_t − β_t/sqrt(1−ᾱ_t) * ε_θ(x_t,t)). This subtracts the predicted noise scaled by a timestep-dependent coefficient, moving one step toward a cleaner image. The formula is derived from the posterior q(x_{t-1}|x_t, x_0).</p></div>
+        <h3 class="ml-walkthrough__step-heading">Считаем x_{t-1} по x_t и предсказанному шуму</h3>
+        <div class="ml-walkthrough__step-body"><p>Обратный шаг DDPM: x_{t-1} = (1/sqrt(α_t)) · (x_t − β_t/sqrt(1−ᾱ_t) · ε_θ(x_t, t)). Вычитаем предсказанный шум с коэффициентом, зависящим от t, — это шаг к более чистому изображению. Формула выводится из posterior q(x_{t-1}|x_t, x_0).</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 04</span>
-        <h3 class="ml-walkthrough__step-heading">Add small noise for t &gt; 1</h3>
-        <div class="ml-walkthrough__step-body"><p>For all steps except the final one (t = 1), add a small amount of Gaussian noise: x_{t-1} += sqrt(β_t) * z where z ~ N(0,I). This stochastic injection prevents the sampler from collapsing to a single deterministic point and is crucial for sample diversity. At t = 1 we skip this addition and output x_0 directly.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Добавляем немного шума при t &gt; 1</h3>
+        <div class="ml-walkthrough__step-body"><p>На всех шагах, кроме последнего (t = 1), добавляем гауссов шум: x_{t-1} += σ_t · z, z ~ N(0, I), где σ_t = sqrt(β_t). Это делает обратный процесс стохастическим, как и предполагает модель. На t = 1 шум не добавляем и сразу выдаём x_0.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 05</span>
-        <h3 class="ml-walkthrough__step-heading">Output x_0 — the generated image</h3>
-        <div class="ml-walkthrough__step-body"><p>After running Steps 2–4 for t = T, T−1, …, 1, the final x_0 is the generated image. Each step removed a small portion of the original noise, guided by the neural network's prediction. The quality depends on the number of steps, the noise schedule, and whether guidance (CFG) was applied during the reverse process.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Выход x_0 — сгенерированное изображение</h3>
+        <div class="ml-walkthrough__step-body"><p>После шагов 2–4 для t = T, T−1, …, 1 получаем x_0 — сгенерированное изображение. Каждый шаг убирал немного шума по предсказанию сети. Качество зависит от числа шагов, noise schedule и того, применялся ли guidance (CFG).</p></div>
       </div>
     </div>
     <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-  </div>
-
-  <div class="ml-quiz">
-    <div class="ml-quiz__header">
-      <span class="ml-quiz__label">Проверь себя</span>
-      <h3 class="ml-quiz__title">Diffusion models — schedule, sampling, and objectives</h3>
-    </div>
-    <ol class="ml-quiz__list">
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">Why did the original DDPM paper use 1000 diffusion steps?</summary>
-          <div class="ml-quiz__a"><p>1000 steps makes each individual forward-process step add only a very small amount of noise (β_t ≈ 0.0001 to 0.02). This ensures the reverse step can be well-approximated by a Gaussian — the theoretical justification for the DDPM objective. Fewer steps would make each step a large non-Gaussian jump, violating the assumption that the reverse posterior is also approximately Gaussian.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">What does DDIM trade off compared to DDPM sampling?</summary>
-          <div class="ml-quiz__a"><p>DDIM (Denoising Diffusion Implicit Models) replaces the stochastic Markov reverse process with a deterministic one. This allows skipping timesteps — sampling with 20–50 steps instead of 1000 without retraining the model. The trade-off: the trajectory is deterministic (the same x_T always gives the same image; diversity comes from sampling x_T), and with very few steps quality degrades somewhat — but generation is many times faster with comparable quality at 20–50 steps.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">Why does DDPM predict the noise ε rather than x_0 directly?</summary>
-          <div class="ml-quiz__a"><p>Predicting ε is an equivalent re-parameterization of predicting x_0, but empirically more stable to train. The noise ε is always drawn from N(0,I) regardless of the input, giving the prediction target a consistent scale and distribution across all timesteps. Predicting x_0 directly at high noise levels forces the network to reconstruct complex structure from almost pure noise, which is harder to optimize.</p></div>
-        </details>
-      </li>
-    </ol>
   </div>
 
   <div class="warn">
@@ -359,13 +318,31 @@
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">В чём основной недостаток диффузионных моделей по сравнению с GAN?</summary>
-      <div class="ml-quiz__a"><p>Диффузионные модели требуют T=50-1000 шагов денойзинга при генерации — намного медленнее GAN (один forward pass). DDIM и другие ускоренные семплеры снижают до 10-50 шагов без потери качества. Consistency models пытаются дойти до 1-2 шагов.</p></div>
+      <div class="ml-quiz__a"><p>Диффузионные модели требуют T=50-1000 шагов денойзинга при генерации — намного медленнее GAN (один forward pass). DDIM и другие ускоренные семплеры снижают число шагов до 10–50 с небольшой потерей качества. Consistency models пытаются дойти до 1-2 шагов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему в оригинальном DDPM использовали 1000 шагов?</summary>
+      <div class="ml-quiz__a"><p>При 1000 шагах каждый шаг forward process добавляет очень мало шума (β_t от 0.0001 до 0.02). Тогда обратный шаг хорошо приближается гауссианом — на этом допущении построен objective DDPM. При малом числе шагов каждый переход становится большим и негауссовым.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что DDIM меняет по сравнению с DDPM-sampling?</summary>
+      <div class="ml-quiz__a"><p>DDIM заменяет стохастический марковский обратный процесс детерминированным, что позволяет пропускать шаги: 20–50 шагов вместо 1000 без переобучения модели. Плата: траектория детерминирована (один x_T → одно изображение, разнообразие даёт только выбор x_T), а при очень малом числе шагов качество падает.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему DDPM предсказывает шум ε, а не x_0 напрямую?</summary>
+      <div class="ml-quiz__a"><p>Предсказание ε эквивалентно предсказанию x_0 (одно выражается через другое), но на практике обучается стабильнее: ε всегда из N(0, I), так что у target одинаковый масштаб на всех шагах. Предсказывать x_0 при сильном шуме — значит восстанавливать сложную структуру почти из чистого шума.</p></div>
     </details>
   </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="gen-7-3"><h2>Checkpoint: 7.3 Diffusion</h2><ul><li>Зачем добавлять шум при обучении?</li><li>Что предсказывает denoiser?</li><li>Почему sampling занимает много шагов?</li><li>Как guidance влияет на fidelity/diversity?</li><li>Rubber duck: объясни diffusion как обучение постепенно убирать шум из картинки.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-3"><h2>Checkpoint: 7.3 Diffusion</h2><ul><li>Зачем добавлять шум при обучении?</li><li>Что предсказывает denoiser?</li><li>Почему sampling занимает много шагов?</li><li>Как guidance влияет на fidelity/diversity?</li><li>Почему forward process фиксирован, а не обучается?</li><li>Что измеряет ᾱ_t?</li><li>Как номер шага t помогает denoiser-у?</li><li>Rubber duck: объясни diffusion как обучение постепенно убирать шум из картинки.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

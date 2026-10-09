@@ -142,27 +142,17 @@
     </section>
 
     <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Derivation: 1D change of variables</summary><div class="intuition-content">Show that if x = 2z and z has density p_Z, then p_X(x)=p_Z(x/2)/2. Explain why the factor 1/2 appears.</div></details>
-      <details class="intuition-block"><summary>Coding: affine coupling layer</summary><div class="intuition-content">Implement a NumPy affine coupling layer with forward, inverse and log-det-Jacobian. Test that inverse(forward(x)) returns x.</div></details>
-      <details class="intuition-block"><summary>Conceptual: why invertibility matters</summary><div class="intuition-content">Explain why exact likelihood breaks if the mapping loses information.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>Why does a flow need a Jacobian determinant?</li>
-        <li>Why are coupling layers easier than arbitrary neural networks?</li>
-        <li>What does exact likelihood buy you compared with GANs?</li>
-        <li>What is the main architectural limitation of flows?</li>
-      </ol>
+      <h2>Упражнения</h2>
+      <details class="intuition-block"><summary>Вывод: замена переменных в 1D</summary><div class="intuition-content">Покажи, что если x = 2z и z имеет плотность p_Z, то p_X(x) = p_Z(x/2)/2. Объясни, откуда берётся множитель 1/2.</div></details>
+      <details class="intuition-block"><summary>Код: affine coupling layer</summary><div class="intuition-content">Реализуй на NumPy affine coupling layer с forward, inverse и log-det-Jacobian. Проверь, что inverse(forward(x)) возвращает x.</div></details>
+      <details class="intuition-block"><summary>Концепция: зачем обратимость</summary><div class="intuition-content">Объясни, почему точное правдоподобие ломается, если отображение теряет информацию.</div></details>
     </section>
 
   <div class="ml-walkthrough">
     <div class="ml-walkthrough__header">
       <div class="ml-walkthrough__title-row">
         <span class="ml-walkthrough__label">Пошагово</span>
-        <span class="ml-walkthrough__title">Change of Variables — how a flow computes exact likelihood</span>
+        <span class="ml-walkthrough__title">Замена переменных — как flow считает точное правдоподобие</span>
       </div>
       <div class="ml-walkthrough__controls">
         <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -173,53 +163,26 @@
     <div class="ml-walkthrough__track">
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 01</span>
-        <h3 class="ml-walkthrough__step-heading">Start with a simple prior z ~ N(0, I)</h3>
-        <div class="ml-walkthrough__step-body"><p>Define a base distribution p_Z — typically a standard multivariate Gaussian. This distribution is trivial to evaluate and sample from. The goal is to transform it into a complex data distribution p_X while keeping the ability to compute exact log-probabilities. Every flow starts from this tractable base.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Начинаем с простого prior z ~ N(0, I)</h3>
+        <div class="ml-walkthrough__step-body"><p>Задаём базовое распределение p_Z — обычно стандартный многомерный гауссиан: его легко вычислять и сэмплировать. Цель — превратить его в сложное распределение данных p_X, сохранив возможность считать точные log-вероятности.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 02</span>
-        <h3 class="ml-walkthrough__step-heading">Apply an invertible transformation f: z → x</h3>
-        <div class="ml-walkthrough__step-body"><p>Pass z through a learned invertible function x = f(z). Because f is invertible, we can also compute z = f⁻¹(x) for any observed data point x. The transformation can be a single coupling layer or a chain of K layers: x = f_K ∘ f_{K−1} ∘ … ∘ f_1(z). Each layer must be both invertible and differentiable.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Применяем обратимое преобразование f: z → x</h3>
+        <div class="ml-walkthrough__step-body"><p>Пропускаем z через обучаемую обратимую функцию x = f(z). Так как f обратима, для любого наблюдаемого x можно вычислить z = f⁻¹(x). Преобразование может быть одним coupling layer или цепочкой из K слоёв: x = f_K ∘ f_{K−1} ∘ … ∘ f_1(z). Каждый слой должен быть обратимым и дифференцируемым.</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 03</span>
-        <h3 class="ml-walkthrough__step-heading">Compute log-likelihood via log |det J|</h3>
-        <div class="ml-walkthrough__step-body"><p>The change-of-variables formula gives: log p_X(x) = log p_Z(z) + log |det J_{f⁻¹}(x)|. The Jacobian determinant corrects for how much f stretches or compresses local volume. For a chain of K transforms: log p_X(x) = log p_Z(z) + Σ_k log |det J_k|. Coupling layers make each J_k triangular, so its determinant is just the product of diagonal entries — computable in O(d) time.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Считаем log-правдоподобие через log |det J|</h3>
+        <div class="ml-walkthrough__step-body"><p>Формула замены переменных: log p_X(x) = log p_Z(z) + log |det J_{f⁻¹}(x)|. Определитель якобиана учитывает, насколько f растягивает или сжимает локальный объём. Для цепочки из K преобразований: log p_X(x) = log p_Z(z) + Σ_k log |det J_k| (якобианы обратных слоёв). Coupling layers делают каждый J_k треугольным, так что определитель — произведение диагональных элементов, O(d).</p></div>
       </div>
       <div class="ml-walkthrough__step">
         <span class="ml-walkthrough__step-num">Шаг 04</span>
-        <h3 class="ml-walkthrough__step-heading">Exact likelihood enables direct training</h3>
-        <div class="ml-walkthrough__step-body"><p>Because we can compute log p_X(x) exactly for any training example, we maximize the log-likelihood directly using gradient descent — no ELBO, no adversarial game. This also means flows can be used for density estimation (computing p(x) for anomaly detection), lossless data compression, and as flexible approximate posteriors in variational inference.</p></div>
+        <h3 class="ml-walkthrough__step-heading">Точное правдоподобие позволяет учить напрямую</h3>
+        <div class="ml-walkthrough__step-body"><p>Раз log p_X(x) считается точно для любого примера, мы напрямую максимизируем log-правдоподобие градиентным спуском — без ELBO и без adversarial-игры. Поэтому flows применяют для оценки плотности (p(x) для поиска аномалий), lossless-сжатия и как гибкие приближённые posterior в variational inference.</p></div>
       </div>
     </div>
     <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-  </div>
-
-  <div class="ml-quiz">
-    <div class="ml-quiz__header">
-      <span class="ml-quiz__label">Проверь себя</span>
-      <h3 class="ml-quiz__title">Normalizing flows — invertibility and exact likelihood</h3>
-    </div>
-    <ol class="ml-quiz__list">
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">Why must the transformations in a normalizing flow be invertible?</summary>
-          <div class="ml-quiz__a"><p>Invertibility is required for two reasons. First, to compute log p_X(x) during training you need z = f⁻¹(x) — you must be able to map data back to the base space. Second, the change-of-variables formula is only valid for bijective (one-to-one) maps: if f loses information, two different x values could map to the same z, making the probability calculation undefined. Invertibility guarantees a one-to-one correspondence between x-space and z-space.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">What makes computing det(J) tractable in coupling layers?</summary>
-          <div class="ml-quiz__a"><p>In a general invertible network, computing det(J) costs O(d³) because d×d Jacobian matrix determinant requires full decomposition. Coupling layers split the input into two parts: one part passes through unchanged, and the other is scaled and shifted based on the first. The resulting Jacobian is triangular (lower or upper). The determinant of a triangular matrix is just the product of its diagonal entries, computable in O(d) — making flows practical at high dimensions.</p></div>
-        </details>
-      </li>
-      <li class="ml-quiz__item">
-        <details class="ml-quiz__entry">
-          <summary class="ml-quiz__q">Why do flows give exact likelihood while VAEs only give a lower bound?</summary>
-          <div class="ml-quiz__a"><p>VAEs introduce an approximate posterior q_φ(z|x) because the true posterior p(z|x) is intractable. The gap between ELBO and the true log p(x) is the KL divergence between approximate and true posterior, which is always non-negative but unknown. Flows avoid this entirely: because f is a bijection, z = f⁻¹(x) is unique and deterministic, so log p_X(x) = log p_Z(f⁻¹(x)) + log |det J| is computed exactly with no approximation.</p></div>
-        </details>
-      </li>
-    </ol>
   </div>
 
   <div class="warn">
@@ -271,10 +234,16 @@
       <div class="ml-quiz__a"><p>Flows используются для: (1) точной оценки плотности (outlier detection), (2) variational inference как более гибкий posterior, (3) нейронные ODEs (continuous normalizing flows), (4) сжатия данных (bijective → lossless). В молекулярном моделировании — Boltzmann generators: flow учится сэмплировать равновесные конформации молекул.</p></div>
     </details>
   </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему преобразования в normalizing flow должны быть обратимыми?</summary>
+      <div class="ml-quiz__a"><p>Во-первых, для обучения нужно z = f⁻¹(x): данные надо отобразить обратно в базовое пространство, чтобы посчитать log p_X(x). Во-вторых, формула замены переменных верна только для биекций: если f теряет информацию, два разных x могут перейти в один z, и плотность становится неопределённой.</p></div>
+    </details>
+  </li>
   </ol>
 </div>
 
-<section class="ml-checkpoint-section" data-quality-pass="gen-7-4"><h2>Checkpoint: 7.4 Normalizing Flows</h2><ul><li>Почему flow должен быть invertible?</li><li>Зачем нужен Jacobian determinant?</li><li>Чем flow отличается от VAE?</li><li>Почему RealNVP использует coupling layers?</li><li>Rubber duck: объясни normalizing flow как обратимое растягивание простого шума в сложные данные.</li></ul></section>
+<section class="ml-checkpoint-section" data-quality-pass="gen-7-4"><h2>Checkpoint: 7.4 Normalizing Flows</h2><ul><li>Почему flow должен быть invertible?</li><li>Зачем нужен Jacobian determinant?</li><li>Чем flow отличается от VAE?</li><li>Почему RealNVP использует coupling layers?</li><li>Что даёт точное правдоподобие по сравнению с GAN?</li><li>Какое главное архитектурное ограничение у flows (размерность latent = размерность данных, ограниченная выразительность слоёв)?</li><li>Rubber duck: объясни normalizing flow как обратимое растягивание простого шума в сложные данные.</li></ul></section>
 
 <!-- step1-learning:start -->
   <section class="ml-endcap-section" data-step1-learning-layer="1">

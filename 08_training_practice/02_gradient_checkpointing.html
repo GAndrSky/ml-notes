@@ -143,7 +143,7 @@ loss.backward()
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как gradient checkpointing экономит память за счёт вычислений?</summary>
-      <div class="ml-quiz__a"><p>Обычно все активации каждого слоя сохраняются для backward pass — это O(depth) памяти. Gradient checkpointing сохраняет только «контрольные точки» каждые k слоёв, а промежуточные активации пересчитывает заново при backward. Компромисс: ~33% больше вычислений, но √depth меньше памяти.</p></div>
+      <div class="ml-quiz__a"><p>Обычно все активации каждого слоя сохраняются для backward pass — это O(depth) памяти. Gradient checkpointing сохраняет только «контрольные точки» каждые k слоёв, а промежуточные активации пересчитывает заново при backward. Компромисс: ~33% больше вычислений, но память на активации падает с O(depth) до O(√depth) при чекпоинтах каждые √depth слоёв.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -162,6 +162,18 @@ loss.backward()
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Как DeepSpeed реализует CPU offloading для оптимизатора?</summary>
       <div class="ml-quiz__a"><p>DeepSpeed ZeRO-Offload перемещает состояния оптимизатора (fp32 копия весов + Adam моменты) в CPU RAM. Это 3× размер модели в fp32. Обновление параметров происходит на CPU, что медленно, но позволяет обучать модели, которые иначе не помещаются в GPU. Обычно используется как крайняя мера.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как часто ставить чекпоинты, чтобы минимизировать память?</summary>
+      <div class="ml-quiz__a"><p>Классическая схема — каждые √L слоёв: тогда хранится O(√L) входов сегментов и при пересчёте одного сегмента живёт O(√L) активаций, итого пик O(√L) вместо O(L). Для 36 слоёв — примерно каждые 6, для 64 — каждые 8. На практике в трансформерах часто чекпоинтят каждый блок: проще и обычно достаточно.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Когда checkpointing НЕ нужен?</summary>
+      <div class="ml-quiz__a"><p>(1) Модель и так комфортно помещается в память — платишь ~30% compute без пользы. (2) Обучение упирается в compute, и цель — скорость, а не размер batch. (3) Пересчитываемый код небезопасно запускать повторно: у него есть побочные эффекты или случайность, которую не отслеживают. torch.utils.checkpoint по умолчанию сохраняет и восстанавливает RNG-состояние (preserve_rng_state=True), так что обычный dropout пересчитывается одинаково; проблемы появляются, если это отключить или брать случайность из генератора, который PyTorch не отслеживает.</p></div>
     </details>
   </li>
   </ol>
@@ -185,7 +197,7 @@ loss.backward()
       <div class="ml-walkthrough__header">
         <div class="ml-walkthrough__title-row">
           <span class="ml-walkthrough__label">Пошагово</span>
-          <span class="ml-walkthrough__title">How Checkpointing Saves Memory</span>
+          <span class="ml-walkthrough__title">Как checkpointing экономит память</span>
         </div>
         <div class="ml-walkthrough__controls">
           <button class="ml-walkthrough__btn" data-wt-prev type="button">←</button>
@@ -196,53 +208,26 @@ loss.backward()
       <div class="ml-walkthrough__track">
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 01</span>
-          <h3 class="ml-walkthrough__step-heading">Normal forward: all activations stored for backward — O(L) memory</h3>
-          <div class="ml-walkthrough__step-body"><p>In a standard forward pass PyTorch records every intermediate tensor needed by the autograd graph: layer inputs, attention scores, normalization statistics, nonlinearity outputs. For a model with L layers this means O(L) tensors sitting in VRAM simultaneously, waiting for the backward pass to consume them. A 48-layer transformer with sequence length 2048 can easily accumulate gigabytes of activation memory this way.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Обычный forward: все активации хранятся для backward — O(L) памяти</h3>
+          <div class="ml-walkthrough__step-body"><p>В обычном forward PyTorch сохраняет все промежуточные тензоры, нужные autograd: входы слоёв, attention scores, статистики нормализации, выходы нелинейностей. Для модели из L слоёв это O(L) тензоров, одновременно лежащих в VRAM до backward. У 48-слойного трансформера с длиной последовательности 2048 так легко набираются гигабайты активаций.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 02</span>
-          <h3 class="ml-walkthrough__step-heading">With checkpointing: only save activations every K layers</h3>
-          <div class="ml-walkthrough__step-body"><p>Instead of storing every activation, checkpointing wraps segments of the network so that only the segment's input tensor (the "checkpoint") is retained. All intermediate activations within the segment are freed immediately after the forward pass through that segment. The segment boundary inputs act as waypoints from which the full computation can be reconstructed.</p></div>
+          <h3 class="ml-walkthrough__step-heading">С checkpointing: сохраняем активации только на границах сегментов</h3>
+          <div class="ml-walkthrough__step-body"><p>Вместо всех активаций checkpointing оборачивает сегменты сети так, что сохраняется только вход сегмента («checkpoint»). Промежуточные активации внутри сегмента освобождаются сразу после его forward. Входы на границах сегментов — опорные точки, из которых вычисление можно восстановить.</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 03</span>
-          <h3 class="ml-walkthrough__step-heading">Backward recomputes forward for each segment on demand</h3>
-          <div class="ml-walkthrough__step-body"><p>When the backward pass reaches a checkpointed segment, it re-runs the forward computation from the saved checkpoint input to regenerate the discarded activations. These activations are then used immediately for gradient computation and freed again. This "recompute on demand" strategy means only one segment's activations are alive in VRAM at any time during the backward pass.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Backward пересчитывает forward каждого сегмента по требованию</h3>
+          <div class="ml-walkthrough__step-body"><p>Когда backward доходит до сегмента, он заново запускает forward от сохранённого входа и восстанавливает выброшенные активации. Они сразу используются для градиентов и снова освобождаются. Поэтому во время backward в VRAM живут активации только одного сегмента (плюс сохранённые входы сегментов).</p></div>
         </div>
         <div class="ml-walkthrough__step">
           <span class="ml-walkthrough__step-num">Шаг 04</span>
-          <h3 class="ml-walkthrough__step-heading">Trade-off: ~30% more compute, memory drops from O(L) to O(√L)</h3>
-          <div class="ml-walkthrough__step-body"><p>With optimal checkpoint placement every √L layers, peak activation memory drops from O(L) to O(√L) — for a 48-layer model that is roughly 7× less activation memory. The cost is that the forward pass effectively runs 1.33× times in total (once normally, plus partial recomputation during backward). In practice this translates to roughly 20–35% slower training steps, which is almost always worth it if the alternative is OOM or a smaller batch.</p></div>
+          <h3 class="ml-walkthrough__step-heading">Компромисс: ~30% больше вычислений, память падает с O(L) до O(√L)</h3>
+          <div class="ml-walkthrough__step-body"><p>При чекпоинтах каждые √L слоёв пиковая память на активации падает с O(L) до O(√L) — для 48 слоёв это примерно в 7 раз меньше. Цена — ещё один forward на шаг: если backward стоит ~2 forward, шаг стоит ~4 forward вместо 3, то есть ≈ +33% вычислений. На практике шаг замедляется на 20–35%, и это почти всегда лучше, чем OOM или меньший batch.</p></div>
         </div>
       </div>
       <div class="ml-walkthrough__progress"><div class="ml-walkthrough__progress-bar"></div></div>
-    </div>
-
-    <div class="ml-quiz">
-      <div class="ml-quiz__header">
-        <span class="ml-quiz__label">Проверь себя</span>
-        <h3 class="ml-quiz__title">Gradient checkpointing mechanics</h3>
-      </div>
-      <ol class="ml-quiz__list">
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">Why does checkpointing increase compute time?</summary>
-            <div class="ml-quiz__a"><p>Because the forward pass must be run a second time, partially, during the backward pass. For each checkpointed segment, when the backward pass arrives at that segment, PyTorch re-executes the segment's forward computation from its saved input checkpoint. This regenerated activation is then used for the gradient computation and freed. The extra compute is roughly one additional full forward pass spread across all segments, adding approximately 30% wall-clock time to each training step.</p></div>
-          </details>
-        </li>
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">What is the optimal checkpoint frequency for minimum memory?</summary>
-            <div class="ml-quiz__a"><p>The optimal strategy is to checkpoint every √L layers, where L is the total number of layers. This minimizes peak memory by balancing the number of stored checkpoints (O(√L)) against the number of activations that must be recomputed per segment (also O(√L)). The resulting peak activation memory is O(√L) rather than O(L) for the unmodified case. For a 36-layer transformer, checkpoint every 6 layers; for 64 layers, every 8 layers.</p></div>
-          </details>
-        </li>
-        <li class="ml-quiz__item">
-          <details class="ml-quiz__entry">
-            <summary class="ml-quiz__q">When should you NOT use checkpointing?</summary>
-            <div class="ml-quiz__a"><p>Avoid checkpointing when: (1) your model already fits comfortably in GPU memory — you pay ~30% compute overhead for no benefit; (2) training is already compute-bound, meaning the GPU is the bottleneck and adding more computation will extend run time proportionally; (3) the checkpointed code is not safe to re-run: it has side effects or randomness that is not captured. Note that <code>torch.utils.checkpoint</code> saves and restores the RNG state by default (<code>preserve_rng_state=True</code>), so ordinary dropout is recomputed identically; the problem appears if you disable that, use your own recomputation, or draw random numbers from a generator PyTorch does not track.</p></div>
-          </details>
-        </li>
-      </ol>
     </div>
 
     <div class="warn">
