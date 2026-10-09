@@ -22,7 +22,7 @@
         <span class="tag">Masks</span>
       </div>
       <h1>5.10 Segmentation</h1>
-      <p class="muted">Segmentation predicts a label for each pixel, not just one label for the whole image or one box for an object.</p>
+      <p class="muted">Сегментация предсказывает метку для каждого пикселя, а не одну метку на изображение или один бокс на объект.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -51,36 +51,36 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>Segmentation is dense prediction. Semantic segmentation assigns a class to every pixel. Instance segmentation separates object identities. U-Net remains the core mental model: downsample for context, upsample for resolution, use skip connections to preserve detail.</p>
+      <p>Сегментация — это dense prediction. Semantic segmentation присваивает класс каждому пикселю, instance segmentation ещё и разделяет отдельные объекты. Базовая ментальная модель — U-Net: downsampling ради контекста, upsampling ради разрешения, skip connections для сохранения деталей.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="05_resnet_normalization.html">5.5 ResNet</a>, <a href="09_object_detection.html">5.9 Detection</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>75-100 min</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High for CV/medical roles</span></div>
-      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="05_resnet_normalization.html">5.5 ResNet</a>, <a href="09_object_detection.html">5.9 Detection</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>75–100 мин</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая для CV и медицины</span></div>
+      <div class="meta-card"><strong>Глубина</strong><span>Основательная</span></div>
     </section>
 
     <section class="card">
-      <h2>Why this matters</h2>
-      <p>Segmentation is used when exact shape matters: tumors, roads, lanes, product defects, organs, satellite parcels, document layout, clothing, and image editing. The output is not "there is a dog"; it is "these exact pixels are dog".</p>
+      <h2>Зачем это нужно</h2>
+      <p>Сегментация нужна там, где важна точная форма: опухоли, дороги, разметка полос, дефекты продукции, органы, участки на спутниковых снимках, вёрстка документов, одежда, редактирование изображений. Ответ не «здесь есть собака», а «вот именно эти пиксели — собака».</p>
     </section>
 
     <section class="card">
       <h2>Semantic vs instance segmentation</h2>
       <table>
-        <thead><tr><th>Task</th><th>Output</th><th>Example</th></tr></thead>
+        <thead><tr><th>Задача</th><th>Выход</th><th>Пример</th></tr></thead>
         <tbody>
-          <tr><td>Semantic segmentation</td><td>Class per pixel</td><td>all road pixels are "road"</td></tr>
-          <tr><td>Instance segmentation</td><td>Class plus object identity</td><td>car 1 and car 2 separated</td></tr>
-          <tr><td>Panoptic segmentation</td><td>Unified semantic + instance map</td><td>stuff classes and countable objects together</td></tr>
+          <tr><td>Semantic segmentation</td><td>Класс для каждого пикселя</td><td>все пиксели дороги — «road»</td></tr>
+          <tr><td>Instance segmentation</td><td>Класс плюс идентичность объекта</td><td>машина 1 и машина 2 разделены</td></tr>
+          <tr><td>Panoptic segmentation</td><td>Единая semantic + instance карта</td><td>фон («stuff») и счётные объекты вместе</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>U-Net architecture</h2>
-      <p>U-Net has an encoder-decoder shape. The encoder compresses spatial resolution and extracts context. The decoder restores resolution. Skip connections copy high-resolution features from encoder to decoder.</p>
+      <h2>Архитектура U-Net</h2>
+      <p>U-Net устроена как encoder-decoder: encoder уменьшает пространственное разрешение и извлекает контекст, decoder восстанавливает разрешение, а skip connections передают признаки высокого разрешения из encoder в decoder.</p>
       <div class="formula" data-no-tex>decoder_l = upsample(decoder_{l+1}) concat encoder_l</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -97,8 +97,8 @@
     </section>
 
     <section class="card">
-      <h2>Dice coefficient and Dice loss</h2>
-      <p>Dice is common for imbalanced masks because background pixels often dominate cross-entropy.</p>
+      <h2>Dice coefficient и Dice loss</h2>
+      <p>Dice популярен для несбалансированных масок, потому что в cross-entropy часто доминируют пиксели фона.</p>
       <div class="formula" data-render-tex data-tex-source="\mathrm{Dice}(p,y)=\frac{2\sum_i p_i y_i+\epsilon}{\sum_i p_i+\sum_i y_i+\epsilon}">
         Dice(p,y) = (2 sum_i p_i y_i + eps) / (sum_i p_i + sum_i y_i + eps)
       </div>
@@ -118,20 +118,20 @@
     </section>
 
     <section class="card">
-      <h2>Loss choices</h2>
+      <h2>Выбор loss</h2>
       <table>
-        <thead><tr><th>Loss</th><th>Use when</th><th>Risk</th></tr></thead>
+        <thead><tr><th>Loss</th><th>Когда использовать</th><th>Риск</th></tr></thead>
         <tbody>
-          <tr><td>Cross-entropy</td><td>balanced classes and calibrated pixel probabilities</td><td>background dominates</td></tr>
-          <tr><td>Dice loss</td><td>small foreground objects, medical masks</td><td>can be unstable for tiny masks</td></tr>
-          <tr><td>Focal loss</td><td>many easy background pixels</td><td>extra hyperparameters</td></tr>
-          <tr><td>Boundary loss</td><td>shape boundaries are critical</td><td>harder implementation</td></tr>
+          <tr><td>Cross-entropy</td><td>классы сбалансированы, нужны откалиброванные вероятности пикселей</td><td>доминирует фон</td></tr>
+          <tr><td>Dice loss</td><td>мелкие foreground-объекты, медицинские маски</td><td>может быть нестабилен на крошечных масках</td></tr>
+          <tr><td>Focal loss</td><td>много лёгких пикселей фона</td><td>лишние гиперпараметры</td></tr>
+          <tr><td>Boundary loss</td><td>критичны границы формы</td><td>сложнее реализовать</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>Runnable code: Dice score</h2>
+      <h2>Рабочий код: Dice score</h2>
       <pre><code class="language-python"># What it does: compute binary Dice score for segmentation masks
 # Input shapes: pred=(H,W), target=(H,W)
 # Output shape: scalar
@@ -150,37 +150,18 @@ print(dice_score(pred, target))
     </section>
 
     <section class="card">
-      <h2>Common mistakes</h2>
+      <h2>Частые ошибки</h2>
       <ul>
-        <li>Using image-level labels when pixel-level masks are required.</li>
-        <li>Resizing masks with bilinear interpolation, which creates invalid class IDs.</li>
-        <li>Reporting only pixel accuracy on imbalanced masks.</li>
-        <li>Forgetting that data augmentation must transform image and mask identically.</li>
+        <li>Использовать метки на уровне изображения, когда нужны маски на уровне пикселей.</li>
+        <li>Ресайзить маски билинейной интерполяцией — появляются несуществующие ID классов (нужен nearest).</li>
+        <li>Отчитываться только pixel accuracy на несбалансированных масках.</li>
+        <li>Забывать, что аугментации должны одинаково преобразовывать изображение и маску.</li>
       </ul>
     </section>
 
     <section class="card">
       <h2>Connections</h2>
-      <p>Detection localizes with boxes; segmentation localizes with masks. See <a href="09_object_detection.html">5.9 Object Detection</a> and <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 End-to-End CV Pipeline</a>.</p>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Type A - Derivation - Foundational</summary><div class="intuition-content">Derive Dice loss = 1 - Dice and explain why it handles class imbalance better than pixel accuracy.</div></details>
-      <details class="intuition-block"><summary>Type B - Coding - Intermediate</summary><div class="intuition-content">Implement mean IoU for a 3-class segmentation mask using NumPy.</div></details>
-      <details class="intuition-block"><summary>Type C - Conceptual - Intermediate</summary><div class="intuition-content">Why do U-Net skip connections help boundary quality?</div></details>
-      <details class="intuition-block"><summary>Type C - Interview - Hard</summary><div class="intuition-content">How would you evaluate a model for tumor segmentation when false negatives are more costly?</div></details>
-      <details class="intuition-block"><summary>Type B - Practical - Foundational</summary><div class="intuition-content">Write an augmentation function that flips image and mask together.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What is the difference between semantic and instance segmentation?</li>
-        <li>Why does U-Net concatenate encoder features into the decoder?</li>
-        <li>Why can pixel accuracy be misleading?</li>
-        <li>When would Dice loss be preferable to cross-entropy?</li>
-      </ol>
+      <p>Detection локализует боксами, сегментация — масками. См. <a href="09_object_detection.html">5.9 Object Detection</a> и <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 End-to-End CV Pipeline</a>.</p>
     </section>
   
   <script src="../bundle.js" defer></script>
@@ -192,6 +173,9 @@ print(dice_score(pred, target))
     <details><summary>[Intermediate] U-Net skip connections</summary><p>Зачем U-Net передаёт encoder features в decoder? <strong>Решение:</strong> чтобы вернуть spatial detail, потерянный при downsampling.</p></details>
     <details><summary>[Intermediate] Loss choice</summary><p>Когда BCE + Dice лучше одной BCE? <strong>Решение:</strong> при сильном дисбалансе foreground/background Dice стабилизирует overlap objective.</p></details>
     <details><summary>[Hard] Boundary errors</summary><p>Почему segmentation может иметь высокий pixel accuracy и плохие границы? <strong>Решение:</strong> фон доминирует, а boundary pixels составляют малую долю, но критичны визуально/практически.</p></details>
+      <details><summary>[Foundational] Аугментация пары</summary><p>Напиши функцию аугментации, которая отражает изображение и маску одновременно.</p></details>
+      <details><summary>[Intermediate] Mean IoU</summary><p>Реализуй mean IoU для маски из 3 классов на NumPy.</p></details>
+      <details><summary>[Interview] Сегментация опухолей</summary><p>Как бы ты оценивал модель сегментации опухолей, если false negatives намного дороже false positives?</p></details>
   </section>
 
   <div class="ml-quiz">
@@ -234,7 +218,7 @@ print(dice_score(pred, target))
       <li>Почему U-Net использует skip connections?</li>
       <li>Когда Dice/IoU loss полезнее plain BCE?</li>
       <li>Какие ошибки типичны при дисбалансе foreground/background?</li>
-      <li>Rubber duck: объясни segmentation как классификацию каждого пикселя.</li>
+      <li>Чем semantic segmentation отличается от instance?</li><li>Почему pixel accuracy может вводить в заблуждение?</li><li>Rubber duck: объясни segmentation как классификацию каждого пикселя.</li>
     </ul>
   </section>
 

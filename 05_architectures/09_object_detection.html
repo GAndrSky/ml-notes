@@ -22,7 +22,7 @@
         <span class="tag">YOLO / DETR</span>
       </div>
       <h1>5.9 Object Detection</h1>
-      <p class="muted">Object detection answers two questions at once: what objects are present, and where each object is located.</p>
+      <p class="muted">Object detection отвечает сразу на два вопроса: какие объекты есть на изображении и где находится каждый из них.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -51,24 +51,24 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>Detection is classification plus localization. The model predicts bounding boxes, class probabilities, and confidence scores. The hard parts are matching predictions to ground truth, suppressing duplicate boxes, and evaluating localization quality with IoU and mAP.</p>
+      <p>Detection — это классификация плюс локализация. Модель предсказывает bounding boxes, вероятности классов и confidence. Сложные части — сопоставить предсказания с ground truth, подавить дубликаты и оценить качество локализации через IoU и mAP.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="08_vision_transformer.html">5.8 ViT</a>, <a href="../02_classic_ml/07_classification_metrics.html">2.7 Metrics</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>90-120 min</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High for CV roles</span></div>
-      <div class="meta-card"><strong>Research depth</strong><span>Solid</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, <a href="08_vision_transformer.html">5.8 ViT</a>, <a href="../02_classic_ml/07_classification_metrics.html">2.7 Metrics</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>90–120 мин</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая для CV-ролей</span></div>
+      <div class="meta-card"><strong>Глубина</strong><span>Основательная</span></div>
     </section>
 
     <section class="card">
-      <h2>Why this matters</h2>
-      <p>Detection appears in autonomous driving, retail analytics, medical imaging, OCR pipelines, manufacturing inspection, moderation, sports analytics, and robotics. It is usually more production-sensitive than image classification because boxes must be spatially accurate, stable across frames, and fast enough for real-time inference.</p>
+      <h2>Зачем это нужно</h2>
+      <p>Detection используется в автономном вождении, ритейл-аналитике, медицинской визуализации, OCR-пайплайнах, контроле качества на производстве, модерации, спортивной аналитике и робототехнике. Обычно она чувствительнее к продакшену, чем классификация: боксы должны быть точными в пространстве, стабильными между кадрами и достаточно быстрыми для real-time.</p>
     </section>
 
     <section class="card">
-      <h2>Bounding boxes and IoU</h2>
-      <p>A detector usually predicts boxes as coordinates. The standard quality measure for localization is Intersection over Union.</p>
+      <h2>Bounding boxes и IoU</h2>
+      <p>Детектор обычно предсказывает боксы как координаты. Стандартная мера качества локализации — Intersection over Union.</p>
       <div class="formula" data-render-tex data-tex-source="\mathrm{IoU}(A,B)=\frac{|A\cap B|}{|A\cup B|}">IoU(A,B) = area(intersection) / area(union)</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -86,8 +86,8 @@
     </section>
 
     <section class="card">
-      <h2>Anchors, YOLO, and one-stage detection</h2>
-      <p>Anchor-based detectors start with predefined reference boxes. The network predicts offsets from anchors and class/objectness scores. YOLO-style models divide the image into prediction locations and output many candidate boxes in one forward pass.</p>
+      <h2>Anchors, YOLO и one-stage detection</h2>
+      <p>Anchor-based детекторы стартуют с заранее заданных опорных боксов: сеть предсказывает смещения относительно anchors и оценки класса/objectness. Модели в стиле YOLO делят изображение на позиции предсказания и выдают множество кандидатов за один forward pass (современные версии YOLO бывают и anchor-free).</p>
       <div class="formula" data-no-tex>b_x = sigma(t_x) + c_x,  b_w = p_w exp(t_w)</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -101,39 +101,39 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> the detector does not invent boxes from scratch; it adjusts reference boxes.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> resize and move a template frame until it fits the object.</div>
       </div>
-      <p><strong>YOLO tradeoff:</strong> very fast and production-friendly, but dense candidate boxes require careful confidence thresholds and NMS.</p>
+      <p><strong>Компромисс YOLO:</strong> очень быстро и удобно для продакшена, но из-за плотных кандидатов нужны аккуратные пороги confidence и NMS.</p>
     </section>
 
     <section class="card">
       <h2>Non-Maximum Suppression</h2>
-      <p>NMS removes duplicate detections. Sort boxes by confidence, keep the strongest box, and suppress nearby boxes with high IoU.</p>
+      <p>NMS удаляет дубликаты: сортируем боксы по confidence, оставляем самый уверенный и подавляем соседние боксы с высоким IoU, затем повторяем.</p>
       <div class="formula" data-no-tex>keep box_i if IoU(box_i, selected_box) < threshold</div>
-      <p><strong>Typical thresholds:</strong> confidence 0.25-0.5, NMS IoU 0.45-0.7. Lower NMS threshold removes more duplicates but may delete nearby objects.</p>
+      <p><strong>Типичные пороги:</strong> confidence 0.25–0.5, IoU для NMS 0.45–0.7. Чем ниже порог NMS, тем больше дубликатов удаляется — но можно удалить и близко стоящие разные объекты.</p>
     </section>
 
     <section class="card">
-      <h2>DETR: detection as set prediction</h2>
-      <p>DETR removes anchors and NMS. It uses transformer object queries and bipartite matching between predicted boxes and ground-truth objects.</p>
+      <h2>DETR: detection как предсказание множества</h2>
+      <p>DETR обходится без anchors и NMS: он использует transformer object queries и двудольное сопоставление предсказанных боксов с объектами ground truth.</p>
       <div class="formula" data-no-tex>loss = class_loss + lambda_box L1(box, box*) + lambda_iou (1 - GIoU(box, box*))</div>
-      <p>The key idea is that the model predicts a fixed-size set of objects, and Hungarian matching decides which prediction corresponds to which ground-truth object.</p>
+      <p>Ключевая идея: модель предсказывает множество объектов фиксированного размера, а Hungarian matching решает, какое предсказание соответствует какому объекту ground truth.</p>
     </section>
 
     <section class="card">
-      <h2>Metrics: mAP</h2>
-      <p>Mean Average Precision summarizes precision-recall curves across classes and IoU thresholds. COCO-style mAP averages from IoU 0.50 to 0.95, which strongly rewards precise boxes.</p>
+      <h2>Метрики: mAP</h2>
+      <p>Mean Average Precision суммирует precision-recall кривые по классам и порогам IoU. mAP в стиле COCO усредняет по IoU от 0.50 до 0.95 и поэтому сильно вознаграждает точные боксы.</p>
       <table>
-        <thead><tr><th>Metric</th><th>Meaning</th><th>What it catches</th></tr></thead>
+        <thead><tr><th>Метрика</th><th>Смысл</th><th>Что ловит</th></tr></thead>
         <tbody>
-          <tr><td>mAP@0.5</td><td>Detection counts as correct if IoU >= 0.5</td><td>Loose localization</td></tr>
-          <tr><td>mAP@0.5:0.95</td><td>Average over stricter IoU thresholds</td><td>Box precision</td></tr>
-          <tr><td>Recall</td><td>How many objects were found</td><td>Missed detections</td></tr>
-          <tr><td>FPS / latency</td><td>Inference speed</td><td>Deployment feasibility</td></tr>
+          <tr><td>mAP@0.5</td><td>Детекция считается верной, если IoU ≥ 0.5</td><td>Грубую локализацию</td></tr>
+          <tr><td>mAP@0.5:0.95</td><td>Среднее по более строгим порогам IoU</td><td>Точность боксов</td></tr>
+          <tr><td>Recall</td><td>Сколько объектов найдено</td><td>Пропущенные объекты</td></tr>
+          <tr><td>FPS / latency</td><td>Скорость inference</td><td>Реалистичность деплоя</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="card">
-      <h2>Runnable code: IoU and NMS</h2>
+      <h2>Рабочий код: IoU и NMS</h2>
       <pre><code class="language-python"># What it does: compute IoU and run greedy NMS
 # Input shapes: boxes=(N,4) in xyxy format, scores=(N,)
 # Output shape: kept indices=(K,)
@@ -164,37 +164,18 @@ print(nms(boxes, scores, threshold=0.5))
     </section>
 
     <section class="card">
-      <h2>Common mistakes</h2>
+      <h2>Частые ошибки</h2>
       <ul>
-        <li>Reporting classification accuracy instead of detection metrics.</li>
-        <li>Training on boxes with inconsistent coordinate formats.</li>
-        <li>Using one confidence threshold for all classes when class imbalance is strong.</li>
-        <li>Ignoring small-object performance and latency constraints.</li>
+        <li>Отчитываться accuracy классификации вместо метрик детекции.</li>
+        <li>Учить на боксах в несогласованных форматах координат.</li>
+        <li>Один порог confidence для всех классов при сильном дисбалансе.</li>
+        <li>Игнорировать качество на мелких объектах и ограничения по latency.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>Connections</h2>
-      <p>See <a href="01_cnn_convolutional_networks.html">5.1 CNN</a> for feature maps, <a href="08_vision_transformer.html">5.8 ViT</a> for transformer vision backbones, and <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 CV Pipeline</a> for a project path.</p>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Type A - Derivation - Foundational</summary><div class="intuition-content">Compute IoU for two boxes by hand and explain how false positives change precision.</div></details>
-      <details class="intuition-block"><summary>Type B - Coding - Intermediate</summary><div class="intuition-content">Extend the NMS code to class-wise NMS so boxes from different classes do not suppress each other.</div></details>
-      <details class="intuition-block"><summary>Type C - Conceptual - Hard</summary><div class="intuition-content">Explain why DETR can avoid NMS but YOLO usually still needs it.</div></details>
-      <details class="intuition-block"><summary>Type C - Interview - Intermediate</summary><div class="intuition-content">When would you choose YOLO over DETR in production?</div></details>
-      <details class="intuition-block"><summary>Type B - Evaluation - Intermediate</summary><div class="intuition-content">Write a script that counts TP/FP/FN at IoU 0.5 for one class.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What does IoU measure and why is it not the same as classification confidence?</li>
-        <li>Why does NMS remove duplicate detections?</li>
-        <li>What is the difference between anchor-based detection and DETR?</li>
-        <li>Why is mAP@0.5:0.95 stricter than mAP@0.5?</li>
-      </ol>
+      <h2>Связи</h2>
+      <p>Карты признаков — в <a href="01_cnn_convolutional_networks.html">5.1 CNN</a>, трансформерные backbone-ы — в <a href="08_vision_transformer.html">5.8 ViT</a>, проектный путь — в <a href="../10_projects/03_end_to_end_cv_pipeline.html">10.3 CV Pipeline</a>.</p>
     </section>
   
   <script src="../bundle.js" defer></script>
@@ -206,6 +187,10 @@ print(nms(boxes, scores, threshold=0.5))
     <details><summary>[Intermediate] Anchor boxes</summary><p>Зачем нужны anchors? <strong>Решение:</strong> они задают набор prior boxes разных размеров/аспектов, от которых модель предсказывает поправки.</p></details>
     <details><summary>[Intermediate] YOLO intuition</summary><p>Почему YOLO быстрый? <strong>Решение:</strong> предсказывает boxes и классы dense/single-stage без отдельного region proposal этапа.</p></details>
     <details><summary>[Hard] DETR tradeoff</summary><p>Чем DETR отличается от anchor-based detectors? <strong>Решение:</strong> формулирует detection как set prediction с bipartite matching и attention.</p></details>
+      <details><summary>[Intermediate] Class-wise NMS</summary><p>Расширь код NMS до class-wise NMS, чтобы боксы разных классов не подавляли друг друга.</p></details>
+      <details><summary>[Intermediate] TP/FP/FN</summary><p>Напиши скрипт, который считает TP/FP/FN при IoU 0.5 для одного класса, и посчитай по ним precision и recall.</p></details>
+      <details><summary>[Hard] Почему DETR без NMS</summary><p>Объясни, почему DETR может обойтись без NMS, а YOLO обычно нет. <strong>Подсказка:</strong> Hungarian matching при обучении штрафует дубликаты — каждому объекту соответствует ровно одно предсказание.</p></details>
+      <details><summary>[Interview] YOLO или DETR</summary><p>Когда в продакшене ты выберешь YOLO, а когда DETR-подобную модель?</p></details>
   </section>
 
   <div class="ml-quiz">
@@ -248,7 +233,7 @@ print(nms(boxes, scores, threshold=0.5))
       <li>Что измеряет IoU?</li>
       <li>Зачем нужен NMS?</li>
       <li>Почему small objects сложны для detection?</li>
-      <li>Rubber duck: объясни object detection как задачу “что это и где это”.</li>
+      <li>Чем IoU отличается от confidence классификации?</li><li>Чем anchor-based detection отличается от DETR?</li><li>Почему mAP@0.5:0.95 строже, чем mAP@0.5?</li><li>Rubber duck: объясни object detection как задачу “что это и где это”.</li>
     </ul>
   </section>
 

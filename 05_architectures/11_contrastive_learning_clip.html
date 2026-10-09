@@ -22,7 +22,7 @@
         <span class="tag">Multimodal</span>
       </div>
       <h1>5.11 Contrastive Learning and CLIP</h1>
-      <p class="muted">Contrastive learning trains representations by pulling matching pairs together and pushing non-matching pairs apart.</p>
+      <p class="muted">Contrastive learning учит представления, притягивая соответствующие пары и отталкивая несоответствующие.</p>
     </section>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -51,24 +51,24 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>CLIP learns a shared embedding space for images and text. Matching image-caption pairs get high cosine similarity; mismatched pairs get low similarity. This makes zero-shot classification possible by comparing an image to text prompts.</p>
+      <p>CLIP учит общее пространство эмбеддингов для изображений и текста: у соответствующих пар «картинка — подпись» высокая cosine similarity, у несоответствующих — низкая. Это позволяет zero-shot классификацию: изображение сравнивают с текстовыми промптами.</p>
     </section>
 
     <section class="learning-meta">
-      <div class="meta-card"><strong>Prerequisites</strong><span><a href="../01_math/01_linear_algebra.html">1.1 Linear Algebra</a>, <a href="03_transformer_attention.html">5.3 Attention</a>, <a href="08_vision_transformer.html">5.8 ViT</a></span></div>
-      <div class="meta-card"><strong>Estimated time</strong><span>90-120 min</span></div>
-      <div class="meta-card"><strong>Job relevance</strong><span>High for multimodal/LLM roles</span></div>
-      <div class="meta-card"><strong>Research depth</strong><span>Deep</span></div>
+      <div class="meta-card"><strong>Нужно знать</strong><span><a href="../01_math/01_linear_algebra.html">1.1 Linear Algebra</a>, <a href="03_transformer_attention.html">5.3 Attention</a>, <a href="08_vision_transformer.html">5.8 ViT</a></span></div>
+      <div class="meta-card"><strong>Время</strong><span>90–120 мин</span></div>
+      <div class="meta-card"><strong>Польза для работы</strong><span>Высокая для мультимодальных и LLM-ролей</span></div>
+      <div class="meta-card"><strong>Глубина</strong><span>Глубокая</span></div>
     </section>
 
     <section class="card">
-      <h2>Why this matters</h2>
-      <p>Contrastive learning is the backbone of modern retrieval, embedding models, multimodal systems, self-supervised visual pretraining, and CLIP-like zero-shot classifiers. It turns "labels" into relationships between examples.</p>
+      <h2>Зачем это нужно</h2>
+      <p>Contrastive learning лежит в основе современного поиска, моделей эмбеддингов, мультимодальных систем, self-supervised предобучения в зрении и zero-shot классификаторов в стиле CLIP. Он превращает «метки» в отношения между примерами.</p>
     </section>
 
     <section class="card">
       <h2>InfoNCE loss</h2>
-      <p>For one anchor, InfoNCE makes the positive example more similar than all negatives in the batch.</p>
+      <p>Для одного якорного примера InfoNCE делает positive более похожим, чем все negatives в batch.</p>
       <div class="formula" data-render-tex data-tex-source="\mathcal{L}_i=-\log\frac{\exp(s_{i,i}/\tau)}{\sum_{j=1}^{N}\exp(s_{i,j}/\tau)}">
         L_i = -log exp(s_i,i / tau) / sum_j exp(s_i,j / tau)
       </div>
@@ -88,18 +88,18 @@
     </section>
 
     <section class="card">
-      <h2>SimCLR: self-supervised contrastive vision</h2>
-      <p>SimCLR creates two augmented views of the same image. These two views are positives. Other images in the batch are negatives. The model learns invariances: crop, color jitter, blur, and small geometric changes should not destroy identity.</p>
+      <h2>SimCLR: self-supervised contrastive learning в зрении</h2>
+      <p>SimCLR создаёт два аугментированных вида одного изображения — это positives; остальные изображения в batch — negatives. Модель учит инвариантности: crop, color jitter, blur и небольшие геометрические изменения не должны менять «идентичность» объекта.</p>
       <ul>
-        <li><strong>Encoder:</strong> CNN or ViT maps image to representation.</li>
-        <li><strong>Projection head:</strong> MLP maps representation to contrastive space.</li>
-        <li><strong>Augmentations:</strong> define what information should be ignored.</li>
+        <li><strong>Encoder:</strong> CNN или ViT отображает изображение в представление.</li>
+        <li><strong>Projection head:</strong> MLP отображает представление в пространство для contrastive loss.</li>
+        <li><strong>Аугментации:</strong> определяют, какую информацию модель должна игнорировать.</li>
       </ul>
     </section>
 
     <section class="card">
-      <h2>CLIP architecture</h2>
-      <p>CLIP uses two encoders: one for images and one for text. It trains on image-caption pairs and optimizes contrastive loss in both directions: image-to-text and text-to-image.</p>
+      <h2>Архитектура CLIP</h2>
+      <p>CLIP использует два encoder-а — для изображений и для текста. Он обучается на парах «картинка — подпись» и оптимизирует contrastive loss в обе стороны: image→text и text→image.</p>
       <div class="formula" data-no-tex>logits = normalize(image_emb) @ normalize(text_emb)^T / tau</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -119,13 +119,13 @@
     </section>
 
     <section class="card">
-      <h2>Zero-shot classification</h2>
-      <p>To classify an image, encode prompts like "a photo of a cat", "a photo of a dog", "a photo of a car". Pick the text embedding most similar to the image embedding.</p>
-      <p>Prompt wording matters. CLIP is not only recognizing labels; it compares the image to natural-language descriptions.</p>
+      <h2>Zero-shot классификация</h2>
+      <p>Чтобы классифицировать изображение, кодируем промпты вроде «a photo of a cat», «a photo of a dog», «a photo of a car» и выбираем текстовый эмбеддинг, наиболее похожий на эмбеддинг изображения.</p>
+      <p>Формулировка промпта важна: CLIP не просто распознаёт метки, а сравнивает изображение с описаниями на естественном языке.</p>
     </section>
 
     <section class="card">
-      <h2>Runnable code: contrastive logits</h2>
+      <h2>Рабочий код: contrastive logits</h2>
       <pre><code class="language-python"># What it does: compute CLIP-style contrastive logits
 # Input shapes: image_emb=(B,d), text_emb=(B,d)
 # Output shape: logits=(B,B)
@@ -143,37 +143,18 @@ print(logits)
     </section>
 
     <section class="card">
-      <h2>Common mistakes</h2>
+      <h2>Частые ошибки</h2>
       <ul>
-        <li>Thinking negatives are always true negatives. In large batches, false negatives can exist.</li>
-        <li>Ignoring augmentation design in self-supervised contrastive learning.</li>
-        <li>Assuming CLIP explanations are causal because text similarity looks intuitive.</li>
-        <li>Using cosine similarity without checking embedding normalization.</li>
+        <li>Считать negatives всегда настоящими negatives: в больших batch встречаются false negatives.</li>
+        <li>Не продумывать аугментации в self-supervised contrastive learning.</li>
+        <li>Считать объяснения CLIP причинными, потому что текстовое сходство выглядит интуитивно.</li>
+        <li>Использовать cosine similarity, не проверив нормализацию эмбеддингов.</li>
       </ul>
     </section>
 
     <section class="card">
       <h2>Connections</h2>
-      <p>Contrastive learning connects <a href="08_vision_transformer.html">ViT</a>, <a href="../06_llm/09_retrieval_augmented_generation.html">RAG retrieval</a>, embedding models, image search, and multimodal LLMs.</p>
-    </section>
-
-    <section class="card">
-      <h2>Exercises</h2>
-      <details class="intuition-block"><summary>Type A - Derivation - Intermediate</summary><div class="intuition-content">Show that InfoNCE is cross-entropy where the correct class is the positive pair index.</div></details>
-      <details class="intuition-block"><summary>Type B - Coding - Foundational</summary><div class="intuition-content">Implement symmetric CLIP loss using NumPy logits and cross-entropy.</div></details>
-      <details class="intuition-block"><summary>Type C - Conceptual - Intermediate</summary><div class="intuition-content">Why does batch size matter for contrastive learning?</div></details>
-      <details class="intuition-block"><summary>Type C - Interview - Hard</summary><div class="intuition-content">Explain why CLIP can do zero-shot classification but still fails on counting and spatial relations.</div></details>
-      <details class="intuition-block"><summary>Type B - Practical - Intermediate</summary><div class="intuition-content">Build a tiny image-text retrieval demo using precomputed embeddings.</div></details>
-    </section>
-
-    <section class="card">
-      <h2>Checkpoint</h2>
-      <ol>
-        <li>What is a positive pair in InfoNCE?</li>
-        <li>Why does temperature affect contrastive training?</li>
-        <li>How does CLIP perform zero-shot classification?</li>
-        <li>Why are augmentations central in SimCLR?</li>
-      </ol>
+      <p>Contrastive learning связывает <a href="08_vision_transformer.html">ViT</a>, <a href="../06_llm/09_retrieval_augmented_generation.html">retrieval в RAG</a>, модели эмбеддингов, поиск по изображениям и мультимодальные LLM.</p>
     </section>
   
   <script src="../bundle.js" defer></script>
@@ -185,6 +166,10 @@ print(logits)
     <details><summary>[Intermediate] Temperature</summary><p>Как temperature влияет на contrastive loss? <strong>Решение:</strong> низкая temperature делает softmax резче и сильнее фокусирует hard negatives.</p></details>
     <details><summary>[Intermediate] Zero-shot classification</summary><p>Как CLIP делает zero-shot classification? <strong>Решение:</strong> сравнивает image embedding с text embeddings prompt-ов классов.</p></details>
     <details><summary>[Hard] False negatives</summary><p>Почему false negatives вредят contrastive learning? <strong>Решение:</strong> модель отталкивает объекты, которые семантически похожи или принадлежат одному классу.</p></details>
+      <details><summary>[Intermediate] InfoNCE = cross-entropy</summary><p>Покажи, что InfoNCE — это cross-entropy, где правильный «класс» — индекс positive-пары.</p></details>
+      <details><summary>[Foundational] Симметричный CLIP loss</summary><p>Реализуй симметричный CLIP loss на NumPy: матрица logits и cross-entropy по строкам и по столбцам.</p></details>
+      <details><summary>[Interview] Пределы CLIP</summary><p>Объясни, почему CLIP умеет zero-shot классификацию, но ошибается в подсчёте объектов и пространственных отношениях.</p></details>
+      <details><summary>[Practice] Мини-поиск</summary><p>Собери крошечное демо поиска «текст → изображение» на заранее посчитанных эмбеддингах.</p></details>
   </section>
 
   <div class="ml-quiz">
@@ -227,7 +212,7 @@ print(logits)
       <li>Почему batch size важен для contrastive learning?</li>
       <li>Как CLIP связывает текст и изображение?</li>
       <li>Что ограничивает zero-shot CLIP?</li>
-      <li>Rubber duck: объясни CLIP как обучение общей карты, где похожие картинки и подписи лежат рядом.</li>
+      <li>Как temperature влияет на contrastive обучение?</li><li>Почему аугментации — центральная часть SimCLR?</li><li>Rubber duck: объясни CLIP как обучение общей карты, где похожие картинки и подписи лежат рядом.</li>
     </ul>
   </section>
 
