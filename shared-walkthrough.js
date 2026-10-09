@@ -16,6 +16,9 @@
 (function () {
   'use strict';
 
+  if (window.__mlNotesWalkthroughInitialized) return;
+  window.__mlNotesWalkthroughInitialized = true;
+
   function initOne(root) {
     var steps    = root.querySelectorAll('.ml-walkthrough__step');
     var btnPrev  = root.querySelector('[data-wt-prev]');

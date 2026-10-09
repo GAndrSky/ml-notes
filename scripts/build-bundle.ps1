@@ -5,7 +5,11 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
 $sourceFiles = @(
+  "course-manifest.js",
   "shared-nav.js",
+  "shared-prevnext.js",
+  "shared-walkthrough.js",
+  "shared-lesson-ui.js",
   "shared-search.js",
   "shared-index.js"
 )

@@ -1001,6 +1001,11 @@
     }
   };
 
+  // Theory copy exists only for blocks 1-8; other blocks (MLOps, projects, job prep) get no section.
+  if (!fallbackBySection[(pageMeta && pageMeta.sectionId) || "classic-ml"]) {
+    return;
+  }
+
   const prose = longFormBySection[(pageMeta && pageMeta.sectionId) || "classic-ml"];
 
   const buildParagraphs = function (items) {

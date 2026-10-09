@@ -7,7 +7,7 @@ Set-Location $repoRoot
 $excludedPages = @("index.html", "course-roadmap.html")
 $lessonPages = Get-ChildItem -Path $repoRoot -Recurse -Filter *.html |
   ForEach-Object { $_.FullName.Substring($repoRoot.Length + 1).Replace('\', '/') } |
-  Where-Object { $_ -notin $excludedPages } |
+  Where-Object { $_ -notin $excludedPages -and $_ -notmatch '^(\.|vendor/)' } |
   Sort-Object
 
 $issues = New-Object System.Collections.Generic.List[string]
@@ -131,7 +131,69 @@ function Test-SearchCoverage {
   }
 }
 
+function Get-NormalizedText {
+  param([string]$Text)
+  return $Text.TrimStart([char]0xFEFF).Replace("`r`n", "`n").Trim()
+}
+
+function Test-BundleFresh {
+  $bundlePath = Join-Path $repoRoot "bundle.js"
+  if (-not (Test-Path -LiteralPath $bundlePath)) {
+    return
+  }
+
+  $bundle = Get-NormalizedText (Get-Content -Raw -LiteralPath $bundlePath -Encoding UTF8)
+  $parts = [regex]::Matches($bundle, '(?s)// BEGIN (\S+)\n(.*?)\n// END \1')
+  if ($parts.Count -eq 0) {
+    Add-Issue "bundle.js has no BEGIN/END sections"
+  }
+
+  foreach ($part in $parts) {
+    $source = $part.Groups[1].Value
+    $sourcePath = Join-Path $repoRoot $source
+    if (-not (Test-Path -LiteralPath $sourcePath)) {
+      Add-Issue "bundle.js contains missing source: $source"
+      continue
+    }
+
+    $sourceText = Get-NormalizedText (Get-Content -Raw -LiteralPath $sourcePath -Encoding UTF8)
+    if ($sourceText -ne $part.Groups[2].Value.Trim()) {
+      Add-Issue "bundle.js is stale for $source (run scripts/build-bundle.ps1)"
+    }
+  }
+}
+
+function Test-CourseManifest {
+  $manifestPath = Join-Path $repoRoot "course-manifest.js"
+  if (-not (Test-Path -LiteralPath $manifestPath)) {
+    Add-Issue "Missing course-manifest.js"
+    return
+  }
+
+  $content = Get-Content -Raw -LiteralPath $manifestPath -Encoding UTF8
+  $paths = @([regex]::Matches($content, 'path:\s*"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+
+  foreach ($path in $paths) {
+    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $path))) {
+      Add-Issue "course-manifest.js points to missing page: $path"
+    }
+  }
+
+  foreach ($relativePath in $lessonPages) {
+    if ($relativePath -notin $paths) {
+      Add-Issue "Missing from course-manifest.js: $relativePath"
+    }
+  }
+
+  $duplicates = $paths | Group-Object | Where-Object { $_.Count -gt 1 }
+  foreach ($duplicate in $duplicates) {
+    Add-Issue "Duplicate page in course-manifest.js: $($duplicate.Name)"
+  }
+}
+
 Test-SearchIndexFiles
+Test-BundleFresh
+Test-CourseManifest
 Test-SharedAssets
 Test-LocalLinks
 Test-SearchCoverage
