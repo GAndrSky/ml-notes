@@ -708,6 +708,11 @@
     }
   );
 
+  // Inline \( ... \) math in ordinary text also needs KaTeX.
+  if (!hasMathCandidates && (pageContainer || document.body).textContent.indexOf("\\(") !== -1) {
+    hasMathCandidates = true;
+  }
+
   var hasFormulaExplainCandidates = document.querySelector(".formula, .fm, .inline-math, [data-render-tex]");
 
   var hasCodeCandidates = Array.prototype.some.call(

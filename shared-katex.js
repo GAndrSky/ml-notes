@@ -467,12 +467,64 @@
     }
   }
 
+  // Inline math written as \( ... \) inside ordinary text (exercises, quizzes, notes).
+  function hasInlineDelimiters() {
+    var root = document.querySelector(".page") || document.body;
+    return root.textContent.indexOf("\\(") !== -1;
+  }
+
+  function renderInlineDelimiters() {
+    var root = document.querySelector(".page") || document.body;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        if (node.nodeValue.indexOf("\\(") === -1) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (node.parentElement && node.parentElement.closest("pre, code, script, style, textarea, .katex, .code-block")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var nodes = [];
+    while (walker.nextNode()) {
+      nodes.push(walker.currentNode);
+    }
+
+    nodes.forEach(function (node) {
+      var text = node.nodeValue;
+      var pattern = /\\\(([\s\S]+?)\\\)/g;
+      var fragment = document.createDocumentFragment();
+      var last = 0;
+      var match;
+      while ((match = pattern.exec(text))) {
+        fragment.appendChild(document.createTextNode(text.slice(last, match.index)));
+        var span = document.createElement("span");
+        span.className = "inline-math";
+        span.setAttribute("data-katex-rendered", "1");
+        try {
+          window.katex.render(match[1], span, { throwOnError: false, displayMode: false });
+        } catch (error) {
+          span.textContent = match[0];
+        }
+        fragment.appendChild(span);
+        last = pattern.lastIndex;
+      }
+      if (!last) {
+        return;
+      }
+      fragment.appendChild(document.createTextNode(text.slice(last)));
+      node.parentNode.replaceChild(fragment, node);
+    });
+  }
+
   function processAll() {
     if (!window.katex) {
       return;
     }
 
     getMathCandidates().forEach(renderElement);
+    renderInlineDelimiters();
   }
 
   function fitAllRenderedFormulas() {
@@ -483,7 +535,7 @@
   }
 
   function init() {
-    if (!getMathCandidates().length) {
+    if (!getMathCandidates().length && !hasInlineDelimiters()) {
       return;
     }
 

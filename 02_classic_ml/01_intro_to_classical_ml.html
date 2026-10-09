@@ -80,7 +80,7 @@
     <span class="ml-learning-path__label">Что узнаешь</span>
     <ul>
       <li>Чем классический ML отличается от нейронных сетей по подходу и применению</li>
-      <li>Supervised vs Unsupervised vs Reinforcement Learning — когда что</li>
+      <li>Supervised vs Unsupervised vs Semi-supervised — когда что</li>
       <li>Типичный ML-пайплайн от данных до продакшена</li>
       <li>Как оценивать модели — train/val/test split, cross-validation</li>
     </ul>
@@ -564,7 +564,7 @@
 
 <!-- SECTION 13 -->
 <div class="card">
-  <h2>🔍 Интерктив: mini ML lifecycle simulator</h2>
+  <h2>🔍 Интерактив: mini ML lifecycle simulator</h2>
   <p class="muted">Выбери тип модели и посмотри типичное поведение на train / validation</p>
 
   <div class="grid-2">
@@ -677,12 +677,23 @@ function drawAxes(ctx, W, H){
   ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-25); ctx.stroke();
 }
 
+function bvCurves(c){
+  const bias = 0.6 * Math.exp(-0.5 * (c - 1));
+  const variance = 0.008 * Math.pow(c - 1, 2);
+  return {
+    // train error: bias plus the part of the noise the model has not memorised yet
+    train: bias + 0.1 * (1 - (c - 1) / 9),
+    // validation error: bias + variance + irreducible noise, always >= train
+    val: 0.1 + bias + variance
+  };
+}
+
 function updateBiasVariance(){
   const c = +document.getElementById('complexity').value;
   document.getElementById('complexityVal').textContent = c;
 
-  const trainErr = Math.max(0.05, 0.85 - 0.075*c);
-  const valErr = 0.22 + Math.pow((c-5.5), 2)/40;
+  const trainErr = bvCurves(c).train;
+  const valErr = bvCurves(c).val;
 
   const canvas = document.getElementById('bvCanvas');
   const ctx = canvas.getContext('2d');
@@ -696,8 +707,8 @@ function updateBiasVariance(){
   ctx.beginPath();
   for(let i=1;i<=10;i++){
     const x = 30 + (i-1)/9*(W-50);
-    const yVal = 0.22 + Math.pow((i-5.5), 2)/40;
-    const y = 15 + yVal*(H-50);
+    const yVal = bvCurves(i).val;
+    const y = (H-25) - yVal*(H-50);
     if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke();
@@ -708,27 +719,27 @@ function updateBiasVariance(){
   ctx.beginPath();
   for(let i=1;i<=10;i++){
     const x = 30 + (i-1)/9*(W-50);
-    const tVal = Math.max(0.05, 0.85 - 0.075*i);
-    const y = 15 + tVal*(H-50);
+    const tVal = bvCurves(i).train;
+    const y = (H-25) - tVal*(H-50);
     if(i===1) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke();
 
   // mark current
   const px = 30 + (c-1)/9*(W-50);
-  const pyTrain = 15 + trainErr*(H-50);
-  const pyVal = 15 + valErr*(H-50);
+  const pyTrain = (H-25) - trainErr*(H-50);
+  const pyVal = (H-25) - valErr*(H-50);
 
   ctx.beginPath(); ctx.arc(px, pyTrain, 4, 0, Math.PI*2); ctx.fillStyle='#60a5fa'; ctx.fill();
   ctx.beginPath(); ctx.arc(px, pyVal, 4, 0, Math.PI*2); ctx.fillStyle='#a78bfa'; ctx.fill();
 
   let zone = '';
-  if(c <= 3) zone = 'модель слишком простая → высокий bias → underfitting';
-  else if(c >= 8) zone = 'модель слишком сложная → высокая variance → overfitting';
+  if(c <= 2) zone = 'модель слишком простая → высокий bias → underfitting';
+  else if(c >= 7) zone = 'модель слишком сложная → высокая variance → overfitting';
   else zone = 'разумный баланс сложности и обобщения';
 
   document.getElementById('bvInfo').innerHTML = `
-    <div class="step">complexity = ${c}</div>
+    <div class="step">complexity = ${c} <span class="muted">(схематичные кривые: bias² + variance + шум)</span></div>
     <div class="step">train error ≈ <span class="hl-blue">${trainErr.toFixed(3)}</span></div>
     <div class="step">validation error ≈ <span class="hl-purple">${valErr.toFixed(3)}</span></div>
     <div class="step highlight">${zone}</div>
@@ -764,7 +775,7 @@ function updateLifecycle(){
   ctx.beginPath();
   trainVals.forEach((v,i)=>{
     const x = 30 + i/(epochs-1)*(W-50);
-    const y = 15 + v*(H-50);
+    const y = (H-25) - v*(H-50);
     if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   });
   ctx.stroke();
@@ -774,7 +785,7 @@ function updateLifecycle(){
   ctx.beginPath();
   valVals.forEach((v,i)=>{
     const x = 30 + i/(epochs-1)*(W-50);
-    const y = 15 + v*(H-50);
+    const y = (H-25) - v*(H-50);
     if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   });
   ctx.stroke();

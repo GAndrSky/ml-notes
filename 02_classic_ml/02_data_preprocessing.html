@@ -215,7 +215,7 @@
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Preprocessing — это тоже часть модели: он должен fit на train и только transform на val/test. Иначе метрики оказываются оптимистично смещены, потому что test косвенно повлиял на preprocessing.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Мерная лента откалибрована по одним объектам (train) — той же лентой измеряем новые объекты (test). Калибровать ленту заново по тестовым объектам — это жульничество.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: salary=[30K, 50K, 80K] → μ=53.3K, σ=20.8K. Test salary=200K → z=(200-53.3)/20.8≈7.0. Если бы std считался на всём dataset (включая 200K), σ стал бы больше, и z уменьшился бы — test «помог» себе в preprocessing.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: salary=[30K, 50K, 80K] → μ=53.3K, σ≈20.5K. Test salary=200K → z=(200-53.3)/20.5≈7.1. Если бы std считался на всём dataset (включая 200K), σ стал бы больше, и z уменьшился бы — test «помог» себе в preprocessing.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -277,7 +277,7 @@
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Заполнение NaN — это компромисс: любой выбор (mean, median, mode, 0, модельная импутация) добавляет шум или смещение. Ключевое правило: fit imputer только на train, применять к val/test с теми же параметрами.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Если в ведомости не указана оценка студента, пишем среднюю оценку по группе (train). Нельзя подглядывать в оценки экзаменационного листа (test), чтобы уточнить «среднюю».</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> age в train: [25, 30, NaN, 45, 50] → mean=37.5. Test: age=[NaN, 60] → заполняем 37.5, не пересчитываем mean по test. Если выброс 150 лет: mean=57 (сдвинут), median=37.5 (устойчив).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> age в train: [25, 30, NaN, 45, 50] → mean=37.5. Test: age=[NaN, 60] → заполняем 37.5, не пересчитываем mean по test. Если вместо 50 в train окажется выброс 150: mean=62.5 (сдвинут), median=37.5 (устойчив).</div>
     </div>
     <div class="intuition">
       Если распределение признака асимметричное или с выбросами,
@@ -663,7 +663,7 @@ Vilnius</textarea>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Признаки с правосторонней асимметрией (зарплаты: большинство у нуля, редкие у 10M) плохо обрабатываются линейными моделями. log(1+x) «сжимает» хвост, делая распределение ближе к нормальному — модели легче выявить линейные закономерности.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Население городов: Москва 12M, малый город 50K — разница в 240 раз. После log: ln(12M)≈16.3, ln(50K)≈10.8 — разница всего в 1.5 раза. Логарифмическая шкала «выравнивает» асимметрию.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> salary=[1000, 5000, 10000, 500000]. log(1+x): [6.9, 8.5, 9.2, 13.1]. Std исходного признака: 218K. Std лог-признака: 2.6. Линейная модель теперь видит более равномерно распределённые значения.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> salary=[1000, 5000, 10000, 500000]. log(1+x): [6.9, 8.5, 9.2, 13.1]. Выборочное std исходного признака: ≈247K. Std лог-признака: ≈2.6. Линейная модель теперь видит более равномерно распределённые значения.</div>
     </div>
     <p>
       Полезно для положительных признаков с сильной правой асимметрией:
