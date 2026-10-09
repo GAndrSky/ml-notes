@@ -197,20 +197,21 @@ pₜ = p̂   if y=1
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">pₜ</span><span class="fa-name">вероятность истинного класса</span><span class="fa-desc">pₜ = p̂ если y=1 (объект); pₜ = 1−p̂ если y=0 (фон). Отражает уверенность модели в правильном классе.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">αₜ</span><span class="fa-name">балансировочный вес класса</span><span class="fa-desc">Компенсирует дисбаланс: редкому классу даётся больший α. Обычно α≈0.25 для фона, ≈0.75 для объекта.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">αₜ</span><span class="fa-name">балансировочный вес класса</span><span class="fa-desc">Вес класса в loss. В RetinaNet α=0.25 для объектов (positive) и 1−α=0.75 для фона — контринтуитивно, но γ уже сильно гасит лёгкий фон, и большой вес positives оказался лишним. α подбирают вместе с γ.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">γ</span><span class="fa-name">focusing parameter (обычно 2)</span><span class="fa-desc">Управляет силой подавления лёгких примеров. γ=0: обычный BCE. γ=2: сильная фокусировка на трудных.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">(1−pₜ)^γ</span><span class="fa-name">модулирующий фактор</span><span class="fa-desc">Для лёгкого примера (pₜ=0.9, γ=2): (0.1)²=0.01 → loss почти 0. Для трудного (pₜ=0.5): (0.5)²=0.25 → полная loss.</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">(1−pₜ)^γ</span><span class="fa-name">модулирующий фактор</span><span class="fa-desc">Для лёгкого примера (pₜ=0.9, γ=2): (0.1)²=0.01 → loss почти 0. Для трудного (pₜ=0.5): (0.5)²=0.25 → четверть BCE, но в 25 раз больше, чем у лёгкого примера.</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">−log(pₜ)</span><span class="fa-name">базовый BCE-член</span><span class="fa-desc">Штраф за неуверенность в правильном классе — совпадает с обычным BCE при γ=0.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> (1−pₜ)^γ автоматически «выключает» лёгкие примеры: если модель уже уверена (pₜ→1), её вклад почти 0. Трудные примеры (pₜ≈0.5) штрафуются почти как в обычном BCE. Gradient budget концентрируется там, где модель ошибается.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> (1−pₜ)^γ автоматически «выключает» лёгкие примеры: если модель уже уверена (pₜ→1), её вклад почти 0. Трудные примеры (pₜ≈0.5) теряют лишь часть веса (×0.25 при γ=2), а совсем ошибочные (pₜ→0) — почти ничего. Gradient budget концентрируется там, где модель ошибается.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как учитель, который не тратит время на учеников, которые уже всё знают. Всё внимание — тем, кто продолжает ошибаться.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> γ=2, y=1. Лёгкий: p̂=0.9 → Focal=(0.1)²·(−log 0.9)≈0.001; BCE=0.105. Сложный: p̂=0.3 → Focal=(0.7)²·(−log 0.3)≈0.590; BCE=1.204. Фокус работает!</div>
     </div>
     <div class="intuition" style="margin-top:10px;font-size:.85em;">
         💡 (1−pₜ)^γ — это «модулирующий фактор».<br>
         Лёгкий пример (p̂→1): (1−0.9)²=0.01 → loss почти 0<br>
-        Сложный пример (p̂=0.5): (1−0.5)²=0.25 → полная loss<br>
+        Сложный пример (p̂=0.5): (1−0.5)²=0.25 → четверть BCE<br>
+        Ошибочный пример (p̂=0.1): (1−0.1)²=0.81 → почти полная BCE<br>
         Фокус на трудных примерах!
       </div>
     </div>
@@ -505,7 +506,7 @@ log-sum-exp трюк (ХОРОШО):
 
 <!-- 13. Итого -->
 <div class="card" style="border-color:var(--amber);">
-  <h2>✅ Что запомнить из 2.4</h2>
+  <h2>✅ Что запомнить из 3.4</h2>
   <div class="grid-2">
     <div>
       <h3>Концепции</h3>
@@ -523,7 +524,7 @@ log-sum-exp трюк (ХОРОШО):
     </div>
   </div>
   <div class="info" style="margin-top:14px;">
-    📌 Следующий блок: <strong>2.5 Backpropagation</strong> — как градиент течёт обратно через все эти loss-функции к весам сети.
+    📌 Следующий блок: <strong>4.1 Backpropagation</strong> — как градиент течёт обратно через все эти loss-функции к весам сети.
   </div>
 </div>
 
@@ -632,7 +633,7 @@ const LOSS_ANATOMY = {
   focal: {
     rows: [
       ['pₜ','вероятность истинного класса','p̂ если y=1 (объект); 1−p̂ если y=0 (фон). Чем выше pₜ — тем увереннее модель.'],
-      ['(1−pₜ)^γ','модулирующий фактор','Для pₜ=0.9, γ=2: (0.1)²=0.01 — loss почти 0. Для pₜ=0.5: (0.5)²=0.25 — почти полная loss.'],
+      ['(1−pₜ)^γ','модулирующий фактор','Для pₜ=0.9, γ=2: (0.1)²=0.01 — loss почти 0. Для pₜ=0.5: (0.5)²=0.25 — четверть BCE; для pₜ=0.1: 0.81 — почти полная.'],
       ['γ','focusing parameter (обычно 2)','γ=0: обычный BCE. γ=2: сильная фокусировка на трудных примерах.'],
       ['αₜ','балансировочный вес','Компенсирует дисбаланс классов: редкому классу даётся больший α.'],
       ['−log(pₜ)','базовый BCE-член','Штраф за неуверенность в правильном классе — как в стандартном BCE.'],
@@ -1058,7 +1059,7 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
 
     def forward(self, logits, targets):
-        # logits: (B,), targets: (B,) v {0,1}
+        # logits: (B,), targets: (B,) ∈ {0,1}
         probs = torch.sigmoid(logits)
         pt = torch.where(targets==1, probs, 1-probs)
         alpha_t = torch.where(targets==1,

@@ -154,8 +154,8 @@
       <p>Kernel PCA делает PCA в скрытом пространстве похожестей, ICA ищет независимые источники, autoencoder учит сжатое представление через реконструкцию.</p>
       <p>Все три подхода отвечают на разный вопрос: где главные оси variance, где независимые факторы, где компактный код, из которого можно восстановить вход.</p>
     </aside>
-    <p>Обычный PCA ищет главные компоненты в исходном пространстве. Kernel PCA сначала строит similarity matrix, центрирует её и делает eigendecomposition уже в kernel space. Это позволяет развернуть нелинейные многообразия.</p>
-      <div class="info">Если данные похожи на “кольца”, “спирали” или “дуги”, а линейный PCA теряет структуру, kernel PCA часто помогает увидеть полезную нелинейную геометрию.</div>
+    <p>Обычный PCA ищет главные компоненты в исходном пространстве. Kernel PCA сначала строит similarity matrix, центрирует её и делает eigendecomposition уже в kernel space. Это даёт нелинейные компоненты: например, с RBF-ядром концентрические кольца становятся линейно разделимыми. «Развернуть» многообразие вроде swiss roll kernel PCA обычно не может — для этого нужны manifold-методы (Isomap, UMAP).</p>
+      <div class="info">Если данные похожи на “кольца” или “дуги”, а линейный PCA теряет структуру, kernel PCA часто помогает увидеть полезную нелинейную геометрию; результат сильно зависит от ядра и gamma.</div>
     </div>
     <div class="card">
       <h2>ICA</h2>
@@ -237,7 +237,8 @@ model = FastICA(
     random_state=42
 )
 S = model.fit_transform(X)</div></div>
-      <div id="ae" class="tab-panel"><div class="formula" data-no-tex data-code-block>z = encoder(x)
+      <div id="ae" class="tab-panel"><div class="formula" data-no-tex data-code-block>optimizer.zero_grad()
+z = encoder(x)
 x_hat = decoder(z)
 loss = F.mse_loss(x_hat, x)
 loss.backward()

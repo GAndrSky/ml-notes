@@ -179,9 +179,7 @@ problem framing
       <div class="formula-anatomy__row"><span class="fa-sym">reproducibility / deployment readiness</span><span class="fa-name">воспроизводимость и готовность к deploy</span><span class="fa-desc">Код, зафиксированные random seeds, версии библиотек, сохранённый pipeline целиком (включая preprocessing). Без этого результат нельзя ни воспроизвести через месяц, ни развернуть в production.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула задаёт честный способ оценить модель и выбрать гиперпараметры без подглядывания в test.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как репетиция перед экзаменом: тренировочные задачи не должны совпадать с финальными.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> В 5-fold CV модель обучается 5 раз, каждый раз оставляя другую пятую часть для проверки.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Порядок шагов важен: метрика и split выбираются до моделей, test открывается один раз в самом конце, а всё, что fit-ится по данным, живёт внутри pipeline.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -565,18 +563,6 @@ FN для нас дороже FP,
 
       <div class="formula">Хороший вопрос:
 "Какое представление данных поможет модели проще увидеть нужный сигнал?"</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">fit</span><span class="fa-name">обучить состояние</span><span class="fa-desc">Вычислить параметры preprocessing или модели на train.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">transform</span><span class="fa-name">применить состояние</span><span class="fa-desc">Преобразовать данные уже найденными параметрами.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">train/val/test</span><span class="fa-name">разделы данных</span><span class="fa-desc">Разные роли данных для обучения, выбора и финальной проверки.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула фиксирует порядок обработки данных, чтобы обучение и проверка проходили честно и воспроизводимо.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как производственная линия: каждый шаг должен быть тем же на train, validation и будущих данных.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Scaler fit-ится на train, а validation только transform-ится; иначе появляется leakage.</div>
-    </div>
     </div>
 
     <div class="card">
@@ -912,9 +898,10 @@ print("Mean CV :", scores.mean())
 # 6. fit final model on full train
 model.fit(X_train, y_train)
 
-# 7. evaluate once on test
-test_score = model.score(X_test, y_test)
-print("Test score:", test_score)</div>
+# 7. evaluate once on test — той же метрикой, что и в CV
+from sklearn.metrics import f1_score
+test_score = f1_score(y_test, model.predict(X_test), average="macro")
+print("Test F1 macro:", test_score)</div>
       </div>
 
       <div id="code-column" class="tab-panel">

@@ -154,18 +154,6 @@
 несколько моделей
 → объединение предсказаний
 → более стабильное и/или более точное решение</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">M</span><span class="fa-name">число моделей</span><span class="fa-desc">Сколько моделей смешивается.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f_m(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Ответ m-го участника ансамбля.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_m</span><span class="fa-name">вес модели</span><span class="fa-desc">Насколько сильно m-я модель влияет на итог.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула смешивает несколько моделей, чтобы получить более устойчивое решение, чем у одной модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как совет экспертов: разные ошибки частично компенсируют друг друга.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если модели дают вероятности 0.6, 0.7 и 0.8, average ensemble вернёт 0.7.</div>
-    </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
       <h3>Ансамбль полезен, когда ошибки разные</h3>
@@ -206,18 +194,6 @@
 
 Если разные модели ловят разные паттерны,
 мета-комбинация может использовать их сильные стороны.</div>
-    <div class="formula-anatomy" data-static-formula-anatomy="1">
-      <div class="formula-anatomy__header">Что означают символы</div>
-      <div class="formula-anatomy__grid">
-      <div class="formula-anatomy__row"><span class="fa-sym">M</span><span class="fa-name">число моделей</span><span class="fa-desc">Сколько моделей смешивается.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">f_m(x)</span><span class="fa-name">прогноз модели</span><span class="fa-desc">Ответ m-го участника ансамбля.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">w_m</span><span class="fa-name">вес модели</span><span class="fa-desc">Насколько сильно m-я модель влияет на итог.</span></div>
-      </div>
-      <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Формула смешивает несколько моделей, чтобы получить более устойчивое решение, чем у одной модели.</div>
-      <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как совет экспертов: разные ошибки частично компенсируют друг друга.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Если модели дают вероятности 0.6, 0.7 и 0.8, average ensemble вернёт 0.7.</div>
-    </div>
     </div>
       </div>
 
@@ -622,7 +598,7 @@ meta-model train features = predictions on same train data
       <div class="grid-2">
         <div>
           <p class="small">
-            Ниже показана разница между “грязным” stacking с leakage и честным OOF stacking.
+            Ниже показана разница между “грязным” stacking с leakage и честным OOF stacking. Числа иллюстративные (не результат обучения): они показывают направление эффекта — чем сильнее base-модели переобучены, тем сильнее in-sample predictions завышают оценку meta-model.
           </p>
 
           <div class="controls">
@@ -756,6 +732,7 @@ meta-model train features = predictions on same train data
             <strong>сила базовых моделей</strong> и <strong>разнообразие их ошибок</strong>.
             Если модели сильные, но одинаковые, выигрыш может быть маленьким.
           </p>
+          <p class="small muted">Расчёт точный для простой модели: 5 классификаторов с одинаковой accuracy, majority vote. С вероятностью (1 − diversity) все копируют один общий ответ, иначе голосуют независимо; независимое голосование даёт accuracy по формуле Кондорсе Σ<sub>k≥3</sub> C(5,k)·q<sup>k</sup>(1−q)<sup>5−k</sup>.</p>
 
           <div class="controls">
             <div class="control">
@@ -1254,8 +1231,13 @@ train meta-model on stacked OOF predictions
       baseQualityVal.textContent = q.toFixed(2);
       diversityVal.textContent = div.toFixed(2);
 
-      const gain = clamp((1-q) * 0.55 * div, 0, 0.20);
-      const ens = clamp(q + gain, 0, 0.995);
+      // Exact model: 5 classifiers with accuracy q. With probability (1 − div) all of them copy one shared
+      // answer (fully correlated errors); otherwise they vote independently. Independent majority vote
+      // accuracy is the Condorcet sum Σ_{k≥3} C(5,k) q^k (1−q)^(5−k).
+      let indep = 0;
+      for (let k = 3; k <= 5; k++) indep += [1, 5, 10, 10, 5, 1][k] * Math.pow(q, k) * Math.pow(1 - q, 5 - k);
+      const ens = (1 - div) * q + div * indep;
+      const gain = ens - q;
 
       singleAccOut.textContent = q.toFixed(2);
       ensembleAccOut.textContent = ens.toFixed(2);

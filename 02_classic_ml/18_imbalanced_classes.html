@@ -514,7 +514,7 @@ majority ↓
       <hr class=”formula-anatomy__divider”>
       <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> Модель учится на перебалансированных train-данных, но в реальности видит исходный дисбаланс. Это помогает находить minority-объекты, но threshold надо настраивать отдельно под реальное распределение.</div>
       <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Тренировка детектива на случаях, где 50% преступления и 50% не-преступления — хотя в реальности лишь 1% преступлений. Детектив учится лучше распознавать, но в реальном мире будет давать много false positives.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Train: 1000 majority, 50 minority (2% positives). После SMOTE: 1000 majority, 200 minority (17% positives). Val остался: 200 majority, 10 minority (5% positives). Threshold подбираем по реальному Val.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> Train: 1000 majority, 50 minority (≈5% positives). После SMOTE: 1000 majority, 200 minority (17% positives). Val остался: 200 majority, 10 minority (5% positives). Threshold подбираем по реальному Val.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="failure">
       <div class="classic-theory-note__kicker">Как не ошибиться</div>
@@ -823,7 +823,7 @@ validation fold remains untouched</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> SMOTE создаёт синтетиков, интерполируя между соседями. Если соседи из val-fold использованы при генерации, синтетики «похожи» на val — оценка нечестная. Pipeline(SMOTE → model) в imbalanced-learn решает это автоматически.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Репетировали на вопросах, списанных с реального экзамена (val). Оценка «100%», но в реальности не готовы. Правильно: репетировать только на train-вопросах, экзамен видеть первый раз.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: 900+50. Val: 100+10. SMOTE до split: генерирует 200 синтетиков из 950+60 — val-объекты были соседями. SMOTE внутри fold: генерирует только из 900+50 train — val изолирован.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Train: 900+50. Val: 100+10. SMOTE до split: соседей ищут среди всех 60 minority-объектов, включая 10 из val, поэтому часть синтетиков лежит прямо между val-точками — модель «видела» val. SMOTE внутри fold: генерирует только из 900+50 train — val изолирован.</div>
     </div>
     <div class="info">
         Иначе synthetic points и дубли могут утечь в validation,
@@ -1500,7 +1500,7 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Почему имбаланс классов — проблема и как она проявляется?</summary>
-      <div class="ml-quiz__a"><p>Модель стремится минимизировать суммарную ошибку. При 99% примеров класса 0 выгоднее всегда предсказывать 0 — это даёт 99% accuracy. Редкий класс игнорируется. Метрика accuracy вводит в заблуждение; нужны F1, ROC-AUC или Precision-Recall AUC.</p></div>
+      <div class="ml-quiz__a"><p>Модель стремится минимизировать суммарную ошибку. При 99% примеров класса 0 выгоднее всегда предсказывать 0 — это даёт 99% accuracy. Редкий класс игнорируется. Метрика accuracy вводит в заблуждение; нужны precision/recall, F1 и PR-AUC; ROC-AUC при сильном дисбалансе может выглядеть слишком оптимистично.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">

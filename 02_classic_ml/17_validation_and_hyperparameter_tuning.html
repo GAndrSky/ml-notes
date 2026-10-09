@@ -133,7 +133,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>Модель без правильной валидации — заблуждение, а не модель. Hold-out, k-Fold, Nested CV — правильные методы оценки. Bayesian Optimization эффективнее Grid Search почти всегда.</p>
+    <p>Модель без правильной валидации — заблуждение, а не модель. Hold-out, k-Fold, Nested CV — правильные методы оценки. Random search и Bayesian optimization обычно эффективнее полного Grid Search при том же бюджете.</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -141,7 +141,7 @@
       <li>Почему нельзя оценивать модель на тренировочных данных</li>
       <li>k-Fold CV — как работает и почему k = 5 или 10</li>
       <li>Bias-variance tradeoff при выборе валидационной стратегии</li>
-      <li>Bayesian Optimization vs Grid Search — почему рандом лучше сетки</li>
+      <li>Grid, Random и Bayesian search — почему случайный поиск часто лучше сетки</li>
     </ul>
   </div>
   <div class="ml-learning-path__prereqs">
@@ -178,7 +178,7 @@
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Train quality — это то, что модель помнит. Real generalization quality — то, что она понимает. Validation выявляет этот разрыв до финального теста.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Студент выучил ответы конкретных задач (train quality = 100%), но на экзамене с новыми задачами получил 60% (real generalization). Валидация — это пробный экзамен с другими задачами.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Модель: train accuracy = 99%, validation accuracy = 73% → generalization gap = 26%: явное переобучение. Регуляризация или больше данных сократит этот разрыв.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Модель: train accuracy = 99%, validation accuracy = 73% → generalization gap = 26 п.п.: явное переобучение. Регуляризация или больше данных сократит этот разрыв.</div>
     </div>
     <aside class="classic-theory-note" data-classic-theory="mechanism">
       <div class="classic-theory-note__kicker">Теория по месту</div>
@@ -326,11 +326,11 @@ Validation = 20%</div>
             <canvas id="holdoutCanvas" width="400" height="220"></canvas>
 <div class="classic-viz-note" data-classic-viz-note="1">
       <div class="classic-viz-note__kicker">Как читать визуализацию</div>
-      <h3>Как читать кривые tuning</h3>
+      <h3>Как читать hold-out split</h3>
       <ul>
-        <li>Ищи область стабильных хороших значений, а не одиночный пик.</li>
-        <li>Если результат сильно скачет между folds, модель или split нестабильны.</li>
-        <li>Validation curve помогает увидеть underfitting и overfitting как функцию гиперпараметра.</li>
+        <li>Больше validation — точнее оценка качества, но меньше данных на обучение.</li>
+        <li>При 200 validation-объектах стандартная ошибка accuracy ≈ √(p(1−p)/200) ≈ 2–3 п.п., поэтому разница моделей в 1 п.п. ещё ничего не доказывает.</li>
+        <li>На маленьких N один hold-out слишком шумный — переходи к k-fold CV.</li>
       </ul>
     </div>
           </div>
@@ -496,7 +496,7 @@ Validation = 20%</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Случайный split может случайно «перекосить» классы. Stratification гарантирует: если в датасете 5% positives, то и в каждом fold будет ~5% positives. Это делает оценку на каждом fold честной.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Делим колоду 52 карт на 5 частей. Без stratification одна часть может получить 4 туза, другая — 0. Stratification гарантирует: в каждой части примерно одна карта каждого ранга.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 объектов: 950 класс 0, 50 класс 1 (5%). 5-fold без stratification: один fold может иметь 0 positives. 5-fold stratified: каждый fold ≈ 10 positives (5%). F1 на fold с 0 positives = 0 — ложная оценка.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> 1000 объектов: 950 класс 0, 50 класс 1 (5%). 5-fold без stratification: в fold из 200 объектов число positives случайно (≈ 10 ± 3), можно получить 5 или 16 — и F1 по фолдам заметно скачет. 5-fold stratified: в каждом fold ровно 10 positives. При совсем редком классе (например, 8 positives на весь датасет) случайный fold действительно может остаться без positives, и F1 на нём не определён.</div>
     </div>
     <div class="grid-2">
         <div>
@@ -528,8 +528,8 @@ Validation = 20%</div>
 
           <div class="grid-2">
             <div class="kpi">
-              <div class="label">Naive split risk</div>
-              <div class="value" id="naiveRiskOut">medium</div>
+              <div class="label">P(доля positives в val отклонится &gt;30%), N=1000</div>
+              <div class="value" id="naiveRiskOut">—</div>
             </div>
             <div class="kpi">
               <div class="label">Stratified split</div>
@@ -1305,9 +1305,15 @@ random search почти всегда разумнее
       posRateVal.textContent = p.toFixed(2);
       stratFracVal.textContent = frac.toFixed(2);
 
-      naiveRiskOut.textContent =
-        p < 0.05 ? 'high' :
-        p < 0.15 ? 'medium' : 'low';
+      // Number of positives in a random validation split of size n ~ Binomial(n, p) (N = 1000 objects).
+      // Probability that the positive share deviates from p by more than 30% (relative):
+      const nVal = Math.round(1000 * frac);
+      let pmf = Math.pow(1 - p, nVal), risk = 0;
+      for (let k = 0; k <= nVal; k++) {
+        if (k > 0) pmf *= (nVal - k + 1) / k * p / (1 - p);
+        if (Math.abs(k / nVal - p) > 0.3 * p) risk += pmf;
+      }
+      naiveRiskOut.textContent = (100 * risk).toFixed(0) + '%';
       stratStableOut.textContent = 'stable';
 
       const W = stratCanvas.width, H = stratCanvas.height;
@@ -1649,7 +1655,7 @@ random search почти всегда разумнее
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое Bayesian Optimization для гиперпараметров?</summary>
-      <div class="ml-quiz__a"><p>Bayesian Optimization строит суррогатную модель (обычно Gaussian Process) для функции качества от гиперпараметров и выбирает следующую точку для проверки с балансом exploitation/exploration (acquisition function). Намного эффективнее RandomSearch при дорогих вычислениях.</p></div>
+      <div class="ml-quiz__a"><p>Bayesian Optimization строит суррогатную модель (Gaussian Process или TPE, как в Optuna) для функции качества от гиперпараметров и выбирает следующую точку для проверки с балансом exploitation/exploration (acquisition function). При дорогих запусках и небольшом числе параметров часто находит хорошую область за меньшее число trials, чем RandomSearch; на дешёвых или очень шумных задачах выигрыш может быть небольшим.</p></div>
     </details>
   </li>
   </ol>
