@@ -229,7 +229,7 @@
       <div class=”formula-anatomy__row”><span class=”fa-sym”>-p log p - (1-p) log(1-p)</span><span class=”fa-name”>сумма двух вкладов</span><span class=”fa-desc”>Каждый из двух исходов добавляет свой вклад: probability × log-probability. При p=0 или p=1 соответствующий член равен 0 (0·log 0 := 0).</span></div>
       </div>
       <hr class=”formula-anatomy__divider”>
-      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> При p=0.5 оба исхода одинаково вероятны — максимальная неопределённость, H=log(2)≈0.69 нат. При p→0 или p→1 исход предсказуем — H→0. Форма кривой симметрична и выпукла.</div>
+      <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> При p=0.5 оба исхода одинаково вероятны — максимальная неопределённость, H=log(2)≈0.69 нат. При p→0 или p→1 исход предсказуем — H→0. Кривая симметрична и вогнута (выпукла вверх).</div>
       <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Честная монета (p=0.5) = самый непредсказуемый броском. Гнутая монета (p≈1) = почти всегда орёл — никакого сюрприза, нет информации.</div>
       <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> p=0.5: H=-0.5·log(0.5)-0.5·log(0.5)=log(2)≈0.693. p=0.9: H=-0.9·log(0.9)-0.1·log(0.1)≈0.325. p=1.0: H=0.</div>
     </div>
@@ -279,7 +279,7 @@
       <hr class=”formula-anatomy__divider”>
       <div class=”formula-anatomy__intuition”><strong>Интуиция:</strong> H(P) показывает «размазанность» распределения по K классам. Равномерное P=[1/K,...,1/K] → H=log(K) (максимум). Один класс доминирует p_true≈1 → H≈0 (почти нет неопределённости).</div>
       <div class=”formula-anatomy__analogy”><strong>Аналогия:</strong> Монета с K гранями: чем равномернее выпадают грани, тем сложнее угадать следующую. H измеряет эту сложность.</div>
-      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> K=4, равномерное: H=-4·0.25·log(0.25)=log(4)≈1.39 нат. K=4, p=[0.97,0.01,0.01,0.01]: H≈0.15 нат — почти детерминированное.</div>
+      <div class=”formula-anatomy__example”><strong>Числовой пример:</strong> K=4, равномерное: H=-4·0.25·log(0.25)=log(4)≈1.39 нат. K=4, p=[0.97,0.01,0.01,0.01]: H≈0.17 нат — почти детерминированное.</div>
     </div>
     <p>Если у нас K классов, то entropy говорит, насколько распределение по классам “размазано”.</p>
 
@@ -468,7 +468,7 @@
       <div class="formula-anatomy__row"><span class="fa-sym">∑_x</span><span class="fa-name">сумма по всем событиям</span><span class="fa-desc">Взвешенная сумма с весами P(x). Асимметрия: D_KL(P||Q) ≠ D_KL(Q||P).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> KL — это «лишние биты», которые тратятся при кодировании P с помощью Q. Если модель занижает вероятность частых событий (Q(x) «» P(x)), штраф велик. При Q=P никакого штрафа нет.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> KL — это «лишние биты», которые тратятся при кодировании P с помощью Q. Если модель занижает вероятность частых событий (Q(x) ≪ P(x)), штраф велик. При Q=P никакого штрафа нет.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Иностранный словарь для родного языка: каждое частое слово требует длинного кода. KL — суммарная «переплата» по словарю Q при словах из языка P.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> P=[0.9,0.1], Q=[0.5,0.5]. KL=0.9·log(0.9/0.5)+0.1·log(0.1/0.5)=0.9·0.588+0.1·(-1.609)≈0.529-0.161=0.368. При Q=P: KL=0.</div>
     </div>
@@ -826,7 +826,7 @@ function calcBinaryCE(){
   document.getElementById('ceInfo').innerHTML = `
     <div class="step">истина: y = ${y}</div>
     <div class="step">модель: q = P(y=1) = ${q.toFixed(6)}</div>
-    <div class="step">${y===1 ? `истинная вероятность = q = ${q.toFixed(6)}` : `истинная вероятность = 1-q = ${(1-q).toFixed(6)}`}</div>
+    <div class="step">${y===1 ? `вероятность истинного класса = q = ${q.toFixed(6)}` : `вероятность истинного класса = 1-q = ${(1-q).toFixed(6)}`}</div>
     <div class="step highlight">CE = <span class="hl-red">${loss.toFixed(6)}</span></div>
     <div class="step">${loss < 0.2 ? 'хорошее и уверенное предсказание' : (loss > 2 ? 'очень плохое / уверенно неправильное предсказание' : 'среднее качество предсказания')}</div>
   `;
@@ -1101,7 +1101,7 @@ print(cross_entropy(logits, y))
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое взаимная информация и где она применяется в ML?</summary>
-      <div class="ml-quiz__a"><p>Взаимная информация I(X;Y) = KL(p(x,y) ‖ p(x)p(y)) измеряет, сколько информации об одной переменной содержится в другой. В ML используется для отбора признаков (Information Gain в деревьях решений), в VAE (ELBO) и при сжатии информации в латентных представлениях.</p></div>
+      <div class="ml-quiz__a"><p>Взаимная информация I(X;Y) = KL(p(x,y) ‖ p(x)p(y)) измеряет, сколько информации об одной переменной содержится в другой. В ML используется для отбора признаков (Information Gain в деревьях решений), в contrastive learning (InfoNCE — нижняя оценка MI), в VAE (KL-член ELBO ограничивает сверху информацию, которую латент несёт о входе) и в information bottleneck.</p></div>
     </details>
   </li>
   </ol>

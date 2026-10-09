@@ -28,7 +28,7 @@
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
     <span class="ml-learning-path__label">Почему важно</span>
-    <p>Любое обучение модели — это оптимизация. Convex vs non-convex, seddle points, local minima — не теория ради теории, а то, почему Adam работает лучше SGD в определённых задачах.</p>
+    <p>Любое обучение модели — это оптимизация. Convex vs non-convex, saddle points, local minima — не теория ради теории, а то, почему Adam работает лучше SGD в определённых задачах.</p>
   </div>
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
@@ -80,37 +80,39 @@
   var sl = document.getElementById('sl-opt');
   var disp = document.getElementById('sl-opt-disp');
   var out = document.getElementById('sl-out-opt');
+  function stepWord(n){var m10=n%10,m100=n%100;if(m10===1&&m100!==11)return 'шаг';if(m10>=2&&m10<=4&&(m100<12||m100>14))return 'шага';return 'шагов';}
   function render(){
     var v = +sl.value; // 1..200
     var lr = v / 100;
     disp.textContent = lr.toFixed(2);
-    // Simulate steps to minimum for f(x) = x^2 (Lipschitz constant L=2)
-    // Optimal lr = 1/L = 0.5. Diverges if lr > 1/L for strongly convex.
-    var converges = lr <= 1.5;
-    var stepsEst  = converges ? Math.max(3, Math.round(80 * Math.abs(Math.log(1 - lr / 2)) / (-Math.log(Math.abs(1 - 2 * lr))))) : 999;
-    stepsEst = Math.min(stepsEst, 500);
-    var stability = Math.max(0, Math.round(100 * (1 - lr / 1.5)));
-    var speed     = Math.min(100, Math.round(lr * 60));
+    // Real gradient descent on f(x) = x^2 from x0 = 1: x <- x - lr*2x = (1 - 2*lr) * x.
+    // Converges iff |1 - 2*lr| < 1, i.e. 0 < lr < 1; lr = 1/L = 0.5 reaches the minimum in one step.
+    var factor = 1 - 2 * lr;
+    var x = 1, steps = 0;
+    while (Math.abs(x) >= 1e-3 && steps < 500 && Math.abs(x) < 1e6) { x = factor * x; steps += 1; }
+    var converged = Math.abs(x) < 1e-3;
     var verdict, vclass, txt;
-    if (v <= 5) {
-      verdict = 'Слишком медленно'; vclass = 'sl-verdict-warn';
-      txt = 'η=' + lr.toFixed(2) + ': шаг слишком мал. Для f(x)=x² понадобится ~' + Math.round(10/lr) + ' шагов. В DL — тысячи эпох без прогресса.';
-    } else if (v <= 60) {
-      verdict = 'Хорошая сходимость'; vclass = 'sl-verdict-ok';
-      txt = 'η=' + lr.toFixed(2) + ': стабильная сходимость. Для квадратичной функции оптимальный lr = 1/L. Здесь ~' + stepsEst + ' шагов до минимума.';
-    } else if (v <= 100) {
-      verdict = 'Осциллирует'; vclass = 'sl-verdict-warn';
-      txt = 'η=' + lr.toFixed(2) + ': GD «перепрыгивает» минимум, но всё ещё сходится. Нужно больше шагов из-за осцилляций.';
+    if (!converged && Math.abs(factor) >= 1) {
+      verdict = Math.abs(factor) > 1 ? 'Расходится' : 'Не сходится'; vclass = 'sl-verdict-bad';
+      txt = 'η=' + lr.toFixed(2) + ': множитель за шаг 1−2η = ' + factor.toFixed(2) + '. ' +
+        (Math.abs(factor) > 1 ? '|x| растёт с каждым шагом — loss увеличивается. Для f(x)=x² расходимость при η > 1.'
+                              : 'x прыгает между +1 и −1 и не приближается к минимуму.');
+    } else if (factor < 0) {
+      verdict = 'Осциллирует, но сходится'; vclass = 'sl-verdict-warn';
+      txt = 'η=' + lr.toFixed(2) + ': множитель 1−2η = ' + factor.toFixed(2) + ' < 0 — x меняет знак на каждом шаге, «перепрыгивая» минимум. До |x| < 10⁻³: ' + steps + ' ' + stepWord(steps) + '.';
+    } else if (steps <= 10) {
+      verdict = 'Быстрая сходимость'; vclass = 'sl-verdict-ok';
+      txt = 'η=' + lr.toFixed(2) + ': множитель 1−2η = ' + factor.toFixed(2) + '. До |x| < 10⁻³: ' + steps + ' ' + stepWord(steps) + '. Оптимум η = 1/L = 0.5 (L = 2) — минимум за один шаг.';
     } else {
-      verdict = 'Расходится'; vclass = 'sl-verdict-bad';
-      txt = 'η=' + lr.toFixed(2) + ': шаг слишком большой! Loss не убывает, а растёт. Для f(x)=x² расходимость при η > 1.0.';
+      verdict = steps > 100 ? 'Слишком медленно' : 'Монотонная сходимость'; vclass = steps > 100 ? 'sl-verdict-warn' : 'sl-verdict-ok';
+      txt = 'η=' + lr.toFixed(2) + ': множитель 1−2η = ' + factor.toFixed(2) + '. До |x| < 10⁻³: ' + steps + ' ' + stepWord(steps) + '.';
     }
+    var shown = converged ? steps : 500;
     out.innerHTML = (
       '<p class="sl-effect-text">' + txt + '</p>' +
       '<div class="sl-bars">' +
-        '<div class="sl-bar-row"><span>Скорость шага</span><div class="sl-bar-wrap"><div class="sl-bar sl-accent" style="width:' + speed + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Стабильность</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stability > 60 ? 'sl-good' : stability > 30 ? 'sl-warn' : 'sl-bad') + '" style="width:' + Math.max(2,stability) + '%"></div></div></div>' +
-        '<div class="sl-bar-row"><span>Шагов до минимума</span><div class="sl-bar-wrap"><div class="sl-bar ' + (stepsEst > 200 ? 'sl-bad' : stepsEst > 50 ? 'sl-warn' : 'sl-good') + '" style="width:' + Math.min(100, stepsEst/5) + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>|1−2η|</span><div class="sl-bar-wrap"><div class="sl-bar ' + (Math.abs(factor) < 0.5 ? 'sl-good' : Math.abs(factor) < 1 ? 'sl-warn' : 'sl-bad') + '" style="width:' + Math.max(2, Math.min(100, Math.abs(factor) * 50)) + '%"></div></div></div>' +
+        '<div class="sl-bar-row"><span>Шагов до минимума</span><div class="sl-bar-wrap"><div class="sl-bar ' + (shown > 100 ? 'sl-bad' : shown > 20 ? 'sl-warn' : 'sl-good') + '" style="width:' + Math.max(2, Math.min(100, shown / 2)) + '%"></div></div></div>' +
       '</div>' +
       '<span class="sl-verdict ' + vclass + '">' + verdict + '</span>'
     );
@@ -220,7 +222,7 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> more expressive models usually need more data for uniform guarantees.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a more flexible story can fit more evidence, but also needs more evidence to be trusted.</div>
       </div>
-      <p>For deep networks, classical PAC/VC bounds are often too loose to predict practice. Still, they teach the right question: how much data is needed to trust performance beyond training examples?</p>
+      <p>This shape is for the realizable case (some hypothesis fits the data perfectly); in the agnostic case the dependence on epsilon becomes 1/epsilon^2. For deep networks, classical PAC/VC bounds are often too loose to predict practice. Still, they teach the right question: how much data is needed to trust performance beyond training examples?</p>
     </section>
 
     <section class="ml-theory-section">
@@ -339,7 +341,7 @@
         <h3>Типичные ошибки</h3>
         <ul class="ml-endcap-list">
         <li>Устанавливать lr «на глаз» без lr range test или расписания.</li>
-        <li>Путать локальный минимум с глобальным — для большинства deep-сетей хватает любого хорошего..</li>
+        <li>Путать локальный минимум с глобальным — для большинства deep-сетей хватает любого хорошего.</li>
         <li>Игнорировать curvature: Adam хорошо работает «из коробки», но fine-tuning требует понимания кривизны.</li>
         </ul>
       </article>
@@ -348,7 +350,7 @@
         <ul class="ml-endcap-list">
         <li>Learning rate: основная ручка — подбирай через lr finder или grid.</li>
         <li>Momentum / β₁, β₂ в Adam — редко требуют изменений, но важно при файн-тюнинге.</li>
-        <li>Gradient clipping и weight decay — ортогональные регуляризаторы.</li>
+        <li>Gradient clipping (защита от взрывов градиента) и weight decay (регуляризация) решают разные задачи — настраивай их независимо.</li>
         </ul>
       </article>
       <article class="ml-endcap-card">

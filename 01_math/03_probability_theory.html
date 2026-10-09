@@ -138,8 +138,8 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <h3 class="ml-walkthrough__step-heading">Практический вывод</h3>
       <div class="ml-walkthrough__step-body">
         <p>Интуиция нас обманывает: «тест 99% точный → 99% вероятность болезни». Байес показывает правду.</p>
-        <div class="wt-formula">β = 0 : J = E[r_φ] → игнорируем prior → 99% кажется верным
-Байес учитывает prior → P(болен|+) = 50%</div>
+        <div class="wt-formula">Без prior: «тест точен на 99%» → кажется, что P(болен|+) = 99%
+С prior 1%: P(болен|+) = 0.0099 / 0.0198 = 50%</div>
         <div class="wt-result">Именно поэтому в медицине повторяют тест при редких болезнях: второй + поднимает вероятность до ~99%.</div>
       </div>
     </div>
@@ -325,7 +325,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <div class="formula-anatomy__row"><span class="fa-sym">(X - E[X])²</span><span class="fa-name">квадрат отклонения</span><span class="fa-desc">Всегда неотрицателен. Квадрат нужен, чтобы положительные и отрицательные отклонения не гасили друг друга при усреднении.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дисперсия — это «средний квадрат разброса». Чем больше Var(X), тем шире разброс значений X. В ML большой Var(параметры) → риск overfitting, малый → underfitting.</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Дисперсия — это «средний квадрат разброса». Чем больше Var(X), тем шире разброс значений X. В bias–variance разложении «variance» — это разброс предсказаний модели при обучении на разных выборках; большой разброс — признак переобучения.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как разброс стрел у лучников: E[X] — куда в среднем попадают, Var(X) — насколько кучно. Хороший лучник имеет малую дисперсию.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X берёт значения {1,3,5} с вероятностями {0.25,0.5,0.25}. E[X]=3. Var(X)=0.25·(1−3)²+0.5·(3−3)²+0.25·(5−3)²=0.25·4+0+0.25·4=2.</div>
     </div>
@@ -472,7 +472,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <div class="formula-anatomy__row"><span class="fa-sym">σ²</span><span class="fa-name">дисперсия</span><span class="fa-desc">Ширина «колокола». Чем больше σ², тем шире и ниже гауссиана. Var(X)=σ². Стандартное отклонение σ=√σ².</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Нормальное распределение — самое важное в ML. Суммы многих независимых величин стремятся к нему (ЦПТ), градиентный шум часто гауссовский, веса инициализируются из N(0,σ²).</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Нормальное распределение — самое важное в ML. Суммы многих независимых величин стремятся к нему (ЦПТ), градиентный шум мини-батчей часто приближают гауссовским, веса инициализируются из N(0,σ²).</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как рост людей в популяции: большинство около среднего (μ=175см), единицы сильно отклоняются. σ показывает, насколько «широко» распределение.</div>
       <div class="formula-anatomy__example"><strong>Числовой пример:</strong> X~N(0,1) — стандартное нормальное. P(|X|&lt;1) ≈ 68%, P(|X|&lt;2) ≈ 95%, P(|X|&lt;3) ≈ 99.7% — правило 1-2-3 σ.</div>
     </div>
@@ -662,7 +662,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> Log-likelihood численно стабильнее (нет произведения очень малых чисел), аналитически удобнее (сумма вместо произведения). Argmax не меняется при замене P на log P.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Вместо умножения 0.001·0.003·0.002 лучше сложить log(0.001)+log(0.003)+log(0.002). Результат (аргмакс) тот же, вычислять проще.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25)≈−1.97. Максимум по p — при p̂=3/4=0.75.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25) ≈ −0.863 − 1.386 ≈ −2.25. Максимум по p — при p̂=3/4=0.75.</div>
     </div>
     <h3>Почему логарифм?</h3>
   <div class="step">1. произведения превращаются в суммы</div>
@@ -717,7 +717,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> log-likelihood для Bernoulli = −(binary cross-entropy)! Минимизация BCE = максимизация log-likelihood. Это связывает вероятностный и оптимизационный взгляды.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> За каждую «единицу» добавляем log p, за каждый «ноль» — log(1-p). Чем лучше p подходит к данным, тем меньше отрицательный штраф.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25)≈−1.97. Максимальное значение при p̂=3/4.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> D={1,0,1,1}, p=0.75. log P = 3·log(0.75)+log(0.25) ≈ −2.25. Максимальное значение при p̂=3/4.</div>
     </div>
     <div class="formula">
         p̂<sub>MLE</sub> = (1/n) ∑<sub>i</sub> x<sub>i</sub>
@@ -726,7 +726,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <div class="formula-anatomy__header">Что означают символы</div>
       <div class="formula-anatomy__grid">
       <div class="formula-anatomy__row"><span class="fa-sym">p̂_MLE</span><span class="fa-name">MLE-оценка параметра p</span><span class="fa-desc">Шляпка ^ означает «оценка по данным». MLE-оценка (maximum likelihood estimate) — то значение p, которое максимизирует правдоподобие P(D|p) по данным D.</span></div>
-      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка — усреднение по n наблюдениям</span><span class="fa-desc">Делим сумму на n, чтобы получить среднее. Такая оценка несмещённая: при n→∞ p̂→p (истинный параметр).</span></div>
+      <div class="formula-anatomy__row"><span class="fa-sym">1/n</span><span class="fa-name">нормировка — усреднение по n наблюдениям</span><span class="fa-desc">Делим сумму на n, чтобы получить среднее. Такая оценка несмещённая (E[p̂] = p) и состоятельная (при n→∞ p̂→p).</span></div>
       <div class="formula-anatomy__row"><span class="fa-sym">Σᵢ xᵢ</span><span class="fa-name">сумма успехов в выборке</span><span class="fa-desc">Количество единиц в данных. Поскольку xᵢ∈{0,1}, сумма = числу «успехов». p̂ = (число успехов) / (всего наблюдений).</span></div>
       </div>
       <hr class="formula-anatomy__divider">
@@ -847,7 +847,7 @@ P(+ | здоров)  = 0.01  (ложно-положительный: 1%)</div>
       <hr class="formula-anatomy__divider">
       <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> MAP с Gaussian prior = MLE + L2-регуляризация. «Maximize log P(D|θ) − λ||θ||²» — это MAP-задача, переформулированная как регуляризованный MLE.</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Как подбор параметров с «ценой» за сложность: чем больше θ, тем «дороже» решение. λ — это цена за единицу сложности. Оптимум — баланс fit и economy.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> n=5, все xᵢ=1. MLE: θ=∞ (логарифм растёт). С λ=0.5: d/dθ[5θ − 0.5θ²]=5−θ=0 → θ=5. Регуляризация «остановила» θ на конечном значении.</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> θ — logit Bernoulli, n=5, все xᵢ=1. Log-likelihood 5·log σ(θ) растёт при θ→∞, поэтому MLE уходит в бесконечность. С λ=0.5 максимизируем 5·log σ(θ) − 0.5θ²: условие 5(1−σ(θ)) = θ даёт θ ≈ 1.18 (p ≈ 0.76). Регуляризация «остановила» θ на конечном значении.</div>
     </div>
     <p class="small">Это соответствует Gaussian prior на параметры. Поэтому L2 regularization можно понимать как MAP.</p>
     </div>
@@ -1338,7 +1338,7 @@ for n in [10, 100, 1000, 10000]:
           <p>Реализуй вычисление log-likelihood для Bernoulli-модели и найди p, который лучше объясняет данные.</p>
           <details class="ml-exercise-solution">
             <summary>Показать решение</summary>
-            <p>MLE для Bernoulli равен среднему значению меток. Grid ниже должен максимум около empirical mean.</p>
+            <p>MLE для Bernoulli равен среднему значению меток. Перебор по сетке ниже должен дать максимум около empirical mean.</p>
 <pre><code class="language-python"># What it does: Bernoulli log-likelihood grid search
 # Input shape: y=(n,)
 # Output shape: best_p=scalar
@@ -1468,7 +1468,7 @@ print(&#39;best p=&#39;, best_p)
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что означает формула Байеса и как её читать?</summary>
-      <div class="ml-quiz__a"><p><strong>P(A|B) = P(B|A)·P(A) / P(B)</strong>: posteriori = likelihood × prior / evidence. Она позволяет «перевернуть» условную вероятность — зная, как B зависит от A, найти, как A зависит от B.</p></div>
+      <div class="ml-quiz__a"><p><strong>P(A|B) = P(B|A)·P(A) / P(B)</strong>: posterior = likelihood × prior / evidence. Она позволяет «перевернуть» условную вероятность — зная, как B зависит от A, найти, как A зависит от B.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
@@ -1486,7 +1486,7 @@ print(&#39;best p=&#39;, best_p)
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что такое центральная предельная теорема и почему она важна для ML?</summary>
-      <div class="ml-quiz__a"><p>ЦПТ: сумма большого числа независимых одинаково распределённых случайных величин стремится к нормальному распределению. В ML это обосновывает использование MSE (предполагает Гауссов шум) и делает надёжным анализ стохастических методов оптимизации.</p></div>
+      <div class="ml-quiz__a"><p>ЦПТ: сумма большого числа независимых одинаково распределённых случайных величин стремится к нормальному распределению. В ML она объясняет, почему шум, складывающийся из многих мелких независимых факторов, часто близок к гауссовскому (отсюда популярность MSE), и почему среднее по мини-батчу и метрика на большой валидации имеют примерно нормальный разброс ~ σ/√n.</p></div>
     </details>
   </li>
   </ol>
