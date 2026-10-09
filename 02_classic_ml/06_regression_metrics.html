@@ -386,9 +386,9 @@
       <div class="formula-anatomy__row"><span class="fa-sym">y^(i)</span><span class="fa-name">истинный ответ i-го объекта</span><span class="fa-desc">Реальное значение target. RMSE штрафует отклонения от него квадратично (как MSE), но выражает результат в читаемых единицах.</span></div>
       </div>
       <hr class="formula-anatomy__divider">
-      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSE = √MSE. По характеру такой же, как MSE (чувствителен к выбросам, квадратичный штраф), но результат в единицах target — легко объяснить бизнесу: «модель ошибается в среднем на X рублей».</div>
+      <div class="formula-anatomy__intuition"><strong>Интуиция:</strong> RMSE = √MSE. По характеру такой же, как MSE (чувствителен к выбросам, квадратичный штраф), но результат в единицах target — легко объяснить бизнесу: «типичный масштаб ошибки ≈ X рублей, с перевесом крупных промахов» (среднюю ошибку в рублях показывает MAE).</div>
       <div class="formula-anatomy__analogy"><strong>Аналогия:</strong> Площадь участка в м² — понятно математику. Сторона квадрата = √площади — понятно всем. RMSE — это «сторона» ошибки, которую легко представить.</div>
-      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5]. MSE=13. RMSE=√13≈3.6 рубля. Можно сказать: «в среднем ошибаемся на 3.6 рубля» (с учётом больших выбросов).</div>
+      <div class="formula-anatomy__example"><strong>Числовой пример:</strong> Ошибки [1, 5]. MSE=13. RMSE=√13≈3.6 рубля. Средняя ошибка (MAE) здесь 3 рубля; RMSE 3.6 больше, потому что промах 5 весит сильнее.</div>
     </div>
     <p>
       RMSE — это просто корень из MSE.
@@ -1055,6 +1055,7 @@
     <div class="tab-panel active" id="tab1">
       <div class="code-block">from sklearn.metrics import (
     mean_squared_error,
+    root_mean_squared_error,
     mean_absolute_error,
     r2_score,
     mean_absolute_percentage_error
@@ -1064,7 +1065,7 @@ y_true = [3, 5, 7, 9]
 y_pred = [2.5, 5.2, 6.8, 10.0]
 
 mse = mean_squared_error(y_true, y_pred)
-rmse = mean_squared_error(y_true, y_pred, squared=False)
+rmse = root_mean_squared_error(y_true, y_pred)
 mae = mean_absolute_error(y_true, y_pred)
 r2 = r2_score(y_true, y_pred)
 mape = mean_absolute_percentage_error(y_true, y_pred)
@@ -1442,13 +1443,13 @@ print("B R² :", r2_score(y_val, pred_model_b))
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Когда MAPE (средняя абсолютная процентная ошибка) даёт некорректные результаты?</summary>
-      <div class="ml-quiz__a"><p>MAPE = (1/n)Σ|yᵢ-ŷᵢ|/|yᵢ| неопределена при yᵢ=0 и ассиметрична: недооценка наказывается сильнее переоценки. Для временных рядов с нулями лучше использовать SMAPE или RMSSE.</p></div>
+      <div class="ml-quiz__a"><p>MAPE = (1/n)Σ|yᵢ-ŷᵢ|/|yᵢ| не определена при yᵢ=0 и асимметрична: для положительных y ошибка недопрогноза ограничена 100%, а перепрогноза — нет, поэтому MAPE сильнее наказывает переоценку и подталкивает модель занижать прогнозы. Для временных рядов с нулями лучше использовать SMAPE или RMSSE.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
     <details class="ml-quiz__entry">
       <summary class="ml-quiz__q">Что показывает R² (коэффициент детерминации) и какой его недостаток?</summary>
-      <div class="ml-quiz__a"><p>R² показывает долю объяснённой дисперсии (1 = идеально, 0 = как среднее). Недостаток: R² никогда не убывает при добавлении новых признаков, даже бесполезных. Adjusted R² исправляет это, штрафуя за число параметров.</p></div>
+      <div class="ml-quiz__a"><p>R² показывает долю объяснённой дисперсии (1 = идеально, 0 = как среднее). Недостаток: на train для OLS R² никогда не убывает при добавлении новых признаков, даже бесполезных. Adjusted R² исправляет это, штрафуя за число параметров.</p></div>
     </details>
   </li>
   <li class="ml-quiz__item">
