@@ -23,7 +23,7 @@
         <span class="tag">Evaluation</span>
       </div>
       <h1>6.9 RAG: Retrieval-Augmented Generation</h1>
-      <p class="muted">RAG is not a magic anti-hallucination switch. It is a system that retrieves evidence, puts it into context, and asks an LLM to answer grounded in that evidence. If retrieval fails, generation usually fails too.</p>
+      <p class="muted">RAG — не волшебный переключатель против галлюцинаций. Это система, которая находит доказательства, кладёт их в контекст и просит LLM ответить с опорой на них. Если retrieval провалился, генерация обычно тоже проваливается.</p>
     </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -33,7 +33,7 @@
   <div class="ml-learning-path__objectives">
     <span class="ml-learning-path__label">Что узнаешь</span>
     <ul>
-      <li>Retrieval pipeline: chunk → embed → index → retrieve → rerank</li>
+      <li>Пайплайн retrieval: chunk → embed → index → retrieve → rerank</li>
       <li>Cosine similarity в embedding space — как найти релевантные чанки</li>
       <li>Hybrid search: dense (embedding) + sparse (BM25) — почему гибрид лучше</li>
       <li>Evaluation: Recall@K и RAGAS — как оценить RAG систему</li>
@@ -52,7 +52,7 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>RAG combines retrieval and generation: split documents into chunks, embed them, index them, retrieve relevant chunks for a query, rerank candidates, generate an answer with citations, and evaluate both retrieval quality and answer groundedness.</p>
+      <p>RAG объединяет поиск и генерацию: документы режут на chunks, эмбеддят, индексируют, по запросу находят релевантные chunks, переранжируют кандидатов, генерируют ответ с цитатами и оценивают и качество поиска, и обоснованность ответа.</p>
     </section>
 
     <section class="ml-theory-section">
@@ -75,37 +75,35 @@
 
     <section class="ml-theory-section">
       <h2>Chunking</h2>
-      <p>Chunking is a quality bottleneck. Chunks that are too small lose context. Chunks that are too large dilute retrieval and waste context window.</p>
+      <p>Chunking — узкое место качества. Слишком мелкие chunks теряют контекст, слишком крупные размывают поиск и тратят окно контекста.</p>
       <div class="grid-2">
         <div class="card">
-          <h3>Common strategies</h3>
+          <h3>Частые стратегии</h3>
           <ul>
-            <li>Fixed token windows with overlap.</li>
-            <li>Paragraph or section-based chunking.</li>
-            <li>Semantic chunking by topic boundaries.</li>
-            <li>Parent-child retrieval: retrieve small chunks, return larger context.</li>
+            <li>Окна фиксированной длины в токенах с overlap.</li>
+            <li>Chunking по абзацам или разделам.</li>
+            <li>Семантический chunking по границам тем.</li>
+            <li>Parent-child retrieval: ищем по мелким chunks, возвращаем более широкий контекст.</li>
           </ul>
         </div>
         <div class="card">
-          <h3>What to preserve</h3>
+          <h3>Что сохранять</h3>
           <ul>
-            <li>Document title and section hierarchy.</li>
-            <li>Source URL or file path.</li>
-            <li>Permissions and metadata.</li>
-            <li>Timestamp or version for freshness.</li>
+            <li>Заголовок документа и иерархию разделов.</li>
+            <li>URL источника или путь к файлу.</li>
+            <li>Права доступа и метаданные.</li>
+            <li>Время или версию — для свежести.</li>
           </ul>
         </div>
       </div>
       <details class="intuition-block" open>
-        <summary>What this means in practice</summary>
-        <div class="intuition-content">
-          Bad chunking creates impossible retrieval problems. If a chunk contains the answer but lacks the surrounding definition, generation may be vague. If a chunk is too broad, embeddings may match the wrong part of the text. Start with simple chunking, then inspect retrieved chunks manually.
-        </div>
+        <summary>Что это значит на практике</summary>
+        <div class="intuition-content">Плохой chunking создаёт нерешаемые задачи поиска. Если chunk содержит ответ, но без окружающего определения, генерация будет расплывчатой. Если chunk слишком широкий, эмбеддинг может совпасть не с той частью текста. Начни с простого chunking и вручную смотри найденные chunks.</div>
       </details>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Embedding similarity</h2>
+      <h2>Сходство эмбеддингов</h2>
       <div class="formula" data-no-tex>cosine(q, d) = (q dot d) / (||q|| ||d||)</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -119,11 +117,11 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> chunks pointing in a similar semantic direction to the query get higher scores.</div>
         <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if normalized vectors have dot product 0.82, they are much closer than a chunk with score 0.21.</div>
       </div>
-      <p>Dense retrieval is strong for paraphrases. Sparse retrieval such as BM25 is strong for exact names, IDs, error codes, and rare terms. Hybrid search often beats either one alone.</p>
+      <p>Dense retrieval силён на перефразах. Sparse retrieval вроде BM25 силён на точных именах, ID, кодах ошибок и редких терминах. Гибридный поиск часто лучше каждого по отдельности.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Hybrid retrieval and reranking</h2>
+      <h2>Гибридный поиск и reranking</h2>
       <div class="formula" data-no-tex>score = alpha * dense_score + (1 - alpha) * sparse_score</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -137,11 +135,11 @@
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> find a book by both topic similarity and exact title words.</div>
       </div>
       <p>Dense и BM25 scores живут в разных шкалах, поэтому перед смешиванием их нормируют (например, min-max внутри выдачи) или вместо взвешенной суммы используют Reciprocal Rank Fusion: score(d) = Σ 1/(k + rank_i(d)), k≈60.</p>
-      <p>Reranking is usually a second stage: retrieve 50-200 candidates cheaply, then use a cross-encoder or LLM-based scorer on the top candidates to produce the final top-k context.</p>
+      <p>Reranking обычно — второй этап: дёшево находим 50–200 кандидатов, затем cross-encoder или скорер на LLM оценивает лучших и формирует финальный top-k контекст.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Minimal local RAG skeleton</h2>
+      <h2>Минимальный локальный скелет RAG</h2>
       <pre><code class="language-python"># What it does: builds a tiny embedding search loop with cosine similarity.
 # Input shapes: docs=list[str], query=str
 # Output shapes: top document strings ranked by similarity
@@ -179,24 +177,24 @@ for i in top_idx:
 
     <section class="ml-theory-section">
       <h2>Оценка</h2>
-      <p>RAG evaluation must separate retrieval and generation. If final answer is bad, first ask: did the system retrieve the needed evidence?</p>
+      <p>Оценка RAG должна разделять поиск и генерацию. Если финальный ответ плохой, сначала спроси: нашла ли система нужные доказательства?</p>
       <div class="grid-2">
         <div class="card">
-          <h3>Retrieval metrics</h3>
+          <h3>Метрики retrieval</h3>
           <ul>
-            <li>Recall@K: did we retrieve evidence somewhere in top K?</li>
-            <li>MRR: how early does the first relevant chunk appear?</li>
-            <li>NDCG: are more relevant chunks ranked higher?</li>
-            <li>Context precision: how much retrieved context is useful?</li>
+            <li>Recall@K: нашлись ли доказательства где-то в top K?</li>
+            <li>MRR: насколько рано появляется первый релевантный chunk?</li>
+            <li>NDCG: стоят ли более релевантные chunks выше?</li>
+            <li>Context precision: какая доля найденного контекста полезна?</li>
           </ul>
         </div>
         <div class="card">
-          <h3>Generation metrics</h3>
+          <h3>Метрики генерации</h3>
           <ul>
-            <li>Answer correctness against reference.</li>
-            <li>Groundedness: claims supported by context.</li>
-            <li>Citation accuracy.</li>
-            <li>Refusal quality when evidence is missing.</li>
+            <li>Корректность ответа относительно эталона.</li>
+            <li>Groundedness: подтверждаются ли утверждения контекстом.</li>
+            <li>Точность цитат.</li>
+            <li>Качество отказа, когда доказательств нет.</li>
           </ul>
         </div>
       </div>
@@ -219,29 +217,27 @@ for i in top_idx:
       <h2>Как это ломается</h2>
       <div class="grid-2">
         <div class="warn">
-          <strong>Retrieval failures</strong>
+          <strong>Провалы retrieval</strong>
           <ul>
-            <li>Chunk too small or too large.</li>
-            <li>Wrong embedding model for domain language.</li>
-            <li>Metadata filters remove the right document.</li>
-            <li>Index is stale after document updates.</li>
+            <li>Chunk слишком мелкий или слишком крупный.</li>
+            <li>Модель эмбеддингов не подходит для языка домена.</li>
+            <li>Фильтры по метаданным отсекают нужный документ.</li>
+            <li>Индекс устарел после обновления документов.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Generation failures</strong>
+          <strong>Провалы генерации</strong>
           <ul>
-            <li>LLM ignores context and answers from priors.</li>
-            <li>Answer cites irrelevant chunks.</li>
-            <li>Prompt asks for confidence the model cannot justify.</li>
-            <li>Context contains conflicting documents.</li>
+            <li>LLM игнорирует контекст и отвечает из своих априорных знаний.</li>
+            <li>Ответ ссылается на нерелевантные chunks.</li>
+            <li>Промпт требует уверенности, которую модель не может обосновать.</li>
+            <li>В контексте противоречащие друг другу документы.</li>
           </ul>
         </div>
       </div>
       <details class="intuition-block" open>
-        <summary>Production rule</summary>
-        <div class="intuition-content">
-          Log the query, retrieved chunk IDs, scores, reranker scores, final prompt, answer, citations, latency, and user feedback. Without these logs, RAG debugging becomes guesswork.
-        </div>
+        <summary>Правило для продакшена</summary>
+        <div class="intuition-content">Логируй запрос, ID найденных chunks, их scores, scores reranker-а, финальный промпт, ответ, цитаты, latency и обратную связь пользователя. Без этих логов отладка RAG превращается в гадание.</div>
       </details>
     </section>
 
@@ -250,27 +246,27 @@ for i in top_idx:
       <div class="ml-exercise-list">
         <article class="exercise-card">
           <div class="exercise-label">Foundational</div>
-          <h3>Separate retrieval from generation</h3>
-          <p>For five failed RAG answers, label each failure as retrieval failure, generation failure, or both.</p>
-          <details><summary>Показать решение</summary><p>If the right evidence is absent from context, it is retrieval. If evidence is present but answer is wrong, it is generation. If conflicting chunks are retrieved and answer chooses poorly, it can be both.</p></details>
+          <h3>Отдели retrieval от генерации</h3>
+          <p>Для пяти неудачных ответов RAG пометь каждый провал как провал retrieval, генерации или обоих.</p>
+          <details><summary>Показать решение</summary><p>Если нужных доказательств нет в контексте — это retrieval. Если они есть, а ответ неверный — генерация. Если найдены противоречащие chunks и ответ выбрал не тот — может быть и то, и другое.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Design chunking for docs</h3>
-          <p>Pick chunk size and overlap for API documentation with code examples.</p>
-          <details><summary>Показать решение</summary><p>Prefer section-aware chunks and keep code blocks with their explanation. Use overlap for long sections and metadata for title, endpoint, version, and permissions.</p></details>
+          <h3>Спроектируй chunking для документации</h3>
+          <p>Выбери размер chunk и overlap для API-документации с примерами кода.</p>
+          <details><summary>Показать решение</summary><p>Лучше chunks по разделам, а блоки кода держать вместе с их объяснением. Для длинных разделов используй overlap, а в метаданные клади заголовок, endpoint, версию и права доступа.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Choose hybrid retrieval</h3>
-          <p>Explain why dense-only search may fail for error code `CUDA_ERROR_ILLEGAL_ADDRESS`.</p>
-          <details><summary>Показать решение</summary><p>Exact identifiers and rare strings are often better handled by lexical search. Hybrid retrieval keeps both semantic and exact matching.</p></details>
+          <h3>Выбери гибридный поиск</h3>
+          <p>Объясни, почему только dense-поиск может не найти код ошибки <code>CUDA_ERROR_ILLEGAL_ADDRESS</code>.</p>
+          <details><summary>Показать решение</summary><p>Точные идентификаторы и редкие строки обычно лучше находит лексический поиск. Гибридный retrieval сохраняет и семантическое, и точное совпадение.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Hard</div>
-          <h3>Build a small eval set</h3>
-          <p>Create 30 questions with expected source chunks and compute Recall@5 manually.</p>
-          <details><summary>Показать решение</summary><p>Store each query with document IDs or chunk IDs that contain the answer. Run retrieval and count how many queries include at least one gold chunk in top 5.</p></details>
+          <h3>Собери маленький eval-набор</h3>
+          <p>Составь 30 вопросов с ожидаемыми chunks-источниками и вручную посчитай Recall@5.</p>
+          <details><summary>Показать решение</summary><p>Сохрани для каждого запроса ID документов или chunks с ответом. Запусти поиск и посчитай, у скольких запросов в top 5 есть хотя бы один эталонный chunk.</p></details>
         </article>
       </div>
     </section>
@@ -311,14 +307,14 @@ for i in top_idx:
 <section class="ml-checkpoint-section">
       <h2>Чекпоинт</h2>
       <ul>
-        <li>Can you explain why RAG does not automatically prevent hallucinations?</li>
-        <li>Can you design chunking, indexing, retrieval, reranking, and generation stages?</li>
-        <li>Can you explain dense vs sparse vs hybrid retrieval?</li>
-        <li>Can you evaluate retrieval separately from answer generation?</li>
-        <li>Can you name the logs needed to debug a RAG production issue?</li>
+        <li>Можешь объяснить, почему RAG не предотвращает галлюцинации автоматически?</li>
+        <li>Можешь спроектировать этапы chunking, индексации, retrieval, reranking и генерации?</li>
+        <li>Можешь объяснить dense, sparse и гибридный поиск?</li>
+        <li>Можешь оценить retrieval отдельно от генерации ответа?</li>
+        <li>Можешь назвать логи, нужные для отладки RAG в продакшене?</li>
       </ul>
       <div class="ml-self-rating" data-topic-id="06_llm/09_retrieval_augmented_generation.html" data-title="RAG: Retrieval-Augmented Generation">
-        <span>I can design and debug a RAG system:</span>
+        <span>Могу спроектировать и отладить RAG-систему:</span>
         <button data-rating="1">1</button>
         <button data-rating="2">2</button>
         <button data-rating="3">3</button>

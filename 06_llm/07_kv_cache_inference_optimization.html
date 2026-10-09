@@ -23,7 +23,7 @@
         <span class="tag">Quantization</span>
       </div>
       <h1>6.7 KV-Cache and Inference Optimization</h1>
-      <p class="muted">LLM inference is usually not limited by the same things as training. During generation, memory bandwidth, KV-cache size, batching strategy, and decoding algorithm often matter more than raw FLOPs.</p>
+      <p class="muted">Inference LLM обычно упирается не в то же, что обучение. При генерации пропускная способность памяти, размер KV-cache, стратегия batching и алгоритм декодирования часто важнее «сырых» FLOPs.</p>
     </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -44,7 +44,7 @@
     <ul>
       <li>Трансформер (5.3–5.4)</li>
       <li>Multi-Head Attention</li>
-      <li>GPU memory</li>
+      <li>Память GPU</li>
     </ul>
   </div>
 </div>
@@ -52,35 +52,35 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>KV-cache stores keys and values from previous tokens so autoregressive decoding does not recompute the whole prefix at every new token. It saves compute, but it consumes memory proportional to layers, heads, head dimension, sequence length, and batch size.</p>
+      <p>KV-cache хранит keys и values предыдущих токенов, чтобы авторегрессионное декодирование не пересчитывало весь префикс на каждом новом токене. Это экономит вычисления, но занимает память, пропорциональную числу слоёв, heads, размерности head, длине последовательности и размеру batch.</p>
     </section>
 
     <section class="ml-theory-section">
       <h2>Зачем это нужно</h2>
-      <p>In production, users care about time-to-first-token, tokens per second, total latency, throughput, and cost. A model that is easy to train can still be too expensive to serve if KV-cache memory explodes or batching is inefficient.</p>
+      <p>В продакшене пользователям важны time-to-first-token, токены в секунду, общая latency, throughput и стоимость. Модель, которую легко обучить, может оказаться слишком дорогой в serving, если KV-cache «взрывается» по памяти или batching неэффективен.</p>
       <div class="grid-2">
         <div class="success">
-          <strong>Key distinction</strong>
+          <strong>Ключевое различие</strong>
           <ul>
-            <li>Prefill: process the prompt all at once.</li>
-            <li>Decode: generate one new token at a time.</li>
-            <li>KV-cache mostly helps decode, not the initial prefill pass.</li>
+            <li>Prefill: весь промпт обрабатывается за один проход.</li>
+            <li>Decode: генерируем по одному новому токену.</li>
+            <li>KV-cache в основном ускоряет decode, а не начальный prefill.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Common bottlenecks</strong>
+          <strong>Частые узкие места</strong>
           <ul>
-            <li>KV-cache memory for long contexts.</li>
-            <li>Memory bandwidth during token-by-token decoding.</li>
-            <li>Low GPU utilization with small batches.</li>
-            <li>Queueing latency under high traffic.</li>
+            <li>Память KV-cache при длинных контекстах.</li>
+            <li>Пропускная способность памяти при потокенном декодировании.</li>
+            <li>Низкая загрузка GPU при маленьких batch.</li>
+            <li>Задержка в очереди при высоком трафике.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Autoregressive decoding without cache</h2>
+      <h2>Авторегрессионное декодирование без кеша</h2>
       <div class="formula" data-no-tex>p(x_t | x_1, ..., x_{t-1}) = Transformer(x_1, ..., x_{t-1})</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -93,11 +93,11 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> without caching, every new token asks the model to reread the entire conversation from the beginning.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> writing one word, then rereading the whole book before writing the next word.</div>
       </div>
-      <p>This is wasteful because old tokens do not change. Their key and value projections are identical at future decode steps.</p>
+      <p>Это расточительно: старые токены не меняются, и их проекции key и value на следующих шагах декодирования те же самые.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>What KV-cache stores</h2>
+      <h2>Что хранит KV-cache</h2>
       <div class="formula" data-no-tex>K_l = X W_K,l, V_l = X W_V,l</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -130,59 +130,57 @@
     </section>
 
     <section class="ml-theory-section">
-      <h2>Prefill vs decode</h2>
+      <h2>Prefill и decode</h2>
       <div class="grid-2">
         <div class="card">
           <h3>Prefill</h3>
           <ul>
-            <li>Processes the whole prompt in parallel.</li>
-            <li>Builds the initial KV-cache.</li>
-            <li>Usually compute-heavy for long prompts.</li>
-            <li>Determines time-to-first-token.</li>
+            <li>Обрабатывает весь промпт параллельно.</li>
+            <li>Строит начальный KV-cache.</li>
+            <li>Для длинных промптов обычно упирается в вычисления.</li>
+            <li>Определяет time-to-first-token.</li>
           </ul>
         </div>
         <div class="card">
           <h3>Decode</h3>
           <ul>
-            <li>Generates one token per sequence step.</li>
-            <li>Reuses KV-cache from previous tokens.</li>
-            <li>Often memory-bandwidth-limited.</li>
-            <li>Determines tokens-per-second.</li>
+            <li>Генерирует один токен на шаг для каждой последовательности.</li>
+            <li>Переиспользует KV-cache предыдущих токенов.</li>
+            <li>Часто упирается в пропускную способность памяти.</li>
+            <li>Определяет токены в секунду.</li>
           </ul>
         </div>
       </div>
       <details class="intuition-block" open>
-        <summary>What this means in production</summary>
-        <div class="intuition-content">
-          Long prompts hurt prefill latency and KV memory. Long outputs hurt decode time and keep cache alive longer. High throughput requires batching, but batching increases cache memory and can increase queueing latency. Serving is therefore a scheduling problem, not only a model problem.
-        </div>
+        <summary>Что это значит в продакшене</summary>
+        <div class="intuition-content">Длинные промпты увеличивают latency prefill и память KV. Длинные ответы увеличивают время decode и дольше держат кеш. Высокий throughput требует batching, но batching увеличивает память кеша и может увеличить задержку в очереди. Поэтому serving — это задача планирования, а не только модели.</div>
       </details>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Optimization techniques</h2>
+      <h2>Техники оптимизации</h2>
       <div class="grid-2">
         <div class="insight-card">
           <h3>Grouped-query attention</h3>
-          <p>Use fewer KV heads than query heads. This keeps attention quality close while shrinking KV-cache memory and bandwidth.</p>
+          <p>Используем меньше KV-heads, чем query-heads. Качество attention почти не страдает, а память и трафик KV-cache сокращаются.</p>
         </div>
         <div class="insight-card">
           <h3>Paged attention</h3>
-          <p>Used by systems such as vLLM. KV-cache is stored in blocks like virtual memory pages, which reduces fragmentation and improves batching.</p>
+          <p>Используется в системах вроде vLLM. KV-cache хранится блоками, как страницы виртуальной памяти, — это уменьшает фрагментацию и улучшает batching.</p>
         </div>
         <div class="insight-card">
           <h3>Speculative decoding</h3>
-          <p>A small draft model proposes several tokens. The large model verifies them. If many are accepted, generation accelerates without changing output distribution.</p>
+          <p>Маленькая draft-модель предлагает несколько токенов, большая проверяет их за один проход. Если большинство принимается, генерация ускоряется, а распределение выходов не меняется (при правильной процедуре принятия).</p>
         </div>
         <div class="insight-card">
-          <h3>Quantization</h3>
-          <p>INT8 or INT4 weights reduce memory and bandwidth. Quality depends on calibration, model size, activation outliers, and whether KV-cache is also quantized.</p>
+          <h3>Квантизация</h3>
+          <p>Веса в INT8 или INT4 уменьшают память и трафик. Качество зависит от калибровки, размера модели, выбросов в активациях и того, квантуется ли также KV-cache.</p>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Minimal KV-cache intuition in code</h2>
+      <h2>Минимальная интуиция KV-cache в коде</h2>
       <pre><code class="language-python"># What it does: sketches cache growth during autoregressive decoding.
 # Input shapes: new_k=(B,H_kv,1,D_head), cache_k=(B,H_kv,T,D_head)
 # Output shapes: updated cache_k=(B,H_kv,T+1,D_head)
@@ -207,23 +205,23 @@ for step in range(5):
     </section>
 
     <section class="ml-theory-section">
-      <h2>When optimization choices matter</h2>
+      <h2>Когда какие оптимизации важны</h2>
       <div class="grid-2">
         <div class="card">
-          <h3>Small local model</h3>
-          <p>llama.cpp-style quantization can matter most. The goal is to fit model weights and KV-cache in limited RAM or VRAM.</p>
+          <h3>Маленькая локальная модель</h3>
+          <p>Важнее всего квантизация в стиле llama.cpp. Цель — уместить веса и KV-cache в ограниченную RAM или VRAM.</p>
         </div>
         <div class="card">
-          <h3>High-throughput API</h3>
-          <p>vLLM-style continuous batching and paged attention can matter most. The goal is to keep GPUs utilized under many concurrent requests.</p>
+          <h3>API с высоким throughput</h3>
+          <p>Важнее всего continuous batching и paged attention в стиле vLLM. Цель — держать GPU загруженными при множестве параллельных запросов.</p>
         </div>
         <div class="card">
-          <h3>Long-context app</h3>
-          <p>KV-cache dominates memory. You may need prompt compression, retrieval, sliding windows, or models with efficient attention.</p>
+          <h3>Приложение с длинным контекстом</h3>
+          <p>Память забирает KV-cache. Может понадобиться сжатие промпта, retrieval, скользящие окна или модели с эффективным attention.</p>
         </div>
         <div class="card">
-          <h3>Low-latency assistant</h3>
-          <p>Time-to-first-token matters. Optimize prompt length, prefill, routing, model size, and queueing policy.</p>
+          <h3>Ассистент с низкой latency</h3>
+          <p>Важен time-to-first-token. Оптимизируй длину промпта, prefill, маршрутизацию, размер модели и политику очереди.</p>
         </div>
       </div>
     </section>
@@ -233,27 +231,27 @@ for step in range(5):
       <div class="ml-exercise-list">
         <article class="exercise-card">
           <div class="exercise-label">Foundational</div>
-          <h3>Compute KV-cache memory</h3>
-          <p>Estimate KV-cache memory for L=32, B=4, T=8192, H_kv=8, D_head=128, bf16.</p>
-          <details><summary>Показать решение</summary><p>2*32*4*8192*8*128*2 bytes = about 4.29 GB. This is cache only, not model weights.</p></details>
+          <h3>Посчитай память KV-cache</h3>
+          <p>Оцени память KV-cache для L=32, B=4, T=8192, H_kv=8, D_head=128, bf16.</p>
+          <details><summary>Показать решение</summary><p>2·32·4·8192·8·128·2 байта ≈ 4.29 GB (ровно 4 GiB). Это только кеш, без весов модели.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Explain prefill vs decode</h3>
-          <p>Explain why a 10k-token prompt can have slow first token even if decode tokens are fast.</p>
-          <details><summary>Показать решение</summary><p>Prefill must process the whole prompt and build KV-cache. Decode reuses that cache and only processes one new token per step.</p></details>
+          <h3>Объясни prefill и decode</h3>
+          <p>Объясни, почему у промпта на 10k токенов первый токен может появляться медленно, даже если последующие идут быстро.</p>
+          <details><summary>Показать решение</summary><p>Prefill должен обработать весь промпт и построить KV-cache. Decode переиспользует кеш и на каждом шаге обрабатывает только один новый токен.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Design a serving policy</h3>
-          <p>Choose batching strategy for an API with mixed short chats and long document prompts.</p>
-          <details><summary>Показать решение</summary><p>Separate queues by prompt length or expected output length, use continuous batching, enforce context limits, and monitor p95 latency separately for prefill and decode.</p></details>
+          <h3>Спроектируй политику serving</h3>
+          <p>Выбери стратегию batching для API, где смешаны короткие чаты и длинные промпты с документами.</p>
+          <details><summary>Показать решение</summary><p>Раздели очереди по длине промпта или ожидаемой длине ответа, используй continuous batching, ограничивай контекст и отдельно мониторь p95 latency для prefill и decode.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Hard</div>
-          <h3>Speculative decoding trade-off</h3>
-          <p>When can speculative decoding be slower instead of faster?</p>
-          <details><summary>Показать решение</summary><p>If draft acceptance rate is low, draft model overhead plus verification can exceed the savings. It also adds system complexity.</p></details>
+          <h3>Компромисс speculative decoding</h3>
+          <p>Когда speculative decoding может замедлить генерацию?</p>
+          <details><summary>Показать решение</summary><p>Если доля принятых draft-токенов низкая, накладные расходы draft-модели и проверки могут превысить выигрыш. Кроме того, это усложняет систему.</p></details>
         </article>
       </div>
     </section>
@@ -294,13 +292,13 @@ for step in range(5):
 <section class="ml-checkpoint-section">
       <h2>Чекпоинт</h2>
       <ul>
-        <li>Can you explain why KV-cache helps decode but not the whole prefill cost?</li>
-        <li>Can you derive the memory scaling formula from tensor shapes?</li>
-        <li>Can you explain why long context can be expensive even with cached decoding?</li>
-        <li>Can you compare quantization, batching, paged attention, and speculative decoding?</li>
+        <li>Можешь объяснить, почему KV-cache помогает decode, но не снижает стоимость prefill?</li>
+        <li>Можешь вывести формулу роста памяти из shapes тензоров?</li>
+        <li>Можешь объяснить, почему длинный контекст дорог даже с кешированным декодированием?</li>
+        <li>Можешь сравнить квантизацию, batching, paged attention и speculative decoding?</li>
       </ul>
       <div class="ml-self-rating" data-topic-id="06_llm/07_kv_cache_inference_optimization.html" data-title="KV-Cache and Inference Optimization">
-        <span>I can explain LLM inference bottlenecks:</span>
+        <span>Могу объяснить узкие места inference LLM:</span>
         <button data-rating="1">1</button>
         <button data-rating="2">2</button>
         <button data-rating="3">3</button>

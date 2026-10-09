@@ -23,7 +23,7 @@
         <span class="tag">RLHF</span>
       </div>
       <h1>6.8 DPO and Alignment Alternatives</h1>
-      <p class="muted">DPO is a preference-optimization method that fine-tunes a language model directly from chosen/rejected answer pairs. It removes the explicit reward model and PPO loop used in classic RLHF, but it does not remove the hard parts of preference data, evaluation, and safety.</p>
+      <p class="muted">DPO — метод preference optimization, который дообучает языковую модель напрямую на парах «выбранный / отвергнутый ответ». Он убирает отдельную reward-модель и цикл PPO из классического RLHF, но не убирает самые трудные части: данные предпочтений, оценку и безопасность.</p>
     </div>
 <div class="ml-learning-path">
   <div class="ml-learning-path__why">
@@ -52,36 +52,36 @@
 
     <section class="card">
       <h2>TL;DR</h2>
-      <p>RLHF usually trains a reward model from human preferences, then optimizes the policy with PPO while staying close to a reference model. DPO folds this into a supervised-looking objective over preference pairs: increase likelihood of chosen responses relative to rejected responses, with a KL-style anchor to the reference model.</p>
+      <p>RLHF обычно обучает reward-модель на человеческих предпочтениях, а затем оптимизирует policy через PPO, удерживая её близко к reference-модели. DPO сворачивает это в похожий на supervised objective по парам предпочтений: повысить правдоподобие выбранных ответов относительно отвергнутых, с KL-подобной привязкой к reference-модели.</p>
     </section>
 
     <section class="ml-theory-section">
       <h2>Зачем это нужно</h2>
-      <p>Instruction tuning teaches the model the response format. Preference optimization teaches it which response is better when both are plausible. This matters for helpfulness, refusal behavior, verbosity, tone, safety, and following ambiguous user intent.</p>
+      <p>Instruction tuning учит модель формату ответа. Preference optimization учит, какой ответ лучше, когда оба правдоподобны. Это важно для полезности, поведения при отказах, многословности, тона, безопасности и следования неоднозначным намерениям пользователя.</p>
       <div class="grid-2">
         <div class="success">
-          <strong>DPO is useful when</strong>
+          <strong>DPO полезен, когда</strong>
           <ul>
-            <li>You have preference pairs: prompt, chosen answer, rejected answer.</li>
-            <li>You want a simpler pipeline than reward model + PPO.</li>
-            <li>You want stable fine-tuning with standard log-probabilities.</li>
-            <li>You can evaluate preference overfitting carefully.</li>
+            <li>Есть пары предпочтений: промпт, выбранный ответ, отвергнутый ответ.</li>
+            <li>Нужен пайплайн проще, чем reward-модель + PPO.</li>
+            <li>Нужно стабильное дообучение на обычных log-вероятностях.</li>
+            <li>Ты можешь аккуратно отслеживать переобучение на предпочтения.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>DPO is not magic</strong>
+          <strong>DPO — не магия</strong>
           <ul>
-            <li>Bad preference data still trains bad behavior.</li>
-            <li>It can overfit style instead of improving reasoning.</li>
-            <li>It still needs a reference model and careful beta choice.</li>
-            <li>It does not guarantee safety or factuality.</li>
+            <li>Плохие данные предпочтений всё равно учат плохому поведению.</li>
+            <li>Он может переобучиться на стиль вместо улучшения рассуждений.</li>
+            <li>Ему всё равно нужны reference-модель и аккуратный выбор beta.</li>
+            <li>Он не гарантирует безопасность и фактическую точность.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Classic RLHF pipeline</h2>
+      <h2>Классический пайплайн RLHF</h2>
       <div class="formula" data-no-tex>SFT model -> preference data -> reward model -> PPO policy optimization</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What each stage does</div>
@@ -95,11 +95,11 @@
         <div class="formula-anatomy__intuition"><strong>Intuition:</strong> RLHF first learns a judge, then trains the model to please that judge without moving too far from the original model.</div>
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> train a critic from human ratings, then train a writer to score well with that critic.</div>
       </div>
-      <p>The main weakness is complexity. PPO training can be unstable, reward models can be exploited, and the whole pipeline has many moving parts.</p>
+      <p>Главная слабость — сложность: обучение PPO бывает нестабильным, reward-модель можно «взломать», а в пайплайне много движущихся частей.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Preference data</h2>
+      <h2>Данные предпочтений</h2>
       <div class="formula" data-no-tex>D = {(x, y_w, y_l)}</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -114,15 +114,13 @@
         <div class="formula-anatomy__analogy"><strong>Analogy:</strong> a coach says "answer A is better than answer B" instead of writing the final answer for you.</div>
       </div>
       <details class="intuition-block" open>
-        <summary>Data quality matters more than the algorithm name</summary>
-        <div class="intuition-content">
-          Preference labels must reflect the behavior you actually want. If labelers always prefer longer answers, the model can become verbose. If labels reward confident style over correctness, the model can become more persuasive but less truthful.
-        </div>
+        <summary>Качество данных важнее названия алгоритма</summary>
+        <div class="intuition-content">Метки предпочтений должны отражать именно то поведение, которое нужно. Если разметчики всегда предпочитают более длинные ответы, модель станет многословной. Если метки вознаграждают уверенный стиль больше, чем правильность, модель станет убедительнее, но менее правдивой.</div>
       </details>
     </section>
 
     <section class="ml-theory-section">
-      <h2>DPO objective</h2>
+      <h2>Objective DPO</h2>
       <div class="formula" data-no-tex>L_DPO = - log sigma(beta * [log pi_theta(y_w|x) - log pi_theta(y_l|x) - log pi_ref(y_w|x) + log pi_ref(y_l|x)])</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -139,41 +137,39 @@
         <div class="formula-anatomy__analogy"><strong>Numeric example:</strong> if the new model prefers the winner more than the reference did, the margin is positive and loss decreases.</div>
       </div>
 
-      <p>The reference correction is the key. DPO is not simply "make chosen more likely." It asks whether the new policy improves the chosen-vs-rejected gap compared with the reference model.</p>
+      <p>Ключевая часть — поправка на reference. DPO не просто «делает выбранный ответ вероятнее»: он смотрит, увеличила ли новая policy разрыв «выбранный vs отвергнутый» по сравнению с reference-моделью.</p>
     </section>
 
     <section class="ml-theory-section">
-      <h2>PPO-RLHF vs DPO</h2>
+      <h2>PPO-RLHF и DPO</h2>
       <div class="grid-2">
         <div class="card">
-          <h3>PPO-based RLHF</h3>
+          <h3>RLHF на PPO</h3>
           <ul>
-            <li>Needs a separate reward model.</li>
-            <li>Generates samples during RL training.</li>
-            <li>Can optimize non-differentiable reward signals.</li>
-            <li>More moving parts and more instability.</li>
+            <li>Нужна отдельная reward-модель.</li>
+            <li>Генерирует сэмплы во время RL-обучения.</li>
+            <li>Может оптимизировать недифференцируемые сигналы награды.</li>
+            <li>Больше движущихся частей и больше нестабильности.</li>
           </ul>
         </div>
         <div class="card">
           <h3>DPO</h3>
           <ul>
-            <li>Uses preference pairs directly.</li>
-            <li>No explicit reward model training step.</li>
-            <li>Looks like supervised fine-tuning over pairwise data.</li>
-            <li>Simpler, but depends heavily on pair quality.</li>
+            <li>Использует пары предпочтений напрямую.</li>
+            <li>Нет отдельного шага обучения reward-модели.</li>
+            <li>Похож на supervised fine-tuning на попарных данных.</li>
+            <li>Проще, но сильно зависит от качества пар.</li>
           </ul>
         </div>
       </div>
       <details class="intuition-block" open>
-        <summary>Practical trade-off</summary>
-        <div class="intuition-content">
-          DPO is usually easier to run and debug than PPO-RLHF. PPO can be more flexible when you have a complex reward function or want online policy optimization, but it is harder to stabilize. For many fine-tuning workflows, DPO gives most of the practical benefit with less engineering overhead.
-        </div>
+        <summary>Практический компромисс</summary>
+        <div class="intuition-content">DPO обычно проще запускать и отлаживать, чем PPO-RLHF. PPO гибче, когда есть сложная функция награды или нужна online-оптимизация policy, но его труднее стабилизировать. Для многих сценариев дообучения DPO даёт бо́льшую часть практической пользы с меньшими инженерными затратами.</div>
       </details>
     </section>
 
     <section class="ml-theory-section">
-      <h2>Minimal DPO data shape</h2>
+      <h2>Минимальная форма данных для DPO</h2>
       <pre><code class="language-python"># What it does: shows the structure of a DPO preference example.
 # Input shapes: prompt=str, chosen=str, rejected=str
 # Output shapes: dict consumed by most DPO trainers
@@ -197,23 +193,23 @@ assert all(field in example for field in required_fields)
     </section>
 
     <section class="ml-theory-section">
-      <h2>Alignment alternatives</h2>
+      <h2>Альтернативы для alignment</h2>
       <div class="grid-2">
         <div class="insight-card">
           <h3>SFT</h3>
-          <p>Best for teaching format, task style, and basic instruction following. It does not directly optimize pairwise preference.</p>
+          <p>Лучше всего учит формату, стилю задачи и базовому следованию инструкциям. Попарные предпочтения напрямую не оптимизирует.</p>
         </div>
         <div class="insight-card">
-          <h3>RLHF with PPO</h3>
-          <p>More flexible but more complex. Useful when a reward model or online reward is central to the training loop.</p>
+          <h3>RLHF с PPO</h3>
+          <p>Гибче, но сложнее. Полезен, когда reward-модель или online-награда — центральная часть цикла обучения.</p>
         </div>
         <div class="insight-card">
           <h3>DPO</h3>
-          <p>Direct pairwise preference optimization. Strong default when you have chosen/rejected pairs and want a stable pipeline.</p>
+          <p>Прямая оптимизация попарных предпочтений. Хороший вариант по умолчанию, когда есть пары chosen/rejected и нужен стабильный пайплайн.</p>
         </div>
         <div class="insight-card">
-          <h3>RLAIF / AI feedback</h3>
-          <p>Uses model-generated preference labels. Scales faster, but can amplify judge model biases and blind spots.</p>
+          <h3>RLAIF / обратная связь от AI</h3>
+          <p>Использует метки предпочтений, сгенерированные моделью. Масштабируется быстрее, но может усиливать смещения и слепые зоны модели-судьи.</p>
         </div>
       </div>
       <h3>ORPO и SimPO: без reference-модели</h3>
@@ -224,29 +220,29 @@ assert all(field in example for field in required_fields)
       <h2>Как это ломается</h2>
       <div class="grid-2">
         <div class="warn">
-          <strong>Data failures</strong>
+          <strong>Провалы в данных</strong>
           <ul>
-            <li>Chosen answers are longer, not better.</li>
-            <li>Rejected answers are too weak, making the task easy but uninformative.</li>
-            <li>Preferences encode inconsistent policy.</li>
-            <li>Dataset does not cover refusal and edge cases.</li>
+            <li>Выбранные ответы длиннее, а не лучше.</li>
+            <li>Отвергнутые ответы слишком слабые: задача лёгкая, но малоинформативная.</li>
+            <li>Предпочтения отражают противоречивую политику.</li>
+            <li>Датасет не покрывает отказы и пограничные случаи.</li>
           </ul>
         </div>
         <div class="warn">
-          <strong>Training failures</strong>
+          <strong>Провалы в обучении</strong>
           <ul>
-            <li>Beta too low: the anchor is weak — the model drifts far from the reference and over-optimizes the pairs.</li>
-            <li>Beta too high: the anchor is strong — preferences barely change behavior.</li>
-            <li>Overfitting to style markers in preference data.</li>
-            <li>Better preference score but worse factuality.</li>
+            <li>Слишком маленький beta: привязка слабая — модель уходит далеко от reference и переоптимизирует пары.</li>
+            <li>Слишком большой beta: привязка сильная — предпочтения почти не меняют поведение.</li>
+            <li>Переобучение на стилистические маркеры в данных предпочтений.</li>
+            <li>Score предпочтений выше, а фактическая точность хуже.</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section class="ml-theory-section">
-      <h2>How to evaluate DPO</h2>
-      <p>Evaluate DPO with fixed prompts, pairwise human or judge preference, safety tests, factuality tests, and regression checks against the base SFT model.</p>
+      <h2>Как оценивать DPO</h2>
+      <p>Оценивай DPO на фиксированных промптах: попарные предпочтения людей или модели-судьи, тесты безопасности и фактической точности, регрессионные проверки против базовой SFT-модели.</p>
       <div class="formula" data-no-tex>win_rate = preferred_outputs_from_new_model / total_comparisons</div>
       <div class="formula-anatomy">
         <div class="formula-anatomy__header">What the symbols mean</div>
@@ -266,27 +262,27 @@ assert all(field in example for field in required_fields)
       <div class="ml-exercise-list">
         <article class="exercise-card">
           <div class="exercise-label">Foundational</div>
-          <h3>Explain DPO in one minute</h3>
-          <p>Explain why DPO can train from chosen/rejected pairs without explicitly training a reward model.</p>
-          <details><summary>Показать решение</summary><p>DPO uses a derived objective that compares policy log-probability margins between chosen and rejected responses against a reference model. This directly optimizes preference likelihood.</p></details>
+          <h3>Объясни DPO за минуту</h3>
+          <p>Объясни, почему DPO может учиться на парах chosen/rejected без явного обучения reward-модели.</p>
+          <details><summary>Показать решение</summary><p>DPO использует выведенный objective, который сравнивает разрыв log-вероятностей policy между выбранным и отвергнутым ответами с тем же разрывом у reference-модели. Reward-модель неявно задаётся самой policy, поэтому правдоподобие предпочтений оптимизируется напрямую.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Find bad preference pairs</h3>
-          <p>Create three preference pairs where the chosen answer is longer but not better. Explain why they are dangerous.</p>
-          <details><summary>Показать решение</summary><p>The model may learn verbosity as a shortcut for preference instead of learning correctness, helpfulness, or safety.</p></details>
+          <h3>Найди плохие пары</h3>
+          <p>Составь три пары предпочтений, где выбранный ответ длиннее, но не лучше. Объясни, чем они опасны.</p>
+          <details><summary>Показать решение</summary><p>Модель может выучить многословность как shortcut к предпочтению вместо правильности, полезности или безопасности.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Intermediate</div>
-          <h3>Choose DPO or PPO</h3>
-          <p>For a small company fine-tuning a support assistant from 5k preference pairs, choose DPO or PPO and justify.</p>
-          <details><summary>Показать решение</summary><p>DPO is usually the better first choice: simpler, more stable, no reward model/PPO loop, and well matched to offline preference pairs.</p></details>
+          <h3>Выбери DPO или PPO</h3>
+          <p>Небольшая компания дообучает ассистента поддержки на 5k пар предпочтений. DPO или PPO — и почему?</p>
+          <details><summary>Показать решение</summary><p>Обычно лучший первый выбор — DPO: проще, стабильнее, нет reward-модели и цикла PPO, хорошо подходит для offline-пар предпочтений.</p></details>
         </article>
         <article class="exercise-card">
           <div class="exercise-label">Hard</div>
-          <h3>Design an evaluation set</h3>
-          <p>Design 50 prompts to detect whether DPO improved helpfulness but harmed factuality or refusal behavior.</p>
-          <details><summary>Показать решение</summary><p>Include normal helpful prompts, factual QA with known answers, ambiguous prompts, harmful prompts, and refusal boundary cases. Compare against SFT baseline blindly.</p></details>
+          <h3>Спроектируй evaluation-набор</h3>
+          <p>Спроектируй 50 промптов, чтобы проверить, не улучшил ли DPO полезность ценой фактической точности или поведения при отказах.</p>
+          <details><summary>Показать решение</summary><p>Включи обычные полезные промпты, фактические вопросы с известными ответами, неоднозначные промпты, вредные промпты и пограничные случаи для отказа. Сравнивай с SFT-baseline вслепую.</p></details>
         </article>
       </div>
     </section>
@@ -327,14 +323,14 @@ assert all(field in example for field in required_fields)
 <section class="ml-checkpoint-section">
       <h2>Чекпоинт</h2>
       <ul>
-        <li>Can you explain DPO vs PPO-RLHF without buzzwords?</li>
-        <li>Can you describe the role of the reference model in DPO?</li>
-        <li>Can you identify when preference data is low quality?</li>
-        <li>Can you explain why DPO can improve style while hurting factuality?</li>
-        <li>Can you design an evaluation protocol for an aligned model?</li>
+        <li>Можешь объяснить DPO и PPO-RLHF без buzzwords?</li>
+        <li>Можешь описать роль reference-модели в DPO?</li>
+        <li>Можешь определить, что данные предпочтений низкого качества?</li>
+        <li>Можешь объяснить, почему DPO может улучшить стиль, ухудшив фактическую точность?</li>
+        <li>Можешь спроектировать протокол оценки для выровненной модели?</li>
       </ul>
       <div class="ml-self-rating" data-topic-id="06_llm/08_dpo_alignment_alternatives.html" data-title="DPO and Alignment Alternatives">
-        <span>I can explain DPO and alignment trade-offs:</span>
+        <span>Могу объяснить DPO и компромиссы alignment:</span>
         <button data-rating="1">1</button>
         <button data-rating="2">2</button>
         <button data-rating="3">3</button>
