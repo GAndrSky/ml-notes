@@ -154,8 +154,10 @@ def nms(boxes, scores, threshold=0.5):
         i = order[0]
         keep.append(i)
         rest = order[1:]
-        order = rest[np.array([iou(boxes[i], boxes[j]) < threshold for j in rest])]
-    return keep
+        # dtype=bool: when rest is empty, np.array([]) is float and cannot index
+        mask = np.array([iou(boxes[i], boxes[j]) < threshold for j in rest], dtype=bool)
+        order = rest[mask]
+    return [int(k) for k in keep]
 
 boxes = np.array([[0,0,10,10], [1,1,11,11], [30,30,40,40]], dtype=float)
 scores = np.array([0.9, 0.8, 0.7])

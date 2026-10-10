@@ -134,7 +134,9 @@ from peft import LoraConfig, get_peft_model, TaskType
 
 model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
+# separate pad token: DataCollatorForLanguageModeling masks every pad id in labels,
+# so pad == eos would hide EOS and the model would never learn to stop
+tokenizer.pad_token = tokenizer.unk_token or tokenizer.eos_token
 
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
 
@@ -159,11 +161,12 @@ model.print_trainable_parameters()
       <pre><code class="language-python"># What it does: trains LoRA adapters with Hugging Face Trainer.
 # Input shapes: dataset["text"] tokenized to input_ids=(B,L)
 # Output shapes: saved adapter files in output_dir
+import torch
 from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
 
 def tokenize(batch):
     return tokenizer(
-        batch["text"],
+        [t + tokenizer.eos_token for t in batch["text"]],  # EOS teaches the model to stop
         truncation=True,
         max_length=512,
         padding=False,
@@ -181,7 +184,7 @@ args = TrainingArguments(
     logging_steps=1,
     save_strategy="epoch",
     fp16=False,
-    bf16=True,
+    bf16=torch.cuda.is_available() and torch.cuda.is_bf16_supported(),
     report_to=[],
 )
 
@@ -196,11 +199,11 @@ model.save_pretrained("outputs/lora-adapter")
 tokenizer.save_pretrained("outputs/lora-adapter")
 
 # Gotchas:
-# 1. If bf16 is unsupported, set bf16=False and use fp16 only with care.
+# 1. bf16 is enabled only on GPUs that support it; fp16 needs loss scaling, use with care.
 # 2. Tiny datasets can quickly overfit style without improving task ability.
-# 3. With pad_token = eos_token, DataCollatorForLanguageModeling sets labels of ALL eos tokens
-#    to -100, so the model never learns to stop. Append EOS to each example and use a separate
-#    pad token, or build labels yourself.
+# 3. Pad token must differ from EOS: the collator sets labels of all pad ids to -100.
+#    If the tokenizer has no unk token, add a dedicated one: tokenizer.add_special_tokens(
+#    {"pad_token": "<pad>"}) and model.resize_token_embeddings(len(tokenizer)).
 # 4. This collator computes loss on the instruction too; to train only on the response,
 #    mask prompt tokens with -100 (e.g., TRL completion-only collator / SFTTrainer).</code></pre>
     </section>

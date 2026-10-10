@@ -900,7 +900,11 @@ print(coef_df)</div>
 
       <div id="code-perm" class="tab-panel">
         <div class="code">from sklearn.inspection import permutation_importance
+from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
+
+# model — любая обученная модель; для SHAP TreeExplainer ниже нужна tree-based
+model = RandomForestClassifier(n_estimators=300, random_state=42).fit(X_train, y_train)
 
 result = permutation_importance(
     model,
@@ -938,20 +942,27 @@ plt.show()</div>
       </div>
 
       <div id="code-shap" class="tab-panel">
-        <div class="code">import shap
+        <div class="code">import numpy as np
+import shap
 
-# пример для tree-based модели
+# пример для tree-based модели (бинарная классификация)
 explainer = shap.TreeExplainer(model)
-shap_values = explainer.shap_values(X_valid)
+sv = explainer.shap_values(X_valid)
+# SHAP возвращает вклад для каждого класса: старые версии — список, новые — массив (n, features, 2)
+if isinstance(sv, list):
+    sv = sv[1]
+elif sv.ndim == 3:
+    sv = sv[..., 1]
+base = np.ravel(explainer.expected_value)[-1]   # базовое значение для класса 1
 
 # глобально
-shap.summary_plot(shap_values, X_valid, feature_names=feature_names)
+shap.summary_plot(sv, X_valid, feature_names=feature_names)
 
 # локально для одного объекта
 i = 0
 shap.force_plot(
-    explainer.expected_value,
-    shap_values[i],
+    base,
+    sv[i],
     X_valid.iloc[i],
     feature_names=feature_names
 )</div>
