@@ -40,7 +40,7 @@
       ".hljs-title,.hljs-title.class_,.hljs-title.function_,.hljs-function .hljs-title{color:#82aaff!important;}" +
       ".hljs-string,.hljs-meta .hljs-string,.hljs-regexp,.hljs-symbol,.hljs-bullet{color:#c3e88d!important;}" +
       ".hljs-number,.hljs-built_in,.hljs-type,.hljs-attr,.hljs-template-variable{color:#f78c6c!important;}" +
-      ".hljs-comment,.hljs-quote,.hljs-deletion{color:#6b7280!important;}" +
+      ".hljs-comment,.hljs-quote,.hljs-deletion{color:#8b949e!important;}" +
       ".hljs-variable,.hljs-params,.hljs-attribute,.hljs-subst{color:#e8eaf0!important;}" +
       "@media (max-width:700px){.formula.ml-code-highlight code,.formula.ml-code-highlight pre,pre code.hljs{font-size:13px!important;}}";
     document.head.appendChild(style);
