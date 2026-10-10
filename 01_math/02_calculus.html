@@ -1239,7 +1239,7 @@ print(np.array(traj)[-5:])
       <summary>Матрица Гессе: что говорят вторые производные</summary>
       <div class="intuition-content">Градиент показывает, куда loss локально растёт быстрее всего. Гессиан — как меняется сам градиент при движении. В одномерном случае это кривизна, в многомерном — матрица всех вторых частных производных. Положительная кривизна — направление «чаши», отрицательная — «холма», а смешанные знаки обычно означают седловую точку.</div>
     </details>
-    <div class="formula" data-no-tex>H_ij = partial^2 L / (partial theta_i partial theta_j)</div>
+    <div class="formula" data-render-tex data-tex-source="H_{ij} = \frac{\partial^2 L}{\partial \theta_i \, \partial \theta_j}">H_ij = partial^2 L / (partial theta_i partial theta_j)</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
@@ -1257,7 +1257,7 @@ print(np.array(traj)[-5:])
       <summary>Почему полный гессиан непрактичен на больших моделях</summary>
       <div class="intuition-content">У модели с P параметрами гессиан размера P × P, то есть P² элементов. Для модели на 100M параметров это 10^16 элементов — хранить и обрабатывать такое напрямую невозможно. Поэтому в deep learning почти не используют полные шаги Ньютона, а применяют диагональные, low-rank и Kronecker-факторизованные приближения или Hessian-vector products.</div>
     </details>
-    <div class="formula" data-no-tex>memory(H) = O(P^2)</div>
+    <div class="formula" data-render-tex data-tex-source="\text{memory}(H) = O(P^2)">memory(H) = O(P^2)</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">Dimensions check</div>
       <div class="formula-anatomy__grid">
@@ -1274,7 +1274,7 @@ print(np.array(traj)[-5:])
       <summary>Hessian-vector products: кривизна без построения H</summary>
       <div class="intuition-content">Многим алгоритмам нужен не весь гессиан, а только произведение H·v на вектор. Autograd вычисляет его ещё одним проходом дифференцирования, не материализуя матрицу P × P. HVP — основа метода сопряжённых градиентов, truncated Newton, influence functions и части приближений natural gradient.</div>
     </details>
-    <div class="formula" data-no-tex>H v = d/d epsilon grad L(theta + epsilon v) | epsilon=0</div>
+    <div class="formula" data-render-tex data-tex-source="H v = \left.\frac{d}{d\varepsilon} \nabla L(\theta + \varepsilon v)\right|_{\varepsilon=0}">H v = d/d epsilon grad L(theta + epsilon v) | epsilon=0</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
@@ -1291,7 +1291,7 @@ print(np.array(traj)[-5:])
       <summary>Информация Фишера: геометрия поведения модели</summary>
       <div class="intuition-content">Информация Фишера измеряет, насколько распределение модели чувствительно к изменению параметров. Если крошечный сдвиг параметров сильно меняет предсказанные вероятности, Фишер в этом направлении большой; если почти не меняет — маленький. Это важно, потому что два одинаковых по величине шага в параметрах могут совершенно по-разному менять поведение модели.</div>
     </details>
-    <div class="formula" data-no-tex>F(theta) = E_x,y [ grad_theta log p_theta(y|x) grad_theta log p_theta(y|x)^T ]</div>
+    <div class="formula" data-render-tex data-tex-source="F(\theta) = \mathbb{E}_{x,y}\left[\nabla_\theta \log p_\theta(y\mid x)\, \nabla_\theta \log p_\theta(y\mid x)^{\top}\right]">F(theta) = E_x,y [ grad_theta log p_theta(y|x) grad_theta log p_theta(y|x)^T ]</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
@@ -1311,7 +1311,7 @@ print(np.array(traj)[-5:])
       <summary>Почему Фишер связан с KL-дивергенцией</summary>
       <div class="intuition-content">KL-дивергенция измеряет, насколько различаются два распределения. Вблизи текущих параметров KL между старой и чуть обновлённой моделью приближённо равна квадратичной форме с матрицей Фишера посередине: KL ≈ ½ Δθᵀ F Δθ. Так что Фишер играет роль кривизны пространства распределений.</div>
     </details>
-    <div class="formula" data-no-tex>KL(p_theta || p_{theta + delta}) approx 1/2 delta^T F(theta) delta</div>
+    <div class="formula" data-render-tex data-tex-source="\mathrm{KL}(p_\theta \,\|\, p_{\theta+\delta}) \approx \tfrac{1}{2}\, \delta^{\top} F(\theta)\, \delta">KL(p_theta || p_{theta + delta}) approx 1/2 delta^T F(theta) delta</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
@@ -1328,7 +1328,7 @@ print(np.array(traj)[-5:])
       <summary>Natural gradient: наискорейший спуск в пространстве распределений</summary>
       <div class="intuition-content">Обычный градиент — это наискорейший спуск в предположении, что все координаты параметров «равноценны». Natural gradient ставит вопрос иначе: найти шаг, который сильнее всего уменьшает loss при ограниченном изменении распределения модели. Получается обновление, предобусловленное обратной матрицей Фишера: Δθ ∝ −F⁻¹∇L.</div>
     </details>
-    <div class="formula" data-no-tex>theta_new = theta - eta F(theta)^{-1} grad L(theta)</div>
+    <div class="formula" data-render-tex data-tex-source="\theta_{\text{new}} = \theta - \eta\, F(\theta)^{-1} \nabla L(\theta)">theta_new = theta - eta F(theta)^{-1} grad L(theta)</div>
     <div class="formula-anatomy">
       <div class="formula-anatomy__header">What the symbols mean</div>
       <div class="formula-anatomy__grid">
