@@ -231,18 +231,33 @@ Span corruption: восстановить вырезанные отрезки   
     </div>
   
   <script>
+    // Final loss of a 7B model trained on D tokens, from the Chinchilla parametric fit
+    // L(N, D) = E + A/N^α + B/D^β (constants: Besiroglu et al., 2024 replication of Hoffmann et al., 2022).
+    const PT = {E: 1.82, A: 482.01, B: 2085.43, a: 0.3478, b: 0.3658, N: 7e9};
+    const ptLoss = D => PT.E + PT.A / Math.pow(PT.N, PT.a) + PT.B / Math.pow(D, PT.b);
     function drawPretrain() {
       const tokens = Number(document.getElementById("tokens").value);
       document.getElementById("tokensVal").textContent = tokens + "B";
       const canvas = document.getElementById("pretrainCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 44;
       ctx.clearRect(0,0,w,h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0,0,w,h);
       ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad,18); ctx.lineTo(pad,h-pad); ctx.lineTo(w-18,h-pad); ctx.stroke();
+      const dMin = 50, dMax = 3000, yMin = ptLoss(dMax) - 0.02, yMax = ptLoss(dMin) + 0.02;
+      const X = d => pad + Math.log(d / dMin) / Math.log(dMax / dMin) * (w - pad - 26);
+      const Y = l => 20 + (yMax - l) / (yMax - yMin) * (h - pad - 28);
       ctx.beginPath(); ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2.5;
-      for(let i=0;i<=140;i++){ const t=i/140; const x=pad+t*(w-pad-26); const yNorm=0.12+0.88*Math.exp(-Math.log(1+tokens/40)*t*1.2); const y=20+yNorm*(h-pad-28); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+      for(let i=0;i<=140;i++){ const d = dMin * Math.pow(dMax / dMin, i / 140); const x = X(d), y = Y(ptLoss(d * 1e9)); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
       ctx.stroke();
-      let text = "Loss ещё быстро падает: модель явно выигрывает от новых токенов.";
-      if(tokens > 1200) text = "Улучшения продолжаются, но каждый новый кусок данных уже даёт более умеренный прирост.";
-      if(tokens > 2400) text = "Зона diminishing returns: качество ещё растёт, но без хорошего scaling по модели и compute одних данных уже мало.";
+      const L = ptLoss(tokens * 1e9), gain = L - ptLoss(2 * tokens * 1e9), floor = PT.E + PT.A / Math.pow(PT.N, PT.a);
+      ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.arc(X(tokens), Y(L), 6, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#8b949e"; ctx.font = "11px system-ui"; ctx.textAlign = "center";
+      [50, 100, 300, 1000, 3000].forEach(d => ctx.fillText(d >= 1000 ? (d/1000) + "T" : d + "B", X(d), h - pad + 16));
+      ctx.fillText("токены обучения, лог. шкала (модель 7B)", (w + pad) / 2, h - 8);
+      ctx.textAlign = "left"; ctx.fillStyle = "#e6edf3"; ctx.font = "12px system-ui";
+      ctx.fillText("L = " + L.toFixed(3) + ";  удвоение данных: −" + gain.toFixed(3) + ";  предел для 7B: " + floor.toFixed(3), pad + 10, 34);
+      let text = `Итоговый loss ≈ ${L.toFixed(3)}. Удвоение данных до ${2 * tokens}B токенов снизит его ещё на ${gain.toFixed(3)} — каждое следующее удвоение даёт меньше (степенной закон). `;
+      text += tokens < 140 ? "Для 7B это меньше compute-optimal (~20 токенов на параметр ≈ 140B): данных явно мало."
+            : tokens < 1000 ? "Это уже больше compute-optimal для 7B, но на практике модели учат дольше: меньшую модель дешевле запускать."
+            : "Сильный «перекорм» данными (как у LLaMA-подобных моделей): каждый токен даёт мало, зато модель маленькая и дешёвая на inference.";
       document.getElementById("pretrainSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
     }
     drawPretrain();

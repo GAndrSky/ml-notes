@@ -259,10 +259,13 @@
       if (!slider || !readout || !score || !strip) return;
 
       function render() {
-        var t = Number(slider.value);
-        var signal = Math.max(0, 1 - t / 100);
-        var noise = 1 - signal;
-        readout.textContent = "signal ≈ " + signal.toFixed(2) + ", noise ≈ " + noise.toFixed(2);
+        // DDPM linear schedule: β_t from 1e-4 to 0.02 over T = 1000 steps; slider 0..100 → step 0..1000.
+        // x_t = √ᾱ_t · x_0 + √(1 − ᾱ_t) · ε, so signal² + noise² = 1.
+        var t = Math.round(Number(slider.value) * 10), alphaBar = 1;
+        for (var k = 1; k <= t; k += 1) alphaBar *= 1 - (1e-4 + (0.02 - 1e-4) * (k - 1) / 999);
+        var signal = Math.sqrt(alphaBar);
+        var noise = Math.sqrt(1 - alphaBar);
+        readout.textContent = "t = " + t + ": √ᾱ (signal) ≈ " + signal.toFixed(3) + ", √(1−ᾱ) (noise) ≈ " + noise.toFixed(3) + ", SNR = ᾱ/(1−ᾱ) ≈ " + (alphaBar / Math.max(1e-12, 1 - alphaBar)).toPrecision(2);
         score.style.opacity = String(0.35 + signal * 0.65);
         strip.innerHTML = "";
         for (var i = 0; i < 6; i += 1) {

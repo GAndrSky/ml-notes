@@ -166,7 +166,7 @@ params и tokens растут согласованно</div>
     <div class="warn">Это очень важный инженерный сдвиг: при планировании pre-training бюджета нельзя принимать решение о параметрах отдельно от решения о числе токенов.</div>
     </div>
     <div class="card">
-      <h2>Интерактив: ощущение компромисса</h2>
+      <h2>Интерактив: формула Chinchilla</h2>
       <div class="control"><span>Параметры (млрд)</span><input id="params" type="range" min="1" max="200" step="1" value="20" oninput="drawScaling()" /><strong id="paramsVal">20B</strong></div>
       <div class="control"><span>Токены (млрд)</span><input id="data" type="range" min="20" max="4000" step="20" value="400" oninput="drawScaling()" /><strong id="dataVal">400B</strong></div>
       <canvas id="scaleCanvas" width="860" height="280"></canvas>
@@ -208,21 +208,53 @@ params и tokens растут согласованно</div>
     </div>
   
   <script>
+    // Chinchilla parametric form L(N, D) = E + A / N^α + B / D^β (Hoffmann et al., 2022, approach 3).
+    // Constants from the replication by Besiroglu et al. (2024): the originally published ones
+    // (E=1.69, A=406.4, B=410.7, α=0.34, β=0.28) are inconsistent with Chinchilla's own ~20 tokens/param.
+    // N = parameters, D = training tokens, compute C ≈ 6·N·D FLOPs.
+    const CH = {E: 1.82, A: 482.01, B: 2085.43, a: 0.3478, b: 0.3658};
+    const chLoss = (N, D) => CH.E + CH.A / Math.pow(N, CH.a) + CH.B / Math.pow(D, CH.b);
+    function chOptimal(C){ // minimise L(N, C / 6N) over N on a log grid
+      let best = null;
+      for(let lg = 7; lg <= 13; lg += 0.005){ const N = Math.pow(10, lg), D = C / (6 * N), L = chLoss(N, D); if(!best || L < best.L) best = {N, D, L}; }
+      return best;
+    }
     function drawScaling() {
       const p = Number(document.getElementById("params").value);
       const d = Number(document.getElementById("data").value);
       document.getElementById("paramsVal").textContent = p + "B";
       document.getElementById("dataVal").textContent = d + "B";
-      const canvas = document.getElementById("scaleCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 42;
+      const canvas = document.getElementById("scaleCanvas"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height, pad = 46;
       ctx.clearRect(0,0,w,h); ctx.fillStyle = "#0b1016"; ctx.fillRect(0,0,w,h);
-      ctx.strokeStyle = "#30363d"; ctx.beginPath(); ctx.moveTo(pad,18); ctx.lineTo(pad,h-pad); ctx.lineTo(w-18,h-pad); ctx.stroke();
-      const ratio = d / Math.max(1, p);
-      const fit = Math.min(1, Math.log(1 + p) / Math.log(201) * 0.45 + Math.log(1 + d) / Math.log(4001) * 0.55);
-      const y = 20 + (1 - fit) * (h - pad - 26);
-      ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(pad, h - pad - 10); ctx.lineTo(w - 40, y); ctx.stroke();
-      let text = "Режим ближе к сбалансированному scaling.";
-      if (ratio < 12) text = "Похоже на data-starved режим: параметров уже много относительно числа токенов.";
-      else if (ratio > 60) text = "Похоже на regime, где модель можно было бы сделать больше и всё ещё окупить данными.";
+      const N = p * 1e9, D = d * 1e9, C = 6 * N * D, L = chLoss(N, D), opt = chOptimal(C);
+      // x: tokens 10B..10T (log), y: loss
+      const xMin = 10, xMax = 10000, yMin = 1.9, yMax = 3.1;
+      const X = t => pad + Math.log10(t / xMin) / Math.log10(xMax / xMin) * (w - pad - 18);
+      const Y = l => 18 + (yMax - Math.min(yMax, Math.max(yMin, l))) / (yMax - yMin) * (h - pad - 18);
+      ctx.strokeStyle = "#30363d"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad,18); ctx.lineTo(pad,h-pad); ctx.lineTo(w-18,h-pad); ctx.stroke();
+      ctx.fillStyle = "#8b949e"; ctx.font = "11px system-ui"; ctx.textAlign = "center";
+      [10, 100, 1000, 10000].forEach(t => ctx.fillText(t >= 1000 ? (t/1000) + "T" : t + "B", X(t), h - pad + 16));
+      ctx.fillText("токены обучения (лог. шкала)", (w + pad) / 2, h - 8);
+      ctx.textAlign = "right";
+      [2.0, 2.3, 2.6, 2.9].forEach(l => ctx.fillText(l.toFixed(1), pad - 6, Y(l) + 4));
+      // loss vs tokens for the chosen model size
+      ctx.strokeStyle = "#10b981"; ctx.lineWidth = 2.5; ctx.beginPath();
+      for(let i = 0; i <= 200; i++){ const t = xMin * Math.pow(xMax / xMin, i / 200); const yy = Y(chLoss(N, t * 1e9)); i ? ctx.lineTo(X(t), yy) : ctx.moveTo(X(t), yy); }
+      ctx.stroke();
+      // irreducible loss
+      ctx.setLineDash([5,5]); ctx.strokeStyle = "#8b949e"; ctx.beginPath(); ctx.moveTo(pad, Y(CH.E + CH.A / Math.pow(N, CH.a))); ctx.lineTo(w - 18, Y(CH.E + CH.A / Math.pow(N, CH.a))); ctx.stroke(); ctx.setLineDash([]);
+      // current point and compute-optimal point for the same budget
+      ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.arc(X(d), Y(L), 6, 0, Math.PI*2); ctx.fill();
+      ctx.textAlign = "left"; ctx.font = "12px system-ui";
+      ctx.fillStyle = "#e6edf3"; ctx.fillText("L = " + L.toFixed(3) + " (твой выбор)", 56, 34);
+      ctx.fillStyle = "#60a5fa"; ctx.fillText("оптимум при том же compute: " + (opt.N/1e9).toFixed(1) + "B параметров × " + (opt.D/1e9).toFixed(0) + "B токенов, L = " + opt.L.toFixed(3), 56, 52);
+      ctx.fillStyle = "#8b949e"; ctx.fillText("пунктир: предел при бесконечных данных для " + p + "B параметров", 56, 70);
+      const ratio = d / p, optRatio = opt.D / opt.N;
+      let text = `Compute ≈ ${C.toExponential(2)} FLOPs, ${ratio.toFixed(0)} токенов на параметр (оптимум по этой формуле — около ${optRatio.toFixed(0)}). `;
+      if (ratio < optRatio / 2) text += "Модель недокормлена данными: при том же бюджете лучше взять модель меньше и больше токенов.";
+      else if (ratio > optRatio * 2) text += "Токенов больше, чем нужно для этого бюджета: модель можно сделать больше (но меньшую модель дешевле запускать на inference).";
+      else text += "Близко к compute-optimal распределению.";
+      text += ` Потери от неоптимального выбора: ${(L - opt.L).toFixed(3)}.`;
       document.getElementById("scaleSummary").innerHTML = "<strong>Интерпретация.</strong> " + text;
     }
     drawScaling();
