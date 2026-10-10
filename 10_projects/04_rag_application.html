@@ -197,9 +197,55 @@ print(top, scores[top, 0])
 
   
   <script src="../bundle.js" defer></script>
-  <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><div class="intuition-content">Сравни fixed-size chunking и semantic chunking для технической документации.</div></details><details><summary>[Intermediate] Retrieval eval</summary><div class="intuition-content">Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</div></details><details><summary>[Hard] Hallucination debugging</summary><div class="intuition-content">Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</div></details>    <details><summary>[Foundational] Eval-набор</summary><p>Составь 10 вопросов для оценки и для каждого отметь, какой chunk документа должен на него отвечать.</p></details>
-      <details><summary>[Intermediate] Recall@k</summary><p>Реализуй Recall@k для небольшого набора разметки «запрос → релевантные документы».</p></details>
-      <details><summary>[Coding] Endpoint с источниками</summary><p>Сделай минимальный FastAPI-endpoint, который возвращает ответ и ID chunks-источников.</p></details>
+  <section class="ml-study-practice" data-quality-pass="proj-10-4"><h2>Упражнения: RAG Application</h2><details><summary>[Foundational] Chunking</summary><p>Сравни fixed-size chunking и semantic chunking для технической документации.</p><p><strong>Решение.</strong> <b>Fixed-size</b> (например, 512 токенов с overlap 64): просто, предсказуемо по размеру, но режет посреди раздела, таблицы или примера кода — ответ может оказаться разорван между chunks. <b>Структурный/семантический</b>: режем по заголовкам Markdown/HTML, абзацам, границам блоков кода, при необходимости дробим длинные разделы. Для технической документации обычно лучше структурный: каждый chunk — законченный раздел с заголовком, его путь («API → Auth → Tokens») добавляется в текст chunk-а, код не разрывается. Проверка — не на глаз, а на eval-наборе: Recall@k для обеих стратегий на одних и тех же вопросах. Типичный результат: структурный выигрывает на вопросах «как сделать X», fixed-size иногда лучше на коротких фактах.</p></details><details><summary>[Intermediate] Retrieval eval</summary><p>Предложи набор retrieval metrics и ручную ошибочную выборку для отладки RAG.</p><p><strong>Решение.</strong> Метрики: Recall@k (есть ли хотя бы один релевантный chunk в top-k — главная для RAG, потому что генератор видит только top-k), MRR (насколько высоко первый релевантный), nDCG (если релевантность градуирована), а также context precision (доля найденного контекста, которая действительно полезна). Ручная «ошибочная выборка»: возьми 30–50 запросов, где ответ был неверным, и для каждого запиши: был ли нужный chunk в индексе вообще, в top-50, в top-k; почему не наверху (другие термины в запросе, chunk разрезан, устаревшая версия документа). Сгруппируй причины — это и есть план работ (синонимы и hybrid search, другой chunking, reranker, переиндексация).</p></details><details><summary>[Hard] Hallucination debugging</summary><p>Опиши, как отличить проблему retrieval от проблемы generation, если ответы без цитат.</p><p><strong>Решение.</strong> Логируй для каждого ответа найденные chunks. Затем на наборе проблемных вопросов: (1) есть ли нужный факт в top-k найденных chunks? Если нет — провал retrieval: проверь chunking (факт разрезан между chunks), модель эмбеддингов (термины домена), фильтры, свежесть индекса; помогает hybrid search и reranker. (2) Факт есть в контексте, а ответ неверен или без опоры — провал генерации: модель игнорирует контекст или смешивает его со своими знаниями; помогают явная инструкция «отвечай только по контексту, иначе скажи, что не знаешь», обязательные цитаты, меньший и более релевантный контекст. (3) Контекст противоречив — оба. Метрики, чтобы мерить автоматически: context recall (есть ли эталонный chunk в top-k) отдельно от faithfulness (подтверждается ли каждое утверждение ответа контекстом).</p></details>    <details><summary>[Foundational] Eval-набор</summary><p>Составь 10 вопросов для оценки и для каждого отметь, какой chunk документа должен на него отвечать.</p><p><strong>Решение.</strong> Формат: таблица «вопрос — эталонный ответ — ID chunk-а(ов), где он есть — тип вопроса». Вопросы бери из реальных логов или спроси пользователей; покрой типы: точный факт («какой лимит запросов?»), процедура («как сменить ключ?»), сравнение двух разделов, вопрос без ответа в документах (правильное поведение — отказ), вопрос с жаргоном/опечаткой. Пример строки: «Сколько хранятся логи?» — «30 дней» — docs/logging.md#retention — факт. Привязка к chunk ID делает набор переиспользуемым для retrieval-метрик; при смене chunking ID пересчитывают через текст ответа. 10 вопросов — для старта; для решений между вариантами нужно 50–100+.</p></details>
+      <details><summary>[Intermediate] Recall@k</summary><p>Реализуй Recall@k для небольшого набора разметки «запрос → релевантные документы».</p><p><strong>Решение.</strong> Recall@k = доля запросов, у которых хотя бы один релевантный документ попал в top-k (так его обычно считают для RAG; есть и вариант «доля всех релевантных документов в top-k»).<pre><code class="language-python">def recall_at_k(results, relevant, k):
+    """results: {query: ranked list of doc ids}, relevant: {query: set of relevant ids}"""
+    hits = sum(1 for q, ranked in results.items() if set(ranked[:k]) &amp; relevant[q])
+    return hits / len(results)
+
+def mrr(results, relevant):
+    total = 0.0
+    for q, ranked in results.items():
+        rank = next((i + 1 for i, d in enumerate(ranked) if d in relevant[q]), None)
+        total += 1 / rank if rank else 0.0
+    return total / len(results)
+
+results = {"q1": ["d3", "d1", "d7"], "q2": ["d2", "d9", "d4"], "q3": ["d5", "d6", "d8"]}
+relevant = {"q1": {"d1"}, "q2": {"d4", "d2"}, "q3": {"d0"}}
+for k in (1, 2, 3):
+    print(f"Recall@{k} =", round(recall_at_k(results, relevant, k), 3))
+print("MRR =", round(mrr(results, relevant), 3))   # (1/2 + 1 + 0) / 3 = 0.5</code></pre></p></details>
+      <details><summary>[Coding] Endpoint с источниками</summary><p>Сделай минимальный FastAPI-endpoint, который возвращает ответ и ID chunks-источников.</p><p><strong>Решение.</strong> Ответ API возвращает не только текст, но и ID и фрагменты источников — это делает ответ проверяемым и позволяет UI показать цитаты.<pre><code class="language-python">from fastapi import FastAPI
+from pydantic import BaseModel
+
+DOCS = {"c1": "Логи хранятся 30 дней.", "c2": "Ключ API меняется в разделе Настройки.", "c3": "Лимит: 100 запросов в минуту."}
+
+def retrieve(question, k=2):
+    q = set(question.lower().split())
+    scored = sorted(DOCS.items(), key=lambda kv: -len(q &amp; set(kv[1].lower().split())))
+    return scored[:k]
+
+def generate(question, chunks):
+    # placeholder for an LLM call that is instructed to answer only from the chunks
+    return chunks[0][1] if chunks else "Не нашёл ответа в документации."
+
+class Source(BaseModel):
+    chunk_id: str
+    text: str
+
+class Answer(BaseModel):
+    answer: str
+    sources: list[Source]
+
+app = FastAPI()
+
+@app.get("/ask", response_model=Answer)
+def ask(q: str):
+    chunks = retrieve(q)
+    return Answer(answer=generate(q, chunks), sources=[Source(chunk_id=i, text=t) for i, t in chunks])
+
+from fastapi.testclient import TestClient
+print(TestClient(app).get("/ask", params={"q": "сколько хранятся логи"}).json())</code></pre></p></details>
   </section>
   <div class="ml-quiz">
   <div class="ml-quiz__header">

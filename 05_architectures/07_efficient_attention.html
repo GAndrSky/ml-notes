@@ -233,7 +233,7 @@ for token in sequence:
     <details><summary>[Foundational] Почему O(L²)?</summary><p><strong>Решение:</strong> каждый query сравнивается с каждым key.</p></details>
     <details><summary>[Intermediate] FlashAttention</summary><p>Что оптимизирует FlashAttention? <strong>Решение:</strong> memory IO: считает attention блоками и не материализует огромную матрицу целиком.</p></details>
     <details><summary>[Intermediate] Sparse attention</summary><p>Что теряется при sparse pattern? <strong>Решение:</strong> не все токены видят друг друга напрямую, поэтому inductive bias становится важным.</p></details>
-    <details><summary>[Hard] Longformer tradeoff</summary><p>Почему local+global attention может быть хорошим компромиссом? <strong>Решение:</strong> локальные окна ловят близкий контекст, global tokens переносят информацию через документ.</p></details>
+    <details><summary>[Hard] Longformer tradeoff</summary><p>Почему local+global attention может быть хорошим компромиссом?</p><p><strong>Решение.</strong> Полный attention стоит \(O(n^2)\): при n = 16 384 это 268M пар на голову на слой. Longformer: каждый токен смотрит на окно w соседей (\(O(nw)\)); несколько global-токенов (например, [CLS] или вопрос в QA) смотрят на всех и видны всем. Локальность покрывает большинство зависимостей в тексте, а информация между далёкими частями проходит за два шага через global-токены или за L/w слоёв через перекрывающиеся окна. При w = 512 и n = 16 384 это ≈ 8.4M пар вместо 268M — в 32 раза меньше. Цена: прямые дальние связи между произвольными токенами теряются, и их приходится закладывать при выборе global-токенов; сложная маска хуже ложится на GPU-ядра, чем плотная матрица.</p></details>
   </section>
 
   <div class="ml-quiz">

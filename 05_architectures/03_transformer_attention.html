@@ -1084,7 +1084,7 @@ calcComp();
     <details><summary>[Foundational] Softmax weights</summary><p>Почему attention weights суммируются в 1 по строке? <strong>Решение:</strong> softmax превращает scores в распределение по keys для каждого query.</p></details>
     <details><summary>[Intermediate] Почему делим на √d_k?</summary><p>Объясни scaling. <strong>Решение:</strong> dot products растут по variance с \(d_k\), деление стабилизирует softmax.</p></details>
     <details><summary>[Intermediate] Causal mask</summary><p>Что делает causal mask? <strong>Решение:</strong> запрещает токену смотреть на будущие позиции.</p></details>
-    <details><summary>[Hard] Multi-head attention</summary><p>Почему несколько heads лучше одной большой? <strong>Решение:</strong> разные heads могут учить разные типы отношений и подпространства.</p></details>
+    <details><summary>[Hard] Multi-head attention</summary><p>Почему несколько heads лучше одной большой?</p><p><strong>Решение.</strong> Одна голова на позиции даёт одно распределение внимания — softmax-усреднение values. Если токену нужно одновременно смотреть на подлежащее (синтаксис) и на антецедент местоимения (кореференция), одна голова вынуждена смешивать оба сигнала в одном среднем. h голов размера d/h — это h независимых распределений внимания в разных подпространствах, причём параметров и FLOPs столько же, сколько у одной головы размера d. Эмпирически головы специализируются (позиционные, синтаксические, «копирующие»), но многие избыточны: часть можно отрезать после обучения почти без потерь (Michel et al., 2019). Слишком много голов при фиксированном d тоже вредно — у каждой маленькая размерность, и attention-скоры становятся грубыми.</p></details>
   </section>
 
   <div class="ml-quiz">

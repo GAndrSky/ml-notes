@@ -442,6 +442,12 @@
       return;
     }
 
+    // Already rendered by KaTeX (shared-katex.js turns \( ... \) into span.inline-math);
+    // re-rendering would read KaTeX's output text back as a TeX source.
+    if (element.dataset.katexRendered === "1" || (element.querySelector && element.querySelector(".katex"))) {
+      return;
+    }
+
     if (element.hasAttribute && element.hasAttribute("data-no-tex")) {
       return;
     }

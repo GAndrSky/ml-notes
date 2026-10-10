@@ -188,11 +188,61 @@ print(nms(boxes, scores, threshold=0.5))
     <details><summary>[Foundational] NMS</summary><p>Что делает non-maximum suppression? <strong>Решение:</strong> оставляет наиболее уверенный box и удаляет сильно пересекающиеся дубликаты.</p></details>
     <details><summary>[Intermediate] Anchor boxes</summary><p>Зачем нужны anchors? <strong>Решение:</strong> они задают набор prior boxes разных размеров/аспектов, от которых модель предсказывает поправки.</p></details>
     <details><summary>[Intermediate] YOLO intuition</summary><p>Почему YOLO быстрый? <strong>Решение:</strong> предсказывает boxes и классы dense/single-stage без отдельного region proposal этапа.</p></details>
-    <details><summary>[Hard] DETR tradeoff</summary><p>Чем DETR отличается от anchor-based detectors? <strong>Решение:</strong> формулирует detection как set prediction с bipartite matching и attention.</p></details>
-      <details><summary>[Intermediate] Class-wise NMS</summary><p>Расширь код NMS до class-wise NMS, чтобы боксы разных классов не подавляли друг друга.</p></details>
-      <details><summary>[Intermediate] TP/FP/FN</summary><p>Напиши скрипт, который считает TP/FP/FN при IoU 0.5 для одного класса, и посчитай по ним precision и recall.</p></details>
-      <details><summary>[Hard] Почему DETR без NMS</summary><p>Объясни, почему DETR может обойтись без NMS, а YOLO обычно нет. <strong>Подсказка:</strong> Hungarian matching при обучении штрафует дубликаты — каждому объекту соответствует ровно одно предсказание.</p></details>
-      <details><summary>[Interview] YOLO или DETR</summary><p>Когда в продакшене ты выберешь YOLO, а когда DETR-подобную модель?</p></details>
+    <details><summary>[Hard] DETR tradeoff</summary><p>Чем DETR отличается от anchor-based detectors?</p><p><strong>Решение.</strong> Anchor-based детектор (Faster R-CNN, YOLO) предсказывает поправки к тысячам заранее заданных боксов и назначает ground truth по IoU-правилам; дубликаты неизбежны, поэтому нужна NMS. DETR выдаёт фиксированное множество N предсказаний (object queries) и при обучении находит оптимальное взаимно-однозначное соответствие с объектами (Hungarian matching по стоимости класс + L1 + GIoU); лишние queries учатся предсказывать «нет объекта». Плюсы: нет anchors и NMS, end-to-end, глобальный контекст через attention. Минусы оригинального DETR: очень долгое обучение (~500 эпох на COCO против ~36 у Faster R-CNN), слабость на мелких объектах. Deformable DETR и DINO-DETR в основном исправили оба недостатка.</p></details>
+      <details><summary>[Intermediate] Class-wise NMS</summary><p>Расширь код NMS до class-wise NMS, чтобы боксы разных классов не подавляли друг друга.</p><p><strong>Решение.</strong> Запускаем обычный NMS отдельно для каждого класса и объединяем результаты (эквивалентный трюк — сдвинуть боксы каждого класса на большое смещение, чтобы они не пересекались, и сделать один NMS).<pre><code class="language-python">import numpy as np
+
+def iou(a, b):
+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])
+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / (union + 1e-9)
+
+def nms(boxes, scores, thr=0.5):
+    order, keep = list(np.argsort(-scores)), []
+    while order:
+        i = order.pop(0)
+        keep.append(i)
+        order = [j for j in order if iou(boxes[i], boxes[j]) &lt; thr]
+    return keep
+
+def classwise_nms(boxes, scores, classes, thr=0.5):
+    keep = []
+    for c in np.unique(classes):
+        idx = np.where(classes == c)[0]
+        keep += [int(idx[k]) for k in nms(boxes[idx], scores[idx], thr)]
+    return sorted(keep, key=lambda i: -scores[i])
+
+boxes = np.array([[0, 0, 10, 10], [1, 1, 11, 11], [1, 1, 11, 11], [30, 30, 40, 40]], dtype=float)
+scores = np.array([0.9, 0.8, 0.85, 0.7])
+classes = np.array([0, 0, 1, 1])   # boxes 1 and 2 overlap, but they are different classes
+print(classwise_nms(boxes, scores, classes))   # [0, 2, 3]: box 1 is suppressed by box 0, box 2 is kept</code></pre></p></details>
+      <details><summary>[Intermediate] TP/FP/FN</summary><p>Напиши скрипт, который считает TP/FP/FN при IoU 0.5 для одного класса, и посчитай по ним precision и recall.</p><p><strong>Решение.</strong> Сортируем предсказания по confidence; каждое сопоставляем с ещё не занятым ground-truth боксом с максимальным IoU ≥ 0.5 — это TP, иначе FP; оставшиеся несопоставленными GT — FN. Важно: один GT может «закрыть» только одно предсказание, повторное попадание считается FP (так считает mAP в COCO/VOC).<pre><code class="language-python">import numpy as np
+
+def iou(a, b):
+    x1, y1 = max(a[0], b[0]), max(a[1], b[1])
+    x2, y2 = min(a[2], b[2]), min(a[3], b[3])
+    inter = max(0, x2 - x1) * max(0, y2 - y1)
+    return inter / ((a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - inter)
+
+def match(preds, scores, gts, thr=0.5):
+    used, tp, fp = set(), 0, 0
+    for i in np.argsort(-scores):
+        ious = [iou(preds[i], g) if j not in used else 0.0 for j, g in enumerate(gts)]
+        j = int(np.argmax(ious)) if len(gts) else -1
+        if j &gt;= 0 and ious[j] &gt;= thr:
+            used.add(j); tp += 1
+        else:
+            fp += 1
+    return tp, fp, len(gts) - len(used)
+
+gts = np.array([[0, 0, 10, 10], [20, 20, 30, 30]], dtype=float)
+preds = np.array([[1, 1, 10, 10], [0, 0, 9, 10], [50, 50, 60, 60]], dtype=float)  # 2nd is a duplicate
+scores = np.array([0.9, 0.8, 0.7])
+tp, fp, fn = match(preds, scores, gts)
+print(tp, fp, fn, "precision", tp / (tp + fp), "recall", tp / (tp + fn))   # 1 2 1 -&gt; 0.33, 0.5</code></pre></p></details>
+      <details><summary>[Hard] Почему DETR без NMS</summary><p>Объясни, почему DETR может обойтись без NMS, а YOLO обычно нет.</p><p><strong>Решение.</strong> NMS нужна, когда несколько предсказаний законно «претендуют» на один объект: в YOLO несколько anchors/ячеек рядом с объектом получают положительную метку, поэтому модель учится выдавать несколько похожих боксов. В DETR Hungarian matching назначает каждому объекту ровно одно предсказание, а все остальные получают цель «нет объекта». Если две queries предсказывают один и тот же объект, одна из них при сопоставлении окажется «лишней» и будет оштрафована классификационным loss — дубликаты подавляются уже при обучении. Self-attention между queries позволяет им «договориться», кто какой объект берёт. Поэтому выход DETR можно использовать после порога confidence без NMS (небольшую пользу NMS иногда всё же даёт, но она не обязательна).</p></details>
+      <details><summary>[Interview] YOLO или DETR</summary><p>Когда в продакшене ты выберешь YOLO, а когда DETR-подобную модель?</p><p><strong>Решение.</strong> <b>YOLO-подобные</b>: строгая latency (видео, edge, мобильные устройства), отлаженный экспорт (ONNX/TensorRT), много готовых пайплайнов и быстрое обучение; NMS — небольшая цена. <b>DETR-подобные</b> (RT-DETR, DINO): сцены с плотными перекрывающимися объектами, где NMS ошибочно удаляет соседей; когда нужен end-to-end пайплайн без настройки порогов NMS; есть GPU-бюджет и время на более долгое обучение. Решение принимай по измерениям на своих данных: mAP по размерам объектов (особенно small), latency на целевом железе с batch 1, стоимость обучения. Хороший ответ на интервью называет критерии и предлагает сравнение, а не «X лучше».</p></details>
   </section>
 
   <div class="ml-quiz">

@@ -165,11 +165,45 @@ print(logits)
     <details><summary>[Foundational] CLIP pairs</summary><p>Что является positive pair в CLIP? <strong>Решение:</strong> изображение и соответствующий текстовый caption.</p></details>
     <details><summary>[Intermediate] Temperature</summary><p>Как temperature влияет на contrastive loss? <strong>Решение:</strong> низкая temperature делает softmax резче и сильнее фокусирует hard negatives.</p></details>
     <details><summary>[Intermediate] Zero-shot classification</summary><p>Как CLIP делает zero-shot classification? <strong>Решение:</strong> сравнивает image embedding с text embeddings prompt-ов классов.</p></details>
-    <details><summary>[Hard] False negatives</summary><p>Почему false negatives вредят contrastive learning? <strong>Решение:</strong> модель отталкивает объекты, которые семантически похожи или принадлежат одному классу.</p></details>
-      <details><summary>[Intermediate] InfoNCE = cross-entropy</summary><p>Покажи, что InfoNCE — это cross-entropy, где правильный «класс» — индекс positive-пары.</p></details>
-      <details><summary>[Foundational] Симметричный CLIP loss</summary><p>Реализуй симметричный CLIP loss на NumPy: матрица logits и cross-entropy по строкам и по столбцам.</p></details>
-      <details><summary>[Interview] Пределы CLIP</summary><p>Объясни, почему CLIP умеет zero-shot классификацию, но ошибается в подсчёте объектов и пространственных отношениях.</p></details>
-      <details><summary>[Practice] Мини-поиск</summary><p>Собери крошечное демо поиска «текст → изображение» на заранее посчитанных эмбеддингах.</p></details>
+    <details><summary>[Hard] False negatives</summary><p>Почему false negatives вредят contrastive learning?</p><p><strong>Решение.</strong> В contrastive loss все остальные примеры в batch считаются negatives. Если в batch из 512 изображений есть две разные фотографии собак, модель штрафуется за их сходство — её учат раздвигать то, что должно быть рядом. Чем больше batch и чем меньше «классов» в данных, тем больше таких ложных negatives: при 10 реальных классах и batch 512 почти у каждого якоря ~50 «негативов» на самом деле того же класса. Последствия: размытые кластеры, хуже качество на downstream. Смягчения: supervised contrastive (SupCon), где объекты одного класса — positives; удаление или понижение веса подозрительно похожих negatives; меньшая temperature компенсирует не всё; в CLIP частично помогает разнообразие текстов-подписей.</p></details>
+      <details><summary>[Intermediate] InfoNCE = cross-entropy</summary><p>Покажи, что InfoNCE — это cross-entropy, где правильный «класс» — индекс positive-пары.</p><p><strong>Решение.</strong> Для якоря q, positive k⁺ и negatives k₁…k_N: \(\mathcal{L} = -\log \frac{\exp(q\cdot k^+/\tau)}{\exp(q\cdot k^+/\tau) + \sum_j \exp(q\cdot k_j/\tau)}\). Определим «логиты» \(z_0 = q\cdot k^+/\tau\), \(z_j = q\cdot k_j/\tau\). Тогда дробь — это softmax(z)₀, а \(\mathcal{L} = -\log \mathrm{softmax}(z)_0\) — ровно cross-entropy (N+1)-классовой задачи с правильным классом 0. В batch-реализации логиты — строка матрицы \(Q K^T/\tau\), а правильный «класс» для строки i — индекс i (диагональ). Отсюда практические следствия: больше negatives = больше «классов» = сложнее задача и туже оценка; τ работает как temperature softmax.</p></details>
+      <details><summary>[Foundational] Симметричный CLIP loss</summary><p>Реализуй симметричный CLIP loss на NumPy: матрица logits и cross-entropy по строкам и по столбцам.</p><p><strong>Решение.</strong> Нормализуем эмбеддинги, логиты = cos-сходства / τ; cross-entropy по строкам (image → text) и по столбцам (text → image) с правильными индексами на диагонали; loss — среднее двух.<pre><code class="language-python">import numpy as np
+
+def log_softmax(z, axis):
+    z = z - z.max(axis=axis, keepdims=True)
+    return z - np.log(np.exp(z).sum(axis=axis, keepdims=True))
+
+def clip_loss(img, txt, tau=0.07):
+    img = img / np.linalg.norm(img, axis=1, keepdims=True)
+    txt = txt / np.linalg.norm(txt, axis=1, keepdims=True)
+    logits = img @ txt.T / tau                     # (B, B), positives on the diagonal
+    i = np.arange(len(img))
+    loss_i2t = -log_softmax(logits, axis=1)[i, i].mean()
+    loss_t2i = -log_softmax(logits, axis=0)[i, i].mean()
+    return (loss_i2t + loss_t2i) / 2
+
+rng = np.random.default_rng(0)
+img = rng.normal(size=(8, 16))
+print("matched pairs :", round(clip_loss(img, img + 0.1 * rng.normal(size=img.shape)), 4))
+print("random pairs  :", round(clip_loss(img, rng.normal(size=img.shape)), 4))   # ~ log(8) or worse</code></pre></p></details>
+      <details><summary>[Interview] Пределы CLIP</summary><p>Объясни, почему CLIP умеет zero-shot классификацию, но ошибается в подсчёте объектов и пространственных отношениях.</p><p><strong>Решение.</strong> Zero-shot работает, потому что CLIP научился сопоставлять изображение с <i>описанием</i>: «a photo of a dog» близко к фото собаки, если таких пар было много. Подсчёт и пространственные отношения ломаются по нескольким причинам: (1) подписи в интернете редко содержат точное количество и расположение («три кошки слева от стола»), сигнала мало; (2) contrastive objective награждает, если подпись подходит лучше других в batch — для этого хватает «мешка понятий» (кошка, стол), порядок и количество не нужны; (3) один глобальный эмбеддинг изображения плохо кодирует композицию. Отсюда известные провалы на бенчмарках композиционности (Winoground, ARO). Улучшают это hard negatives (перестановки слов), детальные подписи, модели с region-level признаками.</p></details>
+      <details><summary>[Practice] Мини-поиск</summary><p>Собери крошечное демо поиска «текст → изображение» на заранее посчитанных эмбеддингах.</p><p><strong>Решение.</strong> Поиск — это ближайшие соседи по косинусному сходству в общем пространстве: нормализуй эмбеддинги изображений один раз, нормализуй эмбеддинг запроса и возьми top-k по скалярному произведению. Для миллионов изображений вместо полного перебора — ANN-индекс (FAISS, HNSW).<pre><code class="language-python">import numpy as np
+
+def search(query_emb, image_embs, names, k=3):
+    q = query_emb / np.linalg.norm(query_emb)
+    m = image_embs / np.linalg.norm(image_embs, axis=1, keepdims=True)
+    sims = m @ q
+    top = np.argsort(-sims)[:k]
+    return [(names[i], round(float(sims[i]), 3)) for i in top]
+
+# toy "precomputed" embeddings: in practice they come from CLIP's image and text encoders
+rng = np.random.default_rng(0)
+concepts = {c: rng.normal(size=32) for c in ["dog", "cat", "car", "beach"]}
+names = ["dog_park.jpg", "cat_sofa.jpg", "red_car.jpg", "dog_beach.jpg"]
+image_embs = np.stack([concepts["dog"], concepts["cat"], concepts["car"], concepts["dog"] + concepts["beach"]])
+image_embs += 0.3 * rng.normal(size=image_embs.shape)
+print(search(concepts["dog"], image_embs, names))
+print(search(concepts["beach"] + concepts["dog"], image_embs, names, k=1))</code></pre></p></details>
   </section>
 
   <div class="ml-quiz">
