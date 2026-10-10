@@ -27,3 +27,8 @@ jobs:
           cp shared-search-index.js "$RUNNER_TEMP/committed-index.js"
           pwsh ./scripts/build-search-index.ps1
           node scripts/ci/check-search-index.mjs "$RUNNER_TEMP/committed-index.js" shared-search-index.js
+
+      - name: Review cards are up to date
+        run: |
+          node scripts/build-review-data.mjs
+          git diff --exit-code -- shared-review-data.js || { echo "Run: node scripts/build-review-data.mjs and commit shared-review-data.js"; exit 1; }

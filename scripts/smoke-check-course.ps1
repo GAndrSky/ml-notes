@@ -9,7 +9,8 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-$excludedPages = @("index.html", "course-roadmap.html")
+# Standalone pages with their own stylesheet; not lessons.
+$excludedPages = @("index.html", "course-roadmap.html", "review.html")
 $lessonPages = Get-ChildItem -Path $repoRoot -Recurse -Filter *.html |
   ForEach-Object { $_.FullName.Substring($repoRoot.Length + 1).Replace('\', '/') } |
   Where-Object { $_ -notin $excludedPages -and $_ -notmatch '^(\.|vendor/)' } |

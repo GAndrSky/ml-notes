@@ -9,7 +9,8 @@
  * page:    path (from site root), label (sidebar/index, numbered),
  *          title (short title on prev/next buttons)
  *
- * After editing, run scripts/build-bundle.ps1, scripts/build-search-index.ps1
+ * After editing, run scripts/build-bundle.ps1, scripts/build-search-index.ps1,
+ * node scripts/build-review-data.mjs
  * and scripts/smoke-check-course.ps1.
  */
 window.__mlNotesCourse = {
