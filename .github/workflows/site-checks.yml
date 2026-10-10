@@ -1,0 +1,29 @@
+name: Site checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Smoke check (links, manifest, bundle, styles)
+        shell: pwsh
+        run: ./scripts/smoke-check-course.ps1
+
+      - name: JavaScript syntax
+        run: for f in *.js; do node --check "$f" || exit 1; done
+
+      - name: Search index is up to date
+        run: |
+          cp shared-search-index.js "$RUNNER_TEMP/committed-index.js"
+          pwsh ./scripts/build-search-index.ps1
+          node scripts/ci/check-search-index.mjs "$RUNNER_TEMP/committed-index.js" shared-search-index.js

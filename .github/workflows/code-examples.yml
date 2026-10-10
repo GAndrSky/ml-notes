@@ -1,0 +1,39 @@
+name: Lesson code examples
+
+on:
+  push:
+    paths: ['**/*.html', 'scripts/ci/**']
+  pull_request:
+    paths: ['**/*.html', 'scripts/ci/**']
+  schedule:
+    - cron: '0 5 * * 1'   # weekly: catches library API changes
+  workflow_dispatch:
+
+jobs:
+  run-blocks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scripts/ci/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefix scripts/ci || npm install --prefix scripts/ci
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r scripts/ci/requirements.txt
+
+      - name: Extract Python blocks from lessons
+        run: node scripts/ci/extract-code-blocks.mjs . "$RUNNER_TEMP/code-blocks"
+
+      - name: Run blocks
+        run: python scripts/ci/run-code-blocks.py "$RUNNER_TEMP/code-blocks"
