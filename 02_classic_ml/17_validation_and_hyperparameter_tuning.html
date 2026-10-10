@@ -882,22 +882,22 @@ fit только на train-part этого fold</div>
 
           <div class="controls">
             <div class="control">
-              <label>Noise level: <span id="curveNoiseVal" class="hl-blue">0.20</span></label>
+              <label>Уровень шума: <span id="curveNoiseVal" class="hl-blue">0.20</span></label>
               <input id="curveNoise" type="range" min="0.00" max="0.60" step="0.01" value="0.20" />
             </div>
           </div>
 
           <div class="grid-3">
             <div class="kpi">
-              <div class="label">Best complexity</div>
+              <div class="label">Лучшая степень полинома</div>
               <div class="value" id="bestComplexityOut">6</div>
             </div>
             <div class="kpi">
-              <div class="label">Best valid</div>
+              <div class="label">Лучший R² на validation</div>
               <div class="value" id="bestValidOut">0.84</div>
             </div>
             <div class="kpi">
-              <div class="label">Train-final</div>
+              <div class="label">R² на train (степень 12)</div>
               <div class="value" id="trainFinalOut">0.99</div>
             </div>
           </div>
@@ -1537,14 +1537,39 @@ random search почти всегда разумнее
     const curveCanvas = document.getElementById('curveCanvas');
     const cCtx = curveCanvas.getContext('2d');
 
+    const polyCache = {};
+    function polyCurve(noise){
+      const key = noise.toFixed(2); if(polyCache[key]) return polyCache[key];
+      let seed = 2024; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      const g = () => Math.sqrt(-2*Math.log(1 - rnd())) * Math.cos(2*Math.PI*rnd());
+      const sigma = 0.05 + noise * 1.5;
+      const make = n => Array.from({length:n}, () => { const x = rnd(); return [x, Math.sin(2*Math.PI*x) + sigma*g()]; });
+      const tr = make(30), va = make(300);
+      const basis = (x, d) => { const t = 2*x - 1, out = [1, t]; for(let k=2;k<=d;k++) out.push(2*t*out[k-1] - out[k-2]); return out.slice(0, d+1); }; // Chebyshev
+      function fit(d){
+        const m = d + 1, A = Array.from({length:m}, () => new Float64Array(m + 1));
+        tr.forEach(([x, y]) => { const b = basis(x, d); for(let i=0;i<m;i++){ for(let j=0;j<m;j++) A[i][j] += b[i]*b[j]; A[i][m] += b[i]*y; } });
+        for(let i=0;i<m;i++) A[i][i] += 1e-9;
+        for(let c=0;c<m;c++){ let p = c; for(let r=c+1;r<m;r++) if(Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r; [A[c], A[p]] = [A[p], A[c]];
+          for(let r=0;r<m;r++) if(r !== c){ const k = A[r][c] / A[c][c]; for(let j=c;j<=m;j++) A[r][j] -= k*A[c][j]; } }
+        return A.map((row, i) => row[m] / row[i]);
+      }
+      const r2 = (set, w, d) => { const mean = set.reduce((s, p) => s + p[1], 0) / set.length;
+        let ss = 0, st = 0; set.forEach(([x, y]) => { const b = basis(x, d); const yh = b.reduce((s, v, i) => s + v*w[i], 0); ss += (y - yh)**2; st += (y - mean)**2; });
+        return 1 - ss / st; };
+      const train = [], valid = [];
+      for(let d=1; d<=12; d++){ const w = fit(d); train.push(r2(tr, w, d)); valid.push(r2(va, w, d)); }
+      return (polyCache[key] = {train, valid});
+    }
+
     function drawCurve(){
       const noise = +curveNoise.value;
       curveNoiseVal.textContent = noise.toFixed(2);
 
+      // Real experiment (seeded): y = sin(2πx) + noise, 30 train / 300 validation points.
+      // Complexity = polynomial degree 1..12 fit by least squares; score = R² (train and validation).
       const xs = Array.from({length:12}, (_,i)=>i+1);
-      const train = xs.map(x => clamp(0.55 + 0.43*(1 - Math.exp(-x/3)), 0, 0.999));
-      const valid = xs.map(x => clamp(0.54 + 0.38*(1 - Math.exp(-x/3.8)) - 0.02*Math.max(0,x-6)**1.35 - noise*0.25, 0, 0.999));
-
+      const {train, valid} = polyCurve(noise);
       let bestIdx = 0;
       for(let i=1;i<valid.length;i++){
         if(valid[i] > valid[bestIdx]) bestIdx = i;
@@ -1561,7 +1586,7 @@ random search почти всегда разумнее
 
       const padL=32,padR=10,padT=12,padB=24;
       function X(i){ return padL + i/11*(W-padL-padR); }
-      function Y(v){ return H-padB - v*(H-padT-padB); }
+      function Y(v){ return H-padB - Math.max(0, Math.min(1, v))*(H-padT-padB); }
 
       cCtx.strokeStyle = '#25303b';
       for(let i=0;i<=4;i++){

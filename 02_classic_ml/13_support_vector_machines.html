@@ -695,9 +695,9 @@ K(x_i, x_j) = φ(x_i)ᵀ φ(x_j)</div>
       <div class="grid-2">
         <div>
           <p class="small">
-            Это схематический интерактив, который показывает характер границы.
-            <code>C</code> влияет на жёсткость штрафа за ошибки, а <code>gamma</code> —
-            на локальность формы границы.
+            Настоящий RBF-SVM на 12 точках (две из них с «неправильной» меткой).
+            <code>C</code> задаёт штраф за ошибки, <code>gamma</code> — локальность ядра.
+            При большом gamma и C граница обходит каждую точку — так выглядит переобучение.
           </p>
 
           <div class="controls">
@@ -713,12 +713,12 @@ K(x_i, x_j) = φ(x_i)ᵀ φ(x_j)</div>
 
           <div class="grid-2">
             <div class="kpi">
-              <div class="label">Smoothness</div>
-              <div class="value" id="smoothOut">medium</div>
+              <div class="label">Опорных векторов</div>
+              <div class="value" id="smoothOut">—</div>
             </div>
             <div class="kpi">
-              <div class="label">Overfit risk</div>
-              <div class="value" id="overfitOut">medium</div>
+              <div class="label">Верно на train</div>
+              <div class="value" id="overfitOut">—</div>
             </div>
           </div>
         </div>
@@ -730,7 +730,7 @@ K(x_i, x_j) = φ(x_i)ᵀ φ(x_j)</div>
           <div class="legend">
             <span><i class="swatch" style="background:#10b981"></i>положительный класс</span>
             <span><i class="swatch" style="background:#ef4444"></i>отрицательный класс</span>
-            <span><i class="swatch" style="background:#60a5fa"></i>нелинейная граница</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>граница решения (f(x) = 0)</span>
           </div>
         </div>
       </div>
@@ -1364,6 +1364,27 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
     const rbfCanvas = document.getElementById('rbfCanvas');
     const rctx = rbfCanvas.getContext('2d');
 
+    // Real RBF-SVM on 12 points (10 clean + 2 with "wrong" labels), solved by dual coordinate descent
+    // (bias absorbed into the kernel as K + 1). The shaded regions are the sign of the actual decision function.
+    const RBF_PTS = [[-1.5,1.6,1],[-0.8,2.2,1],[0.3,1.8,1],[1.2,1.2,1],[0.7,2.7,1],[1.6,-1.2,1],
+                     [-1.9,-1.5,-1],[-0.6,-2.2,-1],[0.6,-1.6,-1],[1.7,-2.1,-1],[2.2,-0.9,-1],[-1.1,1.0,-1]];
+    function rbfFit(C, gamma){
+      const n = RBF_PTS.length, K = RBF_PTS.map(a => RBF_PTS.map(b => Math.exp(-gamma*((a[0]-b[0])**2 + (a[1]-b[1])**2)) + 1));
+      const alpha = new Array(n).fill(0), f = new Array(n).fill(0);
+      for(let epoch=0; epoch<2000; epoch++){
+        let maxChange = 0;
+        for(let i=0;i<n;i++){
+          const yi = RBF_PTS[i][2], G = yi*f[i] - 1;
+          const na = Math.min(C, Math.max(0, alpha[i] - G / K[i][i])), d = na - alpha[i];
+          if(d !== 0){ alpha[i] = na; for(let j=0;j<n;j++) f[j] += d*yi*K[i][j]; maxChange = Math.max(maxChange, Math.abs(d)); }
+        }
+        if(maxChange < 1e-7) break;
+      }
+      const decide = (x, y) => RBF_PTS.reduce((s, p, i) => s + alpha[i]*p[2]*(Math.exp(-gamma*((x-p[0])**2 + (y-p[1])**2)) + 1), 0);
+      const sv = alpha.filter(a => a > 1e-6).length, correct = RBF_PTS.filter((p, i) => f[i]*p[2] > 0).length;
+      return {decide, sv, correct};
+    }
+
     function drawRBFDemo(){
       const C = +rbfCRange.value;
       const gamma = +rbfGammaRange.value;
@@ -1371,58 +1392,36 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       rbfCVal.textContent = C.toFixed(1);
       rbfGammaVal.textContent = gamma.toFixed(1);
 
-      const roughness = gamma * Math.sqrt(C);
-      smoothOut.textContent =
-        roughness < 1.4 ? 'high' :
-        roughness < 3.0 ? 'medium' : 'low';
-
-      overfitOut.textContent =
-        roughness < 1.4 ? 'low' :
-        roughness < 3.0 ? 'medium' : 'high';
+      const m = rbfFit(C, gamma);
+      smoothOut.textContent = m.sv + ' из ' + RBF_PTS.length;
+      overfitOut.textContent = m.correct + ' / ' + RBF_PTS.length;
 
       const W = rbfCanvas.width, H = rbfCanvas.height;
       rctx.clearRect(0,0,W,H);
       rctx.fillStyle = '#0b1016';
       rctx.fillRect(0,0,W,H);
-
       function map(x,y){
         const minX=-4,maxX=4,minY=-4,maxY=4;
         return [(x-minX)/(maxX-minX)*W, H-(y-minY)/(maxY-minY)*H];
       }
-
-      const pos = [[-1.5,1.6],[-0.8,2.2],[0.3,1.8],[1.2,1.2],[0.7,2.7]];
-      const neg = [[-1.9,-1.5],[-0.6,-2.2],[0.6,-1.6],[1.7,-2.1],[2.2,-0.9]];
-
-      // nonlinear boundary curve
-      rctx.strokeStyle = '#60a5fa';
-      rctx.lineWidth = 2.3;
-      rctx.beginPath();
-      for(let i=0;i<=240;i++){
-        const x = -4 + 8*(i/240);
-        const y = 0.30*Math.sin(gamma*0.8*x) + 0.18*Math.sin(gamma*2.2*x)/(1+0.15*C) + 0.15*x;
-        const [cx,cy] = map(x,y);
-        if(i===0) rctx.moveTo(cx,cy);
-        else rctx.lineTo(cx,cy);
+      const step = 5;
+      for(let px=0; px<W; px+=step){
+        for(let py=0; py<H; py+=step){
+          const x = -4 + 8*(px+step/2)/W, y = 4 - 8*(py+step/2)/H;
+          const v = m.decide(x, y);
+          rctx.fillStyle = v > 0 ? 'rgba(16,185,129,0.16)' : 'rgba(239,68,68,0.14)';
+          rctx.fillRect(px, py, step, step);
+          if(Math.abs(v) < 0.06){ rctx.fillStyle = '#60a5fa'; rctx.fillRect(px+1, py+1, step-2, step-2); }
+        }
       }
-      rctx.stroke();
-
-      pos.forEach(([x,y])=>{
+      RBF_PTS.forEach(([x,y,c])=>{
         const [cx,cy]=map(x,y);
         rctx.beginPath();
         rctx.arc(cx,cy,6,0,Math.PI*2);
-        rctx.fillStyle='#10b981';
-        rctx.fill();
-      });
-
-      neg.forEach(([x,y])=>{
-        const [cx,cy]=map(x,y);
-        rctx.beginPath();
-        rctx.arc(cx,cy,6,0,Math.PI*2);
-        rctx.fillStyle='#ef4444';
+        rctx.fillStyle = c > 0 ? '#10b981' : '#ef4444';
         rctx.fill();
       });
     }
-
     [rbfCRange, rbfGammaRange].forEach(el => el.addEventListener('input', drawRBFDemo));
 
     // ---------- hinge loss demo ----------

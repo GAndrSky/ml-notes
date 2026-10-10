@@ -1060,15 +1060,15 @@ Leaf-wise growth:
 
           <div class="grid-3">
             <div class="kpi">
-              <div class="label">Train quality</div>
+              <div class="label">R² на train (в конце)</div>
               <div class="value" id="trainMetric">0.000</div>
             </div>
             <div class="kpi">
-              <div class="label">Valid quality</div>
+              <div class="label">Лучший R² на validation</div>
               <div class="value" id="validMetric">0.000</div>
             </div>
             <div class="kpi">
-              <div class="label">Gap</div>
+              <div class="label">Разрыв train − validation (в конце)</div>
               <div class="value" id="gapMetric">0.000</div>
             </div>
           </div>
@@ -1715,6 +1715,50 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
 
     [lrRange, nestRange, depthRange].forEach(el => el.addEventListener('input', drawCurves));
 
+    const GB_DATA = (function(){
+      let seed = 11; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      const g = () => Math.sqrt(-2*Math.log(1 - rnd())) * Math.cos(2*Math.PI*rnd());
+      const make = n => { const xs = [], ys = []; for(let i=0;i<n;i++){ const x = rnd(); xs.push(x); ys.push(Math.sin(6*x) + 0.5*Math.sin(17*x) + 0.35*g()); } return {xs, ys}; };
+      return {tr: make(120), va: make(400)};
+    })();
+    function gbTree(xs, r, depth){ // 1D regression tree, min 2 samples per leaf
+      function build(idx, d){
+        const mean = idx.reduce((s, i) => s + r[i], 0) / idx.length;
+        if(d === 0 || idx.length < 4) return {leaf: mean};
+        const sorted = idx.slice().sort((p, q) => xs[p] - xs[q]);
+        let total = 0; sorted.forEach(i => total += r[i]);
+        let left = 0, best = -Infinity, bestK = -1;
+        for(let k=1; k<sorted.length-1; k++){
+          left += r[sorted[k-1]];
+          if(k < 2 || xs[sorted[k]] === xs[sorted[k-1]]) continue;
+          const nl = k, nr = sorted.length - k, gain = left*left/nl + (total-left)**2/nr;
+          if(gain > best){ best = gain; bestK = k; }
+        }
+        if(bestK < 0) return {leaf: mean};
+        const thr = (xs[sorted[bestK-1]] + xs[sorted[bestK]]) / 2;
+        return {thr, l: build(sorted.slice(0, bestK), d-1), r: build(sorted.slice(bestK), d-1)};
+      }
+      return build(xs.map((_, i) => i), depth);
+    }
+    const gbPredict = (t, x) => { while(t.leaf === undefined) t = x < t.thr ? t.l : t.r; return t.leaf; };
+    const gbCache = {};
+    function gbRun(lr, nest, depth){
+      const key = lr + '|' + nest + '|' + depth; if(gbCache[key]) return gbCache[key];
+      const {tr, va} = GB_DATA;
+      const mean = tr.ys.reduce((s, v) => s + v, 0) / tr.ys.length;
+      const Ftr = tr.xs.map(() => mean), Fva = va.xs.map(() => mean);
+      const r2 = (y, F) => { const m = y.reduce((s, v) => s + v, 0) / y.length; let a = 0, b = 0; y.forEach((v, i) => { a += (v - F[i])**2; b += (v - m)**2; }); return 1 - a / b; };
+      const train = [r2(tr.ys, Ftr)], valid = [r2(va.ys, Fva)];
+      for(let m=0; m<nest; m++){
+        const res = tr.ys.map((v, i) => v - Ftr[i]);
+        const t = gbTree(tr.xs, res, depth);
+        tr.xs.forEach((x, i) => Ftr[i] += lr * gbPredict(t, x));
+        va.xs.forEach((x, i) => Fva[i] += lr * gbPredict(t, x));
+        train.push(r2(tr.ys, Ftr)); valid.push(r2(va.ys, Fva));
+      }
+      return (gbCache[key] = {train, valid});
+    }
+
     function drawCurves(){
       const lr = +lrRange.value;
       const nest = +nestRange.value;
@@ -1733,18 +1777,12 @@ print("ROC-AUC:", roc_auc_score(y_valid, proba))</div>
       function X(x){ return padL + x*(W-padL-padR); }
       function Y(y){ return H-padB - y*(H-padT-padB); }
 
-      const xs = Array.from({length:200}, (_,i)=>i/199);
-      const train = [];
-      const valid = [];
-      const capacity = clamp((lr*2.8) + (nest/260) + (depth/8), 0, 3);
-
-      xs.forEach((x)=>{
-        const t = 0.48 + 0.48*(1 - Math.exp(-6*capacity*x));
-        const overfit = Math.max(0, capacity - 1.05) * Math.pow(x, 1.7) * 0.18;
-        const v = Math.min(0.98, t - overfit + 0.015*Math.sin(10*x));
-        train.push(clamp(t,0,1));
-        valid.push(clamp(v,0,1));
-      });
+      // Real gradient boosting (squared loss) with depth-limited regression trees on seeded 1D data:
+      // y = sin(6x) + 0.5·sin(17x) + noise, 120 train / 400 validation points. Curves = R² after each tree.
+      const {train: trainR2, valid: validR2} = gbRun(lr, nest, depth);
+      const xs = trainR2.map((_, i) => i / (trainR2.length - 1));
+      const train = trainR2.map(v => clamp(v, 0, 1));
+      const valid = validR2.map(v => clamp(v, 0, 1));
 
       cctx.strokeStyle = '#25303b';
       for(let i=0;i<=4;i++){
