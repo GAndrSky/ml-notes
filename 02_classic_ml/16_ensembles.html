@@ -614,11 +614,11 @@ meta-model train features = predictions on same train data
 
           <div class="grid-2">
             <div class="kpi">
-              <div class="label">Naive stack score</div>
+              <div class="label">Naive stack: кажется → на test</div>
               <div class="value" id="naiveStackOut">0.95</div>
             </div>
             <div class="kpi">
-              <div class="label">OOF stack score</div>
+              <div class="label">OOF stack: на test</div>
               <div class="value" id="oofStackOut">0.81</div>
             </div>
           </div>
@@ -629,7 +629,8 @@ meta-model train features = predictions on same train data
             <canvas id="stackingCanvas" width="400" height="260"></canvas>
           </div>
           <div class="legend">
-            <span><i class="swatch" style="background:#ef4444"></i>наивно / с утечкой</span>
+            <span><i class="swatch" style="background:#f59e0b"></i>naive: оценка на своих train-предсказаниях</span>
+            <span><i class="swatch" style="background:#ef4444"></i>naive: реальное качество</span>
             <span><i class="swatch" style="background:#10b981"></i>OOF stacking</span>
           </div>
         </div>
@@ -1173,6 +1174,36 @@ train meta-model on stacked OOF predictions
     const stackingCanvas = document.getElementById('stackingCanvas');
     const sCtx = stackingCanvas.getContext('2d');
 
+    // Real simulation (seeded): 2D data with label noise, two k-NN base models, meta = blend weight w.
+    // Naive stacking fits w on in-sample base predictions (the overfit model looks perfect there);
+    // OOF stacking fits w on 5-fold out-of-fold predictions. Both are then scored on a held-out set.
+    function stackRng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    const STACK = (function(){
+      const rnd = stackRng(7), gauss = () => Math.sqrt(-2*Math.log(1 - rnd())) * Math.cos(2*Math.PI*rnd());
+      const make = n => Array.from({length:n}, () => { const x1 = gauss(), x2 = gauss(); return {x:[x1, x2], y: (x1 + 0.6*x2 + 0.9*gauss()) > 0 ? 1 : 0}; });
+      return {train: make(240), test: make(600)};
+    })();
+    function knnProb(trainSet, pt, k, wx){
+      const d = trainSet.map(q => [(wx[0]*(q.x[0]-pt.x[0]))**2 + (wx[1]*(q.x[1]-pt.x[1]))**2, q.y]).sort((u,v)=>u[0]-v[0]);
+      let s = 0; for(let i=0;i<k;i++) s += d[i][1]; return s / k;
+    }
+    function stackScores(overfit, diversity){
+      const kA = Math.max(1, Math.round(1 + (1 - overfit) * 30));   // overfit = 1 -> 1-NN memorizes train
+      const kB = 15, wxA = [1, 1], wxB = [1 - 0.9*diversity, 0.3 + 0.7*diversity];
+      const tr = STACK.train, te = STACK.test;
+      const pred = (set, pts) => pts.map(p => [knnProb(set, p, kA, wxA), knnProb(set, p, kB, wxB)]);
+      const inSample = pred(tr, tr);
+      const oof = new Array(tr.length);
+      for(let f=0; f<5; f++){
+        const fitSet = tr.filter((_, i) => i % 5 !== f);
+        tr.forEach((p, i) => { if(i % 5 === f) oof[i] = pred(fitSet, [p])[0]; });
+      }
+      const acc = (P, set, w) => set.reduce((s, p, i) => s + (((w*P[i][0] + (1-w)*P[i][1]) >= 0.5 ? 1 : 0) === p.y ? 1 : 0), 0) / set.length;
+      const fitW = P => { let best = 0, bw = 0; for(let w=0; w<=1.0001; w+=0.05){ const a = acc(P, tr, w); if(a > best + 1e-9){ best = a; bw = w; } } return bw; };
+      const wNaive = fitW(inSample), wOof = fitW(oof), testPred = pred(tr, te);
+      return {apparent: acc(inSample, tr, wNaive), naiveTest: acc(testPred, te, wNaive), oofTest: acc(testPred, te, wOof), wNaive, wOof, kA};
+    }
+
     function drawStacking(){
       const overfit = +stackOverfit.value;
       const diversity = +stackDiversity.value;
@@ -1180,11 +1211,9 @@ train meta-model on stacked OOF predictions
       stackOverfitVal.textContent = overfit.toFixed(2);
       stackDiversityVal.textContent = diversity.toFixed(2);
 
-      const naive = clamp(0.78 + 0.22*overfit + 0.10*diversity, 0, 0.99);
-      const oof = clamp(0.72 + 0.05*overfit + 0.15*diversity, 0, 0.97);
-
-      naiveStackOut.textContent = naive.toFixed(2);
-      oofStackOut.textContent = oof.toFixed(2);
+      const r = stackScores(overfit, diversity);
+      naiveStackOut.textContent = r.apparent.toFixed(2) + ' → ' + r.naiveTest.toFixed(2);
+      oofStackOut.textContent = r.oofTest.toFixed(2);
 
       const W = stackingCanvas.width, H = stackingCanvas.height;
       sCtx.clearRect(0,0,W,H);
@@ -1193,10 +1222,10 @@ train meta-model on stacked OOF predictions
 
       const baseY = 220;
       const maxH = 160;
-      const values = [naive, oof];
-      const colors = ['#ef4444','#10b981'];
-      const labels = ['Naive', 'OOF'];
-      const xs = [95, 235];
+      const values = [r.apparent, r.naiveTest, r.oofTest];
+      const colors = ['#f59e0b','#ef4444','#10b981'];
+      const labels = ['Naive: кажется', 'Naive: test', 'OOF: test'];
+      const xs = [40, 165, 290];
       const barW = 70;
 
       values.forEach((v,i)=>{
@@ -1204,11 +1233,14 @@ train meta-model on stacked OOF predictions
         sCtx.fillStyle = colors[i];
         sCtx.fillRect(xs[i], baseY-h, barW, h);
         sCtx.fillStyle = '#e6edf3';
-        sCtx.font = '13px system-ui';
+        sCtx.font = '12px system-ui';
         sCtx.textAlign = 'center';
         sCtx.fillText(labels[i], xs[i]+barW/2, baseY+18);
         sCtx.fillText(v.toFixed(2), xs[i]+barW/2, baseY-h-8);
       });
+      sCtx.fillStyle = '#8b949e';
+      sCtx.textAlign = 'left';
+      sCtx.fillText(`k модели A = ${r.kA}; вес A: naive ${r.wNaive.toFixed(2)}, OOF ${r.wOof.toFixed(2)}`, 12, 18);
     }
 
     [stackOverfit, stackDiversity].forEach(el => el.addEventListener('input', drawStacking));

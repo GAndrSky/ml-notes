@@ -449,7 +449,7 @@ L = Σ_i w_{y_i} · loss_i</div>
             </div>
           </div>
 
-          <div class="formula" data-no-tex id="weightText">Higher class weight → model cares more about positive errors</div>
+          <div class="formula" data-no-tex id="weightText">Больший вес класса → модель сильнее штрафуется за пропуск позитивов</div>
         </div>
 
         <div>
@@ -746,8 +746,8 @@ PR-AUC часто отражает реальность лучше.</div>
               <input id="thrRange" type="range" min="0.01" max="0.99" step="0.01" value="0.50" />
             </div>
             <div class="control">
-              <label>Base separability: <span id="sepVal" class="hl-blue">0.70</span></label>
-              <input id="sepRange" type="range" min="0.30" max="0.95" step="0.01" value="0.70" />
+              <label>Разделимость классов (ROC-AUC): <span id="sepVal" class="hl-blue">0.85</span></label>
+              <input id="sepRange" type="range" min="0.55" max="0.98" step="0.01" value="0.85" />
             </div>
           </div>
 
@@ -1095,6 +1095,29 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
 
     function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
 
+    // Exact model behind the class-weight and threshold demos:
+    // negatives x ~ N(0,1), positives x ~ N(d,1), positive rate PI.
+    // ROC-AUC = Phi(d / sqrt(2)), so d = sqrt(2) * PhiInv(auc).
+    // P(y=1|x) is logistic in x (logistic regression is the correct model here), so
+    // "predict 1 if P(y=1|x) >= t" is the cut x >= x*(t).
+    const PI = 0.10;
+    function erf(x){ // Abramowitz-Stegun 7.1.26, |error| < 1.5e-7
+      const s = Math.sign(x); x = Math.abs(x);
+      const t = 1 / (1 + 0.3275911 * x);
+      const y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-x*x);
+      return s * y;
+    }
+    const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
+    function PhiInv(p){ let lo = -8, hi = 8; for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(Phi(m)<p) lo=m; else hi=m; } return (lo+hi)/2; }
+    function prAtProbThreshold(t, d){
+      const logit = Math.log(t / (1 - t)), prior = Math.log(PI / (1 - PI));
+      const xs = (logit - prior + d*d/2) / d;          // decision boundary on x
+      const recall = 1 - Phi(xs - d), fpr = 1 - Phi(xs);
+      const tp = PI * recall, fp = (1 - PI) * fpr;
+      const precision = tp + fp > 0 ? tp / (tp + fp) : 1;
+      return {recall, precision, fpr};
+    }
+
     // -------- Accuracy trap demo --------
     const posRate = document.getElementById('posRate');
     const recallRange = document.getElementById('recallRange');
@@ -1171,12 +1194,14 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       const w = +classWeightRange.value;
       classWeightVal.textContent = w.toFixed(1);
 
-      const recall = clamp(0.18 + 0.22 * Math.log(w + 1), 0, 0.98);
-      const precision = clamp(0.92 - 0.12 * Math.log(w + 1), 0.15, 0.99);
+      // class_weight={1: w} on a well-specified logistic model is equivalent to the threshold 1/(1+w)
+      const D_CW = Math.SQRT2 * PhiInv(0.85);   // fixed dataset: ROC-AUC 0.85, 10% positives
+      const cw = w => prAtProbThreshold(1 / (1 + w), D_CW);
+      const {recall, precision} = cw(w);
 
       weightRecallOut.textContent = recall.toFixed(2);
       weightPrecisionOut.textContent = precision.toFixed(2);
-      weightText.textContent = `weight=${w.toFixed(1)} usually pushes recall up, but may reduce precision`;
+      weightText.textContent = `weight=${w.toFixed(1)} ⇔ порог ${(1/(1+w)).toFixed(3)} по вероятности: recall растёт, precision падает`;
 
       const W = classWeightCanvas.width, H = classWeightCanvas.height;
       cwCtx.clearRect(0,0,W,H);
@@ -1199,8 +1224,9 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       const recalls = [];
       const precisions = [];
       for(let i=1;i<=20;i++){
-        recalls.push(clamp(0.18 + 0.22 * Math.log(i + 1), 0, 0.98));
-        precisions.push(clamp(0.92 - 0.12 * Math.log(i + 1), 0.15, 0.99));
+        const r = cw(i);
+        recalls.push(r.recall);
+        precisions.push(r.precision);
       }
 
       cwCtx.strokeStyle = '#10b981';
@@ -1371,8 +1397,8 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       thrVal.textContent = thr.toFixed(2);
       sepVal.textContent = sep.toFixed(2);
 
-      const precision = clamp(0.25 + 0.75*thr + 0.10*(sep-0.5), 0, 1);
-      const recall = clamp(1.05 - 0.95*thr + 0.20*(sep-0.5), 0, 1);
+      const d = Math.SQRT2 * PhiInv(sep);       // separability = ROC-AUC
+      const {precision, recall} = prAtProbThreshold(thr, d);
       const f1 = precision + recall > 0 ? 2*precision*recall/(precision+recall) : 0;
 
       thrPrecisionOut.textContent = precision.toFixed(2);
@@ -1402,7 +1428,7 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       thCtx.beginPath();
       for(let i=0;i<=100;i++){
         const t = i/100;
-        const p = clamp(0.25 + 0.75*t + 0.10*(sep-0.5), 0, 1);
+        const p = prAtProbThreshold(clamp(t, 0.001, 0.999), Math.SQRT2 * PhiInv(sep)).precision;
         if(i===0) thCtx.moveTo(X(t),Y(p));
         else thCtx.lineTo(X(t),Y(p));
       }
@@ -1413,7 +1439,7 @@ print("Recall   :", recall_score(y_valid, pred_best))</div>
       thCtx.beginPath();
       for(let i=0;i<=100;i++){
         const t = i/100;
-        const r = clamp(1.05 - 0.95*t + 0.20*(sep-0.5), 0, 1);
+        const r = prAtProbThreshold(clamp(t, 0.001, 0.999), Math.SQRT2 * PhiInv(sep)).recall;
         if(i===0) thCtx.moveTo(X(t),Y(r));
         else thCtx.lineTo(X(t),Y(r));
       }

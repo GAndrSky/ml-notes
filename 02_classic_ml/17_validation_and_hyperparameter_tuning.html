@@ -808,7 +808,7 @@ fit только на train-part этого fold</div>
       <div class="grid-2">
         <div>
           <p class="small">
-            Здесь схематически показано, как leakage искусственно улучшает validation score.
+            Настоящая симуляция: 80 объектов, 400 признаков, сигнал только в 5. Пайплайн выбирает top-10 признаков и классифицирует по ближайшему центроиду. «Сила leakage» — какую долю validation-фолда видит отбор признаков. Синий столбец — качество той же модели на 2000 новых объектах.
           </p>
 
           <div class="controls">
@@ -817,7 +817,7 @@ fit только на train-part этого fold</div>
               <input id="leakRange" type="range" min="0" max="1" step="0.01" value="0.30" />
             </div>
             <div class="control">
-              <label>Model difficulty: <span id="difficultyVal" class="hl-blue">0.50</span></label>
+              <label>Сложность задачи (слабее сигнал): <span id="difficultyVal" class="hl-blue">0.50</span></label>
               <input id="difficultyRange" type="range" min="0" max="1" step="0.01" value="0.50" />
             </div>
           </div>
@@ -841,6 +841,7 @@ fit только на train-part этого fold</div>
           <div class="legend">
             <span><i class="swatch" style="background:#10b981"></i>честная оценка</span>
             <span><i class="swatch" style="background:#ef4444"></i>оценка с утечкой</span>
+            <span><i class="swatch" style="background:#60a5fa"></i>реальное качество</span>
           </div>
         </div>
       </div>
@@ -1452,6 +1453,44 @@ random search почти всегда разумнее
     const leakCanvas = document.getElementById('leakCanvas');
     const lCtx = leakCanvas.getContext('2d');
 
+    // Real simulation (seeded): feature-selection leakage. n=80 rows, p=400 features, only 5 carry
+    // signal (class shift = 1.2·(1 − difficulty)). Pipeline: pick top-10 features by class-mean
+    // difference, classify by nearest centroid. Honest CV selects features on the training folds only;
+    // leaky CV also lets selection see a share "leak" of the validation fold. "Real" = model fit on all
+    // 80 rows (honest selection) scored on 2000 fresh rows. Averaged over 3 datasets.
+    function leakRng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    const LEAK_P = 400, LEAK_K = 10, LEAK_SIGNAL = 5;
+    function leakData(rnd, n, shift){
+      const g = () => Math.sqrt(-2*Math.log(1 - rnd())) * Math.cos(2*Math.PI*rnd());
+      return Array.from({length:n}, (_, i) => { const y = i % 2; const x = new Float64Array(LEAK_P); for(let j=0;j<LEAK_P;j++) x[j] = g() + (y && j < LEAK_SIGNAL ? shift : 0); return {x, y}; });
+    }
+    function leakSelect(rows){
+      const m = [new Float64Array(LEAK_P), new Float64Array(LEAK_P)], c = [0, 0];
+      rows.forEach(r => { c[r.y]++; for(let j=0;j<LEAK_P;j++) m[r.y][j] += r.x[j]; });
+      const score = Array.from({length:LEAK_P}, (_, j) => [Math.abs(m[1][j]/c[1] - m[0][j]/c[0]), j]).sort((u,v)=>v[0]-u[0]);
+      return score.slice(0, LEAK_K).map(q => q[1]);
+    }
+    function leakFitScore(fitRows, feats, evalRows){
+      const cen = [0, 1].map(cl => { const rs = fitRows.filter(r => r.y === cl); return feats.map(j => rs.reduce((s, r) => s + r.x[j], 0) / rs.length); });
+      return evalRows.reduce((s, r) => { const d = cen.map(c => feats.reduce((t, j, q) => t + (r.x[j] - c[q])**2, 0)); return s + ((d[1] < d[0] ? 1 : 0) === r.y ? 1 : 0); }, 0) / evalRows.length;
+    }
+    const leakCache = {};
+    function leakScores(leak, diff){
+      const key = leak.toFixed(2) + '|' + diff.toFixed(2); if(leakCache[key]) return leakCache[key];
+      const shift = 1.2 * (1 - diff); let honest = 0, leaky = 0, real = 0;
+      for(let rep=0; rep<3; rep++){
+        const rnd = leakRng(101 + rep), data = leakData(rnd, 80, shift), fresh = leakData(rnd, 2000, shift);
+        for(let f=0; f<5; f++){
+          const tr = data.filter((_, i) => i % 5 !== f), va = data.filter((_, i) => i % 5 === f);
+          honest += leakFitScore(tr, leakSelect(tr), va) / 15;
+          const seen = va.slice(0, Math.round(leak * va.length));
+          leaky += leakFitScore(tr, leakSelect(tr.concat(seen)), va) / 15;
+        }
+        real += leakFitScore(data, leakSelect(data), fresh) / 3;
+      }
+      return (leakCache[key] = {honest, leaky, real});
+    }
+
     function drawLeakage(){
       const leak = +leakRange.value;
       const diff = +difficultyRange.value;
@@ -1459,11 +1498,9 @@ random search почти всегда разумнее
       leakVal.textContent = leak.toFixed(2);
       difficultyVal.textContent = diff.toFixed(2);
 
-      const honest = clamp(0.92 - 0.28*diff, 0.45, 0.98);
-      const leaky = clamp(honest + 0.18*leak, 0.45, 0.999);
-
-      honestCvOut.textContent = honest.toFixed(2);
-      leakyCvOut.textContent = leaky.toFixed(2);
+      const r = leakScores(leak, diff);
+      honestCvOut.textContent = r.honest.toFixed(2);
+      leakyCvOut.textContent = r.leaky.toFixed(2);
 
       const W = leakCanvas.width, H = leakCanvas.height;
       lCtx.clearRect(0,0,W,H);
@@ -1471,10 +1508,10 @@ random search почти всегда разумнее
       lCtx.fillRect(0,0,W,H);
 
       const baseY = 210, maxH = 150;
-      const vals = [honest, leaky];
-      const colors = ['#10b981','#ef4444'];
-      const labels = ['Honest', 'Leaky'];
-      const xs = [80, 220];
+      const vals = [r.honest, r.leaky, r.real];
+      const colors = ['#10b981','#ef4444','#60a5fa'];
+      const labels = ['Honest CV', 'Leaky CV', 'Новые данные'];
+      const xs = [40, 165, 290];
       const bw = 70;
 
       vals.forEach((v,i)=>{
