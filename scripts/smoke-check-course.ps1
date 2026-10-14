@@ -213,7 +213,7 @@ function Get-SelectorClasses {
 # styles and that is not in the allow-list of known JS-only hook classes.
 function Test-UnstyledClasses {
   $sharedStyled = New-Object 'System.Collections.Generic.HashSet[string]'
-  $cssFiles = @("shared-theme.css", "shared-nav.css", "shared-search.css",
+  $cssFiles = @("shared-theme.css", "shared-nav.css", "shared-search.css", "shared-sql.css",
     "vendor/katex/katex.min.css", "vendor/highlightjs/github-dark.min.css")
   foreach ($file in $cssFiles) {
     $css = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $file) -Encoding UTF8

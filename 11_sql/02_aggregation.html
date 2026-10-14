@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11.2 Агрегация и GROUP BY</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <link rel="stylesheet" href="../shared-sql.css" />
+  <meta name="description" content="COUNT, SUM, AVG, GROUP BY и HAVING на данных интернет-магазина: интерактивные задания с проверкой в браузере." />
+  <meta property="og:title" content="11.2 Агрегация и GROUP BY - ML notes" />
+  <meta property="og:description" content="Агрегатные функции, GROUP BY и HAVING с задачами в браузере." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/11_sql/02_aggregation.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body data-ml-section="sql">
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">SQL</span>
+        <span class="tag active">GROUP BY</span>
+        <span class="tag">COUNT / SUM / AVG</span>
+        <span class="tag">HAVING</span>
+      </div>
+      <h1>11.2 Агрегация и GROUP BY</h1>
+      <p class="muted">Агрегатные функции сворачивают много строк в одно число, а <code>GROUP BY</code> делает это отдельно для каждой группы. Так отвечают на вопросы «сколько», «сколько в сумме» и «у кого больше всего».</p>
+    </section>
+
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Любой отчёт, метрика и большинство признаков для модели — агрегаты: число покупок клиента, средний чек, доля возвратов. Ошибки в группировке — частая причина неверных цифр.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+      <li>Считать COUNT, SUM, AVG, MIN, MAX</li>
+      <li>Группировать строки через GROUP BY</li>
+      <li>Фильтровать группы через HAVING и понимать порядок выполнения запроса</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать</div>
+    <ul><li><a href="01_select_basics.html">11.1 SQL: первые запросы</a></li></ul>
+  </div>
+</div>
+
+    <div class="sql-story">
+      <h2>Часть 2. Масштаб проблемы</h2>
+      <p>Елена хочет цифры: сколько всего заказов, какая доля возвращается и кто из сотрудников одобряет возвраты. Отдельные строки больше не помогут — пора считать.</p>
+    </div>
+
+    <div class="card">
+      <h2>Агрегатные функции</h2>
+      <p><code>COUNT(*)</code> — число строк, <code>COUNT(столбец)</code> — число не-<code>NULL</code> значений, <code>COUNT(DISTINCT столбец)</code> — число разных значений. <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> работают с числами (а <code>MIN</code>/<code>MAX</code> — и со строками, и с датами). Все они пропускают <code>NULL</code>.</p>
+      <div class="sql-example" data-sql="SELECT COUNT(*) AS n, MIN(price) AS cheapest, MAX(price) AS most_expensive, ROUND(AVG(price)) AS avg_price FROM products;"></div>
+      <div class="sql-example" data-sql="SELECT COUNT(*) AS orders, COUNT(DISTINCT customer_id) AS buyers FROM orders;"></div>
+    </div>
+
+    <div class="card">
+      <h2>GROUP BY</h2>
+      <p><code>GROUP BY</code> делит строки на группы с одинаковыми значениями и считает агрегат в каждой. В <code>SELECT</code> можно выводить только столбцы группировки и агрегаты.</p>
+      <div class="sql-example" data-sql="SELECT category, COUNT(*) AS products, MAX(price) AS max_price FROM products GROUP BY category ORDER BY products DESC;"></div>
+      <p>Группировать можно по выражению — например, по месяцу заказа:</p>
+      <div class="sql-example" data-sql="SELECT strftime('%Y-%m', order_date) AS month, COUNT(*) AS orders FROM orders GROUP BY month ORDER BY month;"></div>
+    </div>
+
+    <div class="card">
+      <h2>HAVING и порядок выполнения</h2>
+      <p>Запрос записывается в одном порядке, а выполняется в другом:</p>
+      <pre><code class="language-sql">FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code></pre>
+      <p><code>WHERE</code> фильтрует строки до группировки и не видит агрегатов; <code>HAVING</code> фильтрует уже готовые группы. Поэтому «клиенты с более чем 8 заказами» — это <code>HAVING</code>:</p>
+      <div class="sql-example" data-sql="SELECT customer_id, COUNT(*) AS n FROM orders WHERE status &lt;&gt; 'cancelled' GROUP BY customer_id HAVING COUNT(*) &gt; 8 ORDER BY n DESC;"></div>
+      <p>Доля как среднее от условия — удобный приём: <code>AVG(status = 'returned')</code> в SQLite даёт долю возвратов, потому что сравнение возвращает 1 или 0.</p>
+      <div class="sql-example" data-sql="SELECT ROUND(AVG(status = 'returned') * 100, 1) AS returned_pct FROM orders;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Задания</h2>
+      <p class="muted">Проверка сравнивает строки и число столбцов с эталоном; названия столбцов не важны.</p>
+      <div class="sql-schema"></div>
+      <div class="sql-lab" data-sql-part="2"></div>
+    </div>
+
+<div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем отличаются COUNT(*), COUNT(col) и COUNT(DISTINCT col)?</summary>
+      <div class="ml-quiz__a"><p><code>COUNT(*)</code> считает все строки, <code>COUNT(col)</code> — строки, где <code>col</code> не <code>NULL</code>, <code>COUNT(DISTINCT col)</code> — число разных не-<code>NULL</code> значений. Например, число заказов и число покупателей в таблице заказов — это <code>COUNT(*)</code> и <code>COUNT(DISTINCT customer_id)</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему условие на агрегат нельзя написать в WHERE?</summary>
+      <div class="ml-quiz__a"><p><code>WHERE</code> выполняется до группировки, когда агрегатов ещё нет: он отбирает отдельные строки. Условия на группы пишут в <code>HAVING</code>, который выполняется после <code>GROUP BY</code>. Фильтры по обычным столбцам лучше оставлять в <code>WHERE</code> — тогда в группировку попадает меньше строк.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как AVG обрабатывает NULL и чем это опасно?</summary>
+      <div class="ml-quiz__a"><p><code>AVG</code> пропускает <code>NULL</code>: среднее считается только по известным значениям. Если пропуски не случайны (например, сумму не записали для отменённых заказов), среднее будет смещено. Если пропуск должен считаться нулём, нужно явно написать <code>AVG(COALESCE(col, 0))</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что будет, если вывести в SELECT столбец, которого нет в GROUP BY?</summary>
+      <div class="ml-quiz__a"><p>В PostgreSQL и большинстве СУБД — ошибка: для группы непонятно, какое значение выбрать. SQLite и старый MySQL молча вернут значение из произвольной строки группы — запрос работает, но результат может быть неверным. Нужно либо добавить столбец в <code>GROUP BY</code>, либо обернуть его в агрегат.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
+  <h2>Чекпоинт</h2>
+  <ul>
+    <li>Можете назвать порядок выполнения частей запроса?</li>
+    <li>Можете посчитать долю строк с условием одним запросом?</li>
+    <li>Rubber duck: объясните разницу между WHERE и HAVING на примере заказов.</li>
+  </ul>
+</section>
+  </main>
+  <script src="sql-course-data.js"></script>
+  <script src="../shared-sql.js"></script>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

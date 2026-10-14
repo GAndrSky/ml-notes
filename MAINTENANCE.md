@@ -108,6 +108,36 @@ python scripts/ci/run-code-blocks.py /tmp/code-blocks --filter 09_object_detecti
   `ml_notes_visited` and `ml_notes_self_rating` from lesson pages for the filters.
 - Card ids are a hash of lesson path + question text: editing a question's text resets its progress.
 
+## SQL block (`11_sql/`)
+
+An interactive SQL trainer: queries run in the browser on SQLite compiled to WebAssembly
+(`vendor/sqljs/`, sql.js 1.14, MIT). No server is needed.
+
+| File | Role |
+|---|---|
+| `scripts/sql-course/build.mjs` | Generates the «Вольт» dataset (deterministic) and writes `11_sql/sql-course-data.js` |
+| `scripts/sql-course/tasks.mjs` | All 24 tasks: story, task text, hints, reference solution, explanation |
+| `11_sql/sql-course-data.js` | Generated: schema, seed data, tasks — **do not edit by hand** |
+| `shared-sql.js`, `shared-sql.css` | Trainer engine and styles |
+| `scripts/ci/check-sql-course.py` | CI: every reference solution runs and returns rows |
+
+After changing tasks or data: `node scripts/sql-course/build.mjs`, then
+`node scripts/build-review-data.mjs` if quizzes changed, and commit the generated file.
+
+How checking works: the user's query and the reference solution run on the same database;
+the answer is correct if the number of columns matches and the rows match (numbers compared to
+2 decimals). Row order is checked only for tasks with `ordered: true`. Column names don't matter,
+so different correct queries are accepted. Changing the data generator changes the data —
+re-read the story texts (they mention concrete facts: employee 6, nine suspicious refunds,
+Денис Лапин) and the HAVING threshold, which is computed by the generator.
+
+Markup hooks on lesson pages: `<div class="sql-schema">`, `<div class="sql-example" data-sql="…">`
+(escape `<`, `>` as `&lt;`, `&gt;`), `<div class="sql-sandbox">`, `<div class="sql-lab" data-sql-part="N">`.
+Progress is stored in `localStorage` key `ml_notes_sql`.
+
+When pages are opened locally via `file://`, browsers block loading `.wasm`; the engine then
+uses `vendor/sqljs/sql-wasm-base64.js` instead. On GitHub Pages the normal `.wasm` file is used.
+
 ## Publishing
 
 Work on a branch, push it (CI runs on every branch), merge into `main` when CI is green.
@@ -124,6 +154,7 @@ Pushing `main` deploys the site via GitHub Pages within ~1 minute.
 - ASCII formulas converted to KaTeX; inline-math double rendering fixed.
 - Full solutions for all Hard exercises and for every exercise that had none.
 - CI added; review page added; accessibility and contrast pass.
+- Block 11 SQL: interactive trainer with 24 story tasks, in-browser SQLite, answer checking, CI check of solutions.
 
 Ideas not done yet: split `shared-advanced-notes.js` / `shared-theory-notes.js` /
 `shared-explainer-notes.js` per lesson (≈240 KB loaded on each lesson page), deepen the

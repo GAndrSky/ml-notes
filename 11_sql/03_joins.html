@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11.3 JOIN и подзапросы</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <link rel="stylesheet" href="../shared-sql.css" />
+  <meta name="description" content="INNER JOIN, LEFT JOIN, anti-join и подзапросы на данных интернет-магазина: интерактивные задания с проверкой в браузере." />
+  <meta property="og:title" content="11.3 JOIN и подзапросы - ML notes" />
+  <meta property="og:description" content="Соединения таблиц, anti-join и подзапросы с задачами в браузере." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/11_sql/03_joins.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body data-ml-section="sql">
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">SQL</span>
+        <span class="tag active">JOIN</span>
+        <span class="tag">LEFT JOIN</span>
+        <span class="tag">подзапросы</span>
+      </div>
+      <h1>11.3 JOIN и подзапросы</h1>
+      <p class="muted">Данные разложены по таблицам, чтобы не дублироваться. <code>JOIN</code> собирает их обратно: возврат — с именем сотрудника, позиция заказа — с категорией товара.</p>
+    </section>
+
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Почти каждый реальный запрос соединяет таблицы. Неправильный тип соединения тихо теряет строки или «размножает» их — и все суммы после этого неверны. На собеседованиях JOIN спрашивают чаще всего.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+      <li>Соединять таблицы через JOIN … ON и псевдонимы</li>
+      <li>Понимать разницу INNER и LEFT JOIN, искать «строки без пары»</li>
+      <li>Писать скалярные подзапросы, IN и EXISTS</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать</div>
+    <ul><li><a href="02_aggregation.html">11.2 Агрегация и GROUP BY</a></li></ul>
+  </div>
+</div>
+
+    <div class="sql-story">
+      <h2>Часть 3. Связи</h2>
+      <p>В таблице возвратов только номера: id заказа и id сотрудника. Чтобы увидеть картину целиком, нужно связать возвраты с заказами, клиентами и сотрудниками — и проверить, все ли связи вообще существуют.</p>
+    </div>
+
+    <div class="card">
+      <h2>INNER JOIN</h2>
+      <p><code>JOIN</code> (он же <code>INNER JOIN</code>) берёт пары строк из двух таблиц, для которых выполняется условие <code>ON</code>. Таблицам дают короткие псевдонимы, а столбцы уточняют префиксом.</p>
+      <div class="sql-example" data-sql="SELECT o.order_id, o.order_date, c.full_name, c.city FROM orders o JOIN customers c ON c.customer_id = o.customer_id ORDER BY o.order_date LIMIT 8;"></div>
+      <p>Строки без пары <code>INNER JOIN</code> отбрасывает. Если у одной строки несколько пар, она повторится несколько раз — это нормально для связи «один ко многим» (заказ → позиции), но опасно, если вы потом суммируете столбец «одной» стороны.</p>
+      <div class="sql-example" data-sql="SELECT o.order_id, COUNT(*) AS rows_after_join FROM orders o JOIN order_items oi ON oi.order_id = o.order_id GROUP BY o.order_id ORDER BY rows_after_join DESC LIMIT 5;"></div>
+    </div>
+
+    <div class="card">
+      <h2>LEFT JOIN и anti-join</h2>
+      <p><code>LEFT JOIN</code> сохраняет все строки левой таблицы; если пары нет, столбцы правой таблицы становятся <code>NULL</code>. Отсюда приём anti-join — «строки, у которых нет пары»: <code>LEFT JOIN … WHERE правая.ключ IS NULL</code>.</p>
+      <div class="sql-example" data-sql="SELECT c.customer_id, c.full_name, COUNT(o.order_id) AS orders FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id ORDER BY orders LIMIT 6;"></div>
+      <p>Обратите внимание: <code>COUNT(o.order_id)</code>, а не <code>COUNT(*)</code> — иначе клиент без заказов получил бы 1 (строку с <code>NULL</code>). Условие на правую таблицу в <code>WHERE</code> превращает <code>LEFT JOIN</code> обратно во внутренний; если строки без пары нужно сохранить, такое условие пишут в <code>ON</code>.</p>
+    </div>
+
+    <div class="card">
+      <h2>Подзапросы</h2>
+      <p>Запрос можно вложить в другой. Скалярный подзапрос возвращает одно значение; подзапрос в <code>IN</code> — список; <code>EXISTS</code> проверяет, есть ли хоть одна строка.</p>
+      <div class="sql-example" data-sql="SELECT full_name, city FROM customers WHERE customer_id IN (SELECT customer_id FROM orders WHERE status = 'returned');"></div>
+      <div class="sql-example" data-sql="SELECT c.full_name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id AND o.status = 'cancelled') LIMIT 5;"></div>
+      <p>Ловушка <code>NOT IN</code>: если подзапрос вернёт хотя бы один <code>NULL</code>, результат будет пустым. <code>NOT EXISTS</code> и anti-join через <code>LEFT JOIN</code> такой проблемы не имеют.</p>
+    </div>
+
+    <div class="card">
+      <h2>Задания</h2>
+      <div class="sql-schema"></div>
+      <div class="sql-lab" data-sql-part="3"></div>
+    </div>
+
+<div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем INNER JOIN отличается от LEFT JOIN?</summary>
+      <div class="ml-quiz__a"><p><code>INNER JOIN</code> возвращает только строки, у которых нашлась пара в обеих таблицах. <code>LEFT JOIN</code> возвращает все строки левой таблицы, а там, где пары нет, заполняет столбцы правой таблицы <code>NULL</code>. Если важно не потерять объекты (например, клиентов без заказов при подсчёте признаков), нужен <code>LEFT JOIN</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему после JOIN суммы иногда становятся завышенными?</summary>
+      <div class="ml-quiz__a"><p>При связи «один ко многим» строка «одной» стороны повторяется для каждой пары. Если соединить заказы с позициями и затем просуммировать столбец заказа (например, стоимость доставки), он посчитается столько раз, сколько позиций в заказе. Решение — агрегировать «многие» до соединения (подзапрос или CTE) или считать <code>COUNT(DISTINCT …)</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как найти строки, у которых нет пары в другой таблице?</summary>
+      <div class="ml-quiz__a"><p>Три способа: <code>LEFT JOIN … WHERE b.key IS NULL</code>, <code>WHERE NOT EXISTS (SELECT 1 FROM b WHERE b.key = a.key)</code> и <code>WHERE a.key NOT IN (SELECT key FROM b)</code>. Первые два безопасны, третий даёт пустой результат, если в подзапросе встречается <code>NULL</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему условие на правую таблицу в WHERE «ломает» LEFT JOIN?</summary>
+      <div class="ml-quiz__a"><p>Для строк без пары столбцы правой таблицы равны <code>NULL</code>, и условие вроде <code>WHERE o.status = 'delivered'</code> для них ложно — они отбрасываются, и <code>LEFT JOIN</code> ведёт себя как <code>INNER JOIN</code>. Чтобы сохранить строки без пары, условие переносят в <code>ON</code>: <code>LEFT JOIN orders o ON o.customer_id = c.customer_id AND o.status = 'delivered'</code>.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
+  <h2>Чекпоинт</h2>
+  <ul>
+    <li>Можете соединить три таблицы и не размножить суммы?</li>
+    <li>Можете написать anti-join двумя способами?</li>
+    <li>Rubber duck: объясните, что происходит с клиентом без заказов при INNER и при LEFT JOIN.</li>
+  </ul>
+</section>
+  </main>
+  <script src="sql-course-data.js"></script>
+  <script src="../shared-sql.js"></script>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

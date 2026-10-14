@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11.5 SQL для ML</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <link rel="stylesheet" href="../shared-sql.css" />
+  <meta name="description" content="Как собрать датасет для модели на SQL: дата среза, признаки, целевая переменная и утечка будущего. Задания с проверкой в браузере." />
+  <meta property="og:title" content="11.5 SQL для ML - ML notes" />
+  <meta property="og:description" content="Признаки, target и утечки при сборке датасета на SQL." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/11_sql/05_sql_for_ml.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body data-ml-section="sql">
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">SQL</span>
+        <span class="tag active">Feature engineering</span>
+        <span class="tag">Target</span>
+        <span class="tag">Leakage</span>
+      </div>
+      <h1>11.5 SQL для ML</h1>
+      <p class="muted">Датасет для модели — это запрос: одна строка на объект, признаки из прошлого, целевая переменная из будущего. Самая дорогая ошибка здесь не синтаксическая, а временная — утечка будущего в признаки.</p>
+    </section>
+
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>В реальных проектах модель редко ломается из-за архитектуры и часто — из-за неправильно собранного датасета: признаки посчитаны с будущими данными, объекты потеряны при соединении, дубли после JOIN.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+      <li>Собирать признаки на дату среза (point-in-time)</li>
+      <li>Строить целевую переменную из будущего окна</li>
+      <li>Находить утечки и считать признаки за разные окна условной агрегацией</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать</div>
+    <ul>
+      <li><a href="04_cte_window.html">11.4 CTE и оконные функции</a></li>
+      <li><a href="../02_classic_ml/17_validation_and_hyperparameter_tuning.html">2.17 Validation</a> и утечки</li>
+    </ul>
+  </div>
+</div>
+
+    <div class="sql-story">
+      <h2>Часть 5. Чтобы это не повторилось</h2>
+      <p>Кирилла уволили, деньги частично вернули. Елена хочет модель, которая будет заранее помечать клиентов с высоким риском возврата. Модель обучат на истории до 1 октября 2025 года и проверят на том, что случилось после.</p>
+    </div>
+
+    <div class="card">
+      <h2>Дата среза и окна</h2>
+      <p>Выберите момент времени — <b>cutoff</b>. Всё, что известно до него, можно использовать в признаках; то, что произошло после (в окне наблюдения), — только в целевой переменной. В продакшене модель будет работать именно так: в момент предсказания будущего ещё нет.</p>
+      <pre><code class="language-sql">         признаки                 |        target
+  ...───────────────────────── cutoff ───────────────────────...
+       2025-01-01 … 2025-09-30    |   2025-10-01 … 2025-12-31</code></pre>
+      <p>Для честной валидации берут несколько срезов (как rolling-origin валидация во временных рядах), а не один.</p>
+    </div>
+
+    <div class="card">
+      <h2>Признаки: одна строка на объект</h2>
+      <p>Витрина признаков группирует события по объекту. Условная агрегация считает признаки за разные окна в одном проходе:</p>
+      <div class="sql-example" data-sql="SELECT customer_id,
+  COUNT(*) AS orders_before,
+  SUM(order_date &gt;= '2025-07-01') AS orders_last_quarter,
+  ROUND(AVG(status = 'returned'), 2) AS return_rate,
+  julianday('2025-10-01') - julianday(MAX(order_date)) AS days_since_last
+FROM orders
+WHERE order_date &lt; '2025-10-01' AND status &lt;&gt; 'cancelled'
+GROUP BY customer_id
+ORDER BY customer_id LIMIT 8;"></div>
+      <p>Проверки, которые стоит делать всегда: число строк равно числу объектов (нет дублей после JOIN), у признаков разумные диапазоны, нет признаков, которые вычисляются из target.</p>
+    </div>
+
+    <div class="card">
+      <h2>Target и утечки</h2>
+      <p>Целевая переменная считается по окну после среза, а объекты без события должны получить 0 — поэтому начинают с полного списка объектов и присоединяют события через <code>LEFT JOIN</code> или <code>EXISTS</code>.</p>
+      <p>Типичные утечки в SQL: агрегат без фильтра по дате (сумма покупок «за всё время»), <code>JOIN</code> с таблицей, где значения перезаписываются задним числом (текущий статус вместо статуса на дату среза), признаки из полей, которые заполняются после события (дата возврата, сумма возврата). Симптом — слишком хорошие метрики на валидации.</p>
+      <div class="sql-example" data-sql="SELECT
+  ROUND(AVG(o.status = 'returned'), 3) AS return_rate_before_cutoff,
+  (SELECT ROUND(AVG(status = 'returned'), 3) FROM orders WHERE order_date &gt;= '2025-10-01') AS return_rate_after_cutoff
+FROM orders o WHERE o.order_date &lt; '2025-10-01';"></div>
+    </div>
+
+    <div class="card">
+      <h2>Задания</h2>
+      <div class="sql-schema"></div>
+      <div class="sql-lab" data-sql-part="5"></div>
+    </div>
+
+<div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое point-in-time correct признаки?</summary>
+      <div class="ml-quiz__a"><p>Признаки, посчитанные только по данным, которые были доступны в момент предсказания (до даты среза). Если признак использует события после среза, модель на обучении «видит будущее», метрики на валидации завышены, а в продакшене качество падает. В SQL это означает фильтр по дате события в каждом агрегате и соединение с версиями таблиц на нужную дату.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему target строят от списка объектов, а не от таблицы событий?</summary>
+      <div class="ml-quiz__a"><p>Если начать с таблицы событий (например, возвратов), в выборку попадут только объекты с событием, и у всех target будет 1. Нужен полный список объектов на дату среза, к которому событие присоединяется через <code>LEFT JOIN</code> или проверяется <code>EXISTS</code>: нет события — 0.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Как JOIN может испортить витрину признаков?</summary>
+      <div class="ml-quiz__a"><p>Связь «один ко многим» размножает строки: после соединения клиентов с заказами каждая строка клиента повторяется, и модель получает дубли, а агрегаты по «одной» стороне завышаются. Защита — агрегировать события до соединения (CTE на уровне объекта) и проверять, что число строк витрины равно числу объектов.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Что такое условная агрегация и где она полезна?</summary>
+      <div class="ml-quiz__a"><p>Агрегат по выражению с условием: <code>SUM(CASE WHEN условие THEN x ELSE 0 END)</code> или в SQLite просто <code>SUM(условие)</code>. Позволяет одним проходом посчитать признаки за разные окна (за 30, 90, 365 дней), доли по категориям и сравнить «правильную» и «протекающую» версии признака.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
+  <h2>Чекпоинт</h2>
+  <ul>
+    <li>Можете собрать витрину «признаки до среза + target после среза» одним запросом?</li>
+    <li>Можете назвать три вида утечки при сборке датасета на SQL?</li>
+    <li>Rubber duck: объясните, почему модель стажёра показала отличные метрики на валидации.</li>
+  </ul>
+</section>
+  </main>
+  <script src="sql-course-data.js"></script>
+  <script src="../shared-sql.js"></script>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>

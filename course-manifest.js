@@ -200,6 +200,20 @@ window.__mlNotesCourse = {
         { path: "10_projects/04_rag_application.html", label: "10.4 RAG Application", title: "RAG-приложение" },
         { path: "10_projects/05_kaggle_competition_walkthrough.html", label: "10.5 Kaggle Walkthrough", title: "Kaggle Walkthrough" }
       ]
+    },
+    {
+      id: "sql",
+      label: "Блок 11",
+      title: "SQL",
+      pagerTitle: "11 SQL",
+      accent: "#e0b46c",
+      pages: [
+        { path: "11_sql/01_select_basics.html", label: "11.1 SQL: первые запросы", title: "SQL: первые запросы" },
+        { path: "11_sql/02_aggregation.html", label: "11.2 Агрегация", title: "Агрегация и GROUP BY" },
+        { path: "11_sql/03_joins.html", label: "11.3 JOIN и подзапросы", title: "JOIN и подзапросы" },
+        { path: "11_sql/04_cte_window.html", label: "11.4 CTE и окна", title: "CTE и оконные функции" },
+        { path: "11_sql/05_sql_for_ml.html", label: "11.5 SQL для ML", title: "SQL для ML" }
+      ]
     }
   ]
 };

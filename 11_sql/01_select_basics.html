@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11.1 SQL: первые запросы</title>
+  <link rel="stylesheet" href="../shared-nav.css" />
+  <link rel="stylesheet" href="../shared-theme.css" />
+  <link rel="stylesheet" href="../shared-sql.css" />
+  <meta name="description" content="Интерактивный SQL-тренажёр: SELECT, WHERE, ORDER BY, LIMIT, LIKE и NULL на данных интернет-магазина. Запросы выполняются прямо в браузере." />
+  <meta property="og:title" content="11.1 SQL: первые запросы - ML notes" />
+  <meta property="og:description" content="SELECT, WHERE, ORDER BY, LIKE и NULL — с задачами и проверкой прямо в браузере." />
+  <meta property="og:url" content="https://gandrsky.github.io/ml-notes/11_sql/01_select_basics.html" />
+  <link rel="icon" type="image/png" href="../favicon.png" />
+</head>
+<body data-ml-section="sql">
+  <main class="page">
+    <section class="hero">
+      <div class="top-tags">
+        <span class="tag tag-block">SQL</span>
+        <span class="tag active">SELECT</span>
+        <span class="tag">WHERE</span>
+        <span class="tag">ORDER BY</span>
+      </div>
+      <h1>11.1 SQL: первые запросы</h1>
+      <p class="muted">SQL — язык, на котором спрашивают у базы данных. В этом блоке вы расследуете дело интернет-магазина «Вольт», а запросы выполняются прямо в браузере — на настоящей SQLite.</p>
+    </section>
+
+<div class="ml-learning-path">
+  <div class="ml-learning-path__why">
+    <div class="ml-learning-path__label">Зачем это знать</div>
+    <p>Данные для ML почти всегда лежат в базах. SQL спрашивают на большинстве собеседований аналитиков, data scientist-ов и ML-инженеров, а сборка датасета и признаков начинается с запроса.</p>
+  </div>
+  <div class="ml-learning-path__objectives">
+    <div class="ml-learning-path__label">Что узнаешь</div>
+    <ul>
+      <li>Выбирать столбцы (SELECT) и фильтровать строки (WHERE)</li>
+      <li>Сортировать и ограничивать выдачу (ORDER BY, LIMIT)</li>
+      <li>Искать по шаблону (LIKE) и правильно работать с NULL</li>
+    </ul>
+  </div>
+  <div class="ml-learning-path__prereqs">
+    <div class="ml-learning-path__label">Нужно знать</div>
+    <ul><li>Ничего — блок начинается с нуля</li></ul>
+  </div>
+</div>
+
+    <div class="sql-story">
+      <h2>Дело о тихих возвратах</h2>
+      <p>2025 год, интернет-магазин электроники «Вольт». Финансовый директор Елена Новикова заметила, что денег по возвратам уходит больше, чем обычно, и попросила вас — нового аналитика — разобраться. У вас есть доступ к базе магазина: клиенты, товары, заказы, возвраты и сотрудники. За пять уроков вы найдёте, кто стоит за возвратами, и подготовите данные для модели, которая будет ловить такое заранее.</p>
+    </div>
+
+    <div class="card">
+      <h2>Таблицы, строки, столбцы</h2>
+      <p>Реляционная база — набор таблиц. Строка — один объект (клиент, заказ), столбец — его свойство (имя, дата). У каждой таблицы есть первичный ключ — столбец, однозначно определяющий строку (<code>customer_id</code> у клиентов). Таблицы связаны ключами: в заказе хранится <code>customer_id</code> покупателя, а не его имя.</p>
+      <div class="sql-schema"></div>
+    </div>
+
+    <div class="card">
+      <h2>SELECT и FROM</h2>
+      <p>Самый простой запрос — какие столбцы взять (<code>SELECT</code>) и из какой таблицы (<code>FROM</code>). Точка с запятой завершает запрос. Ключевые слова пишут заглавными по традиции — регистр для них не важен.</p>
+      <div class="sql-example" data-sql="SELECT name, category, price FROM products;"></div>
+      <p>В <code>SELECT</code> можно считать выражения и давать столбцам имена через <code>AS</code>:</p>
+      <div class="sql-example" data-sql="SELECT name, price, price * 0.9 AS price_with_discount FROM products;"></div>
+    </div>
+
+    <div class="card">
+      <h2>WHERE: фильтр строк</h2>
+      <p><code>WHERE</code> оставляет только строки, для которых условие истинно. Сравнения: <code>=</code>, <code>&lt;&gt;</code> (не равно), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>. Условия объединяют через <code>AND</code>, <code>OR</code>, <code>NOT</code>; удобные сокращения — <code>BETWEEN a AND b</code> (включая границы) и <code>IN (…)</code>.</p>
+      <div class="sql-example" data-sql="SELECT name, price FROM products WHERE category = 'Наушники' AND price &lt; 20000;"></div>
+      <div class="sql-example" data-sql="SELECT full_name, city FROM customers WHERE city IN ('Казань', 'Новосибирск');"></div>
+      <p>Текст пишется в одинарных кавычках. Даты в этой базе — строки <code>YYYY-MM-DD</code>, и их можно сравнивать как строки: <code>'2025-03-01' &lt; '2025-12-31'</code>.</p>
+    </div>
+
+    <div class="card">
+      <h2>ORDER BY и LIMIT</h2>
+      <p>Без <code>ORDER BY</code> база вправе вернуть строки в любом порядке. <code>ORDER BY столбец DESC</code> — по убыванию, <code>ASC</code> (по умолчанию) — по возрастанию; можно сортировать по нескольким столбцам. <code>LIMIT n</code> оставляет первые n строк — после сортировки.</p>
+      <div class="sql-example" data-sql="SELECT order_id, order_date, status FROM orders ORDER BY order_date DESC, order_id LIMIT 5;"></div>
+    </div>
+
+    <div class="card">
+      <h2>LIKE и NULL</h2>
+      <p><code>LIKE</code> ищет по шаблону: <code>%</code> — любые символы, <code>_</code> — ровно один. <code>NULL</code> означает «значение неизвестно»: сравнение <code>= NULL</code> никогда не истинно, поэтому пишут <code>IS NULL</code> / <code>IS NOT NULL</code>.</p>
+      <div class="sql-example" data-sql="SELECT name FROM products WHERE name LIKE 'Наушники%';"></div>
+      <div class="sql-example" data-sql="SELECT COUNT(*) AS all_rows, COUNT(email) AS with_email FROM customers;"></div>
+      <p>Второй запрос заранее показывает агрегаты из следующего урока: <code>COUNT(email)</code> не считает строки, где email — <code>NULL</code>.</p>
+    </div>
+
+    <div class="card">
+      <h2>Песочница</h2>
+      <p>Пробуйте любые запросы. База восстанавливается автоматически, если что-то изменить или удалить.</p>
+      <div class="sql-sandbox" data-sql="SELECT * FROM customers LIMIT 10;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Задания</h2>
+      <p class="muted">Ответ засчитывается, если результат совпадает с эталонным: те же строки и то же число столбцов в том же порядке. Названия столбцов не проверяются. Прогресс сохраняется в браузере.</p>
+      <div class="sql-lab" data-sql-part="1"></div>
+    </div>
+
+<div class="ml-quiz">
+  <div class="ml-quiz__header">
+    <span class="ml-quiz__label">Проверь себя</span>
+    <h3 class="ml-quiz__title">Вопросы для самопроверки</h3>
+  </div>
+  <ol class="ml-quiz__list">
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему без ORDER BY нельзя полагаться на порядок строк?</summary>
+      <div class="ml-quiz__a"><p>Таблица — это множество строк без порядка. База возвращает их в том порядке, который удобен плану выполнения (порядок хранения, индекса, параллельных потоков), и он может меняться между запусками и версиями. Любой порядок, который важен (топ-N, «последний заказ»), задаётся явным <code>ORDER BY</code>, а при равенстве значений — дополнительным столбцом.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему WHERE email = NULL не находит строки с пустым email?</summary>
+      <div class="ml-quiz__a"><p><code>NULL</code> — «неизвестное значение», и любое сравнение с ним даёт неизвестность (UNKNOWN), а <code>WHERE</code> пропускает только TRUE. Поэтому для проверки используют <code>IS NULL</code> и <code>IS NOT NULL</code>. Та же логика влияет на <code>NOT IN</code> и агрегаты: <code>COUNT(email)</code> пропускает <code>NULL</code>.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Чем LIKE 'Pro%' отличается от LIKE '%Pro%'?</summary>
+      <div class="ml-quiz__a"><p><code>%</code> заменяет любую последовательность символов. <code>'Pro%'</code> — строки, которые начинаются с «Pro», <code>'%Pro%'</code> — содержащие «Pro» в любом месте. Шаблон с <code>%</code> в начале не может использовать обычный индекс по столбцу, поэтому на больших таблицах работает медленнее.</p></div>
+    </details>
+  </li>
+  <li class="ml-quiz__item">
+    <details class="ml-quiz__entry">
+      <summary class="ml-quiz__q">Почему SELECT * не рекомендуют в рабочих запросах?</summary>
+      <div class="ml-quiz__a"><p>Запрос читает и передаёт лишние столбцы (медленнее, особенно в колоночных хранилищах), результат меняется, если в таблицу добавят столбец, а читателю непонятно, какие данные реально нужны. Для быстрого просмотра данных <code>SELECT * … LIMIT 10</code> — нормально.</p></div>
+    </details>
+  </li>
+  </ol>
+</div>
+
+<section class="ml-checkpoint-section">
+  <h2>Чекпоинт</h2>
+  <ul>
+    <li>Можете написать запрос «столбцы + фильтр + сортировка + LIMIT» без подсказок?</li>
+    <li>Можете объяснить, почему <code>= NULL</code> не работает?</li>
+    <li>Rubber duck: объясните, в каком порядке база «читает» запрос с WHERE, ORDER BY и LIMIT.</li>
+  </ul>
+</section>
+  </main>
+  <script src="sql-course-data.js"></script>
+  <script src="../shared-sql.js"></script>
+  <script src="../bundle.js" defer></script>
+</body>
+</html>
